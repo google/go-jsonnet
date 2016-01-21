@@ -203,7 +203,7 @@ func (l *lexer) next() rune {
 	if r == '\n' {
 		l.prevLineNumber = l.lineNumber
 		l.prevLineStart = l.lineStart
-		l.lineNumber += 1
+		l.lineNumber++
 		l.lineStart = l.pos
 	}
 	return r
@@ -313,6 +313,8 @@ func (l *lexer) lexNumber() error {
 	)
 
 	state := numBegin
+
+outerLoop:
 	for true {
 		r := l.next()
 		switch state {
@@ -323,8 +325,8 @@ func (l *lexer) lexNumber() error {
 			case r >= '1' && r <= '9':
 				state = numAfterOneToNine
 			default:
-				return makeStaticErrorPoint(
-					"Couldn't lex number", l.fileName, l.prevLocation())
+				// The caller should ensure the first rune is a digit.
+				panic("Couldn't lex number")
 			}
 		case numAfterZero:
 			switch r {
@@ -333,7 +335,7 @@ func (l *lexer) lexNumber() error {
 			case 'e', 'E':
 				state = numAfterE
 			default:
-				goto end
+				break outerLoop
 			}
 		case numAfterOneToNine:
 			switch {
@@ -344,7 +346,7 @@ func (l *lexer) lexNumber() error {
 			case r >= '0' && r <= '9':
 				state = numAfterOneToNine
 			default:
-				goto end
+				break outerLoop
 			}
 		case numAfterDot:
 			switch {
@@ -362,7 +364,7 @@ func (l *lexer) lexNumber() error {
 			case r >= '0' && r <= '9':
 				state = numAfterDigit
 			default:
-				goto end
+				break outerLoop
 			}
 		case numAfterE:
 			switch {
@@ -388,11 +390,11 @@ func (l *lexer) lexNumber() error {
 			if r >= '0' && r <= '9' {
 				state = numAfterExpDigit
 			} else {
-				goto end
+				break outerLoop
 			}
 		}
 	}
-end:
+
 	l.backup()
 	l.emitToken(tokenNumber)
 	return nil
@@ -488,7 +490,7 @@ func (l *lexer) lexSymbol() error {
 		l.resetTokenStart() // Throw out the leading /*
 		for r = l.next(); ; r = l.next() {
 			if r == lexEOF {
-				return makeStaticErrorPoint("Multi-line comment has no terminating */.",
+				return makeStaticErrorPoint("Multi-line comment has no terminating */",
 					l.fileName, commentStartLoc)
 			}
 			if r == '*' && l.peek() == '/' {
@@ -514,7 +516,7 @@ func (l *lexer) lexSymbol() error {
 		numWhiteSpace := checkWhitespace(l.input[l.pos:], l.input[l.pos:])
 		stringBlockIndent := l.input[l.pos : l.pos+numWhiteSpace]
 		if numWhiteSpace == 0 {
-			return makeStaticErrorPoint("Text block's first line must start with whitespace.",
+			return makeStaticErrorPoint("Text block's first line must start with whitespace",
 				l.fileName, commentStartLoc)
 		}
 

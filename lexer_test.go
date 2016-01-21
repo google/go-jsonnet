@@ -41,7 +41,7 @@ var lexTests = []lexTest{
 	{"number 0", "0", tokens{{kind: tokenNumber, data: "0"}}, ""},
 	{"number 1", "1", tokens{{kind: tokenNumber, data: "1"}}, ""},
 	{"number 1.0", "1.0", tokens{{kind: tokenNumber, data: "1.0"}}, ""},
-	{"number 0.1", "0.1", tokens{{kind: tokenNumber, data: "0.1"}}, ""},
+	{"number 0.10", "0.10", tokens{{kind: tokenNumber, data: "0.10"}}, ""},
 	{"number 0e100", "0e100", tokens{{kind: tokenNumber, data: "0e100"}}, ""},
 	{"number 1e100", "1e100", tokens{{kind: tokenNumber, data: "1e100"}}, ""},
 	{"number 1.1e100", "1.1e100", tokens{{kind: tokenNumber, data: "1.1e100"}}, ""},
@@ -90,11 +90,13 @@ var lexTests = []lexTest{
 	{"then", "then", tokens{{kind: tokenThen, data: "then"}}, ""},
 	{"true", "true", tokens{{kind: tokenTrue, data: "true"}}, ""},
 
-	{"identifier", "foobar", tokens{{kind: tokenIdentifier, data: "foobar"}}, ""},
+	{"identifier", "foobar123", tokens{{kind: tokenIdentifier, data: "foobar123"}}, ""},
+	{"identifier", "foo bar123", tokens{{kind: tokenIdentifier, data: "foo"}, {kind: tokenIdentifier, data: "bar123"}}, ""},
 
-	{"c++ comment", "// hi", tokens{}, ""},  // This test doesn't look at fodder (yet?)
-	{"hash comment", "# hi", tokens{}, ""},  // This test doesn't look at fodder (yet?)
-	{"c comment", "/* hi */", tokens{}, ""}, // This test doesn't look at fodder (yet?)
+	{"c++ comment", "// hi", tokens{}, ""},                                                                     // This test doesn't look at fodder (yet?)
+	{"hash comment", "# hi", tokens{}, ""},                                                                     // This test doesn't look at fodder (yet?)
+	{"c comment", "/* hi */", tokens{}, ""},                                                                    // This test doesn't look at fodder (yet?)
+	{"c comment no term", "/* hi", tokens{}, "c comment no term:1:1 Multi-line comment has no terminating */"}, // This test doesn't look at fodder (yet?)
 
 	{
 		"block string spaces",
@@ -194,6 +196,14 @@ var lexTests = []lexTest{
 `,
 		tokens{},
 		"block string not term:1:1 Text block not terminated with |||",
+	},
+	{
+		"block string no ws",
+		`|||
+test
+|||`,
+		tokens{},
+		"block string no ws:1:1 Text block's first line must start with whitespace",
 	},
 
 	{"op *", "*", tokens{{kind: tokenOperator, data: "*"}}, ""},
