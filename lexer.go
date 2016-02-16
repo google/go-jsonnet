@@ -35,10 +35,8 @@ type fodder []fodderElement
 type tokenKind int
 
 const (
-	tokenInvalid tokenKind = iota
-
 	// Symbols
-	tokenBraceL
+	tokenBraceL tokenKind = iota
 	tokenBraceR
 	tokenBracketL
 	tokenBracketR
@@ -54,9 +52,9 @@ const (
 	tokenIdentifier
 	tokenNumber
 	tokenOperator
+	tokenStringBlock
 	tokenStringDouble
 	tokenStringSingle
-	tokenStringBlock
 
 	// Keywords
 	tokenAssert
@@ -71,16 +69,69 @@ const (
 	tokenIn
 	tokenLocal
 	tokenNullLit
-	tokenTailStrict
-	tokenThen
 	tokenSelf
 	tokenSuper
+	tokenTailStrict
+	tokenThen
 	tokenTrue
 
 	// A special token that holds line/column information about the end of the
 	// file.
 	tokenEndOfFile
 )
+
+var tokenKindStrings = []string{
+	// Symbols
+	tokenBraceL:    "\"{\"",
+	tokenBraceR:    "\"}\"",
+	tokenBracketL:  "\"[\"",
+	tokenBracketR:  "\"]\"",
+	tokenColon:     "\":\"",
+	tokenComma:     "\",\"",
+	tokenDollar:    "\"$\"",
+	tokenDot:       "\".\"",
+	tokenParenL:    "\"(\"",
+	tokenParenR:    "\")\"",
+	tokenSemicolon: "\";\"",
+
+	// Arbitrary length lexemes
+	tokenIdentifier:   "IDENTIFIER",
+	tokenNumber:       "NUMBER",
+	tokenOperator:     "OPERATOR",
+	tokenStringBlock:  "STRING_BLOCK",
+	tokenStringDouble: "STRING_DOUBLE",
+	tokenStringSingle: "STRING_SINGLE",
+
+	// Keywords
+	tokenAssert:     "assert",
+	tokenElse:       "else",
+	tokenError:      "error",
+	tokenFalse:      "false",
+	tokenFor:        "for",
+	tokenFunction:   "function",
+	tokenIf:         "if",
+	tokenImport:     "import",
+	tokenImportStr:  "importstr",
+	tokenIn:         "in",
+	tokenLocal:      "local",
+	tokenNullLit:    "null",
+	tokenSelf:       "self",
+	tokenSuper:      "super",
+	tokenTailStrict: "tailstrict",
+	tokenThen:       "then",
+	tokenTrue:       "true",
+
+	// A special token that holds line/column information about the end of the
+	// file.
+	tokenEndOfFile: "end of file",
+}
+
+func (tk tokenKind) String() string {
+	if tk < 0 || int(tk) >= len(tokenKindStrings) {
+		panic(fmt.Sprintf("INTERNAL ERROR: Unknown token kind:: %v", tk))
+	}
+	return tokenKindStrings[tk]
+}
 
 type token struct {
 	kind   tokenKind // The type of the token
@@ -95,6 +146,16 @@ type token struct {
 }
 
 type tokens []token
+
+func (t *token) String() string {
+	if t.data == "" {
+		return t.kind.String()
+	} else if t.kind == tokenOperator {
+		return fmt.Sprintf("\"%v\"", t.data)
+	} else {
+		return fmt.Sprintf("(%v, \"%v\")", t.kind, t.data)
+	}
+}
 
 // ---------------------------------------------------------------------------
 // Helpers

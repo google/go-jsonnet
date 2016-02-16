@@ -235,7 +235,10 @@ type astDollar struct{ astNodeBase }
 // ---------------------------------------------------------------------------
 
 // astError represents the error e.
-type astError struct{ astNodeBase }
+type astError struct {
+	astNodeBase
+	expr astNode
+}
 
 // ---------------------------------------------------------------------------
 
