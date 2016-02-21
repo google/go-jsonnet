@@ -477,6 +477,7 @@ type astUnary struct {
 
 // astVar represents variables.
 type astVar struct {
+	astNodeBase
 	id       identifier
 	original identifier
 }

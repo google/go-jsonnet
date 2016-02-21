@@ -70,22 +70,50 @@ func (p *parser) peek() *token {
 }
 
 func (p *parser) parseIdentifierList(elementKind string) (identifiers, bool, error) {
-	exprs, got_comma, err := p.parseCommaList(tokenParenR, elementKind)
+	_, exprs, got_comma, err := p.parseCommaList(tokenParenR, elementKind)
 	if err != nil {
 		return identifiers{}, false, err
 	}
 	var ids identifiers
-	for n := range exprs {
-		v, ok := n.(astVar)
+	for _, n := range exprs {
+		v, ok := n.(*astVar)
 		if !ok {
-			return identifiers{}, false, makeStaticError(fmt.Sprintf("Not an identifier: %v", n), n.Loc())
+			return identifiers{}, false, makeStaticError(fmt.Sprintf("Not an identifier: %v", n), *n.Loc())
 		}
 		ids = append(ids, v.id)
 	}
+	return ids, got_comma, nil
 }
 
-func (p *parser) parseCommaList(tokenKind end, elementkind string) (astNodes, bool, error) {
+func (p *parser) parseCommaList(end tokenKind, elementKind string) (*token, astNodes, bool, error) {
+	var exprs astNodes
+	got_comma := false
+	first := true
+	for {
+		next := p.peek();
+		if !first && !got_comma {
+			if next.kind == tokenComma {
+				p.pop()
+				next = p.peek()
+				got_comma = true
+			}
+		}
+		if next.kind == end {
+			// got_comma can be true or false here.
+			return p.pop(), exprs, got_comma, nil
+		}
+		if !first && !got_comma {
+			return nil, nil, false, makeStaticError(fmt.Sprintf("Expected a comma before next %s.", elementKind), next.loc)
+		}
 
+		expr, err := p.parse(maxPrecedence)
+		if err != nil {
+			return nil, nil, false, err
+		}
+		exprs = append(exprs, expr)
+		got_comma = false
+		first = false
+	}
 }
 
 func (p *parser) parse(prec precedence) (astNode, error) {
@@ -176,14 +204,14 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 			if err != nil {
 				return nil, err
 			}
-			return astFunction{
+			return &astFunction{
 				astNodeBase: astNodeBase{locFromTokenAST(begin, body)},
 				parameters:  params,
-				trailingComma, got_comma,
+				trailingComma: got_comma,
 				body: body,
-			}
+			}, nil
 		} else {
-			return makeStaticError(fmt.Sprintf("Expected ( but got %v", next), next.loc)
+			return nil, makeStaticError(fmt.Sprintf("Expected ( but got %v", next), next.loc)
 		}
 	}
 
