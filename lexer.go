@@ -55,7 +55,6 @@ const (
 	tokenBraceR
 	tokenBracketL
 	tokenBracketR
-	tokenColon
 	tokenComma
 	tokenDollar
 	tokenDot
@@ -101,7 +100,6 @@ var tokenKindStrings = []string{
 	tokenBraceR:    "\"}\"",
 	tokenBracketL:  "\"[\"",
 	tokenBracketR:  "\"]\"",
-	tokenColon:     "\":\"",
 	tokenComma:     "\",\"",
 	tokenDollar:    "\"$\"",
 	tokenDot:       "\".\"",
@@ -197,7 +195,7 @@ func isIdentifier(r rune) bool {
 
 func isSymbol(r rune) bool {
 	switch r {
-	case '&', '|', '^', '=', '<', '>', '*', '/', '%', '#':
+	case '!', '$', ':', '~', '+', '-', '&', '|', '^', '=', '<', '>', '*', '/', '%':
 		return true
 	}
 	return false
@@ -533,7 +531,7 @@ func (l *lexer) lexIdentifier() {
 }
 
 // lexSymbol will lex a token that starts with a symbol.  This could be a
-// comment, block quote or an operator.  This function assumes that the next
+// C or C++ comment, block quote or an operator.  This function assumes that the next
 // rune to be served by the lexer will be the first rune of the new token.
 func (l *lexer) lexSymbol() error {
 	r := l.next()
@@ -547,16 +545,6 @@ func (l *lexer) lexSymbol() error {
 		// Leave the '\n' in the lexer to be fodder for the next round
 		l.backup()
 		l.addCommentFodder(fodderCommentCpp)
-		return nil
-	}
-
-	if r == '#' {
-		l.resetTokenStart() // Throw out the leading #
-		for r = l.next(); r != lexEOF && r != '\n'; r = l.next() {
-		}
-		// Leave the '\n' in the lexer to be fodder for the next round
-		l.backup()
-		l.addCommentFodder(fodderCommentHash)
 		return nil
 	}
 
@@ -640,10 +628,39 @@ func (l *lexer) lexSymbol() error {
 
 	// Assume any string of symbols is a single operator.
 	for r = l.next(); isSymbol(r); r = l.next() {
-
+		// Not allowed // in operators
+		if r == '/' && strings.HasPrefix(l.input[l.pos:], "/") {
+			break
+		}
+		// Not allowed /* in operators
+		if r == '/' && strings.HasPrefix(l.input[l.pos:], "*") {
+			break
+		}
+		// Not allowed ||| in operators
+		if r == '|' && strings.HasPrefix(l.input[l.pos:], "||") {
+			break
+		}
 	}
+
 	l.backup()
-	l.emitToken(tokenOperator)
+
+	// Operators are not allowed to end with + - ~ ! unless they are one rune long.
+	// So, wind it back if we need to, but stop at the first rune.
+	// This relies on the hack that all operator symbols are ASCII and thus there is
+	// no need to treat this substring as general UTF-8.
+	for r = rune(l.input[l.pos - 1]); l.pos > l.tokenStart + 1; l.pos-- {
+		switch r {
+			case '+', '-', '~', '!':
+			continue
+		}
+		break
+	}
+
+	if l.input[l.tokenStart:l.pos] == "$" {
+		l.emitToken(tokenDollar)
+	} else {
+		l.emitToken(tokenOperator)
+	}
 	return nil
 }
 
@@ -665,12 +682,8 @@ func lex(fn string, input string) (tokens, error) {
 			l.emitToken(tokenBracketL)
 		case ']':
 			l.emitToken(tokenBracketR)
-		case ':':
-			l.emitToken(tokenColon)
 		case ',':
 			l.emitToken(tokenComma)
-		case '$':
-			l.emitToken(tokenDollar)
 		case '.':
 			l.emitToken(tokenDot)
 		case '(':
@@ -679,15 +692,6 @@ func lex(fn string, input string) (tokens, error) {
 			l.emitToken(tokenParenR)
 		case ';':
 			l.emitToken(tokenSemicolon)
-
-			// Operators
-		case '!':
-			if l.peek() == '=' {
-				_ = l.next()
-			}
-			l.emitToken(tokenOperator)
-		case '~', '+', '-':
-			l.emitToken(tokenOperator)
 
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
 			l.backup()
@@ -733,6 +737,14 @@ func lex(fn string, input string) (tokens, error) {
 					r = l.next()
 				}
 			}
+		case '#':
+			l.resetTokenStart() // Throw out the leading #
+			for r = l.next(); r != lexEOF && r != '\n'; r = l.next() {
+			}
+			// Leave the '\n' in the lexer to be fodder for the next round
+			l.backup()
+			l.addCommentFodder(fodderCommentHash)
+
 		default:
 			if isIdentifierFirst(r) {
 				l.backup()

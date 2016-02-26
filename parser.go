@@ -144,7 +144,7 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 			return nil, err
 		}
 		var msg astNode
-		if p.peek().kind == tokenColon {
+		if p.peek().kind == tokenOperator && p.peek().data == ":" {
 			p.pop()
 			msg, err = p.parse(maxPrecedence)
 			if err != nil {
