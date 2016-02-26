@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package jsonnet
 
 import (
@@ -85,7 +86,7 @@ func (p *parser) peek() *token {
 }
 
 func (p *parser) parseIdentifierList(elementKind string) (identifiers, bool, error) {
-	_, exprs, got_comma, err := p.parseCommaList(tokenParenR, elementKind)
+	_, exprs, gotComma, err := p.parseCommaList(tokenParenR, elementKind)
 	if err != nil {
 		return identifiers{}, false, err
 	}
@@ -97,27 +98,27 @@ func (p *parser) parseIdentifierList(elementKind string) (identifiers, bool, err
 		}
 		ids = append(ids, v.id)
 	}
-	return ids, got_comma, nil
+	return ids, gotComma, nil
 }
 
 func (p *parser) parseCommaList(end tokenKind, elementKind string) (*token, astNodes, bool, error) {
 	var exprs astNodes
-	got_comma := false
+	gotComma := false
 	first := true
 	for {
 		next := p.peek()
-		if !first && !got_comma {
+		if !first && !gotComma {
 			if next.kind == tokenComma {
 				p.pop()
 				next = p.peek()
-				got_comma = true
+				gotComma = true
 			}
 		}
 		if next.kind == end {
 			// got_comma can be true or false here.
-			return p.pop(), exprs, got_comma, nil
+			return p.pop(), exprs, gotComma, nil
 		}
-		if !first && !got_comma {
+		if !first && !gotComma {
 			return nil, nil, false, makeStaticError(fmt.Sprintf("Expected a comma before next %s.", elementKind), next.loc)
 		}
 
@@ -126,7 +127,7 @@ func (p *parser) parseCommaList(end tokenKind, elementKind string) (*token, astN
 			return nil, nil, false, err
 		}
 		exprs = append(exprs, expr)
-		got_comma = false
+		gotComma = false
 		first = false
 	}
 }
@@ -207,11 +208,12 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 			branchTrue:  branchTrue,
 			branchFalse: branchFalse,
 		}, nil
+
 	case tokenFunction:
 		p.pop()
 		next := p.pop()
 		if next.kind == tokenParenL {
-			params, got_comma, err := p.parseIdentifierList("function parameter")
+			params, gotComma, err := p.parseIdentifierList("function parameter")
 			if err != nil {
 				return nil, err
 			}
@@ -222,12 +224,12 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 			return &astFunction{
 				astNodeBase:   astNodeBase{locFromTokenAST(begin, body)},
 				parameters:    params,
-				trailingComma: got_comma,
+				trailingComma: gotComma,
 				body:          body,
 			}, nil
-		} else {
-			return nil, makeStaticError(fmt.Sprintf("Expected ( but got %v", next), next.loc)
 		}
+
+		return nil, makeStaticError(fmt.Sprintf("Expected ( but got %v", next), next.loc)
 	}
 
 	return nil, nil
