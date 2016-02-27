@@ -12,3 +12,13 @@
 This is a port of [jsonnet](http://jsonnet.org/) to go.  It is very much a work in progress.
 
 This implementation is largely based on the the [jsonnet C++ implementation](https://github.com/google/jsonnet).
+
+## Implementation Notes
+
+We are generating some helper classes on types by using http://clipperhouse.github.io/gen/.  Do the following to regenerate these if necessary:
+
+```
+go get github.com/clipperhouse/gen
+go get github.com/clipperhouse/set
+go generate
+```

@@ -53,6 +53,8 @@ import (
 // )
 
 // identifier represents a variable / parameter / field name.
+
+//+gen set
 type identifier string
 type identifiers []identifier
 
@@ -78,17 +80,18 @@ func (n *astNodeBase) Loc() *LocationRange {
 
 // ---------------------------------------------------------------------------
 
+// +gen stringer
 type astCompKind int
 
 const (
-	astCompFor = iota
+	astCompFor astCompKind = iota
 	astCompIf
 )
 
 type astCompSpec struct {
 	kind    astCompKind
-	varName identifier // nil when kind != compSpecFor
-	expr    *astNode
+	varName *identifier // nil when kind != compSpecFor
+	expr    astNode
 }
 type astCompSpecs []astCompSpec
 
@@ -203,9 +206,36 @@ var bopStrings = []string{
 	bopOr:  "||",
 }
 
+var bopMap = map[string]binaryOp{
+	"*": bopMult,
+	"/": bopDiv,
+	"%": bopPercent,
+
+	"+": bopPlus,
+	"-": bopMinus,
+
+	"<<": bopShiftL,
+	">>": bopShiftR,
+
+	">":  bopGreater,
+	">=": bopGreaterEq,
+	"<":  bopLess,
+	"<=": bopLessEq,
+
+	"==": bopManifestEqual,
+	"!=": bopManifestUnequal,
+
+	"&": bopBitwiseAnd,
+	"^": bopBitwiseXor,
+	"|": bopBitwiseOr,
+
+	"&&": bopAnd,
+	"||": bopOr,
+}
+
 func (b binaryOp) String() string {
 	if b < 0 || int(b) >= len(bopStrings) {
-		panic(fmt.Sprintf("INTERNAL ERROR: Unrecognised binary operator: %v", b))
+		panic(fmt.Sprintf("INTERNAL ERROR: Unrecognised binary operator: %d", b))
 	}
 	return bopStrings[b]
 }
@@ -299,11 +329,11 @@ type astIndex struct {
 
 // astLocalBind is a helper struct for astLocal
 type astLocalBind struct {
-	variable       identifier
-	body           astNode
-	functionSugar  bool
-	params         identifiers // if functionSugar is true
-	trailingComman bool
+	variable      identifier
+	body          astNode
+	functionSugar bool
+	params        identifiers // if functionSugar is true
+	trailingComma bool
 }
 type astLocalBinds []astLocalBind
 
@@ -332,11 +362,13 @@ type astLiteralNull struct{ astNodeBase }
 // astLiteralNumber represents a JSON number
 type astLiteralNumber struct {
 	astNodeBase
-	value float64
+	value          float64
+	originalString string
 }
 
 // ---------------------------------------------------------------------------
 
+// +gen stringer
 type astLiteralStringKind int
 
 const (
@@ -355,6 +387,7 @@ type astLiteralString struct {
 
 // ---------------------------------------------------------------------------
 
+// +gen stringer
 type astObjectFieldKind int
 
 const (
@@ -365,6 +398,7 @@ const (
 	astObjectLocal                               // local id = expr2
 )
 
+// +gen stringer
 type astObjectFieldHide int
 
 const (
@@ -379,7 +413,7 @@ type astObjectField struct {
 	superSugar    bool               // +:  (ignore if kind != astObjectField*)
 	methodSugar   bool               // f(x, y, z): ...  (ignore if kind  == astObjectAssert)
 	expr1         astNode            // Not in scope of the object
-	id            identifier
+	id            *identifier
 	ids           identifiers // If methodSugar == true then holds the params.
 	trailingComma bool        // If methodSugar == true then remembers the trailing comma
 	expr2, expr3  astNode     // In scope of the object (can see self).
@@ -453,6 +487,7 @@ type astSelf struct{ astNodeBase }
 // Either index or identifier will be set before desugaring.  After desugaring, id will be
 // nil.
 type astSuperIndex struct {
+	astNodeBase
 	index astNode
 	id    *identifier
 }
@@ -475,9 +510,16 @@ var uopStrings = []string{
 	uopMinus:      "-",
 }
 
+var uopMap = map[string]unaryOp{
+	"!": uopNot,
+	"~": uopBitwiseNot,
+	"+": uopPlus,
+	"-": uopMinus,
+}
+
 func (u unaryOp) String() string {
 	if u < 0 || int(u) >= len(uopStrings) {
-		panic(fmt.Sprintf("INTERNAL ERROR: Unrecognised unary operator: %v", u))
+		panic(fmt.Sprintf("INTERNAL ERROR: Unrecognised unary operator: %d", u))
 	}
 	return uopStrings[u]
 }
