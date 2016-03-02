@@ -142,7 +142,7 @@ var tokenKindStrings = []string{
 
 func (tk tokenKind) String() string {
 	if tk < 0 || int(tk) >= len(tokenKindStrings) {
-		panic(fmt.Sprintf("INTERNAL ERROR: Unknown token kind:: %v", tk))
+		panic(fmt.Sprintf("INTERNAL ERROR: Unknown token kind:: %d", tk))
 	}
 	return tokenKindStrings[tk]
 }
@@ -649,9 +649,9 @@ func (l *lexer) lexSymbol() error {
 	// So, wind it back if we need to, but stop at the first rune.
 	// This relies on the hack that all operator symbols are ASCII and thus there is
 	// no need to treat this substring as general UTF-8.
-	for r = rune(l.input[l.pos - 1]); l.pos > l.tokenStart + 1; l.pos-- {
+	for r = rune(l.input[l.pos-1]); l.pos > l.tokenStart+1; l.pos-- {
 		switch r {
-			case '+', '-', '~', '!':
+		case '+', '-', '~', '!':
 			continue
 		}
 		break

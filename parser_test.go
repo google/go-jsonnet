@@ -13,17 +13,23 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-/*
-Package jsonnet implements a parser and evaluator for jsonnet.
-
-Jsonnet is a domain specific configuration language that helps you define JSON
-data. Jsonnet lets you compute fragments of JSON within the structure, bringing
-the same benefit to structured data that templating languages bring to plain
-text.
-
-See http://jsonnet.org/ for a full language description and tutorial.
-*/
 package jsonnet
 
-//go:generate gen
+import (
+	"fmt"
+	"testing"
+
+	"github.com/kr/pretty"
+)
+
+func TestParser(t *testing.T) {
+	tokens, err := lex("test", `{hello: "world"}`)
+	if err != nil {
+		t.Errorf("Unexpected lex error: %v", err)
+	}
+	ast, err := parse(tokens)
+	if err != nil {
+		t.Errorf("Unexpected parse error: %v", err)
+	}
+	fmt.Printf("%# v", pretty.Formatter(ast))
+}
