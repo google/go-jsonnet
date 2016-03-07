@@ -24,10 +24,9 @@ import (
 type precedence int
 
 const (
-	applyPrecedence      precedence = 2  // Function calls and indexing.
-	unaryPrecedence      precedence = 4  // Logical and bitwise negation, unary + -
-	beforeElsePrecedence precedence = 15 // True branch of an if.
-	maxPrecedence        precedence = 16 // Local, If, Import, Function, Error
+	applyPrecedence precedence = 2  // Function calls and indexing.
+	unaryPrecedence precedence = 4  // Logical and bitwise negation, unary + -
+	maxPrecedence   precedence = 16 // Local, If, Import, Function, Error
 )
 
 var bopPrecedence = map[binaryOp]precedence{
@@ -189,6 +188,9 @@ func (p *parser) parseBind(binds *astLocalBinds) error {
 		})
 	} else {
 		_, err = p.popExpectOp("=")
+		if err != nil {
+			return err
+		}
 		body, err := p.parse(maxPrecedence)
 		if err != nil {
 			return err
@@ -248,7 +250,6 @@ func (p *parser) parseObjectRemainder(tok *token) (astNode, *token, error) {
 	literalFields := make(literalFieldSet)
 	binds := make(identifierSet)
 
-	_ = "breakpoint"
 	gotComma := false
 	first := true
 
@@ -914,6 +915,7 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 			// the operator.
 			switch p.peek().kind {
 			case tokenOperator:
+				_ = "breakpoint"
 				if p.peek().data == ":" {
 					// Special case for the colons in assert. Since COLON is no-longer a
 					// special token, we have to make sure it does not trip the
@@ -939,8 +941,74 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 			default:
 				return lhs, nil
 			}
-		}
 
+			op := p.pop()
+			switch op.kind {
+			case tokenBracketL:
+				index, err := p.parse(maxPrecedence)
+				if err != nil {
+					return nil, err
+				}
+				end, err := p.popExpect(tokenBracketR)
+				if err != nil {
+					return nil, err
+				}
+				lhs = &astIndex{
+					astNodeBase: astNodeBase{loc: locFromTokens(begin, end)},
+					target:      lhs,
+					index:       index,
+				}
+			case tokenDot:
+				fieldID, err := p.popExpect(tokenIdentifier)
+				if err != nil {
+					return nil, err
+				}
+				id := identifier(fieldID.data)
+				lhs = &astIndex{
+					astNodeBase: astNodeBase{loc: locFromTokens(begin, fieldID)},
+					target:      lhs,
+					id:          &id,
+				}
+			case tokenParenL:
+				end, args, gotComma, err := p.parseCommaList(tokenParenR, "function argument")
+				if err != nil {
+					return nil, err
+				}
+				tailStrict := false
+				if p.peek().kind == tokenTailStrict {
+					p.pop()
+					tailStrict = true
+				}
+				lhs = &astApply{
+					astNodeBase:   astNodeBase{loc: locFromTokens(begin, end)},
+					target:        lhs,
+					arguments:     args,
+					trailingComma: gotComma,
+					tailStrict:    tailStrict,
+				}
+			case tokenBraceL:
+				obj, end, err := p.parseObjectRemainder(op)
+				if err != nil {
+					return nil, err
+				}
+				lhs = &astApplyBrace{
+					astNodeBase: astNodeBase{loc: locFromTokens(begin, end)},
+					left:        lhs,
+					right:       obj,
+				}
+			default:
+				rhs, err := p.parse(prec - 1)
+				if err != nil {
+					return nil, err
+				}
+				lhs = &astBinary{
+					astNodeBase: astNodeBase{loc: locFromTokenAST(begin, rhs)},
+					left:        lhs,
+					op:          bop,
+					right:       rhs,
+				}
+			}
+		}
 	}
 }
 
