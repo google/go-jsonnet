@@ -115,7 +115,7 @@ func (p *parser) parseIdentifierList(elementKind string) (identifiers, bool, err
 	for _, n := range exprs {
 		v, ok := n.(*astVar)
 		if !ok {
-			return identifiers{}, false, makeStaticError(fmt.Sprintf("Not an identifier: %v", n), *n.Loc())
+			return identifiers{}, false, makeStaticError(fmt.Sprintf("Expected simple identifier but got a complex expression."), *n.Loc())
 		}
 		ids = append(ids, v.id)
 	}
