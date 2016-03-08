@@ -18,12 +18,12 @@ package jsonnet
 
 // TODO(dcunnin): Check for invalid use of self, super, and bound variables.
 // TODO(dcunnin): Compute free variables at each AST.
-func analyseVisit(ast astNode, inObject bool, vars identifierSet) (identifierSet, error) {
+func analyzeVisit(ast astNode, inObject bool, vars identifierSet) (identifierSet, error) {
 	var r identifierSet
 	return r, nil
 }
 
-func analyse(ast astNode) error {
-	_, err := analyseVisit(ast, false, NewidentifierSet())
+func analyze(ast astNode) error {
+	_, err := analyzeVisit(ast, false, NewidentifierSet())
 	return err
 }
