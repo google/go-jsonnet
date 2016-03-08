@@ -20,40 +20,7 @@ import (
 	"fmt"
 )
 
-// type astKind int
-
-// const (
-// 	astApply astKind = iota
-// 	astArray
-// 	astArrayComprehension
-// 	astArrayComprehensionSimple
-// 	astAssert
-// 	astBinary
-// 	astBuiltinFunction
-// 	astConditional
-// 	astDollar
-// 	astError
-// 	astFunction
-// 	astImport
-// 	astImportstr
-// 	astIndex
-// 	astLocal
-// 	astLiteralBoolean
-// 	astLiteralNull
-// 	astLiteralNumber
-// 	astLiteralString
-// 	astObject
-// 	astDesugaredObject
-// 	astObjectComprehension
-// 	astObjectComprehensionSimple
-// 	astSelf
-// 	astSuperIndex
-// 	astUnary
-// 	astVar
-// )
-
 // identifier represents a variable / parameter / field name.
-
 //+gen set
 type identifier string
 type identifiers []identifier

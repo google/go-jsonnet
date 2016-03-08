@@ -43,7 +43,7 @@ var lexTests = []lexTest{
 	{"colon3", ":::", tokens{{kind: tokenOperator, data: ":::"}}, ""},
 	{"arrow right", "->", tokens{{kind: tokenOperator, data: "->"}}, ""},
 	{"less than minus", "<-", tokens{{kind: tokenOperator, data: "<"},
-                                     {kind: tokenOperator, data: "-"}}, ""},
+		{kind: tokenOperator, data: "-"}}, ""},
 	{"comma", ",", tokens{{kind: tokenComma, data: ","}}, ""},
 	{"dollar", "$", tokens{{kind: tokenDollar, data: "$"}}, ""},
 	{"dot", ".", tokens{{kind: tokenDot, data: "."}}, ""},
