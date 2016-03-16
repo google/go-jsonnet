@@ -16,29 +16,40 @@ limitations under the License.
 
 package jsonnet
 
-// Note: There are no garbage collection params because we're using the native Go garbage collector.
-type Vm struct {
-	maxStack int
-	maxTrace int
+// Note: There are no garbage collection params because we're using the native
+// Go garbage collector.
+
+// VM is the core interpreter and is the touchpoint used to parse and execute
+// Jsonnet.
+type VM struct {
+	MaxStack int
+	MaxTrace int // The number of lines of stack trace to display (0 for all of them).
 	ext      vmExtMap
 }
 
-func MakeVm() *Vm {
-	return &Vm{
-		maxStack: 500,
-		maxTrace: 20,
+// MakeVM creates a new VM with default parameters.
+func MakeVM() *VM {
+	return &VM{
+		MaxStack: 500,
+		MaxTrace: 20,
 	}
 }
 
-func (vm *Vm) ExtVar(key string, val string) {
+// ExtVar binds a Jsonnet external var to the given value.
+func (vm *VM) ExtVar(key string, val string) {
 	vm.ext[key] = vmExt{value: val, isCode: false}
 }
 
-func (vm *Vm) ExtCode(key string, val string) {
+// ExtCode binds a Jsonnet external code var to the given value.
+func (vm *VM) ExtCode(key string, val string) {
 	vm.ext[key] = vmExt{value: val, isCode: true}
 }
 
-func (vm *Vm) EvaluateSnippet(filename string, snippet string) (string, error) {
+// EvaluateSnippet evaluates a string containing Jsonnet code, return a JSON
+// string.
+//
+// The filename parameter is only used for error messages.
+func (vm *VM) EvaluateSnippet(filename string, snippet string) (string, error) {
 	tokens, err := lex(filename, snippet)
 	if err != nil {
 		return "", err
@@ -48,7 +59,7 @@ func (vm *Vm) EvaluateSnippet(filename string, snippet string) (string, error) {
 		return "", err
 	}
 	ast, err = desugarFile(ast)
-	output, err := execute(ast, vm.ext, vm.maxStack)
+	output, err := execute(ast, vm.ext, vm.MaxStack)
 	if err != nil {
 		return "", err
 	}

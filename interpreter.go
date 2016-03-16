@@ -31,8 +31,9 @@ type vmExt struct {
 
 type vmExtMap map[string]vmExt
 
+// RuntimeError is an error discovered during evaluation of the program
 type RuntimeError struct {
-	StackTrace []traceFrame
+	StackTrace []TraceFrame
 	Msg        string
 }
 
@@ -127,7 +128,8 @@ func makeValueArray(elements []thunk) *valueArray {
 
 // The stack
 
-type traceFrame struct {
+// TraceFrame is a single frame of the call stack.
+type TraceFrame struct {
 	Loc  LocationRange
 	Name string
 }
@@ -158,17 +160,17 @@ type interpreter struct {
 	ExternalVars vmExtMap
 }
 
-func (this interpreter) execute(ast_ astNode) (value, error) {
+func (i *interpreter) execute(a astNode) (value, error) {
 	// TODO(dcunnin): All the other cases...
-	switch ast := ast_.(type) {
+	switch ast := a.(type) {
 	case *astBinary:
 		// TODO(dcunnin): Assume it's + on numbers for now
-		leftVal, err := this.execute(ast.left)
+		leftVal, err := i.execute(ast.left)
 		if err != nil {
 			return nil, err
 		}
 		leftNum := leftVal.(*valueNumber).value
-		rightVal, err := this.execute(ast.right)
+		rightVal, err := i.execute(ast.right)
 		if err != nil {
 			return nil, err
 		}
@@ -188,18 +190,17 @@ func (this interpreter) execute(ast_ astNode) (value, error) {
 func unparseNumber(v float64) string {
 	if v == math.Floor(v) {
 		return fmt.Sprintf("%.0f", v)
-	} else {
-		// See "What Every Computer Scientist Should Know About Floating-Point Arithmetic"
-		// Theorem 15
-		// http://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
-		return fmt.Sprintf("%.17g", v)
 	}
+
+	// See "What Every Computer Scientist Should Know About Floating-Point Arithmetic"
+	// Theorem 15
+	// http://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
+	return fmt.Sprintf("%.17g", v)
 }
 
-func (this interpreter) manifestJson(
-	v_ value, multiline bool, indent string, buf *bytes.Buffer) error {
+func (i *interpreter) manifestJSON(v value, multiline bool, indent string, buf *bytes.Buffer) error {
 	// TODO(dcunnin): All the other types...
-	switch v := v_.(type) {
+	switch v := v.(type) {
 	case *valueBoolean:
 		if v.value {
 			buf.WriteString("true")
@@ -217,16 +218,16 @@ func (this interpreter) manifestJson(
 }
 
 func execute(ast astNode, ext vmExtMap, maxStack int) (string, error) {
-	theInterpreter := interpreter{
+	i := interpreter{
 		Stack:        makeCallStack(maxStack),
 		ExternalVars: ext,
 	}
-	result, err := theInterpreter.execute(ast)
+	result, err := i.execute(ast)
 	if err != nil {
 		return "", err
 	}
 	var buffer bytes.Buffer
-	err = theInterpreter.manifestJson(result, true, "", &buffer)
+	err = i.manifestJSON(result, true, "", &buffer)
 	if err != nil {
 		return "", err
 	}

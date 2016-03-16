@@ -40,7 +40,7 @@ var mainTests = []mainTest{
 
 func TestMain(t *testing.T) {
 	for _, test := range mainTests {
-		vm := MakeVm()
+		vm := MakeVM()
 		output, err := vm.EvaluateSnippet(test.name, test.input)
 		var errString string
 		if err != nil {
