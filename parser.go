@@ -682,7 +682,6 @@ func (p *parser) parseTerminal() (astNode, error) {
 		return &astVar{
 			astNodeBase: astNodeBase{loc: tok.loc},
 			id:          identifier(tok.data),
-			original:    identifier(tok.data),
 		}, nil
 	case tokenSelf:
 		return &astSelf{
@@ -751,7 +750,7 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 			return nil, err
 		}
 		return &astAssert{
-			astNodeBase: astNodeBase{locFromTokenAST(begin, rest)},
+			astNodeBase: astNodeBase{loc: locFromTokenAST(begin, rest)},
 			cond:        cond,
 			message:     msg,
 			rest:        rest,
@@ -764,7 +763,7 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 			return nil, err
 		}
 		return &astError{
-			astNodeBase: astNodeBase{locFromTokenAST(begin, expr)},
+			astNodeBase: astNodeBase{loc: locFromTokenAST(begin, expr)},
 			expr:        expr,
 		}, nil
 
@@ -793,7 +792,7 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 			lr = locFromTokenAST(begin, branchFalse)
 		}
 		return &astConditional{
-			astNodeBase: astNodeBase{lr},
+			astNodeBase: astNodeBase{loc: lr},
 			cond:        cond,
 			branchTrue:  branchTrue,
 			branchFalse: branchFalse,
@@ -812,7 +811,7 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 				return nil, err
 			}
 			return &astFunction{
-				astNodeBase:   astNodeBase{locFromTokenAST(begin, body)},
+				astNodeBase:   astNodeBase{loc: locFromTokenAST(begin, body)},
 				parameters:    params,
 				trailingComma: gotComma,
 				body:          body,
@@ -828,7 +827,7 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 		}
 		if lit, ok := body.(*astLiteralString); ok {
 			return &astImport{
-				astNodeBase: astNodeBase{locFromTokenAST(begin, body)},
+				astNodeBase: astNodeBase{loc: locFromTokenAST(begin, body)},
 				file:        lit.value,
 			}, nil
 		}
@@ -842,7 +841,7 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 		}
 		if lit, ok := body.(*astLiteralString); ok {
 			return &astImportStr{
-				astNodeBase: astNodeBase{locFromTokenAST(begin, body)},
+				astNodeBase: astNodeBase{loc: locFromTokenAST(begin, body)},
 				file:        lit.value,
 			}, nil
 		}
@@ -869,7 +868,7 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 			return nil, err
 		}
 		return &astLocal{
-			astNodeBase: astNodeBase{locFromTokenAST(begin, body)},
+			astNodeBase: astNodeBase{loc: locFromTokenAST(begin, body)},
 			binds:       binds,
 			body:        body,
 		}, nil
@@ -888,7 +887,7 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 					return nil, err
 				}
 				return &astUnary{
-					astNodeBase: astNodeBase{locFromTokenAST(op, expr)},
+					astNodeBase: astNodeBase{loc: locFromTokenAST(op, expr)},
 					op:          uop,
 					expr:        expr,
 				}, nil

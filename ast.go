@@ -32,17 +32,23 @@ type identifiers []identifier
 
 type astNode interface {
 	Loc() *LocationRange
+	FreeVariables() identifiers
 }
 type astNodes []astNode
 
 // ---------------------------------------------------------------------------
 
 type astNodeBase struct {
-	loc LocationRange
+	loc           LocationRange
+	freeVariables identifiers
 }
 
 func (n *astNodeBase) Loc() *LocationRange {
 	return &n.loc
+}
+
+func (n *astNodeBase) FreeVariables() identifiers {
+	return n.freeVariables
 }
 
 // ---------------------------------------------------------------------------
@@ -386,7 +392,15 @@ type astObjectField struct {
 	expr2, expr3  astNode     // In scope of the object (can see self).
 }
 
-// TODO(jbeda): Add constructor helpers here
+// TODO(jbeda): Add the remaining constructor helpers here
+
+func astObjectFieldLocal(methodSugar bool, id *identifier, ids identifiers, trailingComma bool, body astNode) astObjectField {
+	return astObjectField{astObjectLocal, astObjectFieldVisible, false, methodSugar, nil, id, ids, trailingComma, body, nil}
+}
+
+func astObjectFieldLocalNoMethod(id *identifier, body astNode) astObjectField {
+	return astObjectField{astObjectLocal, astObjectFieldVisible, false, false, nil, id, identifiers{}, false, body, nil}
+}
 
 type astObjectFields []astObjectField
 
@@ -503,8 +517,7 @@ type astUnary struct {
 // astVar represents variables.
 type astVar struct {
 	astNodeBase
-	id       identifier
-	original identifier
+	id identifier
 }
 
 // ---------------------------------------------------------------------------

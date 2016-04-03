@@ -12,6 +12,9 @@
 This is a port of [jsonnet](http://jsonnet.org/) to go.  It is very much a work in progress.
 
 This implementation is largely based on the the [jsonnet C++ implementation](https://github.com/google/jsonnet).
+The precise revision is
+https://github.com/google/jsonnet/tree/27ddf2c2f7041c09316cf7c9ef13af9588fdd671 but when we reach
+feature parity with that revision, we will chase up all the recent changes on the C++ side.
 
 ## Implementation Notes
 
