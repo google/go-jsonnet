@@ -58,8 +58,11 @@ func (vm *VM) EvaluateSnippet(filename string, snippet string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	ast, err = desugarFile(ast)
-	output, err := execute(ast, vm.ext, vm.MaxStack)
+	err = desugarFile(&ast)
+	if err != nil {
+		return "", err
+	}
+	output, err := evaluate(ast, vm.ext, vm.MaxStack)
 	if err != nil {
 		return "", err
 	}
