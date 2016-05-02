@@ -379,6 +379,7 @@ func (i *interpreter) evaluate(a astNode) (value, error) {
 		if err != nil {
 			return nil, err
 		}
+		// TODO(dcunnin): Check the type properly.  The following code just panics.
 		leftNum := leftVal.(*valueNumber).value
 		rightVal, err := i.evaluate(ast.right)
 		if err != nil {

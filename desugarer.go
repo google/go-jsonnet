@@ -179,7 +179,7 @@ func desugarFields(location LocationRange, fields *astObjectFields, objLevel int
 			field.kind = astObjectFieldExpr
 
 		case astObjectLocal:
-			return fmt.Errorf("INTERNAL ERROR: Locals should be removed by now.")
+			return fmt.Errorf("INTERNAL ERROR: Locals should be removed by now")
 		}
 	}
 
@@ -199,34 +199,32 @@ func desugarFields(location LocationRange, fields *astObjectFields, objLevel int
 	return nil
 }
 
-func desugar(astPtr *astNode, objLevel int) error {
+func desugar(astPtr *astNode, objLevel int) (err error) {
 	ast := *astPtr
 	// TODO(dcunnin): Remove all uses of unimplErr.
 	unimplErr := makeStaticError(fmt.Sprintf("Desugarer does not yet implement ast: %s", reflect.TypeOf(ast)), *ast.Loc())
-
-	var err error // Make all recursive calls of the form err = desugar, rather than some being err := desugar
 
 	switch ast := ast.(type) {
 	case *astApply:
 		err = desugar(&ast.target, objLevel)
 		if err != nil {
-			return err
+			return
 		}
 		for i := range ast.arguments {
 			err = desugar(&ast.arguments[i], objLevel)
 			if err != nil {
-				return err
+				return
 			}
 		}
 
 	case *astApplyBrace:
 		err = desugar(&ast.left, objLevel)
 		if err != nil {
-			return err
+			return
 		}
 		err = desugar(&ast.right, objLevel)
 		if err != nil {
-			return err
+			return
 		}
 		*astPtr = &astBinary{
 			astNodeBase: ast.astNodeBase,
@@ -239,7 +237,7 @@ func desugar(astPtr *astNode, objLevel int) error {
 		for i := range ast.elements {
 			err = desugar(&ast.elements[i], objLevel)
 			if err != nil {
-				return err
+				return
 			}
 		}
 
@@ -252,11 +250,11 @@ func desugar(astPtr *astNode, objLevel int) error {
 	case *astBinary:
 		err = desugar(&ast.left, objLevel)
 		if err != nil {
-			return err
+			return
 		}
 		err = desugar(&ast.right, objLevel)
 		if err != nil {
-			return err
+			return
 		}
 		// TODO(dcunnin): Need to handle bopPercent, bopManifestUnequal, bopManifestEqual
 
@@ -266,11 +264,11 @@ func desugar(astPtr *astNode, objLevel int) error {
 	case *astConditional:
 		err = desugar(&ast.cond, objLevel)
 		if err != nil {
-			return err
+			return
 		}
 		err = desugar(&ast.branchTrue, objLevel)
 		if err != nil {
-			return err
+			return
 		}
 		if ast.branchFalse != nil {
 			ast.branchFalse = &astLiteralNull{}
@@ -285,13 +283,13 @@ func desugar(astPtr *astNode, objLevel int) error {
 	case *astError:
 		err = desugar(&ast.expr, objLevel)
 		if err != nil {
-			return err
+			return
 		}
 
 	case *astFunction:
 		err = desugar(&ast.body, objLevel)
 		if err != nil {
-			return err
+			return
 		}
 
 	case *astImport:
@@ -307,12 +305,12 @@ func desugar(astPtr *astNode, objLevel int) error {
 		for _, bind := range ast.binds {
 			err = desugar(&bind.body, objLevel)
 			if err != nil {
-				return err
+				return
 			}
 		}
 		err = desugar(&ast.body, objLevel)
 		if err != nil {
-			return err
+			return
 		}
 		// TODO(dcunnin): Desugar local functions
 
@@ -343,7 +341,7 @@ func desugar(astPtr *astNode, objLevel int) error {
 
 		err = desugarFields(*ast.Loc(), &ast.fields, objLevel)
 		if err != nil {
-			return err
+			return
 		}
 
 		var newFields astDesugaredObjectFields
@@ -379,7 +377,7 @@ func desugar(astPtr *astNode, objLevel int) error {
 	case *astUnary:
 		err = desugar(&ast.expr, objLevel)
 		if err != nil {
-			return err
+			return
 		}
 
 	case *astVar:
