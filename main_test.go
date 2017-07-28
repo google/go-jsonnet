@@ -36,6 +36,7 @@ var mainTests = []mainTest{
 	{"simple_arith1", "3 + 3", "6", ""},
 	{"simple_arith2", "3 + 3 + 3", "9", ""},
 	{"simple_arith3", "(3 + 3) + (3 + 3)", "12", ""},
+	{"simple_arith_string", "\"aaa\" + \"bbb\"", "\"aaabbb\"", ""},
 	{"empty_array", "[]", "[ ]", ""},
 	{"array", "[1, 2, 1 + 2]", "[\n   1,\n   2,\n   3\n]", ""},
 	{"empty_object", "{}", "{ }", ""},

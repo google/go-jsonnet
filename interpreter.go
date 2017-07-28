@@ -360,6 +360,21 @@ func (i *interpreter) objectIndex(loc *LocationRange, obj value, f string, offse
 	}
 }
 
+func (i *interpreter) evalAdd(leftVal, rightVal value) (value, error) {
+	switch leftVal := leftVal.(type) {
+	case *valueNumber:
+		left := leftVal.value
+		right := rightVal.(*valueNumber).value
+		return makeValueNumber(left + right), nil
+	case *valueString:
+		left := leftVal.value
+		right := rightVal.(*valueString).value
+		return makeValueString(left + right), nil
+	}
+	// TODO(sbarzowski) More types and more graceful error handling
+	panic("unknown type")
+}
+
 func (i *interpreter) evaluate(a astNode) (value, error) {
 	// TODO(dcunnin): All the other cases...
 	switch ast := a.(type) {
@@ -374,19 +389,21 @@ func (i *interpreter) evaluate(a astNode) (value, error) {
 		return &valueArray{elements}, nil
 
 	case *astBinary:
-		// TODO(dcunnin): Assume it's + on numbers for now
+		// TODO(dcunnin): Assume it's + for now
 		leftVal, err := i.evaluate(ast.left)
 		if err != nil {
 			return nil, err
 		}
 		// TODO(dcunnin): Check the type properly.  The following code just panics.
-		leftNum := leftVal.(*valueNumber).value
 		rightVal, err := i.evaluate(ast.right)
 		if err != nil {
 			return nil, err
 		}
-		rightNum := rightVal.(*valueNumber).value
-		return makeValueNumber(leftNum + rightNum), nil
+		result, err := i.evalAdd(leftVal, rightVal)
+		if err != nil {
+			return nil, err
+		}
+		return result, nil
 
 	case *astDesugaredObject:
 		// Evaluate all the field names.  Check for null, dups, etc.
