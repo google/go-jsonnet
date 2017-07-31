@@ -361,6 +361,7 @@ func (i *interpreter) objectIndex(loc *LocationRange, obj value, f string, offse
 }
 
 func (i *interpreter) evalAdd(leftVal, rightVal value) (value, error) {
+	// TODO(sbarzowski) More types and more graceful error handling
 	switch leftVal := leftVal.(type) {
 	case *valueNumber:
 		left := leftVal.value
@@ -370,9 +371,9 @@ func (i *interpreter) evalAdd(leftVal, rightVal value) (value, error) {
 		left := leftVal.value
 		right := rightVal.(*valueString).value
 		return makeValueString(left + right), nil
+	default:
+		panic(fmt.Sprintf("INTERNAL ERROR: Unrecognised value type: %T", leftVal))
 	}
-	// TODO(sbarzowski) More types and more graceful error handling
-	panic("unknown type")
 }
 
 func (i *interpreter) evaluate(a astNode) (value, error) {
