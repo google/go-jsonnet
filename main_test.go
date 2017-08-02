@@ -23,19 +23,40 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
 var update = flag.Bool("update", false, "update .golden files")
 
-// Just a few simple sanity tests for now.  Eventually we'll share end-to-end tests with the C++
+// Just some simple sanity tests for now.  Eventually we'll share end-to-end tests with the C++
 // implementation but unsure if that should be done here or via some external framework.
+// TODO(sbarzowski) figure out how to measure coverage on the external tests
 
 type mainTest struct {
 	name   string
 	input  string
 	golden string
+}
+
+func removeExcessiveWhitespace(s string) string {
+	var buf bytes.Buffer
+	separated := true
+	for i, w := 0, 0; i < len(s); i += w {
+		runeValue, width := utf8.DecodeRuneInString(s[i:])
+		if runeValue == '\n' || runeValue == ' ' {
+			if !separated {
+				buf.WriteString(" ")
+				separated = true
+			}
+		} else {
+			buf.WriteRune(runeValue)
+			separated = false
+		}
+		w = width
+	}
+	return buf.String()
 }
 
 func TestMain(t *testing.T) {
@@ -66,11 +87,13 @@ func TestMain(t *testing.T) {
 			}
 
 			input := read(test.input)
-			output, err := vm.EvaluateSnippet(test.name, string(input))
+			output, err := vm.evaluateSnippet(test.name, string(input))
 			if err != nil {
-				t.Fail()
-				t.Errorf("evaluate snippet: %v", err)
+				// TODO(sbarzowski) perhaps somehow mark that we are processing
+				// an error. But for now we can treat them the same.
+				output = err.Error()
 			}
+			output += "\n"
 			if *update {
 				err := ioutil.WriteFile(test.golden, []byte(output), 0666)
 				if err != nil {
@@ -80,9 +103,12 @@ func TestMain(t *testing.T) {
 			}
 			golden := read(test.golden)
 			if bytes.Compare(golden, []byte(output)) != 0 {
+				// TODO(sbarzowski) better reporting of differences in whitespace
+				// missing newline issues can be very subtle now
+				t.Errorf("%#v %#v\n", golden, []byte(output))
 				t.Fail()
-				t.Errorf("%s.input != %s\n", test.name, test.golden)
-				data := diff( output, string(golden),)
+				t.Errorf("Mismatch when running %s.input. Golden: %s\n", test.name, test.golden)
+				data := diff(output, string(golden))
 				if err != nil {
 					t.Errorf("computing diff: %s", err)
 				}
@@ -98,4 +124,72 @@ func diff(a, b string) string {
 	dmp := diffmatchpatch.New()
 	diffs := dmp.DiffMain(a, b, false)
 	return dmp.DiffPrettyText(diffs)
+}
+
+type errorFormattingTest struct {
+	name      string
+	input     string
+	errString string
+}
+
+func genericTestErrorMessage(t *testing.T, tests []errorFormattingTest, format func(RuntimeError) string) {
+	for _, test := range tests {
+		vm := MakeVM()
+		output, err := vm.evaluateSnippet(test.name, test.input)
+		var errString string
+		if err != nil {
+			switch typedErr := err.(type) {
+			case RuntimeError:
+				errString = format(typedErr)
+			default:
+				t.Errorf("%s: unexpected error: %v", test.name, err)
+			}
+
+		}
+		if errString != test.errString {
+			t.Errorf("%s: error result does not match. got\n\t%+#v\nexpected\n\t%+#v",
+				test.name, errString, test.errString)
+		}
+		if err == nil {
+			t.Errorf("%s, Expected error, but execution succeded and the here's the result:\n %v\n", test.name, output)
+		}
+	}
+}
+
+// TODO(sbarzowski) Perhaps we should have just one set of tests with all the variants?
+// TODO(sbarzowski) Perhaps this should be handled in external tests?
+var oneLineTests = []errorFormattingTest{
+	{"error", `error "x"`, "RUNTIME ERROR: x"},
+}
+
+func TestOneLineError(t *testing.T) {
+	genericTestErrorMessage(t, oneLineTests, func(r RuntimeError) string {
+		return r.Error()
+	})
+}
+
+// TODO(sbarzowski) checking if the whitespace is right is quite unpleasant, what can we do about it?
+var minimalErrorTests = []errorFormattingTest{
+	{"error", `error "x"`, "RUNTIME ERROR: x\n" +
+		"	During evaluation	\n" +
+		"	error:1:1-9	<main>\n"}, // TODO(sbarzowski) if seems we have off-by-one in location
+	{"error_in_func", `local x(n) = if n == 0 then error "x" else x(n - 1); x(3)`, "RUNTIME ERROR: x\n" +
+		"	During evaluation	\n" +
+		"	error_in_func:1:54-58	<main>\n" +
+		"	error_in_func:1:44-52	function <anonymous>\n" +
+		"	error_in_func:1:44-52	function <anonymous>\n" +
+		"	error_in_func:1:44-52	function <anonymous>\n" +
+		"	error_in_func:1:29-37	function <anonymous>\n" +
+		""},
+	{"error_in_error", `error (error "x")`, "RUNTIME ERROR: x\n" +
+		"	During evaluation	\n" +
+		"	error_in_error:1:8-16	<main>\n" +
+		""},
+}
+
+func TestMinimalError(t *testing.T) {
+	formatter := ErrorFormatter{}
+	genericTestErrorMessage(t, minimalErrorTests, func(r RuntimeError) string {
+		return formatter.format(r)
+	})
 }

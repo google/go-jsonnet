@@ -1,5 +1,5 @@
 /*
-Copyright 2016 Google Inc. All rights reserved.
+Copyright 2017 Google Inc. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,8 +16,16 @@ limitations under the License.
 
 package jsonnet
 
+import (
+	"errors"
+	"fmt"
+	"runtime/debug"
+)
+
 // Note: There are no garbage collection params because we're using the native
 // Go garbage collector.
+
+// TODO(sbarzowski) prepare API that maps 1-1 to libjsonnet api
 
 // VM is the core interpreter and is the touchpoint used to parse and execute
 // Jsonnet.
@@ -25,7 +33,18 @@ type VM struct {
 	MaxStack int
 	MaxTrace int // The number of lines of stack trace to display (0 for all of them).
 	ext      vmExtMap
+	importer Importer
+	ef       ErrorFormatter
 }
+
+// TODO(sbarzowski) actually support these
+// External variable (or code) provided before execution
+type vmExt struct {
+	value  string // what is it?
+	isCode bool   // what is it?
+}
+
+type vmExtMap map[string]vmExt
 
 // MakeVM creates a new VM with default parameters.
 func MakeVM() *VM {
@@ -33,6 +52,7 @@ func MakeVM() *VM {
 		MaxStack: 500,
 		MaxTrace: 20,
 		ext:      make(vmExtMap),
+		ef:       ErrorFormatter{},
 	}
 }
 
@@ -46,26 +66,52 @@ func (vm *VM) ExtCode(key string, val string) {
 	vm.ext[key] = vmExt{value: val, isCode: true}
 }
 
-// EvaluateSnippet evaluates a string containing Jsonnet code, return a JSON
-// string.
-//
-// The filename parameter is only used for error messages.
-func (vm *VM) EvaluateSnippet(filename string, snippet string) (string, error) {
-	tokens, err := lex(filename, snippet)
+func (vm *VM) evaluateSnippet(filename string, snippet string) (string, error) {
+	ast, err := snippetToAST(filename, snippet)
 	if err != nil {
 		return "", err
 	}
-	ast, err := parse(tokens)
-	if err != nil {
-		return "", err
-	}
-	err = desugarFile(&ast)
-	if err != nil {
-		return "", err
-	}
-	output, err := evaluate(ast, vm.ext, vm.MaxStack)
+	output, err := evaluate(ast, vm.ext, vm.MaxStack, &FileImporter{})
 	if err != nil {
 		return "", err
 	}
 	return output, nil
+}
+
+// EvaluateSnippet evaluates a string containing Jsonnet code, return a JSON
+// string.
+//
+// The filename parameter is only used for error messages.
+func (vm *VM) EvaluateSnippet(filename string, snippet string) (json string, formattedErr error) {
+	defer func() {
+		if r := recover(); r != nil {
+			formattedErr = errors.New(vm.ef.format(fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())))
+		}
+	}()
+	json, err := vm.evaluateSnippet(filename, snippet)
+	if err != nil {
+		return "", errors.New(vm.ef.format(err))
+	}
+	return json, nil
+}
+
+func snippetToAST(filename string, snippet string) (astNode, error) {
+	tokens, err := lex(filename, snippet)
+	if err != nil {
+		return nil, err
+	}
+	ast, err := parse(tokens)
+	if err != nil {
+		return nil, err
+	}
+	// fmt.Println(ast.(dumpable).dump())
+	err = desugarFile(&ast)
+	if err != nil {
+		return nil, err
+	}
+	err = analyze(ast)
+	if err != nil {
+		return nil, err
+	}
+	return ast, nil
 }

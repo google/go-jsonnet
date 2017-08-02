@@ -302,6 +302,21 @@ func desugar(astPtr *astNode, objLevel int) (err error) {
 		*astPtr = &astLiteralNull{}
 
 	case *astBinary:
+		// some operators get replaced by stdlib functions
+		if funcname, replaced := desugaredBop[ast.op]; replaced {
+			if funcname == "notEquals" {
+				// TODO(sbarzowski) maybe we can handle it in more regular way
+				// but let's be consistent with the spec
+				*astPtr = &astUnary{
+					op:   uopNot,
+					expr: buildStdCall(desugaredBop[bopManifestEqual], ast.left, ast.right),
+				}
+			} else {
+				*astPtr = buildStdCall(funcname, ast.left, ast.right)
+			}
+			return desugar(astPtr, objLevel)
+		}
+
 		err = desugar(&ast.left, objLevel)
 		if err != nil {
 			return
@@ -311,9 +326,6 @@ func desugar(astPtr *astNode, objLevel int) (err error) {
 			return
 		}
 		// TODO(dcunnin): Need to handle bopPercent, bopManifestUnequal, bopManifestEqual
-
-	case *astBuiltin:
-		// Nothing to do.
 
 	case *astConditional:
 		err = desugar(&ast.cond, objLevel)
@@ -428,12 +440,10 @@ func desugar(astPtr *astNode, objLevel int) (err error) {
 			if err != nil {
 				return err
 			}
-			// TODO(sbarzowski) perhaps store unescaped in a separate field...
 			ast.value = unescaped
 			ast.kind = astStringDouble
 			ast.blockIndent = ""
 		}
-
 	case *astObject:
 		// Hidden variable to allow $ binding.
 		if objLevel == 0 {
