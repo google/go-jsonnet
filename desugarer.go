@@ -302,8 +302,8 @@ func desugar(astPtr *astNode, objLevel int) (err error) {
 		return unimplErr
 
 	case *astLocal:
-		for _, bind := range ast.binds {
-			err = desugar(&bind.body, objLevel)
+		for i := range ast.binds {
+			err = desugar(&ast.binds[i].body, objLevel)
 			if err != nil {
 				return
 			}
