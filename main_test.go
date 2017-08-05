@@ -59,10 +59,10 @@ var mainTests = []mainTest{
 	{"function_capturing", `local y = 17; (function(x) y)(42)`, "17", ""},
 	{"error", `error "42"`, "", "Error: 42"},
 	{"filled_thunk", "local x = [1, 2, 3]; x[1] + x[1]", "4", ""},
-
-	// Desugaring problems ???
 	{"lazy", `local x = {'x': error "blah"}; x.x`, "", "Error: blah"},
 	{"lazy", `local x = {'x': error "blah"}, f = function(x) 42, z = x.x; f(x.x)`, "42", ""},
+	{"lazy_operator1", `false && error "shouldn't happen"`, "false", ""},
+	{"lazy_operator2", `true && error "should happen"`, "", "Error: should happen"},
 
 	// TODO(sbarzowski) - array comprehension
 	// {"array_comp", `[x for x in [1, 2, 3]]`, "[1, 2, 3]", ""},

@@ -64,6 +64,7 @@ func (err RuntimeError) Error() string {
 
 type value interface {
 	aValue()
+	typename() string
 }
 
 type valueBase struct{}
@@ -90,9 +91,17 @@ func makeValueString(v string) *valueString {
 	return &valueString{value: v}
 }
 
+func (*valueString) typename() string {
+	return "string"
+}
+
 type valueBoolean struct {
 	valueBase
 	value bool
+}
+
+func (*valueBoolean) typename() string {
+	return "boolean"
 }
 
 func makeValueBoolean(v bool) *valueBoolean {
@@ -102,6 +111,10 @@ func makeValueBoolean(v bool) *valueBoolean {
 type valueNumber struct {
 	valueBase
 	value float64
+}
+
+func (*valueNumber) typename() string {
+	return "number"
 }
 
 func makeValueNumber(v float64) *valueNumber {
@@ -117,6 +130,10 @@ func makeValueNull() *valueNull {
 	return &valueNull{}
 }
 
+func (*valueNull) typename() string {
+	return "null"
+}
+
 type valueArray struct {
 	valueBase
 	elements []*thunk
@@ -128,6 +145,10 @@ func makeValueArray(elements []*thunk) *valueArray {
 	}
 }
 
+func (*valueArray) typename() string {
+	return "array"
+}
+
 type valueClosure struct {
 	valueBase
 	upValues bindingFrame
@@ -136,13 +157,15 @@ type valueClosure struct {
 	function *astFunction
 }
 
-func (v *valueClosure) aValue() {}
-
 func makeValueClosure(upValues bindingFrame, function *astFunction) *valueClosure {
 	return &valueClosure{
 		upValues: upValues,
 		function: function,
 	}
+}
+
+func (*valueClosure) typename() string {
+	return "function"
 }
 
 type valueSimpleObjectField struct {
@@ -214,6 +237,10 @@ func makeValueSimpleObject(b bindingFrame, fields valueSimpleObjectFieldMap, ass
 		fields:   fields,
 		asserts:  asserts,
 	}
+}
+
+func (*valueSimpleObject) typename() string {
+	return "object"
 }
 
 func (v *valueSimpleObject) aValue() {}
@@ -513,6 +540,12 @@ func addBindings(a, b bindingFrame) bindingFrame {
 // TODO(sbarzowski) what happens to the stack?
 func (i *interpreter) evaluate(a astNode) (value, error) {
 	// TODO(dcunnin): All the other cases...
+
+	e := &evaluator{
+		fromWhere: a.Loc(),
+		i:         i,
+	}
+
 	switch ast := a.(type) {
 	case *astArray:
 		self, offset := i.stack.getSelfBinding()
@@ -525,18 +558,16 @@ func (i *interpreter) evaluate(a astNode) (value, error) {
 		return makeValueArray(elements), nil
 
 	case *astBinary:
-		leftVal, err := i.evaluate(ast.left)
-		if err != nil {
-			return nil, err
-		}
-		rightVal, err := i.evaluate(ast.right)
-		if err != nil {
-			return nil, err
-		}
+		// Some binary operators are lazy, so thunks are needed in general
+		// TODO(sbarzowski) extract getting the current env
+		self, offset := i.stack.getSelfBinding()
+		env := makeEnvironment(i.capture(ast.FreeVariables()), self, offset)
+		left := makeThunk("???", env, ast.left)
+		right := makeThunk("???", env, ast.right)
 
 		builtin := bopBuiltins[ast.op]
 
-		result, err := builtin.Binary(leftVal, rightVal, i, a.Loc())
+		result, err := builtin.Binary(left, right, e)
 		if err != nil {
 			return nil, err
 		}
@@ -634,11 +665,9 @@ func (i *interpreter) evaluate(a astNode) (value, error) {
 		return i.evaluate(ast.body)
 
 	case *astVar:
-		th := i.stack.lookUpVar(ast.id)
-		if th == nil {
-			//fmt.Println(dumpCallStack(&i.stack))
-			// This, should be caught during static check, right?
-			return nil, makeRuntimeError(ast.Loc(), fmt.Sprintf("Unknown variable: %v", ast.id))
+		th := e.lookUpVar(ast.id)
+		if e.err != nil {
+			return nil, e.err
 		}
 		return th.getValue(i, &ast.loc)
 
