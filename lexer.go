@@ -230,20 +230,18 @@ func checkWhitespace(a, b string) int {
 // ---------------------------------------------------------------------------
 // Lexer
 
+type position struct {
+	byteNo    int // Byte position of last rune read
+	lineNo    int // Line number
+	lineStart int // Rune position of the last newline
+}
+
 type lexer struct {
 	fileName string // The file name being lexed, only used for errors
 	input    string // The input string
 
-	pos        int // Current byte position in input
-	lineNumber int // Current line number for pos
-	lineStart  int // Byte position of start of line
-
-	// Data about the state position of the lexer before previous call to
-	// 'next'. If this state is lost then prevPos is set to lexEOF and panic
-	// ensues.
-	prevPos        int // Byte position of last rune read
-	prevLineNumber int // The line number before last rune read
-	prevLineStart  int // The line start before last rune read
+	pos  position // Current position in input
+	prev position // Previous position in input
 
 	tokens tokens // The tokens that we've generated so far
 
@@ -257,29 +255,26 @@ const lexEOF = -1
 
 func makeLexer(fn string, input string) *lexer {
 	return &lexer{
-		fileName:       fn,
-		input:          input,
-		lineNumber:     1,
-		prevPos:        lexEOF,
-		prevLineNumber: 1,
-		tokenStartLoc:  Location{Line: 1, Column: 1},
+		fileName:      fn,
+		input:         input,
+		pos:           position{byteNo: 0, lineNo: 1, lineStart: 0},
+		prev:          position{byteNo: lexEOF, lineNo: 0, lineStart: 0},
+		tokenStartLoc: Location{Line: 1, Column: 1},
 	}
 }
 
 // next returns the next rune in the input.
 func (l *lexer) next() rune {
-	if int(l.pos) >= len(l.input) {
-		l.prevPos = l.pos
+	if int(l.pos.byteNo) >= len(l.input) {
+		l.prev = l.pos
 		return lexEOF
 	}
-	r, w := utf8.DecodeRuneInString(l.input[l.pos:])
-	l.prevPos = l.pos
-	l.pos += w
+	r, w := utf8.DecodeRuneInString(l.input[l.pos.byteNo:])
+	l.prev = l.pos
+	l.pos.byteNo += w
 	if r == '\n' {
-		l.prevLineNumber = l.lineNumber
-		l.prevLineStart = l.lineStart
-		l.lineNumber++
-		l.lineStart = l.pos
+		l.pos.lineStart = l.pos.byteNo
+		l.pos.lineNo++
 	}
 	return r
 }
@@ -299,31 +294,33 @@ func (l *lexer) peek() rune {
 
 // backup steps back one rune. Can only be called once per call of next.
 func (l *lexer) backup() {
-	if l.prevPos == lexEOF {
+	if l.prev.byteNo == lexEOF {
 		panic("backup called with no valid previous rune")
 	}
-	l.lineNumber = l.prevLineNumber
-	l.lineStart = l.prevLineStart
-	l.pos = l.prevPos
-	l.prevPos = lexEOF
+	l.pos = l.prev
+	l.prev = position{byteNo: lexEOF}
+}
+
+func locationFromPosition(pos position) Location {
+	return Location{Line: pos.lineNo, Column: pos.byteNo - pos.lineStart + 1}
 }
 
 func (l *lexer) location() Location {
-	return Location{Line: l.lineNumber, Column: l.pos - l.lineStart + 1}
+	return locationFromPosition(l.pos)
 }
 
 func (l *lexer) prevLocation() Location {
-	if l.prevPos == lexEOF {
+	if l.prev.byteNo == lexEOF {
 		panic("prevLocation called with no valid previous rune")
 	}
-	return Location{Line: l.prevLineNumber, Column: l.prevPos - l.prevLineStart + 1}
+	return locationFromPosition(l.prev)
 }
 
 // Reset the current working token start to the current cursor position.  This
 // may throw away some characters.  This does not throw away any accumulated
 // fodder.
 func (l *lexer) resetTokenStart() {
-	l.tokenStart = l.pos
+	l.tokenStart = l.pos.byteNo
 	l.tokenStartLoc = l.location()
 }
 
@@ -340,12 +337,12 @@ func (l *lexer) emitFullToken(kind tokenKind, data, stringBlockIndent, stringBlo
 }
 
 func (l *lexer) emitToken(kind tokenKind) {
-	l.emitFullToken(kind, l.input[l.tokenStart:l.pos], "", "")
+	l.emitFullToken(kind, l.input[l.tokenStart:l.pos.byteNo], "", "")
 	l.resetTokenStart()
 }
 
 func (l *lexer) addWhitespaceFodder() {
-	fodderData := l.input[l.tokenStart:l.pos]
+	fodderData := l.input[l.tokenStart:l.pos.byteNo]
 	if len(l.fodder) == 0 || l.fodder[len(l.fodder)-1].kind != fodderWhitespace {
 		l.fodder = append(l.fodder, fodderElement{kind: fodderWhitespace, data: fodderData})
 	} else {
@@ -355,7 +352,7 @@ func (l *lexer) addWhitespaceFodder() {
 }
 
 func (l *lexer) addCommentFodder(kind fodderKind) {
-	fodderData := l.input[l.tokenStart:l.pos]
+	fodderData := l.input[l.tokenStart:l.pos.byteNo]
 	l.fodder = append(l.fodder, fodderElement{kind: kind, data: fodderData})
 	l.resetTokenStart()
 }
@@ -490,7 +487,7 @@ func (l *lexer) lexIdentifier() {
 	}
 	l.backup()
 
-	switch l.input[l.tokenStart:l.pos] {
+	switch l.input[l.tokenStart:l.pos.byteNo] {
 	case "assert":
 		l.emitToken(tokenAssert)
 	case "else":
@@ -559,7 +556,7 @@ func (l *lexer) lexSymbol() error {
 					l.fileName, commentStartLoc)
 			}
 			if r == '*' && l.peek() == '/' {
-				commentData := l.input[l.tokenStart : l.pos-1] // Don't include trailing */
+				commentData := l.input[l.tokenStart : l.pos.byteNo-1] // Don't include trailing */
 				l.addFodder(fodderCommentC, commentData)
 				l.next()            // Skip past '/'
 				l.resetTokenStart() // Start next token at this point
@@ -568,7 +565,7 @@ func (l *lexer) lexSymbol() error {
 		}
 	}
 
-	if r == '|' && strings.HasPrefix(l.input[l.pos:], "||\n") {
+	if r == '|' && strings.HasPrefix(l.input[l.pos.byteNo:], "||\n") {
 		commentStartLoc := l.tokenStartLoc
 		l.acceptN(3) // Skip "||\n"
 		var cb bytes.Buffer
@@ -578,8 +575,8 @@ func (l *lexer) lexSymbol() error {
 			cb.WriteRune(r)
 		}
 		l.backup()
-		numWhiteSpace := checkWhitespace(l.input[l.pos:], l.input[l.pos:])
-		stringBlockIndent := l.input[l.pos : l.pos+numWhiteSpace]
+		numWhiteSpace := checkWhitespace(l.input[l.pos.byteNo:], l.input[l.pos.byteNo:])
+		stringBlockIndent := l.input[l.pos.byteNo : l.pos.byteNo+numWhiteSpace]
 		if numWhiteSpace == 0 {
 			return makeStaticErrorPoint("Text block's first line must start with whitespace",
 				l.fileName, commentStartLoc)
@@ -606,7 +603,7 @@ func (l *lexer) lexSymbol() error {
 			l.backup()
 
 			// Look at the next line
-			numWhiteSpace = checkWhitespace(stringBlockIndent, l.input[l.pos:])
+			numWhiteSpace = checkWhitespace(stringBlockIndent, l.input[l.pos.byteNo:])
 			if numWhiteSpace == 0 {
 				// End of the text block
 				var stringBlockTermIndent string
@@ -614,7 +611,7 @@ func (l *lexer) lexSymbol() error {
 					stringBlockTermIndent += string(r)
 				}
 				l.backup()
-				if !strings.HasPrefix(l.input[l.pos:], "|||") {
+				if !strings.HasPrefix(l.input[l.pos.byteNo:], "|||") {
 					return makeStaticErrorPoint("Text block not terminated with |||",
 						l.fileName, commentStartLoc)
 				}
@@ -630,15 +627,15 @@ func (l *lexer) lexSymbol() error {
 	// Assume any string of symbols is a single operator.
 	for r = l.next(); isSymbol(r); r = l.next() {
 		// Not allowed // in operators
-		if r == '/' && strings.HasPrefix(l.input[l.pos:], "/") {
+		if r == '/' && strings.HasPrefix(l.input[l.pos.byteNo:], "/") {
 			break
 		}
 		// Not allowed /* in operators
-		if r == '/' && strings.HasPrefix(l.input[l.pos:], "*") {
+		if r == '/' && strings.HasPrefix(l.input[l.pos.byteNo:], "*") {
 			break
 		}
 		// Not allowed ||| in operators
-		if r == '|' && strings.HasPrefix(l.input[l.pos:], "||") {
+		if r == '|' && strings.HasPrefix(l.input[l.pos.byteNo:], "||") {
 			break
 		}
 	}
@@ -649,7 +646,7 @@ func (l *lexer) lexSymbol() error {
 	// So, wind it back if we need to, but stop at the first rune.
 	// This relies on the hack that all operator symbols are ASCII and thus there is
 	// no need to treat this substring as general UTF-8.
-	for r = rune(l.input[l.pos-1]); l.pos > l.tokenStart+1; l.pos-- {
+	for r = rune(l.input[l.pos.byteNo-1]); l.pos.byteNo > l.tokenStart+1; l.pos.byteNo-- {
 		switch r {
 		case '+', '-', '~', '!':
 			continue
@@ -657,7 +654,7 @@ func (l *lexer) lexSymbol() error {
 		break
 	}
 
-	if l.input[l.tokenStart:l.pos] == "$" {
+	if l.input[l.tokenStart:l.pos.byteNo] == "$" {
 		l.emitToken(tokenDollar)
 	} else {
 		l.emitToken(tokenOperator)
