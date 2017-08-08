@@ -128,16 +128,21 @@ func desugarFields(location LocationRange, fields *astObjectFields, objLevel int
 
 	// Remove methods
 	// TODO(dcunnin): this
-	for _, field := range *fields {
+	for i := range *fields {
+		field := &((*fields)[i])
 		if !field.methodSugar {
 			continue
 		}
-		/*
-			field.expr2 = alloc->make<Function>(
-				field.expr2->location, field.ids, false, field.expr2)
-			field.methodSugar = false
-			field.ids.clear()
-		*/
+		origBody := field.expr2
+		function := &astFunction{
+			// TODO(sbarzowski) better location
+			astNodeBase: astNodeBase{loc: *origBody.Loc()},
+			parameters:  field.ids,
+			body:        origBody,
+		}
+		field.methodSugar = false
+		field.ids = nil
+		field.expr2 = function
 	}
 
 	// Remove object-level locals
@@ -199,8 +204,33 @@ func desugarFields(location LocationRange, fields *astObjectFields, objLevel int
 	return nil
 }
 
+func desugarArrayComp(astComp *astArrayComp, objLevel int) (astNode, error) {
+	return &astLiteralNull{}, nil
+	// TODO(sbarzowski) this
+	switch astComp.specs[0].kind {
+	case astCompFor:
+		panic("TODO")
+	case astCompIf:
+		panic("TODO")
+	default:
+		panic("TODO")
+	}
+}
+
+func desugarObjectComp(astComp *astObjectComp, objLevel int) (astNode, error) {
+	return &astLiteralNull{}, nil
+	// TODO(sbarzowski) this
+}
+
 func desugar(astPtr *astNode, objLevel int) (err error) {
 	ast := *astPtr
+
+	if ast == nil {
+		// Nothing to desugar. This is normal when desugaring optional subtrees
+		// that happen to be empty.
+		return
+	}
+
 	// TODO(dcunnin): Remove all uses of unimplErr.
 	unimplErr := makeStaticError(fmt.Sprintf("Desugarer does not yet implement ast: %s", reflect.TypeOf(ast)), *ast.Loc())
 
@@ -242,7 +272,11 @@ func desugar(astPtr *astNode, objLevel int) (err error) {
 		}
 
 	case *astArrayComp:
-		return unimplErr
+		comp, err := desugarArrayComp(ast, objLevel)
+		if err != nil {
+			return err
+		}
+		*astPtr = comp
 
 	case *astAssert:
 		return unimplErr
@@ -301,8 +335,32 @@ func desugar(astPtr *astNode, objLevel int) (err error) {
 	case *astIndex:
 		return unimplErr
 
+	case *astSlice:
+		stdslice := &astVar{id: "std.slice"}
+		var apply astNode = &astApply{
+			target:    stdslice,
+			arguments: astNodes{ast.target, ast.beginIndex, ast.endIndex, ast.step},
+		}
+		desugar(&apply, objLevel)
+		*astPtr = apply
+
 	case *astLocal:
 		for i := range ast.binds {
+			if ast.binds[i].functionSugar {
+				origBody := ast.binds[i].body
+				function := &astFunction{
+					// TODO(sbarzowski) better location
+					astNodeBase: astNodeBase{loc: *origBody.Loc()},
+					parameters:  ast.binds[i].params,
+					body:        origBody,
+				}
+				ast.binds[i] = astLocalBind{
+					variable:      ast.binds[i].variable,
+					body:          function,
+					functionSugar: false,
+					params:        nil,
+				}
+			}
 			err = desugar(&ast.binds[i].body, objLevel)
 			if err != nil {
 				return
@@ -363,7 +421,11 @@ func desugar(astPtr *astNode, objLevel int) (err error) {
 		return unimplErr
 
 	case *astObjectComp:
-		return unimplErr
+		comp, err := desugarObjectComp(ast, objLevel)
+		if err != nil {
+			return err
+		}
+		*astPtr = comp
 
 	case *astObjectComprehensionSimple:
 		return unimplErr

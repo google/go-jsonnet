@@ -15,7 +15,9 @@ limitations under the License.
 */
 package jsonnet
 
-import "testing"
+import (
+	"testing"
+)
 
 var tests = []string{
 	`true`,
@@ -88,6 +90,23 @@ var tests = []string{
 
 	`{a: b} + {c: d}`,
 	`{a: b}{c: d}`,
+
+	// no colons
+	`[][0]`,
+	// one colon
+	`[][:]`,
+	`[][1:]`,
+	`[][:1]`,
+	`[][1:2]`,
+	// two colons
+	`[][::]`,
+	`[][1::]`,
+	`[][:1:]`,
+	`[][::1]`,
+	`[][1:1:]`,
+	`[][:1:1]`,
+	`[][1::1]`,
+	`[][1:1:1]`,
 }
 
 func TestParser(t *testing.T) {
@@ -201,6 +220,9 @@ var errorTests = []testError{
 
 	{`a[(b c)]`, `test:1:6-7 Expected token ")" but got (IDENTIFIER, "c")`},
 	{`a[b c]`, `test:1:5-6 Expected token "]" but got (IDENTIFIER, "c")`},
+	{`a[]`, `test:1:3-4 Index requires an expression`},
+	{`a[42:42:42:42]`, `test:1:11-12 Invalid slice: too many colons`},
+	{`a[42:42::42]`, `test:1:8-10 Invalid slice: too many colons`},
 
 	{`a{b c}`, `test:1:5-6 Expected token OPERATOR but got (IDENTIFIER, "c")`},
 }
