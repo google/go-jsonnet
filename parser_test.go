@@ -110,6 +110,7 @@ type testError struct {
 }
 
 var errorTests = []testError{
+	{`,`, `test:1:1-2 Unexpected: (",", ",") while parsing terminal`},
 	{`function(a, b c)`, `test:1:15-16 Expected a comma before next function parameter.`},
 	{`function(a, 1)`, `test:1:13-14 Expected simple identifier but got a complex expression.`},
 	{`a b`, `test:1:3-4 Did not expect: (IDENTIFIER, "b")`},
