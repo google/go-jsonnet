@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 source tests_path.source
 export DISABLE_EXT_PARAMS=true
 export DISABLE_LIB_TESTS=true
