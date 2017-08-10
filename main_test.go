@@ -40,6 +40,7 @@ var mainTests = []mainTest{
 	{"simple_arith_string2", "\"aaa\" + \"\"", "\"aaa\"", ""},
 	{"simple_arith_string3", "\"\" + \"bbb\"", "\"bbb\"", ""},
 	{"simple_arith_string_empty", "\"\" + \"\"", "\"\"", ""},
+	{"verbatim_string", `@"blah ☺"`, `"blah ☺"`, ""},
 	{"empty_array", "[]", "[ ]", ""},
 	{"array", "[1, 2, 1 + 2]", "[\n   1,\n   2,\n   3\n]", ""},
 	{"empty_object", "{}", "{ }", ""},

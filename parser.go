@@ -346,6 +346,8 @@ func (p *parser) parseObjectRemainder(tok *token) (astNode, *token, error) {
 					kind:        astStringBlock,
 					blockIndent: next.stringBlockIndent,
 				}
+			// TODO(sbarzowski) are verbatim string literals allowed here?
+			// if so, maybe it's time we extracted string literal creation somewhere...
 			default:
 				kind = astObjectFieldExpr
 				var err error
@@ -657,6 +659,18 @@ func (p *parser) parseTerminal() (astNode, error) {
 			value:       tok.data,
 			kind:        astStringDouble,
 			blockIndent: tok.stringBlockIndent,
+		}, nil
+	case tokenVerbatimStringDouble:
+		return &astLiteralString{
+			astNodeBase: astNodeBase{loc: tok.loc},
+			value:       tok.data,
+			kind:        astVerbatimStringDouble,
+		}, nil
+	case tokenVerbatimStringSingle:
+		return &astLiteralString{
+			astNodeBase: astNodeBase{loc: tok.loc},
+			value:       tok.data,
+			kind:        astVerbatimStringSingle,
 		}, nil
 	case tokenFalse:
 		return &astLiteralBoolean{
