@@ -275,15 +275,16 @@ func (p *parser) parseObjectRemainder(tok *token) (astNode, *token, error) {
 			numFields := 0
 			numAsserts := 0
 			var field astObjectField
-			for _, field = range fields {
-				if field.kind == astObjectLocal {
+			for _, f := range fields {
+				if f.kind == astObjectLocal {
 					continue
 				}
-				if field.kind == astObjectAssert {
+				if f.kind == astObjectAssert {
 					numAsserts++
 					continue
 				}
 				numFields++
+				field = f
 			}
 
 			if numAsserts > 0 {
