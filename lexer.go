@@ -70,6 +70,8 @@ const (
 	tokenStringBlock
 	tokenStringDouble
 	tokenStringSingle
+	tokenVerbatimStringDouble
+	tokenVerbatimStringSingle
 
 	// Keywords
 	tokenAssert
@@ -109,12 +111,14 @@ var tokenKindStrings = []string{
 	tokenSemicolon: "\";\"",
 
 	// Arbitrary length lexemes
-	tokenIdentifier:   "IDENTIFIER",
-	tokenNumber:       "NUMBER",
-	tokenOperator:     "OPERATOR",
-	tokenStringBlock:  "STRING_BLOCK",
-	tokenStringDouble: "STRING_DOUBLE",
-	tokenStringSingle: "STRING_SINGLE",
+	tokenIdentifier:           "IDENTIFIER",
+	tokenNumber:               "NUMBER",
+	tokenOperator:             "OPERATOR",
+	tokenStringBlock:          "STRING_BLOCK",
+	tokenStringDouble:         "STRING_DOUBLE",
+	tokenStringSingle:         "STRING_SINGLE",
+	tokenVerbatimStringDouble: "VERBATIM_STRING_DOUBLE",
+	tokenVerbatimStringSingle: "VERBATIM_STRING_SINGLE",
 
 	// Keywords
 	tokenAssert:     "assert",
@@ -735,6 +739,45 @@ func lex(fn string, input string) (tokens, error) {
 					r = l.next()
 				}
 			}
+		case '@':
+			// Verbatim string literals.
+			// ' and " quoting is interpreted here, unlike non-verbatim strings
+			// where it is done later by jsonnet_string_unescape.  This is OK
+			// in this case because no information is lost by resoving the
+			// repeated quote into a single quote, so we can go back to the
+			// original form in the formatter.
+			var data []rune
+			stringStartLoc := l.prevLocation()
+			quot := l.next()
+			var kind tokenKind
+			if quot == '"' {
+				kind = tokenVerbatimStringDouble
+			} else if quot == '\'' {
+				kind = tokenVerbatimStringSingle
+			} else {
+				return nil, makeStaticErrorPoint(
+					fmt.Sprintf("Couldn't lex verbatim string, junk after '@': %v", quot),
+					l.fileName,
+					stringStartLoc,
+				)
+			}
+			for r = l.next(); ; r = l.next() {
+				if r == lexEOF {
+					return nil, makeStaticErrorPoint("Unterminated String", l.fileName, stringStartLoc)
+				} else if r == quot {
+					if l.peek() == quot {
+						l.next()
+						data = append(data, r)
+					} else {
+						l.emitFullToken(kind, string(data), "", "")
+						l.resetTokenStart()
+						break
+					}
+				} else {
+					data = append(data, r)
+				}
+			}
+
 		case '#':
 			l.resetTokenStart() // Throw out the leading #
 			for r = l.next(); r != lexEOF && r != '\n'; r = l.next() {

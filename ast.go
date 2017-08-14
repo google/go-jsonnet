@@ -348,6 +348,8 @@ const (
 	astStringSingle astLiteralStringKind = iota
 	astStringDouble
 	astStringBlock
+	astVerbatimStringDouble
+	astVerbatimStringSingle
 )
 
 // astLiteralString represents a JSON string

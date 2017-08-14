@@ -226,6 +226,16 @@ test
 		"block string no ws:1:1 Text block's first line must start with whitespace",
 	},
 
+	{"verbatim_string1", `@""`, tokens{{kind: tokenVerbatimStringDouble, data: ""}}, ""},
+	{"verbatim_string2", `@''`, tokens{{kind: tokenVerbatimStringSingle, data: ""}}, ""},
+	{"verbatim_string3", `@""""`, tokens{{kind: tokenVerbatimStringDouble, data: `"`}}, ""},
+	{"verbatim_string4", `@''''`, tokens{{kind: tokenVerbatimStringSingle, data: "'"}}, ""},
+	{"verbatim_string5", `@"\n"`, tokens{{kind: tokenVerbatimStringDouble, data: "\\n"}}, ""},
+	{"verbatim_string6", `@"''"`, tokens{{kind: tokenVerbatimStringDouble, data: "''"}}, ""},
+
+	{"verbatim_string_unterminated", `@"blah blah`, tokens{}, "verbatim_string_unterminated:1:1 Unterminated String"},
+	{"verbatim_string_junk", `@blah blah`, tokens{}, "verbatim_string_junk:1:1 Couldn't lex verbatim string, junk after '@': 98"},
+
 	{"op *", "*", tokens{{kind: tokenOperator, data: "*"}}, ""},
 	{"op /", "/", tokens{{kind: tokenOperator, data: "/"}}, ""},
 	{"op %", "%", tokens{{kind: tokenOperator, data: "%"}}, ""},
