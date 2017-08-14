@@ -33,6 +33,7 @@ type identifiers []identifier
 type astNode interface {
 	Loc() *LocationRange
 	FreeVariables() identifiers
+	setFreeVariables(identifiers)
 }
 type astNodes []astNode
 
@@ -51,6 +52,10 @@ func (n *astNodeBase) FreeVariables() identifiers {
 	return n.freeVariables
 }
 
+func (n *astNodeBase) setFreeVariables(idents identifiers) {
+	n.freeVariables = idents
+}
+
 // ---------------------------------------------------------------------------
 
 // +gen stringer
@@ -61,6 +66,7 @@ const (
 	astCompIf
 )
 
+// TODO(sbarzowski) separate types for two kinds
 type astCompSpec struct {
 	kind    astCompKind
 	varName *identifier // nil when kind != compSpecFor
@@ -77,6 +83,7 @@ type astApply struct {
 	arguments     astNodes
 	trailingComma bool
 	tailStrict    bool
+	// TODO(sbarzowski) support named arguments
 }
 
 // ---------------------------------------------------------------------------
@@ -261,10 +268,10 @@ type astError struct {
 
 // ---------------------------------------------------------------------------
 
-// astFunction represents a function call. (jbeda: or is it function defn?)
+// astFunction represents a function definition
 type astFunction struct {
 	astNodeBase
-	parameters    identifiers
+	parameters    identifiers // TODO(sbarzowski) support default arguments
 	trailingComma bool
 	body          astNode
 }
@@ -296,6 +303,7 @@ type astIndex struct {
 	target astNode
 	index  astNode
 	id     *identifier
+	// TODO(sbarzowski): slice support (perhaps separate types?)
 }
 
 // ---------------------------------------------------------------------------

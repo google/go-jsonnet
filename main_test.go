@@ -45,6 +45,28 @@ var mainTests = []mainTest{
 	{"array", "[1, 2, 1 + 2]", "[\n   1,\n   2,\n   3\n]", ""},
 	{"empty_object", "{}", "{ }", ""},
 	{"object", `{"x": 1+1}`, "{\n   \"x\": 2\n}", ""},
+
+	{"use_object", `{a: 1}.a`, "1", ""},
+	{"use_object_in_object", `{a: {a: 1}.a, b: {b: 1}.b}.a`, "1", ""},
+	{"variable", `local x = 2; x`, "2", ""},
+	{"variable_not_visible", "local x1 = local nested = 42; nested, x2 = nested; x2", "", "Unknown variable: nested"},
+	{"array_index1", `[1][0]`, "1", ""},
+	{"array_index2", `[1, 2, 3][0]`, "1", ""},
+	{"array_index3", `[1, 2, 3][1]`, "2", ""},
+	{"array_index4", `[1, 2, 3][2]`, "3", ""},
+	{"function", `function() 42`, "", "Couldn't manifest function in JSON output."},
+	{"function_call", `(function() 42)()`, "42", ""},
+	{"function_with_argument", `(function(x) x)(42)`, "42", ""},
+	{"function_capturing", `local y = 17; (function(x) y)(42)`, "17", ""},
+	{"error", `error "42"`, "", "Error: 42"},
+	{"filled_thunk", "local x = [1, 2, 3]; x[1] + x[1]", "4", ""},
+	{"lazy", `local x = {'x': error "blah"}; x.x`, "", "Error: blah"},
+	{"lazy", `local x = {'x': error "blah"}, f = function(x) 42, z = x.x; f(x.x)`, "42", ""},
+	{"lazy_operator1", `false && error "shouldn't happen"`, "false", ""},
+	{"lazy_operator2", `true && error "should happen"`, "", "Error: should happen"},
+
+	// TODO(sbarzowski) - array comprehension
+	// {"array_comp", `[x for x in [1, 2, 3]]`, "[1, 2, 3]", ""},
 }
 
 func TestMain(t *testing.T) {

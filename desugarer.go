@@ -199,6 +199,17 @@ func desugarFields(location LocationRange, fields *astObjectFields, objLevel int
 	return nil
 }
 
+func desugarArrayComp(astComp *astArrayComp, objLevel int) (err error) {
+	switch astComp.specs[0].kind {
+	case astCompFor:
+		panic("TODO")
+	case astCompIf:
+		panic("TODO")
+	default:
+		panic("TODO")
+	}
+}
+
 func desugar(astPtr *astNode, objLevel int) (err error) {
 	ast := *astPtr
 	// TODO(dcunnin): Remove all uses of unimplErr.
@@ -242,7 +253,7 @@ func desugar(astPtr *astNode, objLevel int) (err error) {
 		}
 
 	case *astArrayComp:
-		return unimplErr
+		return desugarArrayComp(ast, objLevel)
 
 	case *astAssert:
 		return unimplErr
@@ -299,7 +310,21 @@ func desugar(astPtr *astNode, objLevel int) (err error) {
 		// Nothing to do.
 
 	case *astIndex:
-		return unimplErr
+		err = desugar(&ast.target, objLevel)
+		if err != nil {
+			return
+		}
+		if ast.id != nil {
+			if ast.index != nil {
+				panic("TODO")
+			}
+			ast.index = makeStr(string(*ast.id))
+			ast.id = nil
+		}
+		err = desugar(&ast.index, objLevel)
+		if err != nil {
+			return
+		}
 
 	case *astLocal:
 		for i := range ast.binds {

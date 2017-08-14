@@ -58,7 +58,12 @@ func (vm *VM) EvaluateSnippet(filename string, snippet string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// fmt.Println(ast.(dumpable).dump())
 	err = desugarFile(&ast)
+	if err != nil {
+		return "", err
+	}
+	err = analyze(ast)
 	if err != nil {
 		return "", err
 	}
