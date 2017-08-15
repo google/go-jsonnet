@@ -962,24 +962,24 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 			case tokenBracketL:
 				// handle slice
 				var indexes [3]astNode
-				which := 0
+				colonsConsumed := 0
 
 				var end *token
 				readyForNextIndex := true
-				for which < 3 {
+				for colonsConsumed < 3 {
 					if p.peek().kind == tokenBracketR {
 						end = p.pop()
 						break
 					} else if p.peek().data == ":" {
-						which++
+						colonsConsumed++
 						end = p.pop()
 						readyForNextIndex = true
 					} else if p.peek().data == "::" {
-						which += 2
+						colonsConsumed += 2
 						end = p.pop()
 						readyForNextIndex = true
 					} else if readyForNextIndex {
-						indexes[which], err = p.parse(maxPrecedence)
+						indexes[colonsConsumed], err = p.parse(maxPrecedence)
 						if err != nil {
 							return nil, err
 						}
@@ -988,15 +988,15 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 						return nil, p.unexpectedTokenError(tokenBracketR, p.peek())
 					}
 				}
-				if which > 2 {
+				if colonsConsumed > 2 {
 					// example: target[42:42:42:42]
 					return p.parsingFailure("Invalid slice: too many colons", end)
 				}
-				if which == 0 && readyForNextIndex {
+				if colonsConsumed == 0 && readyForNextIndex {
 					// example: target[]
 					return p.parsingFailure("Index requires an expression", end)
 				}
-				isSlice := which > 0
+				isSlice := colonsConsumed > 0
 
 				if isSlice {
 					lhs = &astSlice{
