@@ -44,6 +44,8 @@ func stringUnescape(loc *LocationRange, s string) (string, error) {
 			switch r2 {
 			case '"':
 				buf.WriteRune('"')
+			case '\'':
+				buf.WriteRune('\'')
 			case '\\':
 				buf.WriteRune('\\')
 			case '/':
@@ -62,7 +64,7 @@ func stringUnescape(loc *LocationRange, s string) (string, error) {
 				if i+4 > len(s) {
 					return "", makeStaticError("Truncated unicode escape sequence in string literal.", *loc)
 				}
-				codeBytes, err := hex.DecodeString(s[0:4])
+				codeBytes, err := hex.DecodeString(s[i : i+4])
 				if err != nil {
 					return "", makeStaticError(fmt.Sprintf("Unicode escape sequence was malformed: %s", s[0:4]), *loc)
 				}
@@ -239,6 +241,14 @@ func buildStdCall(builtinName identifier, args ...astNode) astNode {
 	}
 }
 
+// Desugar Jsonnet expressions to reduce the number of constructs the rest of the implementation
+// needs to understand.
+
+// Desugaring should happen immediately after parsing, i.e. before static analysis and execution.
+// Temporary variables introduced here should be prefixed with $ to ensure they do not clash with
+// variables used in user code.
+// TODO(sbarzowski) Actually we may want to do some static analysis before desugaring, e.g.
+// warning user about dangerous use of constructs that we desugar.
 func desugar(astPtr *astNode, objLevel int) (err error) {
 	ast := *astPtr
 
@@ -246,15 +256,9 @@ func desugar(astPtr *astNode, objLevel int) (err error) {
 		return
 	}
 
-	// TODO(dcunnin): Remove all uses of unimplErr.
-	unimplErr := makeStaticError(fmt.Sprintf("Desugarer does not yet implement ast: %s", reflect.TypeOf(ast)), *ast.Loc())
-
 	switch ast := ast.(type) {
 	case *astApply:
-		err = desugar(&ast.target, objLevel)
-		if err != nil {
-			return
-		}
+		desugar(&ast.target, objLevel)
 		for i := range ast.arguments {
 			err = desugar(&ast.arguments[i], objLevel)
 			if err != nil {
@@ -294,7 +298,8 @@ func desugar(astPtr *astNode, objLevel int) (err error) {
 		*astPtr = comp
 
 	case *astAssert:
-		return unimplErr
+		// TODO(sbarzowski) this
+		*astPtr = &astLiteralNull{}
 
 	case *astBinary:
 		err = desugar(&ast.left, objLevel)
@@ -450,14 +455,14 @@ func desugar(astPtr *astNode, objLevel int) (err error) {
 			} else if field.kind == astObjectFieldExpr {
 				newFields = append(newFields, astDesugaredObjectField{field.hide, field.expr1, field.expr2})
 			} else {
-				return fmt.Errorf("INTERNAL ERROR: field should have been desugared: %s", field.kind)
+				panic(fmt.Sprintf("INTERNAL ERROR: field should have been desugared: %s", field.kind))
 			}
 		}
 
 		*astPtr = &astDesugaredObject{ast.astNodeBase, newAsserts, newFields}
 
 	case *astDesugaredObject:
-		return unimplErr
+		panic("Desugaring desugared object")
 
 	case *astObjectComp:
 		comp, err := desugarObjectComp(ast, objLevel)
@@ -467,13 +472,16 @@ func desugar(astPtr *astNode, objLevel int) (err error) {
 		*astPtr = comp
 
 	case *astObjectComprehensionSimple:
-		return unimplErr
+		panic("Desugaring desugared object comprehension")
 
 	case *astSelf:
 		// Nothing to do.
 
 	case *astSuperIndex:
-		return unimplErr
+		if ast.id != nil {
+			ast.index = &astLiteralString{value: string(*ast.id)}
+			ast.id = nil
+		}
 
 	case *astUnary:
 		err = desugar(&ast.expr, objLevel)
@@ -485,7 +493,7 @@ func desugar(astPtr *astNode, objLevel int) (err error) {
 		// Nothing to do.
 
 	default:
-		return makeStaticError(fmt.Sprintf("Desugarer does not recognize ast: %s", reflect.TypeOf(ast)), *ast.Loc())
+		panic(fmt.Sprintf("Desugarer does not recognize ast: %s", reflect.TypeOf(ast)))
 	}
 
 	return nil
