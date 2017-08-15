@@ -84,11 +84,17 @@ func (p *parser) pop() *token {
 	return t
 }
 
+func (p *parser) unexpectedTokenError(tk tokenKind, t *token) error {
+	if tk == t.kind {
+		panic("Unexpectedly expected token kind.")
+	}
+	return makeStaticError(fmt.Sprintf("Expected token %v but got %v", tk, t), t.loc)
+}
+
 func (p *parser) popExpect(tk tokenKind) (*token, error) {
 	t := p.pop()
 	if t.kind != tk {
-		return nil, makeStaticError(
-			fmt.Sprintf("Expected token %v but got %v", tk, t), t.loc)
+		return nil, p.unexpectedTokenError(tk, t)
 	}
 	return t, nil
 }
@@ -736,6 +742,10 @@ func (p *parser) parseTerminal() (astNode, error) {
 	return nil, makeStaticError(fmt.Sprintf("INTERNAL ERROR: Unknown tok kind: %v", tok.kind), tok.loc)
 }
 
+func (p *parser) parsingFailure(msg string, tok *token) (astNode, error) {
+	return nil, makeStaticError(msg, tok.loc)
+}
+
 func (p *parser) parse(prec precedence) (astNode, error) {
 	begin := p.peek()
 
@@ -938,6 +948,12 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 					// assert AST.
 					return lhs, nil
 				}
+				if p.peek().data == "::" {
+					// Special case for [e::]
+					// We need to stop parsing e when we see the :: and
+					// avoid tripping the op_is_binary test below.
+					return lhs, nil
+				}
 				var ok bool
 				bop, ok = bopMap[p.peek().data]
 				if !ok {
@@ -959,18 +975,58 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 			op := p.pop()
 			switch op.kind {
 			case tokenBracketL:
-				index, err := p.parse(maxPrecedence)
-				if err != nil {
-					return nil, err
+				// handle slice
+				var indexes [3]astNode
+				colonsConsumed := 0
+
+				var end *token
+				readyForNextIndex := true
+				for colonsConsumed < 3 {
+					if p.peek().kind == tokenBracketR {
+						end = p.pop()
+						break
+					} else if p.peek().data == ":" {
+						colonsConsumed++
+						end = p.pop()
+						readyForNextIndex = true
+					} else if p.peek().data == "::" {
+						colonsConsumed += 2
+						end = p.pop()
+						readyForNextIndex = true
+					} else if readyForNextIndex {
+						indexes[colonsConsumed], err = p.parse(maxPrecedence)
+						if err != nil {
+							return nil, err
+						}
+						readyForNextIndex = false
+					} else {
+						return nil, p.unexpectedTokenError(tokenBracketR, p.peek())
+					}
 				}
-				end, err := p.popExpect(tokenBracketR)
-				if err != nil {
-					return nil, err
+				if colonsConsumed > 2 {
+					// example: target[42:42:42:42]
+					return p.parsingFailure("Invalid slice: too many colons", end)
 				}
-				lhs = &astIndex{
-					astNodeBase: astNodeBase{loc: locFromTokens(begin, end)},
-					target:      lhs,
-					index:       index,
+				if colonsConsumed == 0 && readyForNextIndex {
+					// example: target[]
+					return p.parsingFailure("Index requires an expression", end)
+				}
+				isSlice := colonsConsumed > 0
+
+				if isSlice {
+					lhs = &astSlice{
+						astNodeBase: astNodeBase{loc: locFromTokens(begin, end)},
+						target:      lhs,
+						beginIndex:  indexes[0],
+						endIndex:    indexes[1],
+						step:        indexes[2],
+					}
+				} else {
+					lhs = &astIndex{
+						astNodeBase: astNodeBase{loc: locFromTokens(begin, end)},
+						target:      lhs,
+						index:       indexes[0],
+					}
 				}
 			case tokenDot:
 				fieldID, err := p.popExpect(tokenIdentifier)

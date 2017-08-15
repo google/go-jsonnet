@@ -298,6 +298,16 @@ type astIndex struct {
 	id     *identifier
 }
 
+type astSlice struct {
+	astNodeBase
+	target astNode
+
+	// Each of these can be nil
+	beginIndex astNode
+	endIndex   astNode
+	step       astNode
+}
+
 // ---------------------------------------------------------------------------
 
 // astLocalBind is a helper struct for astLocal
@@ -382,6 +392,7 @@ const (
 	astObjectFieldVisible                           // f::: e
 )
 
+// TODO(sbarzowski) consider having separate types for various kinds
 type astObjectField struct {
 	kind          astObjectFieldKind
 	hide          astObjectFieldHide // (ignore if kind != astObjectField*)

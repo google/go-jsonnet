@@ -83,7 +83,8 @@ func stringUnescape(loc *LocationRange, s string) (string, error) {
 func desugarFields(location LocationRange, fields *astObjectFields, objLevel int) error {
 
 	// Desugar children
-	for _, field := range *fields {
+	for i := range *fields {
+		field := &((*fields)[i])
 		if field.expr1 != nil {
 			err := desugar(&field.expr1, objLevel)
 			if err != nil {
@@ -128,16 +129,21 @@ func desugarFields(location LocationRange, fields *astObjectFields, objLevel int
 
 	// Remove methods
 	// TODO(dcunnin): this
-	for _, field := range *fields {
+	for i := range *fields {
+		field := &((*fields)[i])
 		if !field.methodSugar {
 			continue
 		}
-		/*
-			field.expr2 = alloc->make<Function>(
-				field.expr2->location, field.ids, false, field.expr2)
-			field.methodSugar = false
-			field.ids.clear()
-		*/
+		origBody := field.expr2
+		function := &astFunction{
+			// TODO(sbarzowski) better location
+			astNodeBase: astNodeBase{loc: *origBody.Loc()},
+			parameters:  field.ids,
+			body:        origBody,
+		}
+		field.methodSugar = false
+		field.ids = nil
+		field.expr2 = function
 	}
 
 	// Remove object-level locals
@@ -199,8 +205,47 @@ func desugarFields(location LocationRange, fields *astObjectFields, objLevel int
 	return nil
 }
 
+func desugarArrayComp(astComp *astArrayComp, objLevel int) (astNode, error) {
+	return &astLiteralNull{}, nil
+	// TODO(sbarzowski) this
+	switch astComp.specs[0].kind {
+	case astCompFor:
+		panic("TODO")
+	case astCompIf:
+		panic("TODO")
+	default:
+		panic("TODO")
+	}
+}
+
+func desugarObjectComp(astComp *astObjectComp, objLevel int) (astNode, error) {
+	return &astLiteralNull{}, nil
+	// TODO(sbarzowski) this
+}
+
+func buildSimpleIndex(obj astNode, member identifier) astNode {
+	return &astIndex{
+		target: obj,
+		id:     &member,
+	}
+}
+
+func buildStdCall(builtinName identifier, args ...astNode) astNode {
+	std := &astVar{id: "std"}
+	builtin := buildSimpleIndex(std, builtinName)
+	return &astApply{
+		target:    builtin,
+		arguments: args,
+	}
+}
+
 func desugar(astPtr *astNode, objLevel int) (err error) {
 	ast := *astPtr
+
+	if ast == nil {
+		return
+	}
+
 	// TODO(dcunnin): Remove all uses of unimplErr.
 	unimplErr := makeStaticError(fmt.Sprintf("Desugarer does not yet implement ast: %s", reflect.TypeOf(ast)), *ast.Loc())
 
@@ -242,7 +287,11 @@ func desugar(astPtr *astNode, objLevel int) (err error) {
 		}
 
 	case *astArrayComp:
-		return unimplErr
+		comp, err := desugarArrayComp(ast, objLevel)
+		if err != nil {
+			return err
+		}
+		*astPtr = comp
 
 	case *astAssert:
 		return unimplErr
@@ -270,8 +319,12 @@ func desugar(astPtr *astNode, objLevel int) (err error) {
 		if err != nil {
 			return
 		}
-		if ast.branchFalse != nil {
+		if ast.branchFalse == nil {
 			ast.branchFalse = &astLiteralNull{}
+		}
+		err = desugar(&ast.branchFalse, objLevel)
+		if err != nil {
+			return
 		}
 
 	case *astDollar:
@@ -299,10 +352,52 @@ func desugar(astPtr *astNode, objLevel int) (err error) {
 		// Nothing to do.
 
 	case *astIndex:
-		return unimplErr
+		err = desugar(&ast.target, objLevel)
+		if err != nil {
+			return
+		}
+		if ast.id != nil {
+			if ast.index != nil {
+				panic("TODO")
+			}
+			ast.index = makeStr(string(*ast.id))
+			ast.id = nil
+		}
+		err = desugar(&ast.index, objLevel)
+		if err != nil {
+			return
+		}
+
+	case *astSlice:
+		if ast.beginIndex == nil {
+			ast.beginIndex = &astLiteralNull{}
+		}
+		if ast.endIndex == nil {
+			ast.endIndex = &astLiteralNull{}
+		}
+		if ast.step == nil {
+			ast.step = &astLiteralNull{}
+		}
+		*astPtr = buildStdCall("std.slice", ast.target, ast.beginIndex, ast.endIndex, ast.step)
+		desugar(astPtr, objLevel)
 
 	case *astLocal:
 		for i := range ast.binds {
+			if ast.binds[i].functionSugar {
+				origBody := ast.binds[i].body
+				function := &astFunction{
+					// TODO(sbarzowski) better location
+					astNodeBase: astNodeBase{loc: *origBody.Loc()},
+					parameters:  ast.binds[i].params,
+					body:        origBody,
+				}
+				ast.binds[i] = astLocalBind{
+					variable:      ast.binds[i].variable,
+					body:          function,
+					functionSugar: false,
+					params:        nil,
+				}
+			}
 			err = desugar(&ast.binds[i].body, objLevel)
 			if err != nil {
 				return
@@ -312,7 +407,6 @@ func desugar(astPtr *astNode, objLevel int) (err error) {
 		if err != nil {
 			return
 		}
-		// TODO(dcunnin): Desugar local functions
 
 	case *astLiteralBoolean:
 		// Nothing to do.
@@ -366,7 +460,11 @@ func desugar(astPtr *astNode, objLevel int) (err error) {
 		return unimplErr
 
 	case *astObjectComp:
-		return unimplErr
+		comp, err := desugarObjectComp(ast, objLevel)
+		if err != nil {
+			return err
+		}
+		*astPtr = comp
 
 	case *astObjectComprehensionSimple:
 		return unimplErr
