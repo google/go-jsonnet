@@ -16,7 +16,18 @@ limitations under the License.
 
 package jsonnet
 
-import "testing"
+import (
+	"bytes"
+	"flag"
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+var update = flag.Bool("update", false, "update .golden files")
 
 // Just a few simple sanity tests for now.  Eventually we'll share end-to-end tests with the C++
 // implementation but unsure if that should be done here or via some external framework.
@@ -27,35 +38,88 @@ type mainTest struct {
 	golden string
 }
 
-var mainTests = []mainTest{
-	{"numeric_literal", "100", "100"},
-	{"boolean_literal", "true", "true"},
-	{"simple_arith1", "3 + 3", "6"},
-	{"simple_arith2", "3 + 3 + 3", "9"},
-	{"simple_arith3", "(3 + 3) + (3 + 3)", "12"},
-	{"unicode", `"\u263A"`, `"☺"`},
-	{"unicode2", `"\u263a"`, `"☺"`},
-	{"escaped_single_quote", `"\\'"`, `"\\'"`},
-	{"simple_arith_string", "\"aaa\" + \"bbb\"", "\"aaabbb\""},
-	{"simple_arith_string2", "\"aaa\" + \"\"", "\"aaa\""},
-	{"simple_arith_string3", "\"\" + \"bbb\"", "\"bbb\""},
-	{"simple_arith_string_empty", "\"\" + \"\"", "\"\""},
-	{"verbatim_string", `@"blah ☺"`, `"blah ☺"`},
-	{"empty_array", "[]", "[ ]"},
-	{"array", "[1, 2, 1 + 2]", "[\n   1,\n   2,\n   3\n]"},
-	{"empty_object", "{}", "{ }"},
-	{"object", `{"x": 1+1}`, "{\n   \"x\": 2\n}"},
-}
-
 func TestMain(t *testing.T) {
+	flag.Parse()
+	var mainTests []mainTest
+	match, err := filepath.Glob("testdata/*.input")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, input := range match {
+		golden := input
+		name := input
+		if strings.HasSuffix(input, ".input") {
+			name = input[:len(input)-len(".input")]
+			golden = name + ".golden"
+		}
+		mainTests = append(mainTests, mainTest{name: name, input: input, golden: golden})
+	}
 	for _, test := range mainTests {
 		t.Run(test.name, func(t *testing.T) {
 			vm := MakeVM()
-			output, err := vm.EvaluateSnippet(test.name, test.input)
+			read := func(file string) []byte {
+				bytz, err := ioutil.ReadFile(file)
+				if err != nil {
+					t.Fatalf("reading file: %s: %v", file, err)
+				}
+				return bytz
+			}
 
-			if err == nil && output != test.golden {
-				t.Errorf("got\n\t%+v\nexpected\n\t%+v", output, test.golden)
+			input := read(test.input)
+			output, err := vm.EvaluateSnippet(test.name, string(input))
+			if err != nil {
+				t.Fail()
+				t.Errorf("evaluate snippet: %v", err)
+			}
+			if *update {
+				err := ioutil.WriteFile(test.golden, []byte(output), 0666)
+				if err != nil {
+					t.Errorf("error updating golden files: %v", err)
+				}
+				return
+			}
+			golden := read(test.golden)
+			if bytes.Compare(golden, []byte(output)) != 0 {
+				t.Fail()
+				t.Errorf("%s.input != %s\n", test.name, test.golden)
+				data, err := diff(golden, []byte(output))
+				if err != nil {
+					t.Errorf("computing diff: %s", err)
+				}
+				t.Errorf("diff %s jsonnet %s.input\n", test.golden, test.name)
+				t.Errorf(string(data))
+
 			}
 		})
 	}
+}
+
+// "barrowed" from the std library
+// https://golang.org/src/cmd/gofmt/gofmt.go#L228
+func diff(b1, b2 []byte) (data []byte, err error) {
+	f1, err := ioutil.TempFile("", "jsonnet")
+	if err != nil {
+		return
+	}
+	defer os.Remove(f1.Name())
+	defer f1.Close()
+
+	f2, err := ioutil.TempFile("", "jsonnet")
+	if err != nil {
+		return
+	}
+	defer os.Remove(f2.Name())
+	defer f2.Close()
+
+	f1.Write(b1)
+	f2.Write(b2)
+
+	data, err = exec.Command("diff", "-u", f1.Name(), f2.Name()).CombinedOutput()
+	if len(data) > 0 {
+		// diff exits with a non-zero status when the files don't match.
+		// Ignore that failure as long as we get output.
+		err = nil
+	}
+	return
+
 }
