@@ -32,6 +32,7 @@ func MakeVM() *VM {
 	return &VM{
 		MaxStack: 500,
 		MaxTrace: 20,
+		ext:      make(vmExtMap),
 	}
 }
 
