@@ -22,30 +22,29 @@ import "testing"
 // implementation but unsure if that should be done here or via some external framework.
 
 type mainTest struct {
-	name      string
-	input     string
-	golden    string
-	errString string
+	name   string
+	input  string
+	golden string
 }
 
 var mainTests = []mainTest{
-	{"numeric_literal", "100", "100", ""},
-	{"boolean_literal", "true", "true", ""},
-	{"simple_arith1", "3 + 3", "6", ""},
-	{"simple_arith2", "3 + 3 + 3", "9", ""},
-	{"simple_arith3", "(3 + 3) + (3 + 3)", "12", ""},
-	{"unicode", `"\u263A"`, `"☺"`, ""},
-	{"unicode2", `"\u263a"`, `"☺"`, ""},
-	{"escaped_single_quote", `"\\'"`, `"\\'"`, ""},
-	{"simple_arith_string", "\"aaa\" + \"bbb\"", "\"aaabbb\"", ""},
-	{"simple_arith_string2", "\"aaa\" + \"\"", "\"aaa\"", ""},
-	{"simple_arith_string3", "\"\" + \"bbb\"", "\"bbb\"", ""},
-	{"simple_arith_string_empty", "\"\" + \"\"", "\"\"", ""},
-	{"verbatim_string", `@"blah ☺"`, `"blah ☺"`, ""},
-	{"empty_array", "[]", "[ ]", ""},
-	{"array", "[1, 2, 1 + 2]", "[\n   1,\n   2,\n   3\n]", ""},
-	{"empty_object", "{}", "{ }", ""},
-	{"object", `{"x": 1+1}`, "{\n   \"x\": 2\n}", ""},
+	{"numeric_literal", "100", "100"},
+	{"boolean_literal", "true", "true"},
+	{"simple_arith1", "3 + 3", "6"},
+	{"simple_arith2", "3 + 3 + 3", "9"},
+	{"simple_arith3", "(3 + 3) + (3 + 3)", "12"},
+	{"unicode", `"\u263A"`, `"☺"`},
+	{"unicode2", `"\u263a"`, `"☺"`},
+	{"escaped_single_quote", `"\\'"`, `"\\'"`},
+	{"simple_arith_string", "\"aaa\" + \"bbb\"", "\"aaabbb\""},
+	{"simple_arith_string2", "\"aaa\" + \"\"", "\"aaa\""},
+	{"simple_arith_string3", "\"\" + \"bbb\"", "\"bbb\""},
+	{"simple_arith_string_empty", "\"\" + \"\"", "\"\""},
+	{"verbatim_string", `@"blah ☺"`, `"blah ☺"`},
+	{"empty_array", "[]", "[ ]"},
+	{"array", "[1, 2, 1 + 2]", "[\n   1,\n   2,\n   3\n]"},
+	{"empty_object", "{}", "{ }"},
+	{"object", `{"x": 1+1}`, "{\n   \"x\": 2\n}"},
 }
 
 func TestMain(t *testing.T) {
@@ -53,15 +52,7 @@ func TestMain(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			vm := MakeVM()
 			output, err := vm.EvaluateSnippet(test.name, test.input)
-			var errString string
-			if err != nil {
-				errString = err.Error()
-			}
 
-			if errString != test.errString {
-				t.Errorf("%s: error result does not match. got\n\t%+v\nexpected\n\t%+v",
-					test.input, errString, test.errString)
-			}
 			if err == nil && output != test.golden {
 				t.Errorf("got\n\t%+v\nexpected\n\t%+v", output, test.golden)
 			}
