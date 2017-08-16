@@ -16,9 +16,7 @@ limitations under the License.
 
 package jsonnet
 
-import (
-	"testing"
-)
+import "testing"
 
 // Just a few simple sanity tests for now.  Eventually we'll share end-to-end tests with the C++
 // implementation but unsure if that should be done here or via some external framework.
@@ -52,18 +50,21 @@ var mainTests = []mainTest{
 
 func TestMain(t *testing.T) {
 	for _, test := range mainTests {
-		vm := MakeVM()
-		output, err := vm.EvaluateSnippet(test.name, test.input)
-		var errString string
-		if err != nil {
-			errString = err.Error()
-		}
-		if errString != test.errString {
-			t.Errorf("%s: error result does not match. got\n\t%+v\nexpected\n\t%+v",
-				test.input, errString, test.errString)
-		}
-		if err == nil && output != test.golden {
-			t.Errorf("%s: got\n\t%+v\nexpected\n\t%+v", test.name, output, test.golden)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			vm := MakeVM()
+			output, err := vm.EvaluateSnippet(test.name, test.input)
+			var errString string
+			if err != nil {
+				errString = err.Error()
+			}
+
+			if errString != test.errString {
+				t.Errorf("%s: error result does not match. got\n\t%+v\nexpected\n\t%+v",
+					test.input, errString, test.errString)
+			}
+			if err == nil && output != test.golden {
+				t.Errorf("got\n\t%+v\nexpected\n\t%+v", output, test.golden)
+			}
+		})
 	}
 }
