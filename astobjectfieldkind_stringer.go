@@ -12,8 +12,8 @@ const _astObjectFieldKind_name = "astObjectAssertastObjectFieldIDastObjectFieldE
 
 var _astObjectFieldKind_index = [...]uint8{0, 15, 31, 49, 66, 80}
 
-func (i astObjectFieldKind) String() string {
-	if i < 0 || i+1 >= astObjectFieldKind(len(_astObjectFieldKind_index)) {
+func (i ObjectFieldKind) String() string {
+	if i < 0 || i+1 >= ObjectFieldKind(len(_astObjectFieldKind_index)) {
 		return fmt.Sprintf("astObjectFieldKind(%d)", i)
 	}
 	return _astObjectFieldKind_name[_astObjectFieldKind_index[i]:_astObjectFieldKind_index[i+1]]

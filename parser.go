@@ -29,25 +29,25 @@ const (
 	maxPrecedence   precedence = 16 // Local, If, Import, Function, Error
 )
 
-var bopPrecedence = map[binaryOp]precedence{
-	bopMult:            5,
-	bopDiv:             5,
-	bopPercent:         5,
-	bopPlus:            6,
-	bopMinus:           6,
-	bopShiftL:          7,
-	bopShiftR:          7,
-	bopGreater:         8,
-	bopGreaterEq:       8,
-	bopLess:            8,
-	bopLessEq:          8,
-	bopManifestEqual:   9,
-	bopManifestUnequal: 9,
-	bopBitwiseAnd:      10,
-	bopBitwiseXor:      11,
-	bopBitwiseOr:       12,
-	bopAnd:             13,
-	bopOr:              14,
+var bopPrecedence = map[BinaryOp]precedence{
+	BopMult:            5,
+	BopDiv:             5,
+	BopPercent:         5,
+	BopPlus:            6,
+	BopMinus:           6,
+	BopShiftL:          7,
+	BopShiftR:          7,
+	BopGreater:         8,
+	BopGreaterEq:       8,
+	BopLess:            8,
+	BopLessEq:          8,
+	BopManifestEqual:   9,
+	BopManifestUnequal: 9,
+	BopBitwiseAnd:      10,
+	BopBitwiseXor:      11,
+	BopBitwiseOr:       12,
+	BopAnd:             13,
+	BopOr:              14,
 }
 
 // ---------------------------------------------------------------------------
@@ -61,7 +61,7 @@ func locFromTokens(begin, end *token) LocationRange {
 	return makeLocationRange(begin.loc.FileName, begin.loc.Begin, end.loc.End)
 }
 
-func locFromTokenAST(begin *token, end astNode) LocationRange {
+func locFromTokenAST(begin *token, end Node) LocationRange {
 	return makeLocationRange(begin.loc.FileName, begin.loc.Begin, end.Loc().End)
 }
 
@@ -112,24 +112,24 @@ func (p *parser) peek() *token {
 	return &p.t[p.currT]
 }
 
-func (p *parser) parseIdentifierList(elementKind string) (identifiers, bool, error) {
+func (p *parser) parseIdentifierList(elementKind string) (Identifiers, bool, error) {
 	_, exprs, gotComma, err := p.parseCommaList(tokenParenR, elementKind)
 	if err != nil {
-		return identifiers{}, false, err
+		return Identifiers{}, false, err
 	}
-	var ids identifiers
+	var ids Identifiers
 	for _, n := range exprs {
-		v, ok := n.(*astVar)
+		v, ok := n.(*Var)
 		if !ok {
-			return identifiers{}, false, makeStaticError(fmt.Sprintf("Expected simple identifier but got a complex expression."), *n.Loc())
+			return Identifiers{}, false, makeStaticError(fmt.Sprintf("Expected simple identifier but got a complex expression."), *n.Loc())
 		}
-		ids = append(ids, v.id)
+		ids = append(ids, v.Id)
 	}
 	return ids, gotComma, nil
 }
 
-func (p *parser) parseCommaList(end tokenKind, elementKind string) (*token, astNodes, bool, error) {
-	var exprs astNodes
+func (p *parser) parseCommaList(end tokenKind, elementKind string) (*token, Nodes, bool, error) {
+	var exprs Nodes
 	gotComma := false
 	first := true
 	for {
@@ -160,13 +160,13 @@ func (p *parser) parseCommaList(end tokenKind, elementKind string) (*token, astN
 	}
 }
 
-func (p *parser) parseBind(binds *astLocalBinds) error {
+func (p *parser) parseBind(binds *LocalBinds) error {
 	varID, err := p.popExpect(tokenIdentifier)
 	if err != nil {
 		return err
 	}
 	for _, b := range *binds {
-		if b.variable == identifier(varID.data) {
+		if b.Variable == Identifier(varID.data) {
 			return makeStaticError(fmt.Sprintf("Duplicate local var: %v", varID.data), varID.loc)
 		}
 	}
@@ -185,12 +185,12 @@ func (p *parser) parseBind(binds *astLocalBinds) error {
 		if err != nil {
 			return err
 		}
-		*binds = append(*binds, astLocalBind{
-			variable:      identifier(varID.data),
-			body:          body,
-			functionSugar: true,
-			params:        params,
-			trailingComma: gotComma,
+		*binds = append(*binds, LocalBind{
+			Variable:      Identifier(varID.data),
+			Body:          body,
+			FunctionSugar: true,
+			Params:        params,
+			TrailingComma: gotComma,
 		})
 	} else {
 		_, err = p.popExpectOp("=")
@@ -201,16 +201,16 @@ func (p *parser) parseBind(binds *astLocalBinds) error {
 		if err != nil {
 			return err
 		}
-		*binds = append(*binds, astLocalBind{
-			variable: identifier(varID.data),
-			body:     body,
+		*binds = append(*binds, LocalBind{
+			Variable: Identifier(varID.data),
+			Body:     body,
 		})
 	}
 
 	return nil
 }
 
-func (p *parser) parseObjectAssignmentOp() (plusSugar bool, hide astObjectFieldHide, err error) {
+func (p *parser) parseObjectAssignmentOp() (plusSugar bool, hide ObjectFieldHide, err error) {
 	op, err := p.popExpect(tokenOperator)
 	if err != nil {
 		return
@@ -234,11 +234,11 @@ func (p *parser) parseObjectAssignmentOp() (plusSugar bool, hide astObjectFieldH
 
 	switch numColons {
 	case 1:
-		hide = astObjectFieldInherit
+		hide = ObjectFieldInherit
 	case 2:
-		hide = astObjectFieldHidden
+		hide = ObjectFieldHidden
 	case 3:
-		hide = astObjectFieldVisible
+		hide = ObjectFieldVisible
 	default:
 		err = makeStaticError(
 			fmt.Sprintf("Expected one of :, ::, :::, +:, +::, +:::, got: %v", op.data), op.loc)
@@ -251,10 +251,10 @@ func (p *parser) parseObjectAssignmentOp() (plusSugar bool, hide astObjectFieldH
 // +gen set
 type literalField string
 
-func (p *parser) parseObjectRemainder(tok *token) (astNode, *token, error) {
-	var fields astObjectFields
+func (p *parser) parseObjectRemainder(tok *token) (Node, *token, error) {
+	var fields ObjectFields
 	literalFields := make(literalFieldSet)
-	binds := make(identifierSet)
+	binds := make(IdentifierSet)
 
 	gotComma := false
 	first := true
@@ -269,10 +269,10 @@ func (p *parser) parseObjectRemainder(tok *token) (astNode, *token, error) {
 		}
 
 		if next.kind == tokenBraceR {
-			return &astObject{
-				astNodeBase:   astNodeBase{loc: locFromTokens(tok, next)},
-				fields:        fields,
-				trailingComma: gotComma,
+			return &Object{
+				nodeBase:      nodeBase{loc: locFromTokens(tok, next)},
+				Fields:        fields,
+				TrailingComma: gotComma,
 			}, next, nil
 		}
 
@@ -280,12 +280,12 @@ func (p *parser) parseObjectRemainder(tok *token) (astNode, *token, error) {
 			// It's a comprehension
 			numFields := 0
 			numAsserts := 0
-			var field astObjectField
+			var field ObjectField
 			for _, f := range fields {
-				if f.kind == astObjectLocal {
+				if f.Kind == ObjectLocal {
 					continue
 				}
-				if f.kind == astObjectAssert {
+				if f.Kind == ObjectAssert {
 					numAsserts++
 					continue
 				}
@@ -299,21 +299,21 @@ func (p *parser) parseObjectRemainder(tok *token) (astNode, *token, error) {
 			if numFields != 1 {
 				return nil, nil, makeStaticError("Object comprehension can only have one field.", next.loc)
 			}
-			if field.hide != astObjectFieldInherit {
+			if field.Hide != ObjectFieldInherit {
 				return nil, nil, makeStaticError("Object comprehensions cannot have hidden fields.", next.loc)
 			}
-			if field.kind != astObjectFieldExpr {
+			if field.Kind != ObjectFieldExpr {
 				return nil, nil, makeStaticError("Object comprehensions can only have [e] fields.", next.loc)
 			}
 			specs, last, err := p.parseComprehensionSpecs(tokenBraceR)
 			if err != nil {
 				return nil, nil, err
 			}
-			return &astObjectComp{
-				astNodeBase:   astNodeBase{loc: locFromTokens(tok, last)},
-				fields:        fields,
-				trailingComma: gotComma,
-				specs:         *specs,
+			return &ObjectComp{
+				nodeBase:      nodeBase{loc: locFromTokens(tok, last)},
+				Fields:        fields,
+				TrailingComma: gotComma,
+				Specs:         *specs,
 			}, last, nil
 		}
 
@@ -324,39 +324,39 @@ func (p *parser) parseObjectRemainder(tok *token) (astNode, *token, error) {
 
 		switch next.kind {
 		case tokenBracketL, tokenIdentifier, tokenStringDouble, tokenStringSingle, tokenStringBlock:
-			var kind astObjectFieldKind
-			var expr1 astNode
-			var id *identifier
+			var kind ObjectFieldKind
+			var expr1 Node
+			var id *Identifier
 			switch next.kind {
 			case tokenIdentifier:
-				kind = astObjectFieldID
-				id = (*identifier)(&next.data)
+				kind = ObjectFieldID
+				id = (*Identifier)(&next.data)
 			case tokenStringDouble:
-				kind = astObjectFieldStr
-				expr1 = &astLiteralString{
-					astNodeBase: astNodeBase{loc: next.loc},
-					value:       next.data,
-					kind:        astStringDouble,
+				kind = ObjectFieldStr
+				expr1 = &LiteralString{
+					nodeBase: nodeBase{loc: next.loc},
+					Value:    next.data,
+					Kind:     StringDouble,
 				}
 			case tokenStringSingle:
-				kind = astObjectFieldStr
-				expr1 = &astLiteralString{
-					astNodeBase: astNodeBase{loc: next.loc},
-					value:       next.data,
-					kind:        astStringSingle,
+				kind = ObjectFieldStr
+				expr1 = &LiteralString{
+					nodeBase: nodeBase{loc: next.loc},
+					Value:    next.data,
+					Kind:     StringSingle,
 				}
 			case tokenStringBlock:
-				kind = astObjectFieldStr
-				expr1 = &astLiteralString{
-					astNodeBase: astNodeBase{loc: next.loc},
-					value:       next.data,
-					kind:        astStringBlock,
-					blockIndent: next.stringBlockIndent,
+				kind = ObjectFieldStr
+				expr1 = &LiteralString{
+					nodeBase:    nodeBase{loc: next.loc},
+					Value:       next.data,
+					Kind:        StringBlock,
+					BlockIndent: next.stringBlockIndent,
 				}
 			// TODO(sbarzowski) are verbatim string literals allowed here?
 			// if so, maybe it's time we extracted string literal creation somewhere...
 			default:
-				kind = astObjectFieldExpr
+				kind = ObjectFieldExpr
 				var err error
 				expr1, err = p.parse(maxPrecedence)
 				if err != nil {
@@ -370,7 +370,7 @@ func (p *parser) parseObjectRemainder(tok *token) (astNode, *token, error) {
 
 			isMethod := false
 			methComma := false
-			var params identifiers
+			var params Identifiers
 			if p.peek().kind == tokenParenL {
 				p.pop()
 				var err error
@@ -391,7 +391,7 @@ func (p *parser) parseObjectRemainder(tok *token) (astNode, *token, error) {
 					fmt.Sprintf("Cannot use +: syntax sugar in a method: %v", next.data), next.loc)
 			}
 
-			if kind != astObjectFieldExpr {
+			if kind != ObjectFieldExpr {
 				if !literalFields.Add(literalField(next.data)) {
 					return nil, nil, makeStaticError(
 						fmt.Sprintf("Duplicate field: %v", next.data), next.loc)
@@ -403,16 +403,16 @@ func (p *parser) parseObjectRemainder(tok *token) (astNode, *token, error) {
 				return nil, nil, err
 			}
 
-			fields = append(fields, astObjectField{
-				kind:          kind,
-				hide:          hide,
-				superSugar:    plusSugar,
-				methodSugar:   isMethod,
-				expr1:         expr1,
-				id:            id,
-				ids:           params,
-				trailingComma: methComma,
-				expr2:         body,
+			fields = append(fields, ObjectField{
+				Kind:          kind,
+				Hide:          hide,
+				SuperSugar:    plusSugar,
+				MethodSugar:   isMethod,
+				Expr1:         expr1,
+				Id:            id,
+				Ids:           params,
+				TrailingComma: methComma,
+				Expr2:         body,
 			})
 
 		case tokenLocal:
@@ -421,7 +421,7 @@ func (p *parser) parseObjectRemainder(tok *token) (astNode, *token, error) {
 				return nil, nil, err
 			}
 
-			id := identifier(varID.data)
+			id := Identifier(varID.data)
 
 			if binds.Contains(id) {
 				return nil, nil, makeStaticError(fmt.Sprintf("Duplicate local var: %v", id), varID.loc)
@@ -429,7 +429,7 @@ func (p *parser) parseObjectRemainder(tok *token) (astNode, *token, error) {
 
 			isMethod := false
 			funcComma := false
-			var params identifiers
+			var params Identifiers
 			if p.peek().kind == tokenParenL {
 				p.pop()
 				isMethod = true
@@ -450,15 +450,15 @@ func (p *parser) parseObjectRemainder(tok *token) (astNode, *token, error) {
 
 			binds.Add(id)
 
-			fields = append(fields, astObjectField{
-				kind:          astObjectLocal,
-				hide:          astObjectFieldVisible,
-				superSugar:    false,
-				methodSugar:   isMethod,
-				id:            &id,
-				ids:           params,
-				trailingComma: funcComma,
-				expr2:         body,
+			fields = append(fields, ObjectField{
+				Kind:          ObjectLocal,
+				Hide:          ObjectFieldVisible,
+				SuperSugar:    false,
+				MethodSugar:   isMethod,
+				Id:            &id,
+				Ids:           params,
+				TrailingComma: funcComma,
+				Expr2:         body,
 			})
 
 		case tokenAssert:
@@ -466,7 +466,7 @@ func (p *parser) parseObjectRemainder(tok *token) (astNode, *token, error) {
 			if err != nil {
 				return nil, nil, err
 			}
-			var msg astNode
+			var msg Node
 			if p.peek().kind == tokenOperator && p.peek().data == ":" {
 				p.pop()
 				msg, err = p.parse(maxPrecedence)
@@ -475,11 +475,11 @@ func (p *parser) parseObjectRemainder(tok *token) (astNode, *token, error) {
 				}
 			}
 
-			fields = append(fields, astObjectField{
-				kind:  astObjectAssert,
-				hide:  astObjectFieldVisible,
-				expr2: cond,
-				expr3: msg,
+			fields = append(fields, ObjectField{
+				Kind:  ObjectAssert,
+				Hide:  ObjectFieldVisible,
+				Expr2: cond,
+				Expr3: msg,
 			})
 		default:
 			return nil, nil, makeUnexpectedError(next, "parsing field definition")
@@ -489,14 +489,14 @@ func (p *parser) parseObjectRemainder(tok *token) (astNode, *token, error) {
 }
 
 /* parses for x in expr for y in expr if expr for z in expr ... */
-func (p *parser) parseComprehensionSpecs(end tokenKind) (*astCompSpecs, *token, error) {
-	var specs astCompSpecs
+func (p *parser) parseComprehensionSpecs(end tokenKind) (*CompSpecs, *token, error) {
+	var specs CompSpecs
 	for {
 		varID, err := p.popExpect(tokenIdentifier)
 		if err != nil {
 			return nil, nil, err
 		}
-		id := identifier(varID.data)
+		id := Identifier(varID.data)
 		_, err = p.popExpect(tokenIn)
 		if err != nil {
 			return nil, nil, err
@@ -505,10 +505,10 @@ func (p *parser) parseComprehensionSpecs(end tokenKind) (*astCompSpecs, *token, 
 		if err != nil {
 			return nil, nil, err
 		}
-		specs = append(specs, astCompSpec{
-			kind:    astCompFor,
-			varName: &id,
-			expr:    arr,
+		specs = append(specs, CompSpec{
+			Kind:    CompFor,
+			VarName: &id,
+			Expr:    arr,
 		})
 
 		maybeIf := p.pop()
@@ -517,10 +517,10 @@ func (p *parser) parseComprehensionSpecs(end tokenKind) (*astCompSpecs, *token, 
 			if err != nil {
 				return nil, nil, err
 			}
-			specs = append(specs, astCompSpec{
-				kind:    astCompIf,
-				varName: nil,
-				expr:    cond,
+			specs = append(specs, CompSpec{
+				Kind:    CompIf,
+				VarName: nil,
+				Expr:    cond,
 			})
 		}
 		if maybeIf.kind == end {
@@ -537,12 +537,12 @@ func (p *parser) parseComprehensionSpecs(end tokenKind) (*astCompSpecs, *token, 
 
 // Assumes that the leading '[' has already been consumed and passed as tok.
 // Should read up to and consume the trailing ']'
-func (p *parser) parseArray(tok *token) (astNode, error) {
+func (p *parser) parseArray(tok *token) (Node, error) {
 	next := p.peek()
 	if next.kind == tokenBracketR {
 		p.pop()
-		return &astArray{
-			astNodeBase: astNodeBase{loc: locFromTokens(tok, next)},
+		return &Array{
+			nodeBase: nodeBase{loc: locFromTokens(tok, next)},
 		}, nil
 	}
 
@@ -565,15 +565,15 @@ func (p *parser) parseArray(tok *token) (astNode, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &astArrayComp{
-			astNodeBase:   astNodeBase{loc: locFromTokens(tok, last)},
-			body:          first,
-			trailingComma: gotComma,
-			specs:         *specs,
+		return &ArrayComp{
+			nodeBase:      nodeBase{loc: locFromTokens(tok, last)},
+			Body:          first,
+			TrailingComma: gotComma,
+			Specs:         *specs,
 		}, nil
 	}
 	// Not a comprehension: It can have more elements.
-	elements := astNodes{first}
+	elements := Nodes{first}
 
 	for {
 		if next.kind == tokenBracketR {
@@ -599,14 +599,14 @@ func (p *parser) parseArray(tok *token) (astNode, error) {
 		}
 	}
 
-	return &astArray{
-		astNodeBase:   astNodeBase{loc: locFromTokens(tok, next)},
-		elements:      elements,
-		trailingComma: gotComma,
+	return &Array{
+		nodeBase:      nodeBase{loc: locFromTokens(tok, next)},
+		Elements:      elements,
+		TrailingComma: gotComma,
 	}, nil
 }
 
-func (p *parser) parseTerminal() (astNode, error) {
+func (p *parser) parseTerminal() (Node, error) {
 	tok := p.pop()
 	switch tok.kind {
 	case tokenAssert, tokenBraceR, tokenBracketR, tokenComma, tokenDot, tokenElse,
@@ -643,82 +643,82 @@ func (p *parser) parseTerminal() (astNode, error) {
 		if err != nil {
 			return nil, makeStaticError("Could not parse floating point number.", tok.loc)
 		}
-		return &astLiteralNumber{
-			astNodeBase:    astNodeBase{loc: tok.loc},
-			value:          num,
-			originalString: tok.data,
+		return &LiteralNumber{
+			nodeBase:       nodeBase{loc: tok.loc},
+			Value:          num,
+			OriginalString: tok.data,
 		}, nil
 	case tokenStringSingle:
-		return &astLiteralString{
-			astNodeBase: astNodeBase{loc: tok.loc},
-			value:       tok.data,
-			kind:        astStringSingle,
+		return &LiteralString{
+			nodeBase: nodeBase{loc: tok.loc},
+			Value:    tok.data,
+			Kind:     StringSingle,
 		}, nil
 	case tokenStringDouble:
-		return &astLiteralString{
-			astNodeBase: astNodeBase{loc: tok.loc},
-			value:       tok.data,
-			kind:        astStringDouble,
+		return &LiteralString{
+			nodeBase: nodeBase{loc: tok.loc},
+			Value:    tok.data,
+			Kind:     StringDouble,
 		}, nil
 	case tokenStringBlock:
-		return &astLiteralString{
-			astNodeBase: astNodeBase{loc: tok.loc},
-			value:       tok.data,
-			kind:        astStringDouble,
-			blockIndent: tok.stringBlockIndent,
+		return &LiteralString{
+			nodeBase:    nodeBase{loc: tok.loc},
+			Value:       tok.data,
+			Kind:        StringDouble,
+			BlockIndent: tok.stringBlockIndent,
 		}, nil
 	case tokenVerbatimStringDouble:
-		return &astLiteralString{
-			astNodeBase: astNodeBase{loc: tok.loc},
-			value:       tok.data,
-			kind:        astVerbatimStringDouble,
+		return &LiteralString{
+			nodeBase: nodeBase{loc: tok.loc},
+			Value:    tok.data,
+			Kind:     VerbatimStringDouble,
 		}, nil
 	case tokenVerbatimStringSingle:
-		return &astLiteralString{
-			astNodeBase: astNodeBase{loc: tok.loc},
-			value:       tok.data,
-			kind:        astVerbatimStringSingle,
+		return &LiteralString{
+			nodeBase: nodeBase{loc: tok.loc},
+			Value:    tok.data,
+			Kind:     VerbatimStringSingle,
 		}, nil
 	case tokenFalse:
-		return &astLiteralBoolean{
-			astNodeBase: astNodeBase{loc: tok.loc},
-			value:       false,
+		return &LiteralBoolean{
+			nodeBase: nodeBase{loc: tok.loc},
+			Value:    false,
 		}, nil
 	case tokenTrue:
-		return &astLiteralBoolean{
-			astNodeBase: astNodeBase{loc: tok.loc},
-			value:       true,
+		return &LiteralBoolean{
+			nodeBase: nodeBase{loc: tok.loc},
+			Value:    true,
 		}, nil
 	case tokenNullLit:
-		return &astLiteralNull{
-			astNodeBase: astNodeBase{loc: tok.loc},
+		return &LiteralNull{
+			nodeBase: nodeBase{loc: tok.loc},
 		}, nil
 
 	// Variables
 	case tokenDollar:
-		return &astDollar{
-			astNodeBase: astNodeBase{loc: tok.loc},
+		return &Dollar{
+			nodeBase: nodeBase{loc: tok.loc},
 		}, nil
 	case tokenIdentifier:
-		return &astVar{
-			astNodeBase: astNodeBase{loc: tok.loc},
-			id:          identifier(tok.data),
+		return &Var{
+			nodeBase: nodeBase{loc: tok.loc},
+			Id:       Identifier(tok.data),
 		}, nil
 	case tokenSelf:
-		return &astSelf{
-			astNodeBase: astNodeBase{loc: tok.loc},
+		return &Self{
+			nodeBase: nodeBase{loc: tok.loc},
 		}, nil
 	case tokenSuper:
 		next := p.pop()
-		var index astNode
-		var id *identifier
+		var index Node
+		var id *Identifier
 		switch next.kind {
 		case tokenDot:
 			fieldID, err := p.popExpect(tokenIdentifier)
 			if err != nil {
 				return nil, err
 			}
-			id = (*identifier)(&fieldID.data)
+			id = (*Identifier)(&fieldID.data)
 		case tokenBracketL:
 			var err error
 			index, err = p.parse(maxPrecedence)
@@ -732,21 +732,21 @@ func (p *parser) parseTerminal() (astNode, error) {
 		default:
 			return nil, makeStaticError("Expected . or [ after super.", tok.loc)
 		}
-		return &astSuperIndex{
-			astNodeBase: astNodeBase{loc: tok.loc},
-			index:       index,
-			id:          id,
+		return &SuperIndex{
+			nodeBase: nodeBase{loc: tok.loc},
+			Index:    index,
+			Id:       id,
 		}, nil
 	}
 
 	return nil, makeStaticError(fmt.Sprintf("INTERNAL ERROR: Unknown tok kind: %v", tok.kind), tok.loc)
 }
 
-func (p *parser) parsingFailure(msg string, tok *token) (astNode, error) {
+func (p *parser) parsingFailure(msg string, tok *token) (Node, error) {
 	return nil, makeStaticError(msg, tok.loc)
 }
 
-func (p *parser) parse(prec precedence) (astNode, error) {
+func (p *parser) parse(prec precedence) (Node, error) {
 	begin := p.peek()
 
 	switch begin.kind {
@@ -758,7 +758,7 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 		if err != nil {
 			return nil, err
 		}
-		var msg astNode
+		var msg Node
 		if p.peek().kind == tokenOperator && p.peek().data == ":" {
 			p.pop()
 			msg, err = p.parse(maxPrecedence)
@@ -774,11 +774,11 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &astAssert{
-			astNodeBase: astNodeBase{loc: locFromTokenAST(begin, rest)},
-			cond:        cond,
-			message:     msg,
-			rest:        rest,
+		return &Assert{
+			nodeBase: nodeBase{loc: locFromTokenAST(begin, rest)},
+			Cond:     cond,
+			Message:  msg,
+			Rest:     rest,
 		}, nil
 
 	case tokenError:
@@ -787,9 +787,9 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &astError{
-			astNodeBase: astNodeBase{loc: locFromTokenAST(begin, expr)},
-			expr:        expr,
+		return &Error{
+			nodeBase: nodeBase{loc: locFromTokenAST(begin, expr)},
+			Expr:     expr,
 		}, nil
 
 	case tokenIf:
@@ -806,7 +806,7 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 		if err != nil {
 			return nil, err
 		}
-		var branchFalse astNode
+		var branchFalse Node
 		lr := locFromTokenAST(begin, branchTrue)
 		if p.peek().kind == tokenElse {
 			p.pop()
@@ -816,11 +816,11 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 			}
 			lr = locFromTokenAST(begin, branchFalse)
 		}
-		return &astConditional{
-			astNodeBase: astNodeBase{loc: lr},
-			cond:        cond,
-			branchTrue:  branchTrue,
-			branchFalse: branchFalse,
+		return &Conditional{
+			nodeBase:    nodeBase{loc: lr},
+			Cond:        cond,
+			BranchTrue:  branchTrue,
+			BranchFalse: branchFalse,
 		}, nil
 
 	case tokenFunction:
@@ -835,11 +835,11 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 			if err != nil {
 				return nil, err
 			}
-			return &astFunction{
-				astNodeBase:   astNodeBase{loc: locFromTokenAST(begin, body)},
-				parameters:    params,
-				trailingComma: gotComma,
-				body:          body,
+			return &Function{
+				nodeBase:      nodeBase{loc: locFromTokenAST(begin, body)},
+				Parameters:    params,
+				TrailingComma: gotComma,
+				Body:          body,
 			}, nil
 		}
 		return nil, makeStaticError(fmt.Sprintf("Expected ( but got %v", next), next.loc)
@@ -850,10 +850,10 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 		if err != nil {
 			return nil, err
 		}
-		if lit, ok := body.(*astLiteralString); ok {
-			return &astImport{
-				astNodeBase: astNodeBase{loc: locFromTokenAST(begin, body)},
-				file:        lit.value,
+		if lit, ok := body.(*LiteralString); ok {
+			return &Import{
+				nodeBase: nodeBase{loc: locFromTokenAST(begin, body)},
+				File:     lit.Value,
 			}, nil
 		}
 		return nil, makeStaticError("Computed imports are not allowed", *body.Loc())
@@ -864,17 +864,17 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 		if err != nil {
 			return nil, err
 		}
-		if lit, ok := body.(*astLiteralString); ok {
-			return &astImportStr{
-				astNodeBase: astNodeBase{loc: locFromTokenAST(begin, body)},
-				file:        lit.value,
+		if lit, ok := body.(*LiteralString); ok {
+			return &ImportStr{
+				nodeBase: nodeBase{loc: locFromTokenAST(begin, body)},
+				File:     lit.Value,
 			}, nil
 		}
 		return nil, makeStaticError("Computed imports are not allowed", *body.Loc())
 
 	case tokenLocal:
 		p.pop()
-		var binds astLocalBinds
+		var binds LocalBinds
 		for {
 			err := p.parseBind(&binds)
 			if err != nil {
@@ -892,10 +892,10 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &astLocal{
-			astNodeBase: astNodeBase{loc: locFromTokenAST(begin, body)},
-			binds:       binds,
-			body:        body,
+		return &Local{
+			nodeBase: nodeBase{loc: locFromTokenAST(begin, body)},
+			Binds:    binds,
+			Body:     body,
 		}, nil
 
 	default:
@@ -911,10 +911,10 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 				if err != nil {
 					return nil, err
 				}
-				return &astUnary{
-					astNodeBase: astNodeBase{loc: locFromTokenAST(op, expr)},
-					op:          uop,
-					expr:        expr,
+				return &Unary{
+					nodeBase: nodeBase{loc: locFromTokenAST(op, expr)},
+					Op:       uop,
+					Expr:     expr,
 				}, nil
 			}
 		}
@@ -932,7 +932,7 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 		for {
 			// Then next token must be a binary operator.
 
-			var bop binaryOp
+			var bop BinaryOp
 
 			// Check precedence is correct for this level.  If we're parsing operators
 			// with higher precedence, then return lhs and let lower levels deal with
@@ -976,7 +976,7 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 			switch op.kind {
 			case tokenBracketL:
 				// handle slice
-				var indexes [3]astNode
+				var indexes [3]Node
 				colonsConsumed := 0
 
 				var end *token
@@ -1014,18 +1014,18 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 				isSlice := colonsConsumed > 0
 
 				if isSlice {
-					lhs = &astSlice{
-						astNodeBase: astNodeBase{loc: locFromTokens(begin, end)},
-						target:      lhs,
-						beginIndex:  indexes[0],
-						endIndex:    indexes[1],
-						step:        indexes[2],
+					lhs = &Slice{
+						nodeBase:   nodeBase{loc: locFromTokens(begin, end)},
+						Target:     lhs,
+						BeginIndex: indexes[0],
+						EndIndex:   indexes[1],
+						Step:       indexes[2],
 					}
 				} else {
-					lhs = &astIndex{
-						astNodeBase: astNodeBase{loc: locFromTokens(begin, end)},
-						target:      lhs,
-						index:       indexes[0],
+					lhs = &Index{
+						nodeBase: nodeBase{loc: locFromTokens(begin, end)},
+						Target:   lhs,
+						Index:    indexes[0],
 					}
 				}
 			case tokenDot:
@@ -1033,11 +1033,11 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 				if err != nil {
 					return nil, err
 				}
-				id := identifier(fieldID.data)
-				lhs = &astIndex{
-					astNodeBase: astNodeBase{loc: locFromTokens(begin, fieldID)},
-					target:      lhs,
-					id:          &id,
+				id := Identifier(fieldID.data)
+				lhs = &Index{
+					nodeBase: nodeBase{loc: locFromTokens(begin, fieldID)},
+					Target:   lhs,
+					Id:       &id,
 				}
 			case tokenParenL:
 				end, args, gotComma, err := p.parseCommaList(tokenParenR, "function argument")
@@ -1049,33 +1049,33 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 					p.pop()
 					tailStrict = true
 				}
-				lhs = &astApply{
-					astNodeBase:   astNodeBase{loc: locFromTokens(begin, end)},
-					target:        lhs,
-					arguments:     args,
-					trailingComma: gotComma,
-					tailStrict:    tailStrict,
+				lhs = &Apply{
+					nodeBase:      nodeBase{loc: locFromTokens(begin, end)},
+					Target:        lhs,
+					Arguments:     args,
+					TrailingComma: gotComma,
+					TailStrict:    tailStrict,
 				}
 			case tokenBraceL:
 				obj, end, err := p.parseObjectRemainder(op)
 				if err != nil {
 					return nil, err
 				}
-				lhs = &astApplyBrace{
-					astNodeBase: astNodeBase{loc: locFromTokens(begin, end)},
-					left:        lhs,
-					right:       obj,
+				lhs = &ApplyBrace{
+					nodeBase: nodeBase{loc: locFromTokens(begin, end)},
+					Left:     lhs,
+					Right:    obj,
 				}
 			default:
 				rhs, err := p.parse(prec - 1)
 				if err != nil {
 					return nil, err
 				}
-				lhs = &astBinary{
-					astNodeBase: astNodeBase{loc: locFromTokenAST(begin, rhs)},
-					left:        lhs,
-					op:          bop,
-					right:       rhs,
+				lhs = &Binary{
+					nodeBase: nodeBase{loc: locFromTokenAST(begin, rhs)},
+					Left:     lhs,
+					Op:       bop,
+					Right:    rhs,
 				}
 			}
 		}
@@ -1084,7 +1084,7 @@ func (p *parser) parse(prec precedence) (astNode, error) {
 
 // ---------------------------------------------------------------------------
 
-func parse(t tokens) (astNode, error) {
+func parse(t tokens) (Node, error) {
 	p := makeParser(t)
 	expr, err := p.parse(maxPrecedence)
 	if err != nil {

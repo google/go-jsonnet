@@ -95,7 +95,7 @@ func (vm *VM) EvaluateSnippet(filename string, snippet string) (json string, for
 	return json, nil
 }
 
-func snippetToAST(filename string, snippet string) (astNode, error) {
+func snippetToAST(filename string, snippet string) (Node, error) {
 	tokens, err := lex(filename, snippet)
 	if err != nil {
 		return nil, err

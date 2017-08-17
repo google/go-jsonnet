@@ -12,8 +12,8 @@ const _astLiteralStringKind_name = "astStringSingleastStringDoubleastStringBlock
 
 var _astLiteralStringKind_index = [...]uint8{0, 15, 30, 44}
 
-func (i astLiteralStringKind) String() string {
-	if i < 0 || i+1 >= astLiteralStringKind(len(_astLiteralStringKind_index)) {
+func (i LiteralStringKind) String() string {
+	if i < 0 || i+1 >= LiteralStringKind(len(_astLiteralStringKind_index)) {
 		return fmt.Sprintf("astLiteralStringKind(%d)", i)
 	}
 	return _astLiteralStringKind_name[_astLiteralStringKind_index[i]:_astLiteralStringKind_index[i+1]]

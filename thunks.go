@@ -41,9 +41,9 @@ func (rv *readyValue) bindToObject(sb selfBinding, origBinding bindingFrame) pot
 
 // thunk holds code and environment in which the code is supposed to be evaluated
 type thunk struct {
-	name identifier
+	name Identifier
 	env  environment
-	body astNode
+	body Node
 }
 
 // TODO(sbarzowski) feedback from dcunnin:
@@ -51,7 +51,7 @@ type thunk struct {
 //					Maybe call thunk 'exprThunk' (or astThunk but then it looks like an AST node).
 //					Then call cachedThunk just thunk?
 //					Or, call this makeCachedExprThunk because that's what it really is.
-func makeThunk(name identifier, env environment, body astNode) potentialValue {
+func makeThunk(name Identifier, env environment, body Node) *cachedThunk {
 	return makeCachedThunk(&thunk{
 		name: name,
 		env:  env,
@@ -126,7 +126,7 @@ func makeErrorThunk(err error) *errorThunk {
 // -------------------------------------
 
 type codeUnboundField struct {
-	body astNode
+	body Node
 }
 
 func (f *codeUnboundField) bindToObject(sb selfBinding, origBinding bindingFrame) potentialValue {
@@ -141,13 +141,13 @@ type closure struct {
 	// base environment of a closure
 	// arguments should be added to it, before executing it
 	env      environment
-	function *astFunction
+	function *Function
 }
 
 func (closure *closure) EvalCall(arguments callArguments, e *evaluator) (value, error) {
 	argThunks := make(bindingFrame)
 	for i, arg := range arguments.positional {
-		argThunks[closure.function.parameters[i]] = arg
+		argThunks[closure.function.Parameters[i]] = arg
 	}
 
 	calledEnvironment := makeEnvironment(
@@ -158,14 +158,14 @@ func (closure *closure) EvalCall(arguments callArguments, e *evaluator) (value, 
 	context := TraceContext{
 		Name: "function <anonymous>",
 	}
-	return e.evalInCleanEnv(&context, &calledEnvironment, closure.function.body)
+	return e.evalInCleanEnv(&context, &calledEnvironment, closure.function.Body)
 }
 
-func (closure *closure) Parameters() identifiers {
-	return closure.function.parameters
+func (closure *closure) Parameters() Identifiers {
+	return closure.function.Parameters
 }
 
-func makeClosure(env environment, function *astFunction) *closure {
+func makeClosure(env environment, function *Function) *closure {
 	return &closure{
 		env:      env,
 		function: function,
