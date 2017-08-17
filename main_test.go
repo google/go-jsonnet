@@ -20,11 +20,11 @@ import (
 	"bytes"
 	"flag"
 	"io/ioutil"
-	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
 var update = flag.Bool("update", false, "update .golden files")
@@ -82,7 +82,7 @@ func TestMain(t *testing.T) {
 			if bytes.Compare(golden, []byte(output)) != 0 {
 				t.Fail()
 				t.Errorf("%s.input != %s\n", test.name, test.golden)
-				data, err := diff(golden, []byte(output))
+				data := diff( output, string(golden),)
 				if err != nil {
 					t.Errorf("computing diff: %s", err)
 				}
@@ -94,32 +94,8 @@ func TestMain(t *testing.T) {
 	}
 }
 
-// "barrowed" from the std library
-// https://golang.org/src/cmd/gofmt/gofmt.go#L228
-func diff(b1, b2 []byte) (data []byte, err error) {
-	f1, err := ioutil.TempFile("", "jsonnet")
-	if err != nil {
-		return
-	}
-	defer os.Remove(f1.Name())
-	defer f1.Close()
-
-	f2, err := ioutil.TempFile("", "jsonnet")
-	if err != nil {
-		return
-	}
-	defer os.Remove(f2.Name())
-	defer f2.Close()
-
-	f1.Write(b1)
-	f2.Write(b2)
-
-	data, err = exec.Command("diff", "-u", f1.Name(), f2.Name()).CombinedOutput()
-	if len(data) > 0 {
-		// diff exits with a non-zero status when the files don't match.
-		// Ignore that failure as long as we get output.
-		err = nil
-	}
-	return
-
+func diff(a, b string) string {
+	dmp := diffmatchpatch.New()
+	diffs := dmp.DiffMain(a, b, false)
+	return dmp.DiffPrettyText(diffs)
 }
