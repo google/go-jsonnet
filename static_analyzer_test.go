@@ -23,7 +23,7 @@ import "testing"
 // }
 
 func TestSimpleNull(t *testing.T) {
-	ast := &astLiteralNull{}
+	ast := &LiteralNull{}
 	err := analyze(ast)
 	if err != nil {
 		t.Errorf("Unexpected error: %+v", err)
@@ -33,7 +33,7 @@ func TestSimpleNull(t *testing.T) {
 	}
 }
 
-func hasTheseFreeVars(returned identifiers, expected identifiers) bool {
+func hasTheseFreeVars(returned Identifiers, expected Identifiers) bool {
 	if len(returned) != len(expected) {
 		return false
 	}
@@ -46,14 +46,14 @@ func hasTheseFreeVars(returned identifiers, expected identifiers) bool {
 }
 
 func TestSimpleLocal(t *testing.T) {
-	ast := &astLocal{
-		binds: astLocalBinds{
-			astLocalBind{
-				variable: "x",
-				body:     &astLiteralNull{},
+	ast := &Local{
+		Binds: LocalBinds{
+			LocalBind{
+				Variable: "x",
+				Body:     &LiteralNull{},
 			},
 		},
-		body: &astVar{id: "x"},
+		Body: &Var{Id: "x"},
 	}
 
 	err := analyze(ast)
@@ -63,8 +63,8 @@ func TestSimpleLocal(t *testing.T) {
 	if ast.FreeVariables() != nil {
 		t.Errorf("Unexpected free variables %+v in root local. Expected none.", ast.FreeVariables())
 	}
-	returned := ast.body.FreeVariables()
-	expectedVars := identifiers{"x"}
+	returned := ast.Body.FreeVariables()
+	expectedVars := Identifiers{"x"}
 	if !hasTheseFreeVars(returned, expectedVars) {
 		t.Errorf("Unexpected free variables %+v in local body. Expected %+v.", returned, expectedVars)
 	}

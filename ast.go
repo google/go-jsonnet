@@ -20,513 +20,513 @@ import (
 	"fmt"
 )
 
-// identifier represents a variable / parameter / field name.
+// Identifier represents a variable / parameter / field name.
 //+gen set
-type identifier string
-type identifiers []identifier
+type Identifier string
+type Identifiers []Identifier
 
 // TODO(jbeda) implement interning of identifiers if necessary.  The C++
 // version does so.
 
 // ---------------------------------------------------------------------------
 
-type astNode interface {
+type Node interface {
 	Loc() *LocationRange
-	FreeVariables() identifiers
-	setFreeVariables(identifiers)
+	FreeVariables() Identifiers
+	setFreeVariables(Identifiers)
 }
-type astNodes []astNode
+type Nodes []Node
 
 // ---------------------------------------------------------------------------
 
-type astNodeBase struct {
+type nodeBase struct {
 	loc           LocationRange
-	freeVariables identifiers
+	freeVariables Identifiers
 }
 
-func (n *astNodeBase) Loc() *LocationRange {
+func (n *nodeBase) Loc() *LocationRange {
 	return &n.loc
 }
 
-func (n *astNodeBase) FreeVariables() identifiers {
+func (n *nodeBase) FreeVariables() Identifiers {
 	return n.freeVariables
 }
 
-func (n *astNodeBase) setFreeVariables(idents identifiers) {
+func (n *nodeBase) setFreeVariables(idents Identifiers) {
 	n.freeVariables = idents
 }
 
 // ---------------------------------------------------------------------------
 
 // +gen stringer
-type astCompKind int
+type CompKind int
 
 const (
-	astCompFor astCompKind = iota
-	astCompIf
+	CompFor CompKind = iota
+	CompIf
 )
 
 // TODO(sbarzowski) separate types for two kinds
 // TODO(sbarzowski) bonus points for attaching ifs to the previous for
-type astCompSpec struct {
-	kind    astCompKind
-	varName *identifier // nil when kind != compSpecFor
-	expr    astNode
+type CompSpec struct {
+	Kind    CompKind
+	VarName *Identifier // nil when kind != compSpecFor
+	Expr    Node
 }
-type astCompSpecs []astCompSpec
+type CompSpecs []CompSpec
 
 // ---------------------------------------------------------------------------
 
-// astApply represents a function call
-type astApply struct {
-	astNodeBase
-	target        astNode
-	arguments     astNodes
-	trailingComma bool
-	tailStrict    bool
+// Apply represents a function call
+type Apply struct {
+	nodeBase
+	Target        Node
+	Arguments     Nodes
+	TrailingComma bool
+	TailStrict    bool
 	// TODO(sbarzowski) support named arguments
 }
 
 // ---------------------------------------------------------------------------
 
-// astApplyBrace represents e { }.  Desugared to e + { }.
-type astApplyBrace struct {
-	astNodeBase
-	left  astNode
-	right astNode
+// ApplyBrace represents e { }.  Desugared to e + { }.
+type ApplyBrace struct {
+	nodeBase
+	Left  Node
+	Right Node
 }
 
 // ---------------------------------------------------------------------------
 
-// astArray represents array constructors [1, 2, 3].
-type astArray struct {
-	astNodeBase
-	elements      astNodes
-	trailingComma bool
+// Array represents array constructors [1, 2, 3].
+type Array struct {
+	nodeBase
+	Elements      Nodes
+	TrailingComma bool
 }
 
 // ---------------------------------------------------------------------------
 
-// astArrayComp represents array comprehensions (which are like Python list
+// ArrayComp represents array comprehensions (which are like Python list
 // comprehensions)
-type astArrayComp struct {
-	astNodeBase
-	body          astNode
-	trailingComma bool
-	specs         astCompSpecs
+type ArrayComp struct {
+	nodeBase
+	Body          Node
+	TrailingComma bool
+	Specs         CompSpecs
 }
 
 // ---------------------------------------------------------------------------
 
-// astAssert represents an assert expression (not an object-level assert).
+// Assert represents an assert expression (not an object-level assert).
 //
 // After parsing, message can be nil indicating that no message was
 // specified. This AST is elimiated by desugaring.
-type astAssert struct {
-	astNodeBase
-	cond    astNode
-	message astNode
-	rest    astNode
+type Assert struct {
+	nodeBase
+	Cond    Node
+	Message Node
+	Rest    Node
 }
 
 // ---------------------------------------------------------------------------
 
-type binaryOp int
+type BinaryOp int
 
 const (
-	bopMult binaryOp = iota
-	bopDiv
-	bopPercent
+	BopMult BinaryOp = iota
+	BopDiv
+	BopPercent
 
-	bopPlus
-	bopMinus
+	BopPlus
+	BopMinus
 
-	bopShiftL
-	bopShiftR
+	BopShiftL
+	BopShiftR
 
-	bopGreater
-	bopGreaterEq
-	bopLess
-	bopLessEq
+	BopGreater
+	BopGreaterEq
+	BopLess
+	BopLessEq
 
-	bopManifestEqual
-	bopManifestUnequal
+	BopManifestEqual
+	BopManifestUnequal
 
-	bopBitwiseAnd
-	bopBitwiseXor
-	bopBitwiseOr
+	BopBitwiseAnd
+	BopBitwiseXor
+	BopBitwiseOr
 
-	bopAnd
-	bopOr
+	BopAnd
+	BopOr
 )
 
 var bopStrings = []string{
-	bopMult:    "*",
-	bopDiv:     "/",
-	bopPercent: "%",
+	BopMult:    "*",
+	BopDiv:     "/",
+	BopPercent: "%",
 
-	bopPlus:  "+",
-	bopMinus: "-",
+	BopPlus:  "+",
+	BopMinus: "-",
 
-	bopShiftL: "<<",
-	bopShiftR: ">>",
+	BopShiftL: "<<",
+	BopShiftR: ">>",
 
-	bopGreater:   ">",
-	bopGreaterEq: ">=",
-	bopLess:      "<",
-	bopLessEq:    "<=",
+	BopGreater:   ">",
+	BopGreaterEq: ">=",
+	BopLess:      "<",
+	BopLessEq:    "<=",
 
-	bopManifestEqual:   "==",
-	bopManifestUnequal: "!=",
+	BopManifestEqual:   "==",
+	BopManifestUnequal: "!=",
 
-	bopBitwiseAnd: "&",
-	bopBitwiseXor: "^",
-	bopBitwiseOr:  "|",
+	BopBitwiseAnd: "&",
+	BopBitwiseXor: "^",
+	BopBitwiseOr:  "|",
 
-	bopAnd: "&&",
-	bopOr:  "||",
+	BopAnd: "&&",
+	BopOr:  "||",
 }
 
-var bopMap = map[string]binaryOp{
-	"*": bopMult,
-	"/": bopDiv,
-	"%": bopPercent,
+var bopMap = map[string]BinaryOp{
+	"*": BopMult,
+	"/": BopDiv,
+	"%": BopPercent,
 
-	"+": bopPlus,
-	"-": bopMinus,
+	"+": BopPlus,
+	"-": BopMinus,
 
-	"<<": bopShiftL,
-	">>": bopShiftR,
+	"<<": BopShiftL,
+	">>": BopShiftR,
 
-	">":  bopGreater,
-	">=": bopGreaterEq,
-	"<":  bopLess,
-	"<=": bopLessEq,
+	">":  BopGreater,
+	">=": BopGreaterEq,
+	"<":  BopLess,
+	"<=": BopLessEq,
 
-	"==": bopManifestEqual,
-	"!=": bopManifestUnequal,
+	"==": BopManifestEqual,
+	"!=": BopManifestUnequal,
 
-	"&": bopBitwiseAnd,
-	"^": bopBitwiseXor,
-	"|": bopBitwiseOr,
+	"&": BopBitwiseAnd,
+	"^": BopBitwiseXor,
+	"|": BopBitwiseOr,
 
-	"&&": bopAnd,
-	"||": bopOr,
+	"&&": BopAnd,
+	"||": BopOr,
 }
 
-func (b binaryOp) String() string {
+func (b BinaryOp) String() string {
 	if b < 0 || int(b) >= len(bopStrings) {
 		panic(fmt.Sprintf("INTERNAL ERROR: Unrecognised binary operator: %d", b))
 	}
 	return bopStrings[b]
 }
 
-// astBinary represents binary operators.
-type astBinary struct {
-	astNodeBase
-	left  astNode
-	op    binaryOp
-	right astNode
+// Binary represents binary operators.
+type Binary struct {
+	nodeBase
+	Left  Node
+	Op    BinaryOp
+	Right Node
 }
 
 // ---------------------------------------------------------------------------
 
-// astConditional represents if/then/else.
+// Conditional represents if/then/else.
 //
 // After parsing, branchFalse can be nil indicating that no else branch
 // was specified.  The desugarer fills this in with a LiteralNull
-type astConditional struct {
-	astNodeBase
-	cond        astNode
-	branchTrue  astNode
-	branchFalse astNode
+type Conditional struct {
+	nodeBase
+	Cond        Node
+	BranchTrue  Node
+	BranchFalse Node
 }
 
 // ---------------------------------------------------------------------------
 
-// astDollar represents the $ keyword
-type astDollar struct{ astNodeBase }
+// Dollar represents the $ keyword
+type Dollar struct{ nodeBase }
 
 // ---------------------------------------------------------------------------
 
-// astError represents the error e.
-type astError struct {
-	astNodeBase
-	expr astNode
+// Error represents the error e.
+type Error struct {
+	nodeBase
+	Expr Node
 }
 
 // ---------------------------------------------------------------------------
 
-// astFunction represents a function definition
-type astFunction struct {
-	astNodeBase
-	parameters    identifiers // TODO(sbarzowski) support default arguments
-	trailingComma bool
-	body          astNode
+// Function represents a function definition
+type Function struct {
+	nodeBase
+	Parameters    Identifiers // TODO(sbarzowski) support default arguments
+	TrailingComma bool
+	Body          Node
 }
 
 // ---------------------------------------------------------------------------
 
-// astImport represents import "file".
-type astImport struct {
-	astNodeBase
-	file string
+// Import represents import "file".
+type Import struct {
+	nodeBase
+	File string
 }
 
 // ---------------------------------------------------------------------------
 
-// astImportStr represents importstr "file".
-type astImportStr struct {
-	astNodeBase
-	file string
+// ImportStr represents importstr "file".
+type ImportStr struct {
+	nodeBase
+	File string
 }
 
 // ---------------------------------------------------------------------------
 
-// astIndex represents both e[e] and the syntax sugar e.f.
+// Index represents both e[e] and the syntax sugar e.f.
 //
 // One of index and id will be nil before desugaring.  After desugaring id
 // will be nil.
-type astIndex struct {
-	astNodeBase
-	target astNode
-	index  astNode
-	id     *identifier
+type Index struct {
+	nodeBase
+	Target Node
+	Index  Node
+	Id     *Identifier
 }
 
-type astSlice struct {
-	astNodeBase
-	target astNode
+type Slice struct {
+	nodeBase
+	Target Node
 
 	// Each of these can be nil
-	beginIndex astNode
-	endIndex   astNode
-	step       astNode
+	BeginIndex Node
+	EndIndex   Node
+	Step       Node
 }
 
 // ---------------------------------------------------------------------------
 
-// astLocalBind is a helper struct for astLocal
-type astLocalBind struct {
-	variable      identifier
-	body          astNode
-	functionSugar bool
-	params        identifiers // if functionSugar is true
-	trailingComma bool
+// LocalBind is a helper struct for astLocal
+type LocalBind struct {
+	Variable      Identifier
+	Body          Node
+	FunctionSugar bool
+	Params        Identifiers // if functionSugar is true
+	TrailingComma bool
 }
-type astLocalBinds []astLocalBind
+type LocalBinds []LocalBind
 
-// astLocal represents local x = e; e.  After desugaring, functionSugar is false.
-type astLocal struct {
-	astNodeBase
-	binds astLocalBinds
-	body  astNode
-}
-
-// ---------------------------------------------------------------------------
-
-// astLiteralBoolean represents true and false
-type astLiteralBoolean struct {
-	astNodeBase
-	value bool
+// Local represents local x = e; e.  After desugaring, functionSugar is false.
+type Local struct {
+	nodeBase
+	Binds LocalBinds
+	Body  Node
 }
 
 // ---------------------------------------------------------------------------
 
-// astLiteralNull represents the null keyword
-type astLiteralNull struct{ astNodeBase }
+// LiteralBoolean represents true and false
+type LiteralBoolean struct {
+	nodeBase
+	Value bool
+}
 
 // ---------------------------------------------------------------------------
 
-// astLiteralNumber represents a JSON number
-type astLiteralNumber struct {
-	astNodeBase
-	value          float64
-	originalString string
+// LiteralNull represents the null keyword
+type LiteralNull struct{ nodeBase }
+
+// ---------------------------------------------------------------------------
+
+// LiteralNumber represents a JSON number
+type LiteralNumber struct {
+	nodeBase
+	Value          float64
+	OriginalString string
 }
 
 // ---------------------------------------------------------------------------
 
 // +gen stringer
-type astLiteralStringKind int
+type LiteralStringKind int
 
 const (
-	astStringSingle astLiteralStringKind = iota
-	astStringDouble
-	astStringBlock
-	astVerbatimStringDouble
-	astVerbatimStringSingle
+	StringSingle LiteralStringKind = iota
+	StringDouble
+	StringBlock
+	VerbatimStringDouble
+	VerbatimStringSingle
 )
 
-// astLiteralString represents a JSON string
-type astLiteralString struct {
-	astNodeBase
-	value       string
-	kind        astLiteralStringKind
-	blockIndent string
+// LiteralString represents a JSON string
+type LiteralString struct {
+	nodeBase
+	Value       string
+	Kind        LiteralStringKind
+	BlockIndent string
 }
 
 // ---------------------------------------------------------------------------
 
 // +gen stringer
-type astObjectFieldKind int
+type ObjectFieldKind int
 
 const (
-	astObjectAssert    astObjectFieldKind = iota // assert expr2 [: expr3]  where expr3 can be nil
-	astObjectFieldID                             // id:[:[:]] expr2
-	astObjectFieldExpr                           // '['expr1']':[:[:]] expr2
-	astObjectFieldStr                            // expr1:[:[:]] expr2
-	astObjectLocal                               // local id = expr2
+	ObjectAssert    ObjectFieldKind = iota // assert expr2 [: expr3]  where expr3 can be nil
+	ObjectFieldID                          // id:[:[:]] expr2
+	ObjectFieldExpr                        // '['expr1']':[:[:]] expr2
+	ObjectFieldStr                         // expr1:[:[:]] expr2
+	ObjectLocal                            // local id = expr2
 )
 
 // +gen stringer
-type astObjectFieldHide int
+type ObjectFieldHide int
 
 const (
-	astObjectFieldHidden  astObjectFieldHide = iota // f:: e
-	astObjectFieldInherit                           // f: e
-	astObjectFieldVisible                           // f::: e
+	ObjectFieldHidden  ObjectFieldHide = iota // f:: e
+	ObjectFieldInherit                        // f: e
+	ObjectFieldVisible                        // f::: e
 )
 
 // TODO(sbarzowski) consider having separate types for various kinds
-type astObjectField struct {
-	kind          astObjectFieldKind
-	hide          astObjectFieldHide // (ignore if kind != astObjectField*)
-	superSugar    bool               // +:  (ignore if kind != astObjectField*)
-	methodSugar   bool               // f(x, y, z): ...  (ignore if kind  == astObjectAssert)
-	expr1         astNode            // Not in scope of the object
-	id            *identifier
-	ids           identifiers // If methodSugar == true then holds the params.
-	trailingComma bool        // If methodSugar == true then remembers the trailing comma
-	expr2, expr3  astNode     // In scope of the object (can see self).
+type ObjectField struct {
+	Kind          ObjectFieldKind
+	Hide          ObjectFieldHide // (ignore if kind != astObjectField*)
+	SuperSugar    bool            // +:  (ignore if kind != astObjectField*)
+	MethodSugar   bool            // f(x, y, z): ...  (ignore if kind  == astObjectAssert)
+	Expr1         Node            // Not in scope of the object
+	Id            *Identifier
+	Ids           Identifiers // If methodSugar == true then holds the params.
+	TrailingComma bool        // If methodSugar == true then remembers the trailing comma
+	Expr2, Expr3  Node        // In scope of the object (can see self).
 }
 
 // TODO(jbeda): Add the remaining constructor helpers here
 
-func astObjectFieldLocal(methodSugar bool, id *identifier, ids identifiers, trailingComma bool, body astNode) astObjectField {
-	return astObjectField{astObjectLocal, astObjectFieldVisible, false, methodSugar, nil, id, ids, trailingComma, body, nil}
+func ObjectFieldLocal(methodSugar bool, id *Identifier, ids Identifiers, trailingComma bool, body Node) ObjectField {
+	return ObjectField{ObjectLocal, ObjectFieldVisible, false, methodSugar, nil, id, ids, trailingComma, body, nil}
 }
 
-func astObjectFieldLocalNoMethod(id *identifier, body astNode) astObjectField {
-	return astObjectField{astObjectLocal, astObjectFieldVisible, false, false, nil, id, identifiers{}, false, body, nil}
+func ObjectFieldLocalNoMethod(id *Identifier, body Node) ObjectField {
+	return ObjectField{ObjectLocal, ObjectFieldVisible, false, false, nil, id, Identifiers{}, false, body, nil}
 }
 
-type astObjectFields []astObjectField
+type ObjectFields []ObjectField
 
-// astObject represents object constructors { f: e ... }.
+// Object represents object constructors { f: e ... }.
 //
 // The trailing comma is only allowed if len(fields) > 0.  Converted to
 // DesugaredObject during desugaring.
-type astObject struct {
-	astNodeBase
-	fields        astObjectFields
-	trailingComma bool
+type Object struct {
+	nodeBase
+	Fields        ObjectFields
+	TrailingComma bool
 }
 
 // ---------------------------------------------------------------------------
 
-type astDesugaredObjectField struct {
-	hide astObjectFieldHide
-	name astNode
-	body astNode
+type DesugaredObjectField struct {
+	Hide ObjectFieldHide
+	Name Node
+	Body Node
 }
-type astDesugaredObjectFields []astDesugaredObjectField
+type DesugaredObjectFields []DesugaredObjectField
 
-// astDesugaredObject represents object constructors { f: e ... } after
+// DesugaredObject represents object constructors { f: e ... } after
 // desugaring.
 //
 // The assertions either return true or raise an error.
-type astDesugaredObject struct {
-	astNodeBase
-	asserts astNodes
-	fields  astDesugaredObjectFields
+type DesugaredObject struct {
+	nodeBase
+	Asserts Nodes
+	Fields  DesugaredObjectFields
 }
 
 // ---------------------------------------------------------------------------
 
-// astObjectComp represents object comprehension
+// ObjectComp represents object comprehension
 //   { [e]: e for x in e for.. if... }.
-type astObjectComp struct {
-	astNodeBase
-	fields        astObjectFields
-	trailingComma bool
-	specs         astCompSpecs
+type ObjectComp struct {
+	nodeBase
+	Fields        ObjectFields
+	TrailingComma bool
+	Specs         CompSpecs
 }
 
 // ---------------------------------------------------------------------------
 
-// astObjectComprehensionSimple represents post-desugaring object
+// ObjectComprehensionSimple represents post-desugaring object
 // comprehension { [e]: e for x in e }.
-type astObjectComprehensionSimple struct {
-	astNodeBase
-	field astNode
-	value astNode
-	id    identifier
-	array astNode
+type ObjectComprehensionSimple struct {
+	nodeBase
+	Field Node
+	Value Node
+	Id    Identifier
+	Array Node
 }
 
 // ---------------------------------------------------------------------------
 
-// astSelf represents the self keyword.
-type astSelf struct{ astNodeBase }
+// Self represents the self keyword.
+type Self struct{ nodeBase }
 
 // ---------------------------------------------------------------------------
 
-// astSuperIndex represents the super[e] and super.f constructs.
+// SuperIndex represents the super[e] and super.f constructs.
 //
 // Either index or identifier will be set before desugaring.  After desugaring, id will be
 // nil.
-type astSuperIndex struct {
-	astNodeBase
-	index astNode
-	id    *identifier
+type SuperIndex struct {
+	nodeBase
+	Index Node
+	Id    *Identifier
 }
 
 // ---------------------------------------------------------------------------
 
-type unaryOp int
+type UnaryOp int
 
 const (
-	uopNot unaryOp = iota
-	uopBitwiseNot
-	uopPlus
-	uopMinus
+	UopNot UnaryOp = iota
+	UopBitwiseNot
+	UopPlus
+	UopMinus
 )
 
 var uopStrings = []string{
-	uopNot:        "!",
-	uopBitwiseNot: "~",
-	uopPlus:       "+",
-	uopMinus:      "-",
+	UopNot:        "!",
+	UopBitwiseNot: "~",
+	UopPlus:       "+",
+	UopMinus:      "-",
 }
 
-var uopMap = map[string]unaryOp{
-	"!": uopNot,
-	"~": uopBitwiseNot,
-	"+": uopPlus,
-	"-": uopMinus,
+var uopMap = map[string]UnaryOp{
+	"!": UopNot,
+	"~": UopBitwiseNot,
+	"+": UopPlus,
+	"-": UopMinus,
 }
 
-func (u unaryOp) String() string {
+func (u UnaryOp) String() string {
 	if u < 0 || int(u) >= len(uopStrings) {
 		panic(fmt.Sprintf("INTERNAL ERROR: Unrecognised unary operator: %d", u))
 	}
 	return uopStrings[u]
 }
 
-// astUnary represents unary operators.
-type astUnary struct {
-	astNodeBase
-	op   unaryOp
-	expr astNode
+// Unary represents unary operators.
+type Unary struct {
+	nodeBase
+	Op   UnaryOp
+	Expr Node
 }
 
 // ---------------------------------------------------------------------------
 
-// astVar represents variables.
-type astVar struct {
-	astNodeBase
-	id identifier
+// Var represents variables.
+type Var struct {
+	nodeBase
+	Id Identifier
 }
 
 // ---------------------------------------------------------------------------

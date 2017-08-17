@@ -8,12 +8,12 @@ package jsonnet
 // The MIT License (MIT)
 // Copyright (c) 2013 Ralph Caraveo (deckarep@gmail.com)
 
-// identifierSet is the primary type that represents a set
-type identifierSet map[identifier]struct{}
+// IdentifierSet is the primary type that represents a set
+type IdentifierSet map[Identifier]struct{}
 
-// NewidentifierSet creates and returns a reference to an empty set.
-func NewidentifierSet(a ...identifier) identifierSet {
-	s := make(identifierSet)
+// NewIdentifierSet creates and returns a reference to an empty set.
+func NewIdentifierSet(a ...Identifier) IdentifierSet {
+	s := make(IdentifierSet)
 	for _, i := range a {
 		s.Add(i)
 	}
@@ -21,8 +21,8 @@ func NewidentifierSet(a ...identifier) identifierSet {
 }
 
 // ToSlice returns the elements of the current set as a slice
-func (set identifierSet) ToSlice() []identifier {
-	var s []identifier
+func (set IdentifierSet) ToSlice() []Identifier {
+	var s []Identifier
 	for v := range set {
 		s = append(s, v)
 	}
@@ -30,20 +30,20 @@ func (set identifierSet) ToSlice() []identifier {
 }
 
 // Add adds an item to the current set if it doesn't already exist in the set.
-func (set identifierSet) Add(i identifier) bool {
+func (set IdentifierSet) Add(i Identifier) bool {
 	_, found := set[i]
 	set[i] = struct{}{}
 	return !found //False if it existed already
 }
 
 // Contains determines if a given item is already in the set.
-func (set identifierSet) Contains(i identifier) bool {
+func (set IdentifierSet) Contains(i Identifier) bool {
 	_, found := set[i]
 	return found
 }
 
 // ContainsAll determines if the given items are all in the set
-func (set identifierSet) ContainsAll(i ...identifier) bool {
+func (set IdentifierSet) ContainsAll(i ...Identifier) bool {
 	for _, v := range i {
 		if !set.Contains(v) {
 			return false
@@ -53,7 +53,7 @@ func (set identifierSet) ContainsAll(i ...identifier) bool {
 }
 
 // IsSubset determines if every item in the other set is in this set.
-func (set identifierSet) IsSubset(other identifierSet) bool {
+func (set IdentifierSet) IsSubset(other IdentifierSet) bool {
 	for elem := range set {
 		if !other.Contains(elem) {
 			return false
@@ -63,13 +63,13 @@ func (set identifierSet) IsSubset(other identifierSet) bool {
 }
 
 // IsSuperset determines if every item of this set is in the other set.
-func (set identifierSet) IsSuperset(other identifierSet) bool {
+func (set IdentifierSet) IsSuperset(other IdentifierSet) bool {
 	return other.IsSubset(set)
 }
 
 // Union returns a new set with all items in both sets.
-func (set identifierSet) Union(other identifierSet) identifierSet {
-	unionedSet := NewidentifierSet()
+func (set IdentifierSet) Union(other IdentifierSet) IdentifierSet {
+	unionedSet := NewIdentifierSet()
 
 	for elem := range set {
 		unionedSet.Add(elem)
@@ -81,8 +81,8 @@ func (set identifierSet) Union(other identifierSet) identifierSet {
 }
 
 // Intersect returns a new set with items that exist only in both sets.
-func (set identifierSet) Intersect(other identifierSet) identifierSet {
-	intersection := NewidentifierSet()
+func (set IdentifierSet) Intersect(other IdentifierSet) IdentifierSet {
+	intersection := NewIdentifierSet()
 	// loop over smaller set
 	if set.Cardinality() < other.Cardinality() {
 		for elem := range set {
@@ -101,8 +101,8 @@ func (set identifierSet) Intersect(other identifierSet) identifierSet {
 }
 
 // Difference returns a new set with items in the current set but not in the other set
-func (set identifierSet) Difference(other identifierSet) identifierSet {
-	differencedSet := NewidentifierSet()
+func (set IdentifierSet) Difference(other IdentifierSet) IdentifierSet {
+	differencedSet := NewIdentifierSet()
 	for elem := range set {
 		if !other.Contains(elem) {
 			differencedSet.Add(elem)
@@ -112,30 +112,30 @@ func (set identifierSet) Difference(other identifierSet) identifierSet {
 }
 
 // SymmetricDifference returns a new set with items in the current set or the other set but not in both.
-func (set identifierSet) SymmetricDifference(other identifierSet) identifierSet {
+func (set IdentifierSet) SymmetricDifference(other IdentifierSet) IdentifierSet {
 	aDiff := set.Difference(other)
 	bDiff := other.Difference(set)
 	return aDiff.Union(bDiff)
 }
 
 // Clear clears the entire set to be the empty set.
-func (set *identifierSet) Clear() {
-	*set = make(identifierSet)
+func (set *IdentifierSet) Clear() {
+	*set = make(IdentifierSet)
 }
 
 // Remove allows the removal of a single item in the set.
-func (set identifierSet) Remove(i identifier) {
+func (set IdentifierSet) Remove(i Identifier) {
 	delete(set, i)
 }
 
 // Cardinality returns how many items are currently in the set.
-func (set identifierSet) Cardinality() int {
+func (set IdentifierSet) Cardinality() int {
 	return len(set)
 }
 
 // Iter returns a channel of type identifier that you can range over.
-func (set identifierSet) Iter() <-chan identifier {
-	ch := make(chan identifier)
+func (set IdentifierSet) Iter() <-chan Identifier {
+	ch := make(chan Identifier)
 	go func() {
 		for elem := range set {
 			ch <- elem
@@ -149,7 +149,7 @@ func (set identifierSet) Iter() <-chan identifier {
 // Equal determines if two sets are equal to each other.
 // If they both are the same size and have the same items they are considered equal.
 // Order of items is not relevent for sets to be equal.
-func (set identifierSet) Equal(other identifierSet) bool {
+func (set IdentifierSet) Equal(other IdentifierSet) bool {
 	if set.Cardinality() != other.Cardinality() {
 		return false
 	}
@@ -163,8 +163,8 @@ func (set identifierSet) Equal(other identifierSet) bool {
 
 // Clone returns a clone of the set.
 // Does NOT clone the underlying elements.
-func (set identifierSet) Clone() identifierSet {
-	clonedSet := NewidentifierSet()
+func (set IdentifierSet) Clone() IdentifierSet {
+	clonedSet := NewIdentifierSet()
 	for elem := range set {
 		clonedSet.Add(elem)
 	}

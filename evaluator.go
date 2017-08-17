@@ -140,15 +140,15 @@ func (e *evaluator) evaluateObject(pv potentialValue) (valueObject, error) {
 	return e.getObject(v)
 }
 
-func (e *evaluator) evalInCurrentContext(a astNode) (value, error) {
+func (e *evaluator) evalInCurrentContext(a Node) (value, error) {
 	return e.i.evaluate(a, e.trace.context)
 }
 
-func (e *evaluator) evalInCleanEnv(newContext *TraceContext, env *environment, ast astNode) (value, error) {
+func (e *evaluator) evalInCleanEnv(newContext *TraceContext, env *environment, ast Node) (value, error) {
 	return e.i.EvalInCleanEnv(e.trace, newContext, env, ast)
 }
 
-func (e *evaluator) lookUpVar(ident identifier) potentialValue {
+func (e *evaluator) lookUpVar(ident Identifier) potentialValue {
 	th := e.i.stack.lookUpVar(ident)
 	if th == nil {
 		panic(fmt.Sprintf("RUNTIME: Unknown variable: %v (we should have caught this statically)", ident))

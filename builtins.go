@@ -250,12 +250,12 @@ type unaryBuiltin func(*evaluator, potentialValue) (value, error)
 type binaryBuiltin func(*evaluator, potentialValue, potentialValue) (value, error)
 
 type UnaryBuiltin struct {
-	name       identifier
+	name       Identifier
 	function   unaryBuiltin
-	parameters identifiers
+	parameters Identifiers
 }
 
-func getBuiltinEvaluator(e *evaluator, name identifier) *evaluator {
+func getBuiltinEvaluator(e *evaluator, name Identifier) *evaluator {
 	loc := makeLocationRangeMessage("<builtin>")
 	context := TraceContext{Name: "builtin function <" + string(name) + ">"}
 	trace := TraceElement{loc: &loc, context: &context}
@@ -268,14 +268,14 @@ func (b *UnaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error)
 	return b.function(getBuiltinEvaluator(e, b.name), args.positional[0])
 }
 
-func (b *UnaryBuiltin) Parameters() identifiers {
+func (b *UnaryBuiltin) Parameters() Identifiers {
 	return b.parameters
 }
 
 type BinaryBuiltin struct {
-	name       identifier
+	name       Identifier
 	function   binaryBuiltin
-	parameters identifiers
+	parameters Identifiers
 }
 
 func (b *BinaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
@@ -283,7 +283,7 @@ func (b *BinaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error
 	return b.function(getBuiltinEvaluator(e, b.name), args.positional[0], args.positional[1])
 }
 
-func (b *BinaryBuiltin) Parameters() identifiers {
+func (b *BinaryBuiltin) Parameters() Identifiers {
 	return b.parameters
 }
 
@@ -292,52 +292,52 @@ func todoFunc(e *evaluator, x, y potentialValue) (value, error) {
 }
 
 // so that we don't get segfaults
-var todo = &BinaryBuiltin{function: todoFunc, parameters: identifiers{"x", "y"}}
+var todo = &BinaryBuiltin{function: todoFunc, parameters: Identifiers{"x", "y"}}
 
-var desugaredBop = map[binaryOp]identifier{
+var desugaredBop = map[BinaryOp]Identifier{
 	//bopPercent,
-	bopManifestEqual:   "equals",
-	bopManifestUnequal: "notEquals", // Special case
+	BopManifestEqual:   "equals",
+	BopManifestUnequal: "notEquals", // Special case
 }
 
 var bopBuiltins = []*BinaryBuiltin{
-	bopMult:    todo,
-	bopDiv:     todo,
-	bopPercent: todo,
+	BopMult:    todo,
+	BopDiv:     todo,
+	BopPercent: todo,
 
-	bopPlus:  &BinaryBuiltin{name: "operator+", function: builtinPlus, parameters: identifiers{"x", "y"}},
-	bopMinus: &BinaryBuiltin{name: "operator-", function: builtinMinus, parameters: identifiers{"x", "y"}},
+	BopPlus:  &BinaryBuiltin{name: "operator+", function: builtinPlus, parameters: Identifiers{"x", "y"}},
+	BopMinus: &BinaryBuiltin{name: "operator-", function: builtinMinus, parameters: Identifiers{"x", "y"}},
 
-	bopShiftL: todo,
-	bopShiftR: todo,
+	BopShiftL: todo,
+	BopShiftR: todo,
 
-	bopGreater:   &BinaryBuiltin{name: "operator>", function: builtinGreater, parameters: identifiers{"x", "y"}},
-	bopGreaterEq: &BinaryBuiltin{name: "operator>=", function: builtinGreaterEq, parameters: identifiers{"x", "y"}},
-	bopLess:      &BinaryBuiltin{name: "operator<,", function: builtinLess, parameters: identifiers{"x", "y"}},
-	bopLessEq:    &BinaryBuiltin{name: "operator<=", function: builtinLessEq, parameters: identifiers{"x", "y"}},
+	BopGreater:   &BinaryBuiltin{name: "operator>", function: builtinGreater, parameters: Identifiers{"x", "y"}},
+	BopGreaterEq: &BinaryBuiltin{name: "operator>=", function: builtinGreaterEq, parameters: Identifiers{"x", "y"}},
+	BopLess:      &BinaryBuiltin{name: "operator<,", function: builtinLess, parameters: Identifiers{"x", "y"}},
+	BopLessEq:    &BinaryBuiltin{name: "operator<=", function: builtinLessEq, parameters: Identifiers{"x", "y"}},
 
-	bopManifestEqual:   todo,
-	bopManifestUnequal: todo,
+	BopManifestEqual:   todo,
+	BopManifestUnequal: todo,
 
-	bopBitwiseAnd: todo,
-	bopBitwiseXor: todo,
-	bopBitwiseOr:  todo,
+	BopBitwiseAnd: todo,
+	BopBitwiseXor: todo,
+	BopBitwiseOr:  todo,
 
-	bopAnd: &BinaryBuiltin{name: "operator&&", function: builtinAnd, parameters: identifiers{"x", "y"}},
-	bopOr:  todo,
+	BopAnd: &BinaryBuiltin{name: "operator&&", function: builtinAnd, parameters: Identifiers{"x", "y"}},
+	BopOr:  todo,
 }
 
 var uopBuiltins = []*UnaryBuiltin{
-	uopNot:        &UnaryBuiltin{name: "operator!", function: builtinNegation, parameters: identifiers{"x"}},
-	uopBitwiseNot: &UnaryBuiltin{name: "operator~", function: builtinBitNeg, parameters: identifiers{"x"}},
-	uopPlus:       &UnaryBuiltin{name: "operator+ (unary)", function: builtinIdentity, parameters: identifiers{"x"}},
-	uopMinus:      &UnaryBuiltin{name: "operator- (unary)", function: builtinUnaryMinus, parameters: identifiers{"x"}},
+	UopNot:        &UnaryBuiltin{name: "operator!", function: builtinNegation, parameters: Identifiers{"x"}},
+	UopBitwiseNot: &UnaryBuiltin{name: "operator~", function: builtinBitNeg, parameters: Identifiers{"x"}},
+	UopPlus:       &UnaryBuiltin{name: "operator+ (unary)", function: builtinIdentity, parameters: Identifiers{"x"}},
+	UopMinus:      &UnaryBuiltin{name: "operator- (unary)", function: builtinUnaryMinus, parameters: Identifiers{"x"}},
 }
 
 // TODO(sbarzowski) eliminate duplication in function names (e.g. build map from array or constants)
 var funcBuiltins = map[string]evalCallable{
-	"length":          &UnaryBuiltin{name: "length", function: builtinLength, parameters: identifiers{"x"}},
-	"makeArray":       &BinaryBuiltin{name: "makeArray", function: builtinMakeArray, parameters: identifiers{"sz", "func"}},
-	"primitiveEquals": &BinaryBuiltin{name: "primitiveEquals", function: primitiveEquals, parameters: identifiers{"sz", "func"}},
-	"type":            &UnaryBuiltin{name: "type", function: builtinType, parameters: identifiers{"x"}},
+	"length":          &UnaryBuiltin{name: "length", function: builtinLength, parameters: Identifiers{"x"}},
+	"makeArray":       &BinaryBuiltin{name: "makeArray", function: builtinMakeArray, parameters: Identifiers{"sz", "func"}},
+	"primitiveEquals": &BinaryBuiltin{name: "primitiveEquals", function: primitiveEquals, parameters: Identifiers{"sz", "func"}},
+	"type":            &UnaryBuiltin{name: "type", function: builtinType, parameters: Identifiers{"x"}},
 }

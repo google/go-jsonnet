@@ -166,7 +166,7 @@ func (s *callStack) getSelfBinding() selfBinding {
 }
 
 // lookUpVar finds for the closest variable in scope that matches the given name.
-func (s *callStack) lookUpVar(id identifier) potentialValue {
+func (s *callStack) lookUpVar(id Identifier) potentialValue {
 	for i := len(s.stack) - 1; i >= 0; i-- {
 		bind := s.stack[i].env.upValues[id]
 		if bind != nil {
@@ -193,8 +193,8 @@ func makeCallStack(limit int) callStack {
 // Keeps current execution context and evaluates things
 type interpreter struct {
 	stack          callStack  // TODO what is it?
-	idArrayElement identifier // TODO what is it?
-	idInvariant    identifier // TODO what is it?
+	idArrayElement Identifier // TODO what is it?
+	idInvariant    Identifier // TODO what is it?
 	externalVars   vmExtMap   // TODO what is it?
 
 	initialEnv  environment
@@ -202,7 +202,7 @@ type interpreter struct {
 }
 
 // Build a binding frame containing specified variables.
-func (i *interpreter) capture(freeVars identifiers) bindingFrame {
+func (i *interpreter) capture(freeVars Identifiers) bindingFrame {
 	env := make(bindingFrame)
 	for _, fv := range freeVars {
 		env[fv] = i.stack.lookUpVar(fv)
@@ -227,14 +227,14 @@ func addBindings(a, b bindingFrame) bindingFrame {
 	return result
 }
 
-func (i *interpreter) getCurrentEnv(ast astNode) environment {
+func (i *interpreter) getCurrentEnv(ast Node) environment {
 	return makeEnvironment(
 		i.capture(ast.FreeVariables()),
 		i.stack.getSelfBinding(),
 	)
 }
 
-func (i *interpreter) evaluate(a astNode, context *TraceContext) (value, error) {
+func (i *interpreter) evaluate(a Node, context *TraceContext) (value, error) {
 	// TODO(dcunnin): All the other cases...
 
 	e := &evaluator{
@@ -246,27 +246,27 @@ func (i *interpreter) evaluate(a astNode, context *TraceContext) (value, error) 
 	}
 
 	switch ast := a.(type) {
-	case *astArray:
+	case *Array:
 		sb := i.stack.getSelfBinding()
 		var elements []potentialValue
-		for _, el := range ast.elements {
+		for _, el := range ast.Elements {
 			env := makeEnvironment(i.capture(el.FreeVariables()), sb)
 			elThunk := makeThunk(i.idArrayElement, env, el)
 			elements = append(elements, elThunk)
 		}
 		return makeValueArray(elements), nil
 
-	case *astBinary:
+	case *Binary:
 		// Some binary operators are lazy, so thunks are needed in general
 		env := i.getCurrentEnv(ast)
 		// TODO(sbarzowski) make sure it displays nicely in stack trace (thunk names etc.)
 		// TODO(sbarzowski) it may make sense not to show a line in stack trace for operators
 		// 					at all in many cases. 1 + 2 + 3 + 4 + error "x" will show 5 lines
 		//					of stack trace now, and it's not that nice.
-		left := makeThunk("x", env, ast.left)
-		right := makeThunk("y", env, ast.right)
+		left := makeThunk("x", env, ast.Left)
+		right := makeThunk("y", env, ast.Right)
 
-		builtin := bopBuiltins[ast.op]
+		builtin := bopBuiltins[ast.Op]
 
 		result, err := builtin.function(e, left, right)
 		if err != nil {
@@ -274,11 +274,11 @@ func (i *interpreter) evaluate(a astNode, context *TraceContext) (value, error) 
 		}
 		return result, nil
 
-	case *astUnary:
+	case *Unary:
 		env := i.getCurrentEnv(ast)
-		arg := makeThunk("x", env, ast.expr)
+		arg := makeThunk("x", env, ast.Expr)
 
-		builtin := uopBuiltins[ast.op]
+		builtin := uopBuiltins[ast.Op]
 
 		result, err := builtin.function(e, arg)
 		if err != nil {
@@ -286,8 +286,8 @@ func (i *interpreter) evaluate(a astNode, context *TraceContext) (value, error) 
 		}
 		return result, nil
 
-	case *astConditional:
-		cond, err := e.evalInCurrentContext(ast.cond)
+	case *Conditional:
+		cond, err := e.evalInCurrentContext(ast.Cond)
 		if err != nil {
 			return nil, err
 		}
@@ -296,15 +296,15 @@ func (i *interpreter) evaluate(a astNode, context *TraceContext) (value, error) 
 			return nil, err
 		}
 		if condBool.value {
-			return e.evalInCurrentContext(ast.branchTrue)
+			return e.evalInCurrentContext(ast.BranchTrue)
 		}
-		return e.evalInCurrentContext(ast.branchFalse)
+		return e.evalInCurrentContext(ast.BranchFalse)
 
-	case *astDesugaredObject:
+	case *DesugaredObject:
 		// Evaluate all the field names.  Check for null, dups, etc.
 		fields := make(valueSimpleObjectFieldMap)
-		for _, field := range ast.fields {
-			fieldNameValue, err := e.evalInCurrentContext(field.name)
+		for _, field := range ast.Fields {
+			fieldNameValue, err := e.evalInCurrentContext(field.Name)
 			if err != nil {
 				return nil, err
 			}
@@ -322,13 +322,13 @@ func (i *interpreter) evaluate(a astNode, context *TraceContext) (value, error) 
 			if _, ok := fields[fieldName]; ok {
 				return nil, e.Error(fmt.Sprintf("Duplicate field name: \"%s\"", fieldName))
 			}
-			fields[fieldName] = valueSimpleObjectField{field.hide, &codeUnboundField{field.body}}
+			fields[fieldName] = valueSimpleObjectField{field.Hide, &codeUnboundField{field.Body}}
 		}
 		upValues := i.capture(ast.FreeVariables())
-		return makeValueSimpleObject(upValues, fields, ast.asserts), nil
+		return makeValueSimpleObject(upValues, fields, ast.Asserts), nil
 
-	case *astError:
-		msgVal, err := e.evalInCurrentContext(ast.expr)
+	case *Error:
+		msgVal, err := e.evalInCurrentContext(ast.Expr)
 		if err != nil {
 			// error when evaluating error message
 			return nil, err
@@ -339,12 +339,12 @@ func (i *interpreter) evaluate(a astNode, context *TraceContext) (value, error) 
 		}
 		return nil, e.Error(msg.value)
 
-	case *astIndex:
-		targetValue, err := e.evalInCurrentContext(ast.target)
+	case *Index:
+		targetValue, err := e.evalInCurrentContext(ast.Target)
 		if err != nil {
 			return nil, err
 		}
-		index, err := e.evalInCurrentContext(ast.index)
+		index, err := e.evalInCurrentContext(ast.Index)
 		if err != nil {
 			return nil, err
 		}
@@ -360,54 +360,54 @@ func (i *interpreter) evaluate(a astNode, context *TraceContext) (value, error) 
 
 		return nil, e.Error(fmt.Sprintf("Value non indexable: %v", reflect.TypeOf(targetValue)))
 
-	case *astImport:
+	case *Import:
 		// TODO(sbarzowski) put this information in AST instead of getting it out of tracing data...
 		codeDir := path.Dir(e.trace.loc.FileName)
-		return i.importCache.ImportCode(codeDir, ast.file, e)
+		return i.importCache.ImportCode(codeDir, ast.File, e)
 
-	case *astImportStr:
+	case *ImportStr:
 		// TODO(sbarzowski) put this information in AST instead of getting it out of tracing data...
 		codeDir := path.Dir(e.trace.loc.FileName)
-		return i.importCache.ImportString(codeDir, ast.file)
+		return i.importCache.ImportString(codeDir, ast.File)
 
-	case *astLiteralBoolean:
-		return makeValueBoolean(ast.value), nil
+	case *LiteralBoolean:
+		return makeValueBoolean(ast.Value), nil
 
-	case *astLiteralNull:
+	case *LiteralNull:
 		return makeValueNull(), nil
 
-	case *astLiteralNumber:
-		return makeValueNumber(ast.value), nil
+	case *LiteralNumber:
+		return makeValueNumber(ast.Value), nil
 
-	case *astLiteralString:
-		return makeValueString(ast.value), nil
+	case *LiteralString:
+		return makeValueString(ast.Value), nil
 
-	case *astLocal:
+	case *Local:
 		vars := make(bindingFrame)
 		bindEnv := i.getCurrentEnv(a)
-		for _, bind := range ast.binds {
-			th := makeThunk(bind.variable, bindEnv, bind.body)
+		for _, bind := range ast.Binds {
+			th := makeThunk(bind.Variable, bindEnv, bind.Body)
 
 			// recursive locals
-			vars[bind.variable] = th
-			bindEnv.upValues[bind.variable] = th
+			vars[bind.Variable] = th
+			bindEnv.upValues[bind.Variable] = th
 		}
 		i.newLocal(vars)
 		// Add new stack frame, with new thunk for this variable
 		// execute body WRT stack frame.
-		v, err := e.evalInCurrentContext(ast.body)
+		v, err := e.evalInCurrentContext(ast.Body)
 		i.stack.pop()
 		return v, err
 
-	case *astSelf:
+	case *Self:
 		sb := i.stack.getSelfBinding()
 		return sb.self, nil
 
-	case *astVar:
-		return e.evaluate(e.lookUpVar(ast.id))
+	case *Var:
+		return e.evaluate(e.lookUpVar(ast.Id))
 
-	case *astSuperIndex:
-		index, err := e.evalInCurrentContext(ast.index)
+	case *SuperIndex:
+		index, err := e.evalInCurrentContext(ast.Index)
 		if err != nil {
 			return nil, err
 		}
@@ -417,14 +417,14 @@ func (i *interpreter) evaluate(a astNode, context *TraceContext) (value, error) 
 		}
 		return superIndex(e, i.stack.getSelfBinding(), indexStr.value)
 
-	case *astFunction:
+	case *Function:
 		return &valueFunction{
 			ec: makeClosure(i.getCurrentEnv(a), ast),
 		}, nil
 
-	case *astApply:
+	case *Apply:
 		// Eval target
-		target, err := e.evalInCurrentContext(ast.target)
+		target, err := e.evalInCurrentContext(ast.Target)
 		if err != nil {
 			return nil, err
 		}
@@ -437,9 +437,9 @@ func (i *interpreter) evaluate(a astNode, context *TraceContext) (value, error) 
 		argEnv := i.getCurrentEnv(a)
 
 		arguments := callArguments{
-			positional: make([]potentialValue, len(ast.arguments)),
+			positional: make([]potentialValue, len(ast.Arguments)),
 		}
-		for i, arg := range ast.arguments {
+		for i, arg := range ast.Arguments {
 			// TODO(sbarzowski) better thunk name
 			arguments.positional[i] = makeThunk("arg", argEnv, arg)
 		}
@@ -625,7 +625,7 @@ func (i *interpreter) manifestJSON(trace *TraceElement, v value, multiline bool,
 }
 
 func (i *interpreter) EvalInCleanEnv(fromWhere *TraceElement, newContext *TraceContext,
-	env *environment, ast astNode) (value, error) {
+	env *environment, ast Node) (value, error) {
 	err := i.newCall(fromWhere, *env)
 	if err != nil {
 		return nil, err
@@ -648,7 +648,7 @@ func buildStdObject(i *interpreter) (value, error) {
 	}
 
 	for name, value := range builtinFields {
-		obj.fields[name] = valueSimpleObjectField{astObjectFieldHidden, value}
+		obj.fields[name] = valueSimpleObjectField{ObjectFieldHidden, value}
 	}
 	return obj, nil
 }
@@ -671,8 +671,8 @@ func evaluateStd(i *interpreter) (value, error) {
 func buildInterpreter(ext vmExtMap, maxStack int, importer Importer) (*interpreter, error) {
 	i := interpreter{
 		stack:          makeCallStack(maxStack),
-		idArrayElement: identifier("array_element"),
-		idInvariant:    identifier("object_assert"),
+		idArrayElement: Identifier("array_element"),
+		idInvariant:    Identifier("object_assert"),
 		externalVars:   ext,
 
 		importCache: MakeImportCache(importer),
@@ -692,7 +692,7 @@ func buildInterpreter(ext vmExtMap, maxStack int, importer Importer) (*interpret
 	return &i, nil
 }
 
-func evaluate(ast astNode, ext vmExtMap, maxStack int, importer Importer) (string, error) {
+func evaluate(ast Node, ext vmExtMap, maxStack int, importer Importer) (string, error) {
 	i, err := buildInterpreter(ext, maxStack, importer)
 	if err != nil {
 		return "", err
