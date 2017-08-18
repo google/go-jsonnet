@@ -19,35 +19,37 @@ package jsonnet
 import (
 	"fmt"
 	"strconv"
+
+	"github.com/google/go-jsonnet/ast"
 )
 
 type precedence int
 
 const (
-	applyPrecedence precedence = 2  // Function calls and indexing.
+	applyPrecedence precedence = 2  // ast.Function calls and indexing.
 	unaryPrecedence precedence = 4  // Logical and bitwise negation, unary + -
-	maxPrecedence   precedence = 16 // Local, If, Import, Function, Error
+	maxPrecedence   precedence = 16 // ast.Local, If, ast.Import, ast.Function, Error
 )
 
-var bopPrecedence = map[BinaryOp]precedence{
-	BopMult:            5,
-	BopDiv:             5,
-	BopPercent:         5,
-	BopPlus:            6,
-	BopMinus:           6,
-	BopShiftL:          7,
-	BopShiftR:          7,
-	BopGreater:         8,
-	BopGreaterEq:       8,
-	BopLess:            8,
-	BopLessEq:          8,
-	BopManifestEqual:   9,
-	BopManifestUnequal: 9,
-	BopBitwiseAnd:      10,
-	BopBitwiseXor:      11,
-	BopBitwiseOr:       12,
-	BopAnd:             13,
-	BopOr:              14,
+var bopPrecedence = map[ast.BinaryOp]precedence{
+	ast.BopMult:            5,
+	ast.BopDiv:             5,
+	ast.BopPercent:         5,
+	ast.BopPlus:            6,
+	ast.BopMinus:           6,
+	ast.BopShiftL:          7,
+	ast.BopShiftR:          7,
+	ast.BopGreater:         8,
+	ast.BopGreaterEq:       8,
+	ast.BopLess:            8,
+	ast.BopLessEq:          8,
+	ast.BopManifestEqual:   9,
+	ast.BopManifestUnequal: 9,
+	ast.BopBitwiseAnd:      10,
+	ast.BopBitwiseXor:      11,
+	ast.BopBitwiseOr:       12,
+	ast.BopAnd:             13,
+	ast.BopOr:              14,
 }
 
 // ---------------------------------------------------------------------------
@@ -57,12 +59,12 @@ func makeUnexpectedError(t *token, while string) error {
 		fmt.Sprintf("Unexpected: %v while %v", t, while), t.loc)
 }
 
-func locFromTokens(begin, end *token) LocationRange {
-	return makeLocationRange(begin.loc.FileName, begin.loc.Begin, end.loc.End)
+func locFromTokens(begin, end *token) ast.LocationRange {
+	return ast.MakeLocationRange(begin.loc.FileName, begin.loc.Begin, end.loc.End)
 }
 
-func locFromTokenAST(begin *token, end Node) LocationRange {
-	return makeLocationRange(begin.loc.FileName, begin.loc.Begin, end.Loc().End)
+func locFromTokenAST(begin *token, end ast.Node) ast.LocationRange {
+	return ast.MakeLocationRange(begin.loc.FileName, begin.loc.Begin, end.Loc().End)
 }
 
 // ---------------------------------------------------------------------------
@@ -112,24 +114,24 @@ func (p *parser) peek() *token {
 	return &p.t[p.currT]
 }
 
-func (p *parser) parseIdentifierList(elementKind string) (Identifiers, bool, error) {
+func (p *parser) parseIdentifierList(elementKind string) (ast.Identifiers, bool, error) {
 	_, exprs, gotComma, err := p.parseCommaList(tokenParenR, elementKind)
 	if err != nil {
-		return Identifiers{}, false, err
+		return ast.Identifiers{}, false, err
 	}
-	var ids Identifiers
+	var ids ast.Identifiers
 	for _, n := range exprs {
-		v, ok := n.(*Var)
+		v, ok := n.(*ast.Var)
 		if !ok {
-			return Identifiers{}, false, makeStaticError(fmt.Sprintf("Expected simple identifier but got a complex expression."), *n.Loc())
+			return ast.Identifiers{}, false, makeStaticError(fmt.Sprintf("Expected simple identifier but got a complex expression."), *n.Loc())
 		}
 		ids = append(ids, v.Id)
 	}
 	return ids, gotComma, nil
 }
 
-func (p *parser) parseCommaList(end tokenKind, elementKind string) (*token, Nodes, bool, error) {
-	var exprs Nodes
+func (p *parser) parseCommaList(end tokenKind, elementKind string) (*token, ast.Nodes, bool, error) {
+	var exprs ast.Nodes
 	gotComma := false
 	first := true
 	for {
@@ -160,13 +162,13 @@ func (p *parser) parseCommaList(end tokenKind, elementKind string) (*token, Node
 	}
 }
 
-func (p *parser) parseBind(binds *LocalBinds) error {
+func (p *parser) parseBind(binds *ast.LocalBinds) error {
 	varID, err := p.popExpect(tokenIdentifier)
 	if err != nil {
 		return err
 	}
 	for _, b := range *binds {
-		if b.Variable == Identifier(varID.data) {
+		if b.Variable == ast.Identifier(varID.data) {
 			return makeStaticError(fmt.Sprintf("Duplicate local var: %v", varID.data), varID.loc)
 		}
 	}
@@ -185,8 +187,8 @@ func (p *parser) parseBind(binds *LocalBinds) error {
 		if err != nil {
 			return err
 		}
-		*binds = append(*binds, LocalBind{
-			Variable:      Identifier(varID.data),
+		*binds = append(*binds, ast.LocalBind{
+			Variable:      ast.Identifier(varID.data),
 			Body:          body,
 			FunctionSugar: true,
 			Params:        params,
@@ -201,8 +203,8 @@ func (p *parser) parseBind(binds *LocalBinds) error {
 		if err != nil {
 			return err
 		}
-		*binds = append(*binds, LocalBind{
-			Variable: Identifier(varID.data),
+		*binds = append(*binds, ast.LocalBind{
+			Variable: ast.Identifier(varID.data),
 			Body:     body,
 		})
 	}
@@ -210,7 +212,7 @@ func (p *parser) parseBind(binds *LocalBinds) error {
 	return nil
 }
 
-func (p *parser) parseObjectAssignmentOp() (plusSugar bool, hide ObjectFieldHide, err error) {
+func (p *parser) parseObjectAssignmentOp() (plusSugar bool, hide ast.ObjectFieldHide, err error) {
 	op, err := p.popExpect(tokenOperator)
 	if err != nil {
 		return
@@ -234,11 +236,11 @@ func (p *parser) parseObjectAssignmentOp() (plusSugar bool, hide ObjectFieldHide
 
 	switch numColons {
 	case 1:
-		hide = ObjectFieldInherit
+		hide = ast.ObjectFieldInherit
 	case 2:
-		hide = ObjectFieldHidden
+		hide = ast.ObjectFieldHidden
 	case 3:
-		hide = ObjectFieldVisible
+		hide = ast.ObjectFieldVisible
 	default:
 		err = makeStaticError(
 			fmt.Sprintf("Expected one of :, ::, :::, +:, +::, +:::, got: %v", op.data), op.loc)
@@ -251,10 +253,10 @@ func (p *parser) parseObjectAssignmentOp() (plusSugar bool, hide ObjectFieldHide
 // +gen set
 type literalField string
 
-func (p *parser) parseObjectRemainder(tok *token) (Node, *token, error) {
-	var fields ObjectFields
+func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
+	var fields ast.ObjectFields
 	literalFields := make(literalFieldSet)
-	binds := make(IdentifierSet)
+	binds := make(ast.IdentifierSet)
 
 	gotComma := false
 	first := true
@@ -269,8 +271,8 @@ func (p *parser) parseObjectRemainder(tok *token) (Node, *token, error) {
 		}
 
 		if next.kind == tokenBraceR {
-			return &Object{
-				nodeBase:      nodeBase{loc: locFromTokens(tok, next)},
+			return &ast.Object{
+				NodeBase:      ast.NewNodeBaseLoc(locFromTokens(tok, next)),
 				Fields:        fields,
 				TrailingComma: gotComma,
 			}, next, nil
@@ -280,12 +282,12 @@ func (p *parser) parseObjectRemainder(tok *token) (Node, *token, error) {
 			// It's a comprehension
 			numFields := 0
 			numAsserts := 0
-			var field ObjectField
+			var field ast.ObjectField
 			for _, f := range fields {
-				if f.Kind == ObjectLocal {
+				if f.Kind == ast.ObjectLocal {
 					continue
 				}
-				if f.Kind == ObjectAssert {
+				if f.Kind == ast.ObjectAssert {
 					numAsserts++
 					continue
 				}
@@ -299,18 +301,18 @@ func (p *parser) parseObjectRemainder(tok *token) (Node, *token, error) {
 			if numFields != 1 {
 				return nil, nil, makeStaticError("Object comprehension can only have one field.", next.loc)
 			}
-			if field.Hide != ObjectFieldInherit {
+			if field.Hide != ast.ObjectFieldInherit {
 				return nil, nil, makeStaticError("Object comprehensions cannot have hidden fields.", next.loc)
 			}
-			if field.Kind != ObjectFieldExpr {
+			if field.Kind != ast.ObjectFieldExpr {
 				return nil, nil, makeStaticError("Object comprehensions can only have [e] fields.", next.loc)
 			}
 			specs, last, err := p.parseComprehensionSpecs(tokenBraceR)
 			if err != nil {
 				return nil, nil, err
 			}
-			return &ObjectComp{
-				nodeBase:      nodeBase{loc: locFromTokens(tok, last)},
+			return &ast.ObjectComp{
+				NodeBase:      ast.NewNodeBaseLoc(locFromTokens(tok, last)),
 				Fields:        fields,
 				TrailingComma: gotComma,
 				Specs:         *specs,
@@ -324,39 +326,39 @@ func (p *parser) parseObjectRemainder(tok *token) (Node, *token, error) {
 
 		switch next.kind {
 		case tokenBracketL, tokenIdentifier, tokenStringDouble, tokenStringSingle, tokenStringBlock:
-			var kind ObjectFieldKind
-			var expr1 Node
-			var id *Identifier
+			var kind ast.ObjectFieldKind
+			var expr1 ast.Node
+			var id *ast.Identifier
 			switch next.kind {
 			case tokenIdentifier:
-				kind = ObjectFieldID
-				id = (*Identifier)(&next.data)
+				kind = ast.ObjectFieldID
+				id = (*ast.Identifier)(&next.data)
 			case tokenStringDouble:
-				kind = ObjectFieldStr
-				expr1 = &LiteralString{
-					nodeBase: nodeBase{loc: next.loc},
+				kind = ast.ObjectFieldStr
+				expr1 = &ast.LiteralString{
+					NodeBase: ast.NewNodeBaseLoc(next.loc),
 					Value:    next.data,
-					Kind:     StringDouble,
+					Kind:     ast.StringDouble,
 				}
 			case tokenStringSingle:
-				kind = ObjectFieldStr
-				expr1 = &LiteralString{
-					nodeBase: nodeBase{loc: next.loc},
+				kind = ast.ObjectFieldStr
+				expr1 = &ast.LiteralString{
+					NodeBase: ast.NewNodeBaseLoc(next.loc),
 					Value:    next.data,
-					Kind:     StringSingle,
+					Kind:     ast.StringSingle,
 				}
 			case tokenStringBlock:
-				kind = ObjectFieldStr
-				expr1 = &LiteralString{
-					nodeBase:    nodeBase{loc: next.loc},
+				kind = ast.ObjectFieldStr
+				expr1 = &ast.LiteralString{
+					NodeBase:    ast.NewNodeBaseLoc(next.loc),
 					Value:       next.data,
-					Kind:        StringBlock,
+					Kind:        ast.StringBlock,
 					BlockIndent: next.stringBlockIndent,
 				}
 			// TODO(sbarzowski) are verbatim string literals allowed here?
 			// if so, maybe it's time we extracted string literal creation somewhere...
 			default:
-				kind = ObjectFieldExpr
+				kind = ast.ObjectFieldExpr
 				var err error
 				expr1, err = p.parse(maxPrecedence)
 				if err != nil {
@@ -370,7 +372,7 @@ func (p *parser) parseObjectRemainder(tok *token) (Node, *token, error) {
 
 			isMethod := false
 			methComma := false
-			var params Identifiers
+			var params ast.Identifiers
 			if p.peek().kind == tokenParenL {
 				p.pop()
 				var err error
@@ -391,7 +393,7 @@ func (p *parser) parseObjectRemainder(tok *token) (Node, *token, error) {
 					fmt.Sprintf("Cannot use +: syntax sugar in a method: %v", next.data), next.loc)
 			}
 
-			if kind != ObjectFieldExpr {
+			if kind != ast.ObjectFieldExpr {
 				if !literalFields.Add(literalField(next.data)) {
 					return nil, nil, makeStaticError(
 						fmt.Sprintf("Duplicate field: %v", next.data), next.loc)
@@ -403,7 +405,7 @@ func (p *parser) parseObjectRemainder(tok *token) (Node, *token, error) {
 				return nil, nil, err
 			}
 
-			fields = append(fields, ObjectField{
+			fields = append(fields, ast.ObjectField{
 				Kind:          kind,
 				Hide:          hide,
 				SuperSugar:    plusSugar,
@@ -421,7 +423,7 @@ func (p *parser) parseObjectRemainder(tok *token) (Node, *token, error) {
 				return nil, nil, err
 			}
 
-			id := Identifier(varID.data)
+			id := ast.Identifier(varID.data)
 
 			if binds.Contains(id) {
 				return nil, nil, makeStaticError(fmt.Sprintf("Duplicate local var: %v", id), varID.loc)
@@ -429,7 +431,7 @@ func (p *parser) parseObjectRemainder(tok *token) (Node, *token, error) {
 
 			isMethod := false
 			funcComma := false
-			var params Identifiers
+			var params ast.Identifiers
 			if p.peek().kind == tokenParenL {
 				p.pop()
 				isMethod = true
@@ -450,9 +452,9 @@ func (p *parser) parseObjectRemainder(tok *token) (Node, *token, error) {
 
 			binds.Add(id)
 
-			fields = append(fields, ObjectField{
-				Kind:          ObjectLocal,
-				Hide:          ObjectFieldVisible,
+			fields = append(fields, ast.ObjectField{
+				Kind:          ast.ObjectLocal,
+				Hide:          ast.ObjectFieldVisible,
 				SuperSugar:    false,
 				MethodSugar:   isMethod,
 				Id:            &id,
@@ -466,7 +468,7 @@ func (p *parser) parseObjectRemainder(tok *token) (Node, *token, error) {
 			if err != nil {
 				return nil, nil, err
 			}
-			var msg Node
+			var msg ast.Node
 			if p.peek().kind == tokenOperator && p.peek().data == ":" {
 				p.pop()
 				msg, err = p.parse(maxPrecedence)
@@ -475,9 +477,9 @@ func (p *parser) parseObjectRemainder(tok *token) (Node, *token, error) {
 				}
 			}
 
-			fields = append(fields, ObjectField{
-				Kind:  ObjectAssert,
-				Hide:  ObjectFieldVisible,
+			fields = append(fields, ast.ObjectField{
+				Kind:  ast.ObjectAssert,
+				Hide:  ast.ObjectFieldVisible,
 				Expr2: cond,
 				Expr3: msg,
 			})
@@ -489,14 +491,14 @@ func (p *parser) parseObjectRemainder(tok *token) (Node, *token, error) {
 }
 
 /* parses for x in expr for y in expr if expr for z in expr ... */
-func (p *parser) parseComprehensionSpecs(end tokenKind) (*CompSpecs, *token, error) {
-	var specs CompSpecs
+func (p *parser) parseComprehensionSpecs(end tokenKind) (*ast.CompSpecs, *token, error) {
+	var specs ast.CompSpecs
 	for {
 		varID, err := p.popExpect(tokenIdentifier)
 		if err != nil {
 			return nil, nil, err
 		}
-		id := Identifier(varID.data)
+		id := ast.Identifier(varID.data)
 		_, err = p.popExpect(tokenIn)
 		if err != nil {
 			return nil, nil, err
@@ -505,8 +507,8 @@ func (p *parser) parseComprehensionSpecs(end tokenKind) (*CompSpecs, *token, err
 		if err != nil {
 			return nil, nil, err
 		}
-		specs = append(specs, CompSpec{
-			Kind:    CompFor,
+		specs = append(specs, ast.CompSpec{
+			Kind:    ast.CompFor,
 			VarName: &id,
 			Expr:    arr,
 		})
@@ -517,8 +519,8 @@ func (p *parser) parseComprehensionSpecs(end tokenKind) (*CompSpecs, *token, err
 			if err != nil {
 				return nil, nil, err
 			}
-			specs = append(specs, CompSpec{
-				Kind:    CompIf,
+			specs = append(specs, ast.CompSpec{
+				Kind:    ast.CompIf,
 				VarName: nil,
 				Expr:    cond,
 			})
@@ -537,12 +539,12 @@ func (p *parser) parseComprehensionSpecs(end tokenKind) (*CompSpecs, *token, err
 
 // Assumes that the leading '[' has already been consumed and passed as tok.
 // Should read up to and consume the trailing ']'
-func (p *parser) parseArray(tok *token) (Node, error) {
+func (p *parser) parseArray(tok *token) (ast.Node, error) {
 	next := p.peek()
 	if next.kind == tokenBracketR {
 		p.pop()
-		return &Array{
-			nodeBase: nodeBase{loc: locFromTokens(tok, next)},
+		return &ast.Array{
+			NodeBase: ast.NewNodeBaseLoc(locFromTokens(tok, next)),
 		}, nil
 	}
 
@@ -565,15 +567,15 @@ func (p *parser) parseArray(tok *token) (Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &ArrayComp{
-			nodeBase:      nodeBase{loc: locFromTokens(tok, last)},
+		return &ast.ArrayComp{
+			NodeBase:      ast.NewNodeBaseLoc(locFromTokens(tok, last)),
 			Body:          first,
 			TrailingComma: gotComma,
 			Specs:         *specs,
 		}, nil
 	}
 	// Not a comprehension: It can have more elements.
-	elements := Nodes{first}
+	elements := ast.Nodes{first}
 
 	for {
 		if next.kind == tokenBracketR {
@@ -599,14 +601,14 @@ func (p *parser) parseArray(tok *token) (Node, error) {
 		}
 	}
 
-	return &Array{
-		nodeBase:      nodeBase{loc: locFromTokens(tok, next)},
+	return &ast.Array{
+		NodeBase:      ast.NewNodeBaseLoc(locFromTokens(tok, next)),
 		Elements:      elements,
 		TrailingComma: gotComma,
 	}, nil
 }
 
-func (p *parser) parseTerminal() (Node, error) {
+func (p *parser) parseTerminal() (ast.Node, error) {
 	tok := p.pop()
 	switch tok.kind {
 	case tokenAssert, tokenBraceR, tokenBracketR, tokenComma, tokenDot, tokenElse,
@@ -643,82 +645,82 @@ func (p *parser) parseTerminal() (Node, error) {
 		if err != nil {
 			return nil, makeStaticError("Could not parse floating point number.", tok.loc)
 		}
-		return &LiteralNumber{
-			nodeBase:       nodeBase{loc: tok.loc},
+		return &ast.LiteralNumber{
+			NodeBase:       ast.NewNodeBaseLoc(tok.loc),
 			Value:          num,
 			OriginalString: tok.data,
 		}, nil
 	case tokenStringSingle:
-		return &LiteralString{
-			nodeBase: nodeBase{loc: tok.loc},
+		return &ast.LiteralString{
+			NodeBase: ast.NewNodeBaseLoc(tok.loc),
 			Value:    tok.data,
-			Kind:     StringSingle,
+			Kind:     ast.StringSingle,
 		}, nil
 	case tokenStringDouble:
-		return &LiteralString{
-			nodeBase: nodeBase{loc: tok.loc},
+		return &ast.LiteralString{
+			NodeBase: ast.NewNodeBaseLoc(tok.loc),
 			Value:    tok.data,
-			Kind:     StringDouble,
+			Kind:     ast.StringDouble,
 		}, nil
 	case tokenStringBlock:
-		return &LiteralString{
-			nodeBase:    nodeBase{loc: tok.loc},
+		return &ast.LiteralString{
+			NodeBase:    ast.NewNodeBaseLoc(tok.loc),
 			Value:       tok.data,
-			Kind:        StringDouble,
+			Kind:        ast.StringDouble,
 			BlockIndent: tok.stringBlockIndent,
 		}, nil
 	case tokenVerbatimStringDouble:
-		return &LiteralString{
-			nodeBase: nodeBase{loc: tok.loc},
+		return &ast.LiteralString{
+			NodeBase: ast.NewNodeBaseLoc(tok.loc),
 			Value:    tok.data,
-			Kind:     VerbatimStringDouble,
+			Kind:     ast.VerbatimStringDouble,
 		}, nil
 	case tokenVerbatimStringSingle:
-		return &LiteralString{
-			nodeBase: nodeBase{loc: tok.loc},
+		return &ast.LiteralString{
+			NodeBase: ast.NewNodeBaseLoc(tok.loc),
 			Value:    tok.data,
-			Kind:     VerbatimStringSingle,
+			Kind:     ast.VerbatimStringSingle,
 		}, nil
 	case tokenFalse:
-		return &LiteralBoolean{
-			nodeBase: nodeBase{loc: tok.loc},
+		return &ast.LiteralBoolean{
+			NodeBase: ast.NewNodeBaseLoc(tok.loc),
 			Value:    false,
 		}, nil
 	case tokenTrue:
-		return &LiteralBoolean{
-			nodeBase: nodeBase{loc: tok.loc},
+		return &ast.LiteralBoolean{
+			NodeBase: ast.NewNodeBaseLoc(tok.loc),
 			Value:    true,
 		}, nil
 	case tokenNullLit:
-		return &LiteralNull{
-			nodeBase: nodeBase{loc: tok.loc},
+		return &ast.LiteralNull{
+			NodeBase: ast.NewNodeBaseLoc(tok.loc),
 		}, nil
 
 	// Variables
 	case tokenDollar:
-		return &Dollar{
-			nodeBase: nodeBase{loc: tok.loc},
+		return &ast.Dollar{
+			NodeBase: ast.NewNodeBaseLoc(tok.loc),
 		}, nil
 	case tokenIdentifier:
-		return &Var{
-			nodeBase: nodeBase{loc: tok.loc},
-			Id:       Identifier(tok.data),
+		return &ast.Var{
+			NodeBase: ast.NewNodeBaseLoc(tok.loc),
+			Id:       ast.Identifier(tok.data),
 		}, nil
 	case tokenSelf:
-		return &Self{
-			nodeBase: nodeBase{loc: tok.loc},
+		return &ast.Self{
+			NodeBase: ast.NewNodeBaseLoc(tok.loc),
 		}, nil
 	case tokenSuper:
 		next := p.pop()
-		var index Node
-		var id *Identifier
+		var index ast.Node
+		var id *ast.Identifier
 		switch next.kind {
 		case tokenDot:
 			fieldID, err := p.popExpect(tokenIdentifier)
 			if err != nil {
 				return nil, err
 			}
-			id = (*Identifier)(&fieldID.data)
+			id = (*ast.Identifier)(&fieldID.data)
 		case tokenBracketL:
 			var err error
 			index, err = p.parse(maxPrecedence)
@@ -732,8 +734,8 @@ func (p *parser) parseTerminal() (Node, error) {
 		default:
 			return nil, makeStaticError("Expected . or [ after super.", tok.loc)
 		}
-		return &SuperIndex{
-			nodeBase: nodeBase{loc: tok.loc},
+		return &ast.SuperIndex{
+			NodeBase: ast.NewNodeBaseLoc(tok.loc),
 			Index:    index,
 			Id:       id,
 		}, nil
@@ -742,11 +744,11 @@ func (p *parser) parseTerminal() (Node, error) {
 	return nil, makeStaticError(fmt.Sprintf("INTERNAL ERROR: Unknown tok kind: %v", tok.kind), tok.loc)
 }
 
-func (p *parser) parsingFailure(msg string, tok *token) (Node, error) {
+func (p *parser) parsingFailure(msg string, tok *token) (ast.Node, error) {
 	return nil, makeStaticError(msg, tok.loc)
 }
 
-func (p *parser) parse(prec precedence) (Node, error) {
+func (p *parser) parse(prec precedence) (ast.Node, error) {
 	begin := p.peek()
 
 	switch begin.kind {
@@ -758,7 +760,7 @@ func (p *parser) parse(prec precedence) (Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		var msg Node
+		var msg ast.Node
 		if p.peek().kind == tokenOperator && p.peek().data == ":" {
 			p.pop()
 			msg, err = p.parse(maxPrecedence)
@@ -774,8 +776,8 @@ func (p *parser) parse(prec precedence) (Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &Assert{
-			nodeBase: nodeBase{loc: locFromTokenAST(begin, rest)},
+		return &ast.Assert{
+			NodeBase: ast.NewNodeBaseLoc(locFromTokenAST(begin, rest)),
 			Cond:     cond,
 			Message:  msg,
 			Rest:     rest,
@@ -787,8 +789,8 @@ func (p *parser) parse(prec precedence) (Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &Error{
-			nodeBase: nodeBase{loc: locFromTokenAST(begin, expr)},
+		return &ast.Error{
+			NodeBase: ast.NewNodeBaseLoc(locFromTokenAST(begin, expr)),
 			Expr:     expr,
 		}, nil
 
@@ -806,7 +808,7 @@ func (p *parser) parse(prec precedence) (Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		var branchFalse Node
+		var branchFalse ast.Node
 		lr := locFromTokenAST(begin, branchTrue)
 		if p.peek().kind == tokenElse {
 			p.pop()
@@ -816,8 +818,8 @@ func (p *parser) parse(prec precedence) (Node, error) {
 			}
 			lr = locFromTokenAST(begin, branchFalse)
 		}
-		return &Conditional{
-			nodeBase:    nodeBase{loc: lr},
+		return &ast.Conditional{
+			NodeBase:    ast.NewNodeBaseLoc(lr),
 			Cond:        cond,
 			BranchTrue:  branchTrue,
 			BranchFalse: branchFalse,
@@ -835,8 +837,8 @@ func (p *parser) parse(prec precedence) (Node, error) {
 			if err != nil {
 				return nil, err
 			}
-			return &Function{
-				nodeBase:      nodeBase{loc: locFromTokenAST(begin, body)},
+			return &ast.Function{
+				NodeBase:      ast.NewNodeBaseLoc(locFromTokenAST(begin, body)),
 				Parameters:    params,
 				TrailingComma: gotComma,
 				Body:          body,
@@ -850,9 +852,9 @@ func (p *parser) parse(prec precedence) (Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		if lit, ok := body.(*LiteralString); ok {
-			return &Import{
-				nodeBase: nodeBase{loc: locFromTokenAST(begin, body)},
+		if lit, ok := body.(*ast.LiteralString); ok {
+			return &ast.Import{
+				NodeBase: ast.NewNodeBaseLoc(locFromTokenAST(begin, body)),
 				File:     lit.Value,
 			}, nil
 		}
@@ -864,9 +866,9 @@ func (p *parser) parse(prec precedence) (Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		if lit, ok := body.(*LiteralString); ok {
-			return &ImportStr{
-				nodeBase: nodeBase{loc: locFromTokenAST(begin, body)},
+		if lit, ok := body.(*ast.LiteralString); ok {
+			return &ast.ImportStr{
+				NodeBase: ast.NewNodeBaseLoc(locFromTokenAST(begin, body)),
 				File:     lit.Value,
 			}, nil
 		}
@@ -874,7 +876,7 @@ func (p *parser) parse(prec precedence) (Node, error) {
 
 	case tokenLocal:
 		p.pop()
-		var binds LocalBinds
+		var binds ast.LocalBinds
 		for {
 			err := p.parseBind(&binds)
 			if err != nil {
@@ -892,16 +894,16 @@ func (p *parser) parse(prec precedence) (Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &Local{
-			nodeBase: nodeBase{loc: locFromTokenAST(begin, body)},
+		return &ast.Local{
+			NodeBase: ast.NewNodeBaseLoc(locFromTokenAST(begin, body)),
 			Binds:    binds,
 			Body:     body,
 		}, nil
 
 	default:
-		// Unary operator
+		// ast.Unary operator
 		if begin.kind == tokenOperator {
-			uop, ok := uopMap[begin.data]
+			uop, ok := ast.UopMap[begin.data]
 			if !ok {
 				return nil, makeStaticError(fmt.Sprintf("Not a unary operator: %v", begin.data), begin.loc)
 			}
@@ -911,8 +913,8 @@ func (p *parser) parse(prec precedence) (Node, error) {
 				if err != nil {
 					return nil, err
 				}
-				return &Unary{
-					nodeBase: nodeBase{loc: locFromTokenAST(op, expr)},
+				return &ast.Unary{
+					NodeBase: ast.NewNodeBaseLoc(locFromTokenAST(op, expr)),
 					Op:       uop,
 					Expr:     expr,
 				}, nil
@@ -932,7 +934,7 @@ func (p *parser) parse(prec precedence) (Node, error) {
 		for {
 			// Then next token must be a binary operator.
 
-			var bop BinaryOp
+			var bop ast.BinaryOp
 
 			// Check precedence is correct for this level.  If we're parsing operators
 			// with higher precedence, then return lhs and let lower levels deal with
@@ -955,7 +957,7 @@ func (p *parser) parse(prec precedence) (Node, error) {
 					return lhs, nil
 				}
 				var ok bool
-				bop, ok = bopMap[p.peek().data]
+				bop, ok = ast.BopMap[p.peek().data]
 				if !ok {
 					return nil, makeStaticError(fmt.Sprintf("Not a binary operator: %v", p.peek().data), p.peek().loc)
 				}
@@ -976,7 +978,7 @@ func (p *parser) parse(prec precedence) (Node, error) {
 			switch op.kind {
 			case tokenBracketL:
 				// handle slice
-				var indexes [3]Node
+				var indexes [3]ast.Node
 				colonsConsumed := 0
 
 				var end *token
@@ -1009,21 +1011,21 @@ func (p *parser) parse(prec precedence) (Node, error) {
 				}
 				if colonsConsumed == 0 && readyForNextIndex {
 					// example: target[]
-					return p.parsingFailure("Index requires an expression", end)
+					return p.parsingFailure("ast.Index requires an expression", end)
 				}
 				isSlice := colonsConsumed > 0
 
 				if isSlice {
-					lhs = &Slice{
-						nodeBase:   nodeBase{loc: locFromTokens(begin, end)},
+					lhs = &ast.Slice{
+						NodeBase:   ast.NewNodeBaseLoc(locFromTokens(begin, end)),
 						Target:     lhs,
 						BeginIndex: indexes[0],
 						EndIndex:   indexes[1],
 						Step:       indexes[2],
 					}
 				} else {
-					lhs = &Index{
-						nodeBase: nodeBase{loc: locFromTokens(begin, end)},
+					lhs = &ast.Index{
+						NodeBase: ast.NewNodeBaseLoc(locFromTokens(begin, end)),
 						Target:   lhs,
 						Index:    indexes[0],
 					}
@@ -1033,9 +1035,9 @@ func (p *parser) parse(prec precedence) (Node, error) {
 				if err != nil {
 					return nil, err
 				}
-				id := Identifier(fieldID.data)
-				lhs = &Index{
-					nodeBase: nodeBase{loc: locFromTokens(begin, fieldID)},
+				id := ast.Identifier(fieldID.data)
+				lhs = &ast.Index{
+					NodeBase: ast.NewNodeBaseLoc(locFromTokens(begin, fieldID)),
 					Target:   lhs,
 					Id:       &id,
 				}
@@ -1049,8 +1051,8 @@ func (p *parser) parse(prec precedence) (Node, error) {
 					p.pop()
 					tailStrict = true
 				}
-				lhs = &Apply{
-					nodeBase:      nodeBase{loc: locFromTokens(begin, end)},
+				lhs = &ast.Apply{
+					NodeBase:      ast.NewNodeBaseLoc(locFromTokens(begin, end)),
 					Target:        lhs,
 					Arguments:     args,
 					TrailingComma: gotComma,
@@ -1061,8 +1063,8 @@ func (p *parser) parse(prec precedence) (Node, error) {
 				if err != nil {
 					return nil, err
 				}
-				lhs = &ApplyBrace{
-					nodeBase: nodeBase{loc: locFromTokens(begin, end)},
+				lhs = &ast.ApplyBrace{
+					NodeBase: ast.NewNodeBaseLoc(locFromTokens(begin, end)),
 					Left:     lhs,
 					Right:    obj,
 				}
@@ -1071,8 +1073,8 @@ func (p *parser) parse(prec precedence) (Node, error) {
 				if err != nil {
 					return nil, err
 				}
-				lhs = &Binary{
-					nodeBase: nodeBase{loc: locFromTokenAST(begin, rhs)},
+				lhs = &ast.Binary{
+					NodeBase: ast.NewNodeBaseLoc(locFromTokenAST(begin, rhs)),
 					Left:     lhs,
 					Op:       bop,
 					Right:    rhs,
@@ -1084,7 +1086,7 @@ func (p *parser) parse(prec precedence) (Node, error) {
 
 // ---------------------------------------------------------------------------
 
-func parse(t tokens) (Node, error) {
+func parse(t tokens) (ast.Node, error) {
 	p := makeParser(t)
 	expr, err := p.parse(maxPrecedence)
 	if err != nil {

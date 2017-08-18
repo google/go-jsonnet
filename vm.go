@@ -20,6 +20,8 @@ import (
 	"errors"
 	"fmt"
 	"runtime/debug"
+
+	"github.com/google/go-jsonnet/ast"
 )
 
 // Note: There are no garbage collection params because we're using the native
@@ -67,11 +69,11 @@ func (vm *VM) ExtCode(key string, val string) {
 }
 
 func (vm *VM) evaluateSnippet(filename string, snippet string) (string, error) {
-	ast, err := snippetToAST(filename, snippet)
+	node, err := snippetToAST(filename, snippet)
 	if err != nil {
 		return "", err
 	}
-	output, err := evaluate(ast, vm.ext, vm.MaxStack, &FileImporter{})
+	output, err := evaluate(node, vm.ext, vm.MaxStack, &FileImporter{})
 	if err != nil {
 		return "", err
 	}
@@ -95,23 +97,23 @@ func (vm *VM) EvaluateSnippet(filename string, snippet string) (json string, for
 	return json, nil
 }
 
-func snippetToAST(filename string, snippet string) (Node, error) {
+func snippetToAST(filename string, snippet string) (ast.Node, error) {
 	tokens, err := lex(filename, snippet)
 	if err != nil {
 		return nil, err
 	}
-	ast, err := parse(tokens)
+	node, err := parse(tokens)
 	if err != nil {
 		return nil, err
 	}
 	// fmt.Println(ast.(dumpable).dump())
-	err = desugarFile(&ast)
+	err = desugarFile(&node)
 	if err != nil {
 		return nil, err
 	}
-	err = analyze(ast)
+	err = analyze(node)
 	if err != nil {
 		return nil, err
 	}
-	return ast, nil
+	return node, nil
 }

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package jsonnet
+package ast
 
 import (
 	"fmt"
@@ -33,26 +33,40 @@ type Identifiers []Identifier
 type Node interface {
 	Loc() *LocationRange
 	FreeVariables() Identifiers
-	setFreeVariables(Identifiers)
+	SetFreeVariables(Identifiers)
 }
 type Nodes []Node
 
 // ---------------------------------------------------------------------------
 
-type nodeBase struct {
+type NodeBase struct {
 	loc           LocationRange
 	freeVariables Identifiers
 }
 
-func (n *nodeBase) Loc() *LocationRange {
+func NewNodeBase(loc LocationRange, freeVariables Identifiers) NodeBase {
+	return NodeBase{
+		loc:           loc,
+		freeVariables: freeVariables,
+	}
+}
+
+func NewNodeBaseLoc(loc LocationRange) NodeBase {
+	return NodeBase{
+		loc:           loc,
+		freeVariables: []Identifier{},
+	}
+}
+
+func (n *NodeBase) Loc() *LocationRange {
 	return &n.loc
 }
 
-func (n *nodeBase) FreeVariables() Identifiers {
+func (n *NodeBase) FreeVariables() Identifiers {
 	return n.freeVariables
 }
 
-func (n *nodeBase) setFreeVariables(idents Identifiers) {
+func (n *NodeBase) SetFreeVariables(idents Identifiers) {
 	n.freeVariables = idents
 }
 
@@ -79,7 +93,7 @@ type CompSpecs []CompSpec
 
 // Apply represents a function call
 type Apply struct {
-	nodeBase
+	NodeBase
 	Target        Node
 	Arguments     Nodes
 	TrailingComma bool
@@ -91,7 +105,7 @@ type Apply struct {
 
 // ApplyBrace represents e { }.  Desugared to e + { }.
 type ApplyBrace struct {
-	nodeBase
+	NodeBase
 	Left  Node
 	Right Node
 }
@@ -100,7 +114,7 @@ type ApplyBrace struct {
 
 // Array represents array constructors [1, 2, 3].
 type Array struct {
-	nodeBase
+	NodeBase
 	Elements      Nodes
 	TrailingComma bool
 }
@@ -110,7 +124,7 @@ type Array struct {
 // ArrayComp represents array comprehensions (which are like Python list
 // comprehensions)
 type ArrayComp struct {
-	nodeBase
+	NodeBase
 	Body          Node
 	TrailingComma bool
 	Specs         CompSpecs
@@ -123,7 +137,7 @@ type ArrayComp struct {
 // After parsing, message can be nil indicating that no message was
 // specified. This AST is elimiated by desugaring.
 type Assert struct {
-	nodeBase
+	NodeBase
 	Cond    Node
 	Message Node
 	Rest    Node
@@ -187,7 +201,7 @@ var bopStrings = []string{
 	BopOr:  "||",
 }
 
-var bopMap = map[string]BinaryOp{
+var BopMap = map[string]BinaryOp{
 	"*": BopMult,
 	"/": BopDiv,
 	"%": BopPercent,
@@ -223,7 +237,7 @@ func (b BinaryOp) String() string {
 
 // Binary represents binary operators.
 type Binary struct {
-	nodeBase
+	NodeBase
 	Left  Node
 	Op    BinaryOp
 	Right Node
@@ -236,7 +250,7 @@ type Binary struct {
 // After parsing, branchFalse can be nil indicating that no else branch
 // was specified.  The desugarer fills this in with a LiteralNull
 type Conditional struct {
-	nodeBase
+	NodeBase
 	Cond        Node
 	BranchTrue  Node
 	BranchFalse Node
@@ -245,13 +259,13 @@ type Conditional struct {
 // ---------------------------------------------------------------------------
 
 // Dollar represents the $ keyword
-type Dollar struct{ nodeBase }
+type Dollar struct{ NodeBase }
 
 // ---------------------------------------------------------------------------
 
 // Error represents the error e.
 type Error struct {
-	nodeBase
+	NodeBase
 	Expr Node
 }
 
@@ -259,7 +273,7 @@ type Error struct {
 
 // Function represents a function definition
 type Function struct {
-	nodeBase
+	NodeBase
 	Parameters    Identifiers // TODO(sbarzowski) support default arguments
 	TrailingComma bool
 	Body          Node
@@ -269,7 +283,7 @@ type Function struct {
 
 // Import represents import "file".
 type Import struct {
-	nodeBase
+	NodeBase
 	File string
 }
 
@@ -277,7 +291,7 @@ type Import struct {
 
 // ImportStr represents importstr "file".
 type ImportStr struct {
-	nodeBase
+	NodeBase
 	File string
 }
 
@@ -288,14 +302,14 @@ type ImportStr struct {
 // One of index and id will be nil before desugaring.  After desugaring id
 // will be nil.
 type Index struct {
-	nodeBase
+	NodeBase
 	Target Node
 	Index  Node
 	Id     *Identifier
 }
 
 type Slice struct {
-	nodeBase
+	NodeBase
 	Target Node
 
 	// Each of these can be nil
@@ -318,7 +332,7 @@ type LocalBinds []LocalBind
 
 // Local represents local x = e; e.  After desugaring, functionSugar is false.
 type Local struct {
-	nodeBase
+	NodeBase
 	Binds LocalBinds
 	Body  Node
 }
@@ -327,20 +341,20 @@ type Local struct {
 
 // LiteralBoolean represents true and false
 type LiteralBoolean struct {
-	nodeBase
+	NodeBase
 	Value bool
 }
 
 // ---------------------------------------------------------------------------
 
 // LiteralNull represents the null keyword
-type LiteralNull struct{ nodeBase }
+type LiteralNull struct{ NodeBase }
 
 // ---------------------------------------------------------------------------
 
 // LiteralNumber represents a JSON number
 type LiteralNumber struct {
-	nodeBase
+	NodeBase
 	Value          float64
 	OriginalString string
 }
@@ -360,7 +374,7 @@ const (
 
 // LiteralString represents a JSON string
 type LiteralString struct {
-	nodeBase
+	NodeBase
 	Value       string
 	Kind        LiteralStringKind
 	BlockIndent string
@@ -418,7 +432,7 @@ type ObjectFields []ObjectField
 // The trailing comma is only allowed if len(fields) > 0.  Converted to
 // DesugaredObject during desugaring.
 type Object struct {
-	nodeBase
+	NodeBase
 	Fields        ObjectFields
 	TrailingComma bool
 }
@@ -437,7 +451,7 @@ type DesugaredObjectFields []DesugaredObjectField
 //
 // The assertions either return true or raise an error.
 type DesugaredObject struct {
-	nodeBase
+	NodeBase
 	Asserts Nodes
 	Fields  DesugaredObjectFields
 }
@@ -447,7 +461,7 @@ type DesugaredObject struct {
 // ObjectComp represents object comprehension
 //   { [e]: e for x in e for.. if... }.
 type ObjectComp struct {
-	nodeBase
+	NodeBase
 	Fields        ObjectFields
 	TrailingComma bool
 	Specs         CompSpecs
@@ -458,7 +472,7 @@ type ObjectComp struct {
 // ObjectComprehensionSimple represents post-desugaring object
 // comprehension { [e]: e for x in e }.
 type ObjectComprehensionSimple struct {
-	nodeBase
+	NodeBase
 	Field Node
 	Value Node
 	Id    Identifier
@@ -468,7 +482,7 @@ type ObjectComprehensionSimple struct {
 // ---------------------------------------------------------------------------
 
 // Self represents the self keyword.
-type Self struct{ nodeBase }
+type Self struct{ NodeBase }
 
 // ---------------------------------------------------------------------------
 
@@ -477,7 +491,7 @@ type Self struct{ nodeBase }
 // Either index or identifier will be set before desugaring.  After desugaring, id will be
 // nil.
 type SuperIndex struct {
-	nodeBase
+	NodeBase
 	Index Node
 	Id    *Identifier
 }
@@ -500,7 +514,7 @@ var uopStrings = []string{
 	UopMinus:      "-",
 }
 
-var uopMap = map[string]UnaryOp{
+var UopMap = map[string]UnaryOp{
 	"!": UopNot,
 	"~": UopBitwiseNot,
 	"+": UopPlus,
@@ -516,7 +530,7 @@ func (u UnaryOp) String() string {
 
 // Unary represents unary operators.
 type Unary struct {
-	nodeBase
+	NodeBase
 	Op   UnaryOp
 	Expr Node
 }
@@ -525,7 +539,7 @@ type Unary struct {
 
 // Var represents variables.
 type Var struct {
-	nodeBase
+	NodeBase
 	Id Identifier
 }
 

@@ -15,7 +15,11 @@ limitations under the License.
 */
 package jsonnet
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/google/go-jsonnet/ast"
+)
 
 // value represents a concrete jsonnet value of a specific type.
 // Various operations on values are allowed, depending on their type.
@@ -46,7 +50,7 @@ type potentialValue interface {
 }
 
 // A set of variables with associated potentialValues.
-type bindingFrame map[Identifier]potentialValue
+type bindingFrame map[ast.Identifier]potentialValue
 
 type valueBase struct{}
 
@@ -119,7 +123,7 @@ func (*valueNull) typename() string {
 	return "null"
 }
 
-// Array
+// ast.Array
 // -------------------------------------
 
 type valueArray struct {
@@ -137,7 +141,7 @@ func (*valueArray) typename() string {
 	return "array"
 }
 
-// Function
+// ast.Function
 // -------------------------------------
 
 type valueFunction struct {
@@ -148,14 +152,14 @@ type valueFunction struct {
 // TODO(sbarzowski) better name?
 type evalCallable interface {
 	EvalCall(args callArguments, e *evaluator) (value, error)
-	Parameters() Identifiers
+	Parameters() ast.Identifiers
 }
 
 func (f *valueFunction) call(args callArguments) potentialValue {
 	return makeCallThunk(f.ec, args)
 }
 
-func (f *valueFunction) parameters() Identifiers {
+func (f *valueFunction) parameters() ast.Identifiers {
 	return f.ec.Parameters()
 }
 
@@ -233,7 +237,7 @@ type valueSimpleObject struct {
 	valueObjectBase
 	upValues bindingFrame
 	fields   valueSimpleObjectFieldMap
-	asserts  []Node
+	asserts  []ast.Node
 }
 
 func (o *valueSimpleObject) index(e *evaluator, field string) (value, error) {
@@ -244,7 +248,7 @@ func (*valueSimpleObject) inheritanceSize() int {
 	return 1
 }
 
-func makeValueSimpleObject(b bindingFrame, fields valueSimpleObjectFieldMap, asserts Nodes) *valueSimpleObject {
+func makeValueSimpleObject(b bindingFrame, fields valueSimpleObjectFieldMap, asserts ast.Nodes) *valueSimpleObject {
 	return &valueSimpleObject{
 		upValues: b,
 		fields:   fields,
@@ -257,7 +261,7 @@ type valueSimpleObjectFieldMap map[string]valueSimpleObjectField
 // TODO(sbarzowski) this is not a value and the name suggests it is...
 // TODO(sbarzowski) better name? This is basically just a (hide, field) pair.
 type valueSimpleObjectField struct {
-	hide  ObjectFieldHide
+	hide  ast.ObjectFieldHide
 	field unboundField
 }
 
@@ -350,7 +354,7 @@ func objectIndex(e *evaluator, sb selfBinding, fieldName string) (value, error) 
 	return e.evaluate(field.field.bindToObject(fieldSelfBinding, upValues))
 }
 
-type fieldHideMap map[string]ObjectFieldHide
+type fieldHideMap map[string]ast.ObjectFieldHide
 
 func objectFieldsVisibility(obj valueObject) fieldHideMap {
 	r := make(fieldHideMap)
@@ -374,7 +378,7 @@ func objectFieldsVisibility(obj valueObject) fieldHideMap {
 func objectFields(obj valueObject, manifesting bool) []string {
 	var r []string
 	for fieldName, hide := range objectFieldsVisibility(obj) {
-		if !manifesting || hide != ObjectFieldHidden {
+		if !manifesting || hide != ast.ObjectFieldHidden {
 			r = append(r, fieldName)
 		}
 	}

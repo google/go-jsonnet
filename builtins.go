@@ -16,6 +16,8 @@ limitations under the License.
 
 package jsonnet
 
+import "github.com/google/go-jsonnet/ast"
+
 // TODO(sbarzowski) Is this the best option? It's the first one that worked for me...
 //go:generate esc -o std.go -pkg=jsonnet std/std.jsonnet
 
@@ -250,13 +252,13 @@ type unaryBuiltin func(*evaluator, potentialValue) (value, error)
 type binaryBuiltin func(*evaluator, potentialValue, potentialValue) (value, error)
 
 type UnaryBuiltin struct {
-	name       Identifier
+	name       ast.Identifier
 	function   unaryBuiltin
-	parameters Identifiers
+	parameters ast.Identifiers
 }
 
-func getBuiltinEvaluator(e *evaluator, name Identifier) *evaluator {
-	loc := makeLocationRangeMessage("<builtin>")
+func getBuiltinEvaluator(e *evaluator, name ast.Identifier) *evaluator {
+	loc := ast.MakeLocationRangeMessage("<builtin>")
 	context := TraceContext{Name: "builtin function <" + string(name) + ">"}
 	trace := TraceElement{loc: &loc, context: &context}
 	return &evaluator{i: e.i, trace: &trace}
@@ -268,14 +270,14 @@ func (b *UnaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error)
 	return b.function(getBuiltinEvaluator(e, b.name), args.positional[0])
 }
 
-func (b *UnaryBuiltin) Parameters() Identifiers {
+func (b *UnaryBuiltin) Parameters() ast.Identifiers {
 	return b.parameters
 }
 
 type BinaryBuiltin struct {
-	name       Identifier
+	name       ast.Identifier
 	function   binaryBuiltin
-	parameters Identifiers
+	parameters ast.Identifiers
 }
 
 func (b *BinaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
@@ -283,7 +285,7 @@ func (b *BinaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error
 	return b.function(getBuiltinEvaluator(e, b.name), args.positional[0], args.positional[1])
 }
 
-func (b *BinaryBuiltin) Parameters() Identifiers {
+func (b *BinaryBuiltin) Parameters() ast.Identifiers {
 	return b.parameters
 }
 
@@ -292,52 +294,52 @@ func todoFunc(e *evaluator, x, y potentialValue) (value, error) {
 }
 
 // so that we don't get segfaults
-var todo = &BinaryBuiltin{function: todoFunc, parameters: Identifiers{"x", "y"}}
+var todo = &BinaryBuiltin{function: todoFunc, parameters: ast.Identifiers{"x", "y"}}
 
-var desugaredBop = map[BinaryOp]Identifier{
+var desugaredBop = map[ast.BinaryOp]ast.Identifier{
 	//bopPercent,
-	BopManifestEqual:   "equals",
-	BopManifestUnequal: "notEquals", // Special case
+	ast.BopManifestEqual:   "equals",
+	ast.BopManifestUnequal: "notEquals", // Special case
 }
 
 var bopBuiltins = []*BinaryBuiltin{
-	BopMult:    todo,
-	BopDiv:     todo,
-	BopPercent: todo,
+	ast.BopMult:    todo,
+	ast.BopDiv:     todo,
+	ast.BopPercent: todo,
 
-	BopPlus:  &BinaryBuiltin{name: "operator+", function: builtinPlus, parameters: Identifiers{"x", "y"}},
-	BopMinus: &BinaryBuiltin{name: "operator-", function: builtinMinus, parameters: Identifiers{"x", "y"}},
+	ast.BopPlus:  &BinaryBuiltin{name: "operator+", function: builtinPlus, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopMinus: &BinaryBuiltin{name: "operator-", function: builtinMinus, parameters: ast.Identifiers{"x", "y"}},
 
-	BopShiftL: todo,
-	BopShiftR: todo,
+	ast.BopShiftL: todo,
+	ast.BopShiftR: todo,
 
-	BopGreater:   &BinaryBuiltin{name: "operator>", function: builtinGreater, parameters: Identifiers{"x", "y"}},
-	BopGreaterEq: &BinaryBuiltin{name: "operator>=", function: builtinGreaterEq, parameters: Identifiers{"x", "y"}},
-	BopLess:      &BinaryBuiltin{name: "operator<,", function: builtinLess, parameters: Identifiers{"x", "y"}},
-	BopLessEq:    &BinaryBuiltin{name: "operator<=", function: builtinLessEq, parameters: Identifiers{"x", "y"}},
+	ast.BopGreater:   &BinaryBuiltin{name: "operator>", function: builtinGreater, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopGreaterEq: &BinaryBuiltin{name: "operator>=", function: builtinGreaterEq, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopLess:      &BinaryBuiltin{name: "operator<,", function: builtinLess, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopLessEq:    &BinaryBuiltin{name: "operator<=", function: builtinLessEq, parameters: ast.Identifiers{"x", "y"}},
 
-	BopManifestEqual:   todo,
-	BopManifestUnequal: todo,
+	ast.BopManifestEqual:   todo,
+	ast.BopManifestUnequal: todo,
 
-	BopBitwiseAnd: todo,
-	BopBitwiseXor: todo,
-	BopBitwiseOr:  todo,
+	ast.BopBitwiseAnd: todo,
+	ast.BopBitwiseXor: todo,
+	ast.BopBitwiseOr:  todo,
 
-	BopAnd: &BinaryBuiltin{name: "operator&&", function: builtinAnd, parameters: Identifiers{"x", "y"}},
-	BopOr:  todo,
+	ast.BopAnd: &BinaryBuiltin{name: "operator&&", function: builtinAnd, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopOr:  todo,
 }
 
 var uopBuiltins = []*UnaryBuiltin{
-	UopNot:        &UnaryBuiltin{name: "operator!", function: builtinNegation, parameters: Identifiers{"x"}},
-	UopBitwiseNot: &UnaryBuiltin{name: "operator~", function: builtinBitNeg, parameters: Identifiers{"x"}},
-	UopPlus:       &UnaryBuiltin{name: "operator+ (unary)", function: builtinIdentity, parameters: Identifiers{"x"}},
-	UopMinus:      &UnaryBuiltin{name: "operator- (unary)", function: builtinUnaryMinus, parameters: Identifiers{"x"}},
+	ast.UopNot:        &UnaryBuiltin{name: "operator!", function: builtinNegation, parameters: ast.Identifiers{"x"}},
+	ast.UopBitwiseNot: &UnaryBuiltin{name: "operator~", function: builtinBitNeg, parameters: ast.Identifiers{"x"}},
+	ast.UopPlus:       &UnaryBuiltin{name: "operator+ (unary)", function: builtinIdentity, parameters: ast.Identifiers{"x"}},
+	ast.UopMinus:      &UnaryBuiltin{name: "operator- (unary)", function: builtinUnaryMinus, parameters: ast.Identifiers{"x"}},
 }
 
 // TODO(sbarzowski) eliminate duplication in function names (e.g. build map from array or constants)
 var funcBuiltins = map[string]evalCallable{
-	"length":          &UnaryBuiltin{name: "length", function: builtinLength, parameters: Identifiers{"x"}},
-	"makeArray":       &BinaryBuiltin{name: "makeArray", function: builtinMakeArray, parameters: Identifiers{"sz", "func"}},
-	"primitiveEquals": &BinaryBuiltin{name: "primitiveEquals", function: primitiveEquals, parameters: Identifiers{"sz", "func"}},
-	"type":            &UnaryBuiltin{name: "type", function: builtinType, parameters: Identifiers{"x"}},
+	"length":          &UnaryBuiltin{name: "length", function: builtinLength, parameters: ast.Identifiers{"x"}},
+	"makeArray":       &BinaryBuiltin{name: "makeArray", function: builtinMakeArray, parameters: ast.Identifiers{"sz", "func"}},
+	"primitiveEquals": &BinaryBuiltin{name: "primitiveEquals", function: primitiveEquals, parameters: ast.Identifiers{"sz", "func"}},
+	"type":            &UnaryBuiltin{name: "type", function: builtinType, parameters: ast.Identifiers{"x"}},
 }

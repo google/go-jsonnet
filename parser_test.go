@@ -220,7 +220,7 @@ var errorTests = []testError{
 
 	{`a[(b c)]`, `test:1:6-7 Expected token ")" but got (IDENTIFIER, "c")`},
 	{`a[b c]`, `test:1:5-6 Expected token "]" but got (IDENTIFIER, "c")`},
-	{`a[]`, `test:1:3-4 Index requires an expression`},
+	{`a[]`, `test:1:3-4 ast.Index requires an expression`},
 	{`a[42:42:42:42]`, `test:1:11-12 Invalid slice: too many colons`},
 	{`a[42:42::42]`, `test:1:8-10 Invalid slice: too many colons`},
 

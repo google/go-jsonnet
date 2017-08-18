@@ -16,7 +16,11 @@ limitations under the License.
 
 package jsonnet
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/google/go-jsonnet/ast"
+)
 
 // evaluator is a convenience wrapper for interpreter
 // Most importantly it keeps the context for traces and handles details
@@ -140,15 +144,15 @@ func (e *evaluator) evaluateObject(pv potentialValue) (valueObject, error) {
 	return e.getObject(v)
 }
 
-func (e *evaluator) evalInCurrentContext(a Node) (value, error) {
+func (e *evaluator) evalInCurrentContext(a ast.Node) (value, error) {
 	return e.i.evaluate(a, e.trace.context)
 }
 
-func (e *evaluator) evalInCleanEnv(newContext *TraceContext, env *environment, ast Node) (value, error) {
+func (e *evaluator) evalInCleanEnv(newContext *TraceContext, env *environment, ast ast.Node) (value, error) {
 	return e.i.EvalInCleanEnv(e.trace, newContext, env, ast)
 }
 
-func (e *evaluator) lookUpVar(ident Identifier) potentialValue {
+func (e *evaluator) lookUpVar(ident ast.Identifier) potentialValue {
 	th := e.i.stack.lookUpVar(ident)
 	if th == nil {
 		panic(fmt.Sprintf("RUNTIME: Unknown variable: %v (we should have caught this statically)", ident))
