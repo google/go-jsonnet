@@ -228,6 +228,13 @@ func desugarObjectComp(astComp *ast.ObjectComp, objLevel int) (ast.Node, error) 
 	// TODO(sbarzowski) this
 }
 
+func buildLiteralString(value string) ast.Node {
+	return &ast.LiteralString{
+		Kind:  ast.StringDouble,
+		Value: value,
+	}
+}
+
 func buildSimpleIndex(obj ast.Node, member ast.Identifier) ast.Node {
 	return &ast.Index{
 		Target: obj,
@@ -301,8 +308,14 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		*astPtr = comp
 
 	case *ast.Assert:
-		// TODO(sbarzowski) this
-		*astPtr = &ast.LiteralNull{}
+		if node.Message == nil {
+			node.Message = buildLiteralString("Assertion failed")
+		}
+		*astPtr = &ast.Conditional{
+			Cond:        node.Cond,
+			BranchTrue:  node.Rest,
+			BranchFalse: &ast.Error{Expr: node.Message},
+		}
 
 	case *ast.Binary:
 		// some operators get replaced by stdlib functions
