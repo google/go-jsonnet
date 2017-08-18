@@ -18,6 +18,8 @@ package jsonnet
 import (
 	"bytes"
 	"fmt"
+
+	"github.com/google/go-jsonnet/ast"
 )
 
 type ErrorFormatter struct {
@@ -72,5 +74,5 @@ func (ef *ErrorFormatter) buildStackTrace(frames []TraceFrame) string {
 type SourceProvider interface {
 	// TODO(sbarzowski) problem: locationRange.FileName may not necessarily
 	// uniquely identify a file. But this is the interface we want to have here.
-	getCode(LocationRange) string
+	getCode(ast.LocationRange) string
 }

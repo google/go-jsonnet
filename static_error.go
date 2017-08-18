@@ -18,6 +18,8 @@ package jsonnet
 
 import (
 	"fmt"
+
+	"github.com/google/go-jsonnet/ast"
 )
 
 //////////////////////////////////////////////////////////////////////////////
@@ -26,7 +28,7 @@ import (
 // StaticError represents an error during parsing/lexing or static analysis.
 // TODO(sbarzowski) Make it possible to have multiple static errors and warnings
 type StaticError struct {
-	Loc LocationRange
+	Loc ast.LocationRange
 	Msg string
 }
 
@@ -34,11 +36,11 @@ func makeStaticErrorMsg(msg string) StaticError {
 	return StaticError{Msg: msg}
 }
 
-func makeStaticErrorPoint(msg string, fn string, l Location) StaticError {
-	return StaticError{Msg: msg, Loc: makeLocationRange(fn, l, l)}
+func makeStaticErrorPoint(msg string, fn string, l ast.Location) StaticError {
+	return StaticError{Msg: msg, Loc: ast.MakeLocationRange(fn, l, l)}
 }
 
-func makeStaticError(msg string, lr LocationRange) StaticError {
+func makeStaticError(msg string, lr ast.LocationRange) StaticError {
 	return StaticError{Msg: msg, Loc: lr}
 }
 

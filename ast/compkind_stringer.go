@@ -2,7 +2,7 @@
 // TypeWriter: stringer
 // Directive: +gen on astCompKind
 
-package jsonnet
+package ast
 
 import (
 	"fmt"

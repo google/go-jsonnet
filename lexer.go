@@ -22,6 +22,8 @@ import (
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/google/go-jsonnet/ast"
 )
 
 // ---------------------------------------------------------------------------
@@ -160,7 +162,7 @@ type token struct {
 	stringBlockIndent     string // The sequence of whitespace that indented the block.
 	stringBlockTermIndent string // This is always fewer whitespace characters than in stringBlockIndent.
 
-	loc LocationRange
+	loc ast.LocationRange
 }
 
 type tokens []token
@@ -252,7 +254,7 @@ type lexer struct {
 	// Information about the token we are working on right now
 	fodder        fodder
 	tokenStart    int
-	tokenStartLoc Location
+	tokenStartLoc ast.Location
 }
 
 const lexEOF = -1
@@ -263,7 +265,7 @@ func makeLexer(fn string, input string) *lexer {
 		input:         input,
 		pos:           position{byteNo: 0, lineNo: 1, lineStart: 0},
 		prev:          position{byteNo: lexEOF, lineNo: 0, lineStart: 0},
-		tokenStartLoc: Location{Line: 1, Column: 1},
+		tokenStartLoc: ast.Location{Line: 1, Column: 1},
 	}
 }
 
@@ -305,15 +307,15 @@ func (l *lexer) backup() {
 	l.prev = position{byteNo: lexEOF}
 }
 
-func locationFromPosition(pos position) Location {
-	return Location{Line: pos.lineNo, Column: pos.byteNo - pos.lineStart + 1}
+func locationFromPosition(pos position) ast.Location {
+	return ast.Location{Line: pos.lineNo, Column: pos.byteNo - pos.lineStart + 1}
 }
 
-func (l *lexer) location() Location {
+func (l *lexer) location() ast.Location {
 	return locationFromPosition(l.pos)
 }
 
-func (l *lexer) prevLocation() Location {
+func (l *lexer) prevLocation() ast.Location {
 	if l.prev.byteNo == lexEOF {
 		panic("prevLocation called with no valid previous rune")
 	}
@@ -335,7 +337,7 @@ func (l *lexer) emitFullToken(kind tokenKind, data, stringBlockIndent, stringBlo
 		data:                  data,
 		stringBlockIndent:     stringBlockIndent,
 		stringBlockTermIndent: stringBlockTermIndent,
-		loc: makeLocationRange(l.fileName, l.tokenStartLoc, l.location()),
+		loc: ast.MakeLocationRange(l.fileName, l.tokenStartLoc, l.location()),
 	})
 	l.fodder = fodder{}
 }

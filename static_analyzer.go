@@ -18,20 +18,16 @@ package jsonnet
 
 import (
 	"fmt"
-)
 
-func (i *IdentifierSet) Append(idents Identifiers) {
-	for _, ident := range idents {
-		i.Add(ident)
-	}
-}
+	"github.com/google/go-jsonnet/ast"
+)
 
 type analysisState struct {
 	err      error
-	freeVars IdentifierSet
+	freeVars ast.IdentifierSet
 }
 
-func visitNext(a Node, inObject bool, vars IdentifierSet, state *analysisState) {
+func visitNext(a ast.Node, inObject bool, vars ast.IdentifierSet, state *analysisState) {
 	if state.err != nil {
 		return
 	}
@@ -39,108 +35,108 @@ func visitNext(a Node, inObject bool, vars IdentifierSet, state *analysisState) 
 	state.freeVars.Append(a.FreeVariables())
 }
 
-func analyzeVisit(a Node, inObject bool, vars IdentifierSet) error {
-	s := &analysisState{freeVars: NewIdentifierSet()}
+func analyzeVisit(a ast.Node, inObject bool, vars ast.IdentifierSet) error {
+	s := &analysisState{freeVars: ast.NewIdentifierSet()}
 
 	// TODO(sbarzowski) Test somehow that we're visiting all the nodes
-	switch ast := a.(type) {
-	case *Apply:
-		visitNext(ast.Target, inObject, vars, s)
-		for _, arg := range ast.Arguments {
+	switch a := a.(type) {
+	case *ast.Apply:
+		visitNext(a.Target, inObject, vars, s)
+		for _, arg := range a.Arguments {
 			visitNext(arg, inObject, vars, s)
 		}
-	case *Array:
-		for _, elem := range ast.Elements {
+	case *ast.Array:
+		for _, elem := range a.Elements {
 			visitNext(elem, inObject, vars, s)
 		}
-	case *Binary:
-		visitNext(ast.Left, inObject, vars, s)
-		visitNext(ast.Right, inObject, vars, s)
-	case *Conditional:
-		visitNext(ast.Cond, inObject, vars, s)
-		visitNext(ast.BranchTrue, inObject, vars, s)
-		visitNext(ast.BranchFalse, inObject, vars, s)
-	case *Error:
-		visitNext(ast.Expr, inObject, vars, s)
-	case *Function:
+	case *ast.Binary:
+		visitNext(a.Left, inObject, vars, s)
+		visitNext(a.Right, inObject, vars, s)
+	case *ast.Conditional:
+		visitNext(a.Cond, inObject, vars, s)
+		visitNext(a.BranchTrue, inObject, vars, s)
+		visitNext(a.BranchFalse, inObject, vars, s)
+	case *ast.Error:
+		visitNext(a.Expr, inObject, vars, s)
+	case *ast.Function:
 		// TODO(sbarzowski) check duplicate function parameters
 		// or maybe somewhere else as it doesn't require any context
 		newVars := vars.Clone()
-		for _, param := range ast.Parameters {
+		for _, param := range a.Parameters {
 			newVars.Add(param)
 		}
-		visitNext(ast.Body, inObject, newVars, s)
+		visitNext(a.Body, inObject, newVars, s)
 		// Parameters are free inside the body, but not visible here or outside
-		for _, param := range ast.Parameters {
+		for _, param := range a.Parameters {
 			s.freeVars.Remove(param)
 		}
 		// TODO(sbarzowski) when we have default values of params check them
-	case *Import:
+	case *ast.Import:
 		//nothing to do here
-	case *ImportStr:
+	case *ast.ImportStr:
 		//nothing to do here
-	case *SuperIndex:
+	case *ast.SuperIndex:
 		if !inObject {
-			return makeStaticError("Can't use super outside of an object.", ast.loc)
+			return makeStaticError("Can't use super outside of an object.", *a.Loc())
 		}
-		visitNext(ast.Index, inObject, vars, s)
-	case *Index:
-		visitNext(ast.Target, inObject, vars, s)
-		visitNext(ast.Index, inObject, vars, s)
-	case *Local:
+		visitNext(a.Index, inObject, vars, s)
+	case *ast.Index:
+		visitNext(a.Target, inObject, vars, s)
+		visitNext(a.Index, inObject, vars, s)
+	case *ast.Local:
 		newVars := vars.Clone()
-		for _, bind := range ast.Binds {
+		for _, bind := range a.Binds {
 			newVars.Add(bind.Variable)
 		}
 		// Binds in local can be mutually or even self recursive
-		for _, bind := range ast.Binds {
+		for _, bind := range a.Binds {
 			visitNext(bind.Body, inObject, newVars, s)
 		}
-		visitNext(ast.Body, inObject, newVars, s)
+		visitNext(a.Body, inObject, newVars, s)
 
 		// Any usage of newly created variables inside are considered free
 		// but they are not here or outside
-		for _, bind := range ast.Binds {
+		for _, bind := range a.Binds {
 			s.freeVars.Remove(bind.Variable)
 		}
-	case *LiteralBoolean:
+	case *ast.LiteralBoolean:
 		//nothing to do here
-	case *LiteralNull:
+	case *ast.LiteralNull:
 		//nothing to do here
-	case *LiteralNumber:
+	case *ast.LiteralNumber:
 		//nothing to do here
-	case *LiteralString:
+	case *ast.LiteralString:
 		//nothing to do here
-	case *DesugaredObject:
-		for _, field := range ast.Fields {
+	case *ast.DesugaredObject:
+		for _, field := range a.Fields {
 			// Field names are calculated *outside* of the object
 			visitNext(field.Name, inObject, vars, s)
 			visitNext(field.Body, true, vars, s)
 		}
-		for _, assert := range ast.Asserts {
+		for _, assert := range a.Asserts {
 			visitNext(assert, true, vars, s)
 		}
-	case *ObjectComprehensionSimple:
+	case *ast.ObjectComprehensionSimple:
 		// TODO (sbarzowski) this
 		panic("Comprehensions not supported yet")
-	case *Self:
+	case *ast.Self:
 		if !inObject {
-			return makeStaticError("Can't use self outside of an object.", ast.loc)
+			return makeStaticError("Can't use self outside of an object.", *a.Loc())
 		}
-	case *Unary:
-		visitNext(ast.Expr, inObject, vars, s)
-	case *Var:
-		if !vars.Contains(ast.Id) {
-			return makeStaticError(fmt.Sprintf("Unknown variable: %v", ast.Id), ast.loc)
+	case *ast.Unary:
+		visitNext(a.Expr, inObject, vars, s)
+	case *ast.Var:
+		if !vars.Contains(a.Id) {
+			return makeStaticError(fmt.Sprintf("Unknown variable: %v", a.Id), *a.Loc())
 		}
-		s.freeVars.Add(ast.Id)
+		s.freeVars.Add(a.Id)
 	default:
 		panic(fmt.Sprintf("Unexpected node %#v", a))
 	}
-	a.setFreeVariables(s.freeVars.ToSlice())
+	a.SetFreeVariables(s.freeVars.ToSlice())
 	return s.err
 }
 
-func analyze(ast Node) error {
-	return analyzeVisit(ast, false, NewIdentifierSet("std"))
+func analyze(node ast.Node) error {
+	return analyzeVisit(node, false, ast.NewIdentifierSet("std"))
 }

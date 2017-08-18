@@ -16,14 +16,18 @@ limitations under the License.
 
 package jsonnet
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/google/go-jsonnet/ast"
+)
 
 // func dummyNodeBase() astNodeBase {
 // 	return astNode
 // }
 
 func TestSimpleNull(t *testing.T) {
-	ast := &LiteralNull{}
+	ast := &ast.LiteralNull{}
 	err := analyze(ast)
 	if err != nil {
 		t.Errorf("Unexpected error: %+v", err)
@@ -33,7 +37,7 @@ func TestSimpleNull(t *testing.T) {
 	}
 }
 
-func hasTheseFreeVars(returned Identifiers, expected Identifiers) bool {
+func hasTheseFreeVars(returned ast.Identifiers, expected ast.Identifiers) bool {
 	if len(returned) != len(expected) {
 		return false
 	}
@@ -46,25 +50,25 @@ func hasTheseFreeVars(returned Identifiers, expected Identifiers) bool {
 }
 
 func TestSimpleLocal(t *testing.T) {
-	ast := &Local{
-		Binds: LocalBinds{
-			LocalBind{
+	node := &ast.Local{
+		Binds: ast.LocalBinds{
+			ast.LocalBind{
 				Variable: "x",
-				Body:     &LiteralNull{},
+				Body:     &ast.LiteralNull{},
 			},
 		},
-		Body: &Var{Id: "x"},
+		Body: &ast.Var{Id: "x"},
 	}
 
-	err := analyze(ast)
+	err := analyze(node)
 	if err != nil {
 		t.Errorf("Unexpected error: %+v", err)
 	}
-	if ast.FreeVariables() != nil {
-		t.Errorf("Unexpected free variables %+v in root local. Expected none.", ast.FreeVariables())
+	if node.FreeVariables() != nil {
+		t.Errorf("Unexpected free variables %+v in root local. Expected none.", node.FreeVariables())
 	}
-	returned := ast.Body.FreeVariables()
-	expectedVars := Identifiers{"x"}
+	returned := node.Body.FreeVariables()
+	expectedVars := ast.Identifiers{"x"}
 	if !hasTheseFreeVars(returned, expectedVars) {
 		t.Errorf("Unexpected free variables %+v in local body. Expected %+v.", returned, expectedVars)
 	}

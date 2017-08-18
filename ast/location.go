@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package jsonnet
+package ast
 
 import "fmt"
 
@@ -71,10 +71,10 @@ func (lr *LocationRange) String() string {
 }
 
 // This is useful for special locations, e.g. manifestation entry point.
-func makeLocationRangeMessage(msg string) LocationRange {
+func MakeLocationRangeMessage(msg string) LocationRange {
 	return LocationRange{FileName: msg}
 }
 
-func makeLocationRange(fn string, begin Location, end Location) LocationRange {
+func MakeLocationRange(fn string, begin Location, end Location) LocationRange {
 	return LocationRange{FileName: fn, Begin: begin, End: end}
 }

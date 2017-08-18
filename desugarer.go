@@ -22,13 +22,15 @@ import (
 	"fmt"
 	"reflect"
 	"unicode/utf8"
+
+	"github.com/google/go-jsonnet/ast"
 )
 
-func makeStr(s string) *LiteralString {
-	return &LiteralString{nodeBase{loc: LocationRange{}}, s, StringDouble, ""}
+func makeStr(s string) *ast.LiteralString {
+	return &ast.LiteralString{ast.NodeBase{}, s, ast.StringDouble, ""}
 }
 
-func stringUnescape(loc *LocationRange, s string) (string, error) {
+func stringUnescape(loc *ast.LocationRange, s string) (string, error) {
 	var buf bytes.Buffer
 	// read one rune at a time
 	for i := 0; i < len(s); {
@@ -82,7 +84,7 @@ func stringUnescape(loc *LocationRange, s string) (string, error) {
 	return buf.String(), nil
 }
 
-func desugarFields(location LocationRange, fields *ObjectFields, objLevel int) error {
+func desugarFields(location ast.LocationRange, fields *ast.ObjectFields, objLevel int) error {
 
 	// Desugar children
 	for i := range *fields {
@@ -108,7 +110,7 @@ func desugarFields(location LocationRange, fields *ObjectFields, objLevel int) e
 	// Simplify asserts
 	// TODO(dcunnin): this
 	for _, field := range *fields {
-		if field.Kind != ObjectAssert {
+		if field.Kind != ast.ObjectAssert {
 			continue
 		}
 		/*
@@ -116,15 +118,15 @@ func desugarFields(location LocationRange, fields *ObjectFields, objLevel int) e
 			field.expr3 = nil
 			if (msg == nil) {
 				auto msg_str = U"Object assertion failed."
-				msg = alloc->make<LiteralString>(field.expr2->location, msg_str,
-												 LiteralString::DOUBLE, "")
+				msg = alloc->make<ast.LiteralString>(field.expr2->location, msg_str,
+												 ast.LiteralString::DOUBLE, "")
 			}
 
 			// if expr2 then true else error msg
-			field.expr2 = alloc->make<Conditional>(
+			field.expr2 = alloc->make<ast.Conditional>(
 				ast->location,
 				field.expr2,
-				alloc->make<LiteralBoolean>(E, true),
+				alloc->make<ast.LiteralBoolean>(E, true),
 				alloc->make<Error>(msg->location, msg))
 		*/
 	}
@@ -137,9 +139,9 @@ func desugarFields(location LocationRange, fields *ObjectFields, objLevel int) e
 			continue
 		}
 		origBody := field.Expr2
-		function := &Function{
+		function := &ast.Function{
 			// TODO(sbarzowski) better location
-			nodeBase:   nodeBase{loc: *origBody.Loc()},
+			NodeBase:   ast.NewNodeBaseLoc(*origBody.Loc()),
 			Parameters: field.Ids,
 			Body:       origBody,
 		}
@@ -149,20 +151,20 @@ func desugarFields(location LocationRange, fields *ObjectFields, objLevel int) e
 	}
 
 	// Remove object-level locals
-	newFields := []ObjectField{}
-	var binds LocalBinds
+	newFields := []ast.ObjectField{}
+	var binds ast.LocalBinds
 	for _, local := range *fields {
-		if local.Kind != ObjectLocal {
+		if local.Kind != ast.ObjectLocal {
 			continue
 		}
-		binds = append(binds, LocalBind{Variable: *local.Id, Body: local.Expr2})
+		binds = append(binds, ast.LocalBind{Variable: *local.Id, Body: local.Expr2})
 	}
 	for _, field := range *fields {
-		if field.Kind == ObjectLocal {
+		if field.Kind == ast.ObjectLocal {
 			continue
 		}
 		if len(binds) > 0 {
-			field.Expr2 = &Local{nodeBase{loc: *field.Expr2.Loc()}, binds, field.Expr2}
+			field.Expr2 = &ast.Local{ast.NewNodeBaseLoc(*field.Expr2.Loc()), binds, field.Expr2}
 		}
 		newFields = append(newFields, field)
 	}
@@ -172,21 +174,21 @@ func desugarFields(location LocationRange, fields *ObjectFields, objLevel int) e
 	for i := range *fields {
 		field := &(*fields)[i]
 		switch field.Kind {
-		case ObjectAssert:
+		case ast.ObjectAssert:
 		// Nothing to do.
 
-		case ObjectFieldID:
+		case ast.ObjectFieldID:
 			field.Expr1 = makeStr(string(*field.Id))
-			field.Kind = ObjectFieldExpr
+			field.Kind = ast.ObjectFieldExpr
 
-		case ObjectFieldExpr:
+		case ast.ObjectFieldExpr:
 		// Nothing to do.
 
-		case ObjectFieldStr:
+		case ast.ObjectFieldStr:
 			// Just set the flag.
-			field.Kind = ObjectFieldExpr
+			field.Kind = ast.ObjectFieldExpr
 
-		case ObjectLocal:
+		case ast.ObjectLocal:
 			return fmt.Errorf("INTERNAL ERROR: Locals should be removed by now")
 		}
 	}
@@ -199,7 +201,7 @@ func desugarFields(location LocationRange, fields *ObjectFields, objLevel int) e
 		}
 		/*
 			AST *super_f = alloc->make<SuperIndex>(field.expr1->location, field.expr1, nil)
-			field.expr2 = alloc->make<Binary>(ast->location, super_f, BOP_PLUS, field.expr2)
+			field.expr2 = alloc->make<ast.Binary>(ast->location, super_f, BOP_PLUS, field.expr2)
 			field.superSugar = false
 		*/
 	}
@@ -207,35 +209,35 @@ func desugarFields(location LocationRange, fields *ObjectFields, objLevel int) e
 	return nil
 }
 
-func desugarArrayComp(astComp *ArrayComp, objLevel int) (Node, error) {
-	return &LiteralNull{}, nil
+func desugarArrayComp(astComp *ast.ArrayComp, objLevel int) (ast.Node, error) {
+	return &ast.LiteralNull{}, nil
 	// TODO(sbarzowski) this
 	switch astComp.Specs[0].Kind {
-	case CompFor:
+	case ast.CompFor:
 		panic("TODO")
-	case CompIf:
+	case ast.CompIf:
 		panic("TODO")
 	default:
 		panic("TODO")
 	}
 }
 
-func desugarObjectComp(astComp *ObjectComp, objLevel int) (Node, error) {
-	return &LiteralNull{}, nil
+func desugarObjectComp(astComp *ast.ObjectComp, objLevel int) (ast.Node, error) {
+	return &ast.LiteralNull{}, nil
 	// TODO(sbarzowski) this
 }
 
-func buildSimpleIndex(obj Node, member Identifier) Node {
-	return &Index{
+func buildSimpleIndex(obj ast.Node, member ast.Identifier) ast.Node {
+	return &ast.Index{
 		Target: obj,
 		Id:     &member,
 	}
 }
 
-func buildStdCall(builtinName Identifier, args ...Node) Node {
-	std := &Var{Id: "std"}
+func buildStdCall(builtinName ast.Identifier, args ...ast.Node) ast.Node {
+	std := &ast.Var{Id: "std"}
 	builtin := buildSimpleIndex(std, builtinName)
-	return &Apply{
+	return &ast.Apply{
 		Target:    builtin,
 		Arguments: args,
 	}
@@ -249,267 +251,267 @@ func buildStdCall(builtinName Identifier, args ...Node) Node {
 // variables used in user code.
 // TODO(sbarzowski) Actually we may want to do some static analysis before desugaring, e.g.
 // warning user about dangerous use of constructs that we desugar.
-func desugar(astPtr *Node, objLevel int) (err error) {
-	ast := *astPtr
+func desugar(astPtr *ast.Node, objLevel int) (err error) {
+	node := *astPtr
 
-	if ast == nil {
+	if node == nil {
 		return
 	}
 
-	switch ast := ast.(type) {
-	case *Apply:
-		desugar(&ast.Target, objLevel)
-		for i := range ast.Arguments {
-			err = desugar(&ast.Arguments[i], objLevel)
+	switch node := node.(type) {
+	case *ast.Apply:
+		desugar(&node.Target, objLevel)
+		for i := range node.Arguments {
+			err = desugar(&node.Arguments[i], objLevel)
 			if err != nil {
 				return
 			}
 		}
 
-	case *ApplyBrace:
-		err = desugar(&ast.Left, objLevel)
+	case *ast.ApplyBrace:
+		err = desugar(&node.Left, objLevel)
 		if err != nil {
 			return
 		}
-		err = desugar(&ast.Right, objLevel)
+		err = desugar(&node.Right, objLevel)
 		if err != nil {
 			return
 		}
-		*astPtr = &Binary{
-			nodeBase: ast.nodeBase,
-			Left:     ast.Left,
-			Op:       BopPlus,
-			Right:    ast.Right,
+		*astPtr = &ast.Binary{
+			NodeBase: node.NodeBase,
+			Left:     node.Left,
+			Op:       ast.BopPlus,
+			Right:    node.Right,
 		}
 
-	case *Array:
-		for i := range ast.Elements {
-			err = desugar(&ast.Elements[i], objLevel)
+	case *ast.Array:
+		for i := range node.Elements {
+			err = desugar(&node.Elements[i], objLevel)
 			if err != nil {
 				return
 			}
 		}
 
-	case *ArrayComp:
-		comp, err := desugarArrayComp(ast, objLevel)
+	case *ast.ArrayComp:
+		comp, err := desugarArrayComp(node, objLevel)
 		if err != nil {
 			return err
 		}
 		*astPtr = comp
 
-	case *Assert:
+	case *ast.Assert:
 		// TODO(sbarzowski) this
-		*astPtr = &LiteralNull{}
+		*astPtr = &ast.LiteralNull{}
 
-	case *Binary:
+	case *ast.Binary:
 		// some operators get replaced by stdlib functions
-		if funcname, replaced := desugaredBop[ast.Op]; replaced {
+		if funcname, replaced := desugaredBop[node.Op]; replaced {
 			if funcname == "notEquals" {
 				// TODO(sbarzowski) maybe we can handle it in more regular way
 				// but let's be consistent with the spec
-				*astPtr = &Unary{
-					Op:   UopNot,
-					Expr: buildStdCall(desugaredBop[BopManifestEqual], ast.Left, ast.Right),
+				*astPtr = &ast.Unary{
+					Op:   ast.UopNot,
+					Expr: buildStdCall(desugaredBop[ast.BopManifestEqual], node.Left, node.Right),
 				}
 			} else {
-				*astPtr = buildStdCall(funcname, ast.Left, ast.Right)
+				*astPtr = buildStdCall(funcname, node.Left, node.Right)
 			}
 			return desugar(astPtr, objLevel)
 		}
 
-		err = desugar(&ast.Left, objLevel)
+		err = desugar(&node.Left, objLevel)
 		if err != nil {
 			return
 		}
-		err = desugar(&ast.Right, objLevel)
+		err = desugar(&node.Right, objLevel)
 		if err != nil {
 			return
 		}
 		// TODO(dcunnin): Need to handle bopPercent, bopManifestUnequal, bopManifestEqual
 
-	case *Conditional:
-		err = desugar(&ast.Cond, objLevel)
+	case *ast.Conditional:
+		err = desugar(&node.Cond, objLevel)
 		if err != nil {
 			return
 		}
-		err = desugar(&ast.BranchTrue, objLevel)
+		err = desugar(&node.BranchTrue, objLevel)
 		if err != nil {
 			return
 		}
-		if ast.BranchFalse == nil {
-			ast.BranchFalse = &LiteralNull{}
+		if node.BranchFalse == nil {
+			node.BranchFalse = &ast.LiteralNull{}
 		}
-		err = desugar(&ast.BranchFalse, objLevel)
+		err = desugar(&node.BranchFalse, objLevel)
 		if err != nil {
 			return
 		}
 
-	case *Dollar:
+	case *ast.Dollar:
 		if objLevel == 0 {
-			return makeStaticError("No top-level object found.", *ast.Loc())
+			return makeStaticError("No top-level object found.", *node.Loc())
 		}
-		*astPtr = &Var{nodeBase: ast.nodeBase, Id: Identifier("$")}
+		*astPtr = &ast.Var{NodeBase: node.NodeBase, Id: ast.Identifier("$")}
 
-	case *Error:
-		err = desugar(&ast.Expr, objLevel)
+	case *ast.Error:
+		err = desugar(&node.Expr, objLevel)
 		if err != nil {
 			return
 		}
 
-	case *Function:
-		err = desugar(&ast.Body, objLevel)
+	case *ast.Function:
+		err = desugar(&node.Body, objLevel)
 		if err != nil {
 			return
 		}
 
-	case *Import:
+	case *ast.Import:
 		// Nothing to do.
 
-	case *ImportStr:
+	case *ast.ImportStr:
 		// Nothing to do.
 
-	case *Index:
-		err = desugar(&ast.Target, objLevel)
+	case *ast.Index:
+		err = desugar(&node.Target, objLevel)
 		if err != nil {
 			return
 		}
-		if ast.Id != nil {
-			if ast.Index != nil {
+		if node.Id != nil {
+			if node.Index != nil {
 				panic("TODO")
 			}
-			ast.Index = makeStr(string(*ast.Id))
-			ast.Id = nil
+			node.Index = makeStr(string(*node.Id))
+			node.Id = nil
 		}
-		err = desugar(&ast.Index, objLevel)
+		err = desugar(&node.Index, objLevel)
 		if err != nil {
 			return
 		}
 
-	case *Slice:
-		if ast.BeginIndex == nil {
-			ast.BeginIndex = &LiteralNull{}
+	case *ast.Slice:
+		if node.BeginIndex == nil {
+			node.BeginIndex = &ast.LiteralNull{}
 		}
-		if ast.EndIndex == nil {
-			ast.EndIndex = &LiteralNull{}
+		if node.EndIndex == nil {
+			node.EndIndex = &ast.LiteralNull{}
 		}
-		if ast.Step == nil {
-			ast.Step = &LiteralNull{}
+		if node.Step == nil {
+			node.Step = &ast.LiteralNull{}
 		}
-		*astPtr = buildStdCall("std.slice", ast.Target, ast.BeginIndex, ast.EndIndex, ast.Step)
+		*astPtr = buildStdCall("std.slice", node.Target, node.BeginIndex, node.EndIndex, node.Step)
 		desugar(astPtr, objLevel)
 
-	case *Local:
-		for i := range ast.Binds {
-			if ast.Binds[i].FunctionSugar {
-				origBody := ast.Binds[i].Body
-				function := &Function{
+	case *ast.Local:
+		for i := range node.Binds {
+			if node.Binds[i].FunctionSugar {
+				origBody := node.Binds[i].Body
+				function := &ast.Function{
 					// TODO(sbarzowski) better location
-					nodeBase:   nodeBase{loc: *origBody.Loc()},
-					Parameters: ast.Binds[i].Params,
+					NodeBase:   ast.NewNodeBaseLoc(*origBody.Loc()),
+					Parameters: node.Binds[i].Params,
 					Body:       origBody,
 				}
-				ast.Binds[i] = LocalBind{
-					Variable:      ast.Binds[i].Variable,
+				node.Binds[i] = ast.LocalBind{
+					Variable:      node.Binds[i].Variable,
 					Body:          function,
 					FunctionSugar: false,
 					Params:        nil,
 				}
 			}
-			err = desugar(&ast.Binds[i].Body, objLevel)
+			err = desugar(&node.Binds[i].Body, objLevel)
 			if err != nil {
 				return
 			}
 		}
-		err = desugar(&ast.Body, objLevel)
+		err = desugar(&node.Body, objLevel)
 		if err != nil {
 			return
 		}
 
-	case *LiteralBoolean:
+	case *ast.LiteralBoolean:
 		// Nothing to do.
 
-	case *LiteralNull:
+	case *ast.LiteralNull:
 		// Nothing to do.
 
-	case *LiteralNumber:
+	case *ast.LiteralNumber:
 		// Nothing to do.
 
-	case *LiteralString:
-		if ast.Kind != VerbatimStringDouble && ast.Kind != VerbatimStringSingle {
-			unescaped, err := stringUnescape(ast.Loc(), ast.Value)
+	case *ast.LiteralString:
+		if node.Kind != ast.VerbatimStringDouble && node.Kind != ast.VerbatimStringSingle {
+			unescaped, err := stringUnescape(node.Loc(), node.Value)
 			if err != nil {
 				return err
 			}
-			ast.Value = unescaped
-			ast.Kind = StringDouble
-			ast.BlockIndent = ""
+			node.Value = unescaped
+			node.Kind = ast.StringDouble
+			node.BlockIndent = ""
 		}
-	case *Object:
+	case *ast.Object:
 		// Hidden variable to allow $ binding.
 		if objLevel == 0 {
-			dollar := Identifier("$")
-			ast.Fields = append(ast.Fields, ObjectFieldLocalNoMethod(&dollar, &Self{}))
+			dollar := ast.Identifier("$")
+			node.Fields = append(node.Fields, ast.ObjectFieldLocalNoMethod(&dollar, &ast.Self{}))
 		}
 
-		err = desugarFields(*ast.Loc(), &ast.Fields, objLevel)
+		err = desugarFields(*node.Loc(), &node.Fields, objLevel)
 		if err != nil {
 			return
 		}
 
-		var newFields DesugaredObjectFields
-		var newAsserts Nodes
+		var newFields ast.DesugaredObjectFields
+		var newAsserts ast.Nodes
 
-		for _, field := range ast.Fields {
-			if field.Kind == ObjectAssert {
+		for _, field := range node.Fields {
+			if field.Kind == ast.ObjectAssert {
 				newAsserts = append(newAsserts, field.Expr2)
-			} else if field.Kind == ObjectFieldExpr {
-				newFields = append(newFields, DesugaredObjectField{field.Hide, field.Expr1, field.Expr2})
+			} else if field.Kind == ast.ObjectFieldExpr {
+				newFields = append(newFields, ast.DesugaredObjectField{field.Hide, field.Expr1, field.Expr2})
 			} else {
 				panic(fmt.Sprintf("INTERNAL ERROR: field should have been desugared: %s", field.Kind))
 			}
 		}
 
-		*astPtr = &DesugaredObject{ast.nodeBase, newAsserts, newFields}
+		*astPtr = &ast.DesugaredObject{node.NodeBase, newAsserts, newFields}
 
-	case *DesugaredObject:
+	case *ast.DesugaredObject:
 		panic("Desugaring desugared object")
 
-	case *ObjectComp:
-		comp, err := desugarObjectComp(ast, objLevel)
+	case *ast.ObjectComp:
+		comp, err := desugarObjectComp(node, objLevel)
 		if err != nil {
 			return err
 		}
 		*astPtr = comp
 
-	case *ObjectComprehensionSimple:
+	case *ast.ObjectComprehensionSimple:
 		panic("Desugaring desugared object comprehension")
 
-	case *Self:
+	case *ast.Self:
 		// Nothing to do.
 
-	case *SuperIndex:
-		if ast.Id != nil {
-			ast.Index = &LiteralString{Value: string(*ast.Id)}
-			ast.Id = nil
+	case *ast.SuperIndex:
+		if node.Id != nil {
+			node.Index = &ast.LiteralString{Value: string(*node.Id)}
+			node.Id = nil
 		}
 
-	case *Unary:
-		err = desugar(&ast.Expr, objLevel)
+	case *ast.Unary:
+		err = desugar(&node.Expr, objLevel)
 		if err != nil {
 			return
 		}
 
-	case *Var:
+	case *ast.Var:
 		// Nothing to do.
 
 	default:
-		panic(fmt.Sprintf("Desugarer does not recognize ast: %s", reflect.TypeOf(ast)))
+		panic(fmt.Sprintf("Desugarer does not recognize ast: %s", reflect.TypeOf(node)))
 	}
 
 	return nil
 }
 
-func desugarFile(ast *Node) error {
+func desugarFile(ast *ast.Node) error {
 	err := desugar(ast, 0)
 	if err != nil {
 		return err
