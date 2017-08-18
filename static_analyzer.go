@@ -43,7 +43,7 @@ func analyzeVisit(a ast.Node, inObject bool, vars ast.IdentifierSet) error {
 	switch a := a.(type) {
 	case *ast.Apply:
 		visitNext(a.Target, inObject, vars, s)
-		for _, arg := range a.Arguments {
+		for _, arg := range a.Arguments.Positional {
 			visitNext(arg, inObject, vars, s)
 		}
 	case *ast.Array:
@@ -63,12 +63,12 @@ func analyzeVisit(a ast.Node, inObject bool, vars ast.IdentifierSet) error {
 		// TODO(sbarzowski) check duplicate function parameters
 		// or maybe somewhere else as it doesn't require any context
 		newVars := vars.Clone()
-		for _, param := range a.Parameters {
+		for _, param := range a.Parameters.Positional {
 			newVars.Add(param)
 		}
 		visitNext(a.Body, inObject, newVars, s)
 		// Parameters are free inside the body, but not visible here or outside
-		for _, param := range a.Parameters {
+		for _, param := range a.Parameters.Positional {
 			s.freeVars.Remove(param)
 		}
 		// TODO(sbarzowski) when we have default values of params check them

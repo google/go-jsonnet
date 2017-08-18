@@ -84,6 +84,8 @@ var tests = []string{
 	`if n > 1 then 'foos' else 'foo'`,
 
 	`local foo = function(x) x + 1; true`,
+	`local foo = function(x=5) x + 1; true`,
+	`local foo = function(x=5) x + 1; x(x=3)`,
 
 	`import 'foo.jsonnet'`,
 	`importstr 'foo.text'`,
@@ -130,18 +132,18 @@ type testError struct {
 
 var errorTests = []testError{
 	{`,`, `test:1:1-2 Unexpected: (",", ",") while parsing terminal`},
-	{`function(a, b c)`, `test:1:15-16 Expected a comma before next function parameter.`},
+	{`function(a, b c)`, `test:1:15-16 Expected a comma before next function parameter, got (IDENTIFIER, "c").`},
 	{`function(a, 1)`, `test:1:13-14 Expected simple identifier but got a complex expression.`},
 	{`a b`, `test:1:3-4 Did not expect: (IDENTIFIER, "b")`},
-	{`foo(a, bar(a b))`, `test:1:14-15 Expected a comma before next function argument.`},
+	{`foo(a, bar(a b))`, `test:1:14-15 Expected a comma before next function argument, got (IDENTIFIER, "b").`},
 
 	{`local`, `test:1:6 Expected token IDENTIFIER but got end of file`},
 	{`local foo = 1, foo = 2; true`, `test:1:16-19 Duplicate local var: foo`},
-	{`local foo(a b) = a; true`, `test:1:13-14 Expected a comma before next function parameter.`},
+	{`local foo(a b) = a; true`, `test:1:13-14 Expected a comma before next function parameter, got (IDENTIFIER, "b").`},
 	{`local foo(a): a; true`, `test:1:13-14 Expected operator = but got ":"`},
-	{`local foo(a) = bar(a b); true`, `test:1:22-23 Expected a comma before next function argument.`},
+	{`local foo(a) = bar(a b); true`, `test:1:22-23 Expected a comma before next function argument, got (IDENTIFIER, "b").`},
 	{`local foo: 1; true`, `test:1:10-11 Expected operator = but got ":"`},
-	{`local foo = bar(a b); true`, `test:1:19-20 Expected a comma before next function argument.`},
+	{`local foo = bar(a b); true`, `test:1:19-20 Expected a comma before next function argument, got (IDENTIFIER, "b").`},
 
 	{`{a b}`, `test:1:4-5 Expected token OPERATOR but got (IDENTIFIER, "b")`},
 	{`{a = b}`, `test:1:4-5 Expected one of :, ::, :::, +:, +::, +:::, got: =`},
@@ -162,14 +164,14 @@ var errorTests = []testError{
 	{`{[(x y)]: z}`, `test:1:6-7 Expected token ")" but got (IDENTIFIER, "y")`},
 	{`{[x y]: z}`, `test:1:5-6 Expected token "]" but got (IDENTIFIER, "y")`},
 
-	{`{foo(x y): z}`, `test:1:8-9 Expected a comma before next method parameter.`},
+	{`{foo(x y): z}`, `test:1:8-9 Expected a comma before next method parameter, got (IDENTIFIER, "y").`},
 	{`{foo(x)+: z}`, `test:1:2-5 Cannot use +: syntax sugar in a method: foo`},
 	{`{foo: 1, foo: 2}`, `test:1:10-13 Duplicate field: foo`},
 	{`{foo: (1 2)}`, `test:1:10-11 Expected token ")" but got (NUMBER, "2")`},
 
 	{`{local 1 = 3, true}`, `test:1:8-9 Expected token IDENTIFIER but got (NUMBER, "1")`},
 	{`{local foo = 1, local foo = 2, true}`, `test:1:23-26 Duplicate local var: foo`},
-	{`{local foo(a b) = 1, a: true}`, `test:1:14-15 Expected a comma before next function parameter.`},
+	{`{local foo(a b) = 1, a: true}`, `test:1:14-15 Expected a comma before next function parameter, got (IDENTIFIER, "b").`},
 	{`{local foo(a): 1, a: true}`, `test:1:14-15 Expected operator = but got ":"`},
 	{`{local foo(a) = (a b), a: true}`, `test:1:20-21 Expected token ")" but got (IDENTIFIER, "b")`},
 

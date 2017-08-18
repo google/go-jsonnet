@@ -95,10 +95,19 @@ type CompSpecs []CompSpec
 type Apply struct {
 	NodeBase
 	Target        Node
-	Arguments     Nodes
+	Arguments     Arguments
 	TrailingComma bool
 	TailStrict    bool
-	// TODO(sbarzowski) support named arguments
+}
+
+type NamedArgument struct {
+	Name Identifier
+	Arg  Node
+}
+
+type Arguments struct {
+	Positional Nodes
+	Named      []NamedArgument
 }
 
 // ---------------------------------------------------------------------------
@@ -274,9 +283,19 @@ type Error struct {
 // Function represents a function definition
 type Function struct {
 	NodeBase
-	Parameters    Identifiers // TODO(sbarzowski) support default arguments
+	Parameters    Parameters
 	TrailingComma bool
 	Body          Node
+}
+
+type NamedParameter struct {
+	Name       Identifier
+	DefaultArg Node
+}
+
+type Parameters struct {
+	Positional Identifiers
+	Named      []NamedParameter
 }
 
 // ---------------------------------------------------------------------------
@@ -325,7 +344,7 @@ type LocalBind struct {
 	Variable      Identifier
 	Body          Node
 	FunctionSugar bool
-	Params        Identifiers // if functionSugar is true
+	Params        *Parameters // if functionSugar is true
 	TrailingComma bool
 }
 type LocalBinds []LocalBind
@@ -410,19 +429,19 @@ type ObjectField struct {
 	MethodSugar   bool            // f(x, y, z): ...  (ignore if kind  == astObjectAssert)
 	Expr1         Node            // Not in scope of the object
 	Id            *Identifier
-	Ids           Identifiers // If methodSugar == true then holds the params.
+	Params        *Parameters // If methodSugar == true then holds the params.
 	TrailingComma bool        // If methodSugar == true then remembers the trailing comma
 	Expr2, Expr3  Node        // In scope of the object (can see self).
 }
 
 // TODO(jbeda): Add the remaining constructor helpers here
 
-func ObjectFieldLocal(methodSugar bool, id *Identifier, ids Identifiers, trailingComma bool, body Node) ObjectField {
-	return ObjectField{ObjectLocal, ObjectFieldVisible, false, methodSugar, nil, id, ids, trailingComma, body, nil}
+func ObjectFieldLocal(methodSugar bool, id *Identifier, params *Parameters, trailingComma bool, body Node) ObjectField {
+	return ObjectField{ObjectLocal, ObjectFieldVisible, false, methodSugar, nil, id, params, trailingComma, body, nil}
 }
 
 func ObjectFieldLocalNoMethod(id *Identifier, body Node) ObjectField {
-	return ObjectField{ObjectLocal, ObjectFieldVisible, false, false, nil, id, Identifiers{}, false, body, nil}
+	return ObjectField{ObjectLocal, ObjectFieldVisible, false, false, nil, id, nil, false, body, nil}
 }
 
 type ObjectFields []ObjectField

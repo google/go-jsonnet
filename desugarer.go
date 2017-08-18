@@ -143,11 +143,11 @@ func desugarFields(location ast.LocationRange, fields *ast.ObjectFields, objLeve
 		function := &ast.Function{
 			// TODO(sbarzowski) better location
 			NodeBase:   ast.NewNodeBaseLoc(*origBody.Loc()),
-			Parameters: field.Ids,
+			Parameters: *field.Params,
 			Body:       origBody,
 		}
 		field.MethodSugar = false
-		field.Ids = nil
+		field.Params = nil
 		field.Expr2 = function
 	}
 
@@ -240,7 +240,7 @@ func buildStdCall(builtinName ast.Identifier, args ...ast.Node) ast.Node {
 	builtin := buildSimpleIndex(std, builtinName)
 	return &ast.Apply{
 		Target:    builtin,
-		Arguments: args,
+		Arguments: ast.Arguments{Positional: args},
 	}
 }
 
@@ -262,8 +262,8 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 	switch node := node.(type) {
 	case *ast.Apply:
 		desugar(&node.Target, objLevel)
-		for i := range node.Arguments {
-			err = desugar(&node.Arguments[i], objLevel)
+		for i := range node.Arguments.Positional {
+			err = desugar(&node.Arguments.Positional[i], objLevel)
 			if err != nil {
 				return
 			}
@@ -408,7 +408,7 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 				function := &ast.Function{
 					// TODO(sbarzowski) better location
 					NodeBase:   ast.NewNodeBaseLoc(*origBody.Loc()),
-					Parameters: node.Binds[i].Params,
+					Parameters: *node.Binds[i].Params,
 					Body:       origBody,
 				}
 				node.Binds[i] = ast.LocalBind{
