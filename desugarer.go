@@ -24,6 +24,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/go-jsonnet/ast"
+	"github.com/google/go-jsonnet/parser"
 )
 
 func makeStr(s string) *ast.LiteralString {
@@ -39,7 +40,7 @@ func stringUnescape(loc *ast.LocationRange, s string) (string, error) {
 		switch r {
 		case '\\':
 			if i >= len(s) {
-				return "", MakeStaticError("Truncated escape sequence in string literal.", *loc)
+				return "", parser.MakeStaticError("Truncated escape sequence in string literal.", *loc)
 			}
 			r2, w := utf8.DecodeRuneInString(s[i:])
 			i += w
@@ -64,17 +65,17 @@ func stringUnescape(loc *ast.LocationRange, s string) (string, error) {
 				buf.WriteRune('\t')
 			case 'u':
 				if i+4 > len(s) {
-					return "", MakeStaticError("Truncated unicode escape sequence in string literal.", *loc)
+					return "", parser.MakeStaticError("Truncated unicode escape sequence in string literal.", *loc)
 				}
 				codeBytes, err := hex.DecodeString(s[i : i+4])
 				if err != nil {
-					return "", MakeStaticError(fmt.Sprintf("Unicode escape sequence was malformed: %s", s[0:4]), *loc)
+					return "", parser.MakeStaticError(fmt.Sprintf("Unicode escape sequence was malformed: %s", s[0:4]), *loc)
 				}
 				code := int(codeBytes[0])*256 + int(codeBytes[1])
 				buf.WriteRune(rune(code))
 				i += 4
 			default:
-				return "", MakeStaticError(fmt.Sprintf("Unknown escape sequence in string literal: \\%c", r2), *loc)
+				return "", parser.MakeStaticError(fmt.Sprintf("Unknown escape sequence in string literal: \\%c", r2), *loc)
 			}
 
 		default:
@@ -348,7 +349,7 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 
 	case *ast.Dollar:
 		if objLevel == 0 {
-			return MakeStaticError("No top-level object found.", *node.Loc())
+			return parser.MakeStaticError("No top-level object found.", *node.Loc())
 		}
 		*astPtr = &ast.Var{NodeBase: node.NodeBase, Id: ast.Identifier("$")}
 
