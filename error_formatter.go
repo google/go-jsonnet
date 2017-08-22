@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/google/go-jsonnet/ast"
+	"github.com/google/go-jsonnet/parser"
 )
 
 type ErrorFormatter struct {
@@ -36,7 +37,7 @@ func (ef *ErrorFormatter) format(err error) string {
 	switch err := err.(type) {
 	case RuntimeError:
 		return ef.formatRuntime(&err)
-	case StaticError:
+	case parser.StaticError:
 		return ef.formatStatic(&err)
 	default:
 		return ef.formatInternal(err)
@@ -48,7 +49,7 @@ func (ef *ErrorFormatter) formatRuntime(err *RuntimeError) string {
 	// TODO(sbarzowski) pretty stuff
 }
 
-func (ef *ErrorFormatter) formatStatic(err *StaticError) string {
+func (ef *ErrorFormatter) formatStatic(err *parser.StaticError) string {
 	return err.Error() + "\n"
 	// TODO(sbarzowski) pretty stuff
 }

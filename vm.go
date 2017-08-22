@@ -22,6 +22,7 @@ import (
 	"runtime/debug"
 
 	"github.com/google/go-jsonnet/ast"
+	"github.com/google/go-jsonnet/parser"
 )
 
 // Note: There are no garbage collection params because we're using the native
@@ -98,11 +99,11 @@ func (vm *VM) EvaluateSnippet(filename string, snippet string) (json string, for
 }
 
 func snippetToAST(filename string, snippet string) (ast.Node, error) {
-	tokens, err := Lex(filename, snippet)
+	tokens, err := parser.Lex(filename, snippet)
 	if err != nil {
 		return nil, err
 	}
-	node, err := Parse(tokens)
+	node, err := parser.Parse(tokens)
 	if err != nil {
 		return nil, err
 	}

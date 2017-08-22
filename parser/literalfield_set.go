@@ -2,7 +2,7 @@
 // TypeWriter: set
 // Directive: +gen on literalField
 
-package jsonnet
+package parser
 
 // Set is a modification of https://github.com/deckarep/golang-set
 // The MIT License (MIT)
