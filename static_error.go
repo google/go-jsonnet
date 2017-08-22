@@ -32,15 +32,15 @@ type StaticError struct {
 	Msg string
 }
 
-func makeStaticErrorMsg(msg string) StaticError {
+func MakeStaticErrorMsg(msg string) StaticError {
 	return StaticError{Msg: msg}
 }
 
-func makeStaticErrorPoint(msg string, fn string, l ast.Location) StaticError {
+func MakeStaticErrorPoint(msg string, fn string, l ast.Location) StaticError {
 	return StaticError{Msg: msg, Loc: ast.MakeLocationRange(fn, l, l)}
 }
 
-func makeStaticError(msg string, lr ast.LocationRange) StaticError {
+func MakeStaticError(msg string, lr ast.LocationRange) StaticError {
 	return StaticError{Msg: msg, Loc: lr}
 }
 

@@ -98,11 +98,11 @@ func (vm *VM) EvaluateSnippet(filename string, snippet string) (json string, for
 }
 
 func snippetToAST(filename string, snippet string) (ast.Node, error) {
-	tokens, err := lex(filename, snippet)
+	tokens, err := Lex(filename, snippet)
 	if err != nil {
 		return nil, err
 	}
-	node, err := parse(tokens)
+	node, err := Parse(tokens)
 	if err != nil {
 		return nil, err
 	}

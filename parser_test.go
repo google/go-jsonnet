@@ -111,12 +111,12 @@ var tests = []string{
 
 func TestParser(t *testing.T) {
 	for _, s := range tests {
-		tokens, err := lex("test", s)
+		tokens, err := Lex("test", s)
 		if err != nil {
 			t.Errorf("Unexpected lex error\n  input: %v\n  error: %v", s, err)
 			continue
 		}
-		_, err = parse(tokens)
+		_, err = Parse(tokens)
 		if err != nil {
 			t.Errorf("Unexpected parse error\n  input: %v\n  error: %v", s, err)
 		}
@@ -229,12 +229,12 @@ var errorTests = []testError{
 
 func TestParserErrors(t *testing.T) {
 	for _, s := range errorTests {
-		tokens, err := lex("test", s.input)
+		tokens, err := Lex("test", s.input)
 		if err != nil {
 			t.Errorf("Unexpected lex error\n  input: %v\n  error: %v", s.input, err)
 			continue
 		}
-		_, err = parse(tokens)
+		_, err = Parse(tokens)
 		if err == nil {
 			t.Errorf("Expected parse error but got success\n  input: %v", s.input)
 			continue

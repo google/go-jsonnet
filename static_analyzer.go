@@ -77,7 +77,7 @@ func analyzeVisit(a ast.Node, inObject bool, vars ast.IdentifierSet) error {
 		//nothing to do here
 	case *ast.SuperIndex:
 		if !inObject {
-			return makeStaticError("Can't use super outside of an object.", *a.Loc())
+			return MakeStaticError("Can't use super outside of an object.", *a.Loc())
 		}
 		visitNext(a.Index, inObject, vars, s)
 	case *ast.Index:
@@ -121,13 +121,13 @@ func analyzeVisit(a ast.Node, inObject bool, vars ast.IdentifierSet) error {
 		panic("Comprehensions not supported yet")
 	case *ast.Self:
 		if !inObject {
-			return makeStaticError("Can't use self outside of an object.", *a.Loc())
+			return MakeStaticError("Can't use self outside of an object.", *a.Loc())
 		}
 	case *ast.Unary:
 		visitNext(a.Expr, inObject, vars, s)
 	case *ast.Var:
 		if !vars.Contains(a.Id) {
-			return makeStaticError(fmt.Sprintf("Unknown variable: %v", a.Id), *a.Loc())
+			return MakeStaticError(fmt.Sprintf("Unknown variable: %v", a.Id), *a.Loc())
 		}
 		s.freeVars.Add(a.Id)
 	default:

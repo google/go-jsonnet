@@ -9,10 +9,10 @@ package jsonnet
 // Copyright (c) 2013 Ralph Caraveo (deckarep@gmail.com)
 
 // literalFieldSet is the primary type that represents a set
-type literalFieldSet map[literalField]struct{}
+type literalFieldSet map[LiteralField]struct{}
 
 // NewliteralFieldSet creates and returns a reference to an empty set.
-func NewliteralFieldSet(a ...literalField) literalFieldSet {
+func NewliteralFieldSet(a ...LiteralField) literalFieldSet {
 	s := make(literalFieldSet)
 	for _, i := range a {
 		s.Add(i)
@@ -21,8 +21,8 @@ func NewliteralFieldSet(a ...literalField) literalFieldSet {
 }
 
 // ToSlice returns the elements of the current set as a slice
-func (set literalFieldSet) ToSlice() []literalField {
-	var s []literalField
+func (set literalFieldSet) ToSlice() []LiteralField {
+	var s []LiteralField
 	for v := range set {
 		s = append(s, v)
 	}
@@ -30,20 +30,20 @@ func (set literalFieldSet) ToSlice() []literalField {
 }
 
 // Add adds an item to the current set if it doesn't already exist in the set.
-func (set literalFieldSet) Add(i literalField) bool {
+func (set literalFieldSet) Add(i LiteralField) bool {
 	_, found := set[i]
 	set[i] = struct{}{}
 	return !found //False if it existed already
 }
 
 // Contains determines if a given item is already in the set.
-func (set literalFieldSet) Contains(i literalField) bool {
+func (set literalFieldSet) Contains(i LiteralField) bool {
 	_, found := set[i]
 	return found
 }
 
 // ContainsAll determines if the given items are all in the set
-func (set literalFieldSet) ContainsAll(i ...literalField) bool {
+func (set literalFieldSet) ContainsAll(i ...LiteralField) bool {
 	for _, v := range i {
 		if !set.Contains(v) {
 			return false
@@ -124,7 +124,7 @@ func (set *literalFieldSet) Clear() {
 }
 
 // Remove allows the removal of a single item in the set.
-func (set literalFieldSet) Remove(i literalField) {
+func (set literalFieldSet) Remove(i LiteralField) {
 	delete(set, i)
 }
 
@@ -134,8 +134,8 @@ func (set literalFieldSet) Cardinality() int {
 }
 
 // Iter returns a channel of type literalField that you can range over.
-func (set literalFieldSet) Iter() <-chan literalField {
-	ch := make(chan literalField)
+func (set literalFieldSet) Iter() <-chan LiteralField {
+	ch := make(chan LiteralField)
 	go func() {
 		for elem := range set {
 			ch <- elem

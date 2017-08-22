@@ -431,7 +431,7 @@ outerLoop:
 			case r >= '0' && r <= '9':
 				state = numAfterDigit
 			default:
-				return makeStaticErrorPoint(
+				return MakeStaticErrorPoint(
 					fmt.Sprintf("Couldn't lex number, junk after decimal point: %v", strconv.QuoteRuneToASCII(r)),
 					l.fileName, l.prevLocation())
 			}
@@ -451,7 +451,7 @@ outerLoop:
 			case r >= '0' && r <= '9':
 				state = numAfterExpDigit
 			default:
-				return makeStaticErrorPoint(
+				return MakeStaticErrorPoint(
 					fmt.Sprintf("Couldn't lex number, junk after 'E': %v", strconv.QuoteRuneToASCII(r)),
 					l.fileName, l.prevLocation())
 			}
@@ -459,7 +459,7 @@ outerLoop:
 			if r >= '0' && r <= '9' {
 				state = numAfterExpDigit
 			} else {
-				return makeStaticErrorPoint(
+				return MakeStaticErrorPoint(
 					fmt.Sprintf("Couldn't lex number, junk after exponent sign: %v", strconv.QuoteRuneToASCII(r)),
 					l.fileName, l.prevLocation())
 			}
@@ -558,7 +558,7 @@ func (l *lexer) lexSymbol() error {
 		l.resetTokenStart() // Throw out the leading /*
 		for r = l.next(); ; r = l.next() {
 			if r == lexEOF {
-				return makeStaticErrorPoint("Multi-line comment has no terminating */",
+				return MakeStaticErrorPoint("Multi-line comment has no terminating */",
 					l.fileName, commentStartLoc)
 			}
 			if r == '*' && l.peek() == '/' {
@@ -584,7 +584,7 @@ func (l *lexer) lexSymbol() error {
 		numWhiteSpace := checkWhitespace(l.input[l.pos.byteNo:], l.input[l.pos.byteNo:])
 		stringBlockIndent := l.input[l.pos.byteNo : l.pos.byteNo+numWhiteSpace]
 		if numWhiteSpace == 0 {
-			return makeStaticErrorPoint("Text block's first line must start with whitespace",
+			return MakeStaticErrorPoint("Text block's first line must start with whitespace",
 				l.fileName, commentStartLoc)
 		}
 
@@ -595,7 +595,7 @@ func (l *lexer) lexSymbol() error {
 			l.acceptN(numWhiteSpace)
 			for r = l.next(); r != '\n'; r = l.next() {
 				if r == lexEOF {
-					return makeStaticErrorPoint("Unexpected EOF",
+					return MakeStaticErrorPoint("Unexpected EOF",
 						l.fileName, commentStartLoc)
 				}
 				cb.WriteRune(r)
@@ -618,7 +618,7 @@ func (l *lexer) lexSymbol() error {
 				}
 				l.backup()
 				if !strings.HasPrefix(l.input[l.pos.byteNo:], "|||") {
-					return makeStaticErrorPoint("Text block not terminated with |||",
+					return MakeStaticErrorPoint("Text block not terminated with |||",
 						l.fileName, commentStartLoc)
 				}
 				l.acceptN(3) // Skip '|||'
@@ -668,7 +668,7 @@ func (l *lexer) lexSymbol() error {
 	return nil
 }
 
-func lex(fn string, input string) (tokens, error) {
+func Lex(fn string, input string) (tokens, error) {
 	l := makeLexer(fn, input)
 
 	var err error
@@ -710,7 +710,7 @@ func lex(fn string, input string) (tokens, error) {
 			l.resetTokenStart() // Don't include the quotes in the token data
 			for r = l.next(); ; r = l.next() {
 				if r == lexEOF {
-					return nil, makeStaticErrorPoint("Unterminated String", l.fileName, stringStartLoc)
+					return nil, MakeStaticErrorPoint("Unterminated String", l.fileName, stringStartLoc)
 				}
 				if r == '"' {
 					l.backup()
@@ -728,7 +728,7 @@ func lex(fn string, input string) (tokens, error) {
 			l.resetTokenStart() // Don't include the quotes in the token data
 			for r = l.next(); ; r = l.next() {
 				if r == lexEOF {
-					return nil, makeStaticErrorPoint("Unterminated String", l.fileName, stringStartLoc)
+					return nil, MakeStaticErrorPoint("Unterminated String", l.fileName, stringStartLoc)
 				}
 				if r == '\'' {
 					l.backup()
@@ -757,7 +757,7 @@ func lex(fn string, input string) (tokens, error) {
 			} else if quot == '\'' {
 				kind = tokenVerbatimStringSingle
 			} else {
-				return nil, makeStaticErrorPoint(
+				return nil, MakeStaticErrorPoint(
 					fmt.Sprintf("Couldn't lex verbatim string, junk after '@': %v", quot),
 					l.fileName,
 					stringStartLoc,
@@ -765,7 +765,7 @@ func lex(fn string, input string) (tokens, error) {
 			}
 			for r = l.next(); ; r = l.next() {
 				if r == lexEOF {
-					return nil, makeStaticErrorPoint("Unterminated String", l.fileName, stringStartLoc)
+					return nil, MakeStaticErrorPoint("Unterminated String", l.fileName, stringStartLoc)
 				} else if r == quot {
 					if l.peek() == quot {
 						l.next()
@@ -799,7 +799,7 @@ func lex(fn string, input string) (tokens, error) {
 					return nil, err
 				}
 			} else {
-				return nil, makeStaticErrorPoint(
+				return nil, MakeStaticErrorPoint(
 					fmt.Sprintf("Could not lex the character %s", strconv.QuoteRuneToASCII(r)),
 					l.fileName, l.prevLocation())
 			}
