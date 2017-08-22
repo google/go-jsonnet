@@ -107,6 +107,9 @@ var tests = []string{
 	`[][:1:1]`,
 	`[][1::1]`,
 	`[][1:1:1]`,
+
+	`a in b`,
+	`{ x: if "opt" in super then "x" else "y" }`,
 }
 
 func TestParser(t *testing.T) {

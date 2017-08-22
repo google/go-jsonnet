@@ -43,6 +43,7 @@ var bopPrecedence = map[ast.BinaryOp]precedence{
 	ast.BopGreaterEq:       8,
 	ast.BopLess:            8,
 	ast.BopLessEq:          8,
+	ast.BopIn:              8,
 	ast.BopManifestEqual:   9,
 	ast.BopManifestUnequal: 9,
 	ast.BopBitwiseAnd:      10,
@@ -940,6 +941,11 @@ func (p *parser) parse(prec precedence) (ast.Node, error) {
 			// with higher precedence, then return lhs and let lower levels deal with
 			// the operator.
 			switch p.peek().kind {
+			case tokenIn:
+				bop = ast.BopIn
+				if bopPrecedence[bop] != prec {
+					return lhs, nil
+				}
 			case tokenOperator:
 				_ = "breakpoint"
 				if p.peek().data == ":" {
@@ -1069,15 +1075,23 @@ func (p *parser) parse(prec precedence) (ast.Node, error) {
 					Right:    obj,
 				}
 			default:
-				rhs, err := p.parse(prec - 1)
-				if err != nil {
-					return nil, err
-				}
-				lhs = &ast.Binary{
-					NodeBase: ast.NewNodeBaseLoc(locFromTokenAST(begin, rhs)),
-					Left:     lhs,
-					Op:       bop,
-					Right:    rhs,
+				if op.kind == tokenIn && p.peek().kind == tokenSuper {
+					super := p.pop()
+					lhs = &ast.InSuper{
+						NodeBase: ast.NewNodeBaseLoc(locFromTokens(begin, super)),
+						Index:    lhs,
+					}
+				} else {
+					rhs, err := p.parse(prec - 1)
+					if err != nil {
+						return nil, err
+					}
+					lhs = &ast.Binary{
+						NodeBase: ast.NewNodeBaseLoc(locFromTokenAST(begin, rhs)),
+						Left:     lhs,
+						Op:       bop,
+						Right:    rhs,
+					}
 				}
 			}
 		}

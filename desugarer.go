@@ -509,6 +509,11 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 			node.Id = nil
 		}
 
+	case *ast.InSuper:
+		err := desugar(&node.Index, objLevel)
+		if err != nil {
+			return err
+		}
 	case *ast.Unary:
 		err = desugar(&node.Expr, objLevel)
 		if err != nil {

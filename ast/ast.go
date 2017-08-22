@@ -162,6 +162,7 @@ const (
 	BopGreaterEq
 	BopLess
 	BopLessEq
+	BopIn
 
 	BopManifestEqual
 	BopManifestUnequal
@@ -189,6 +190,7 @@ var bopStrings = []string{
 	BopGreaterEq: ">=",
 	BopLess:      "<",
 	BopLessEq:    "<=",
+	BopIn:        "in",
 
 	BopManifestEqual:   "==",
 	BopManifestUnequal: "!=",
@@ -216,6 +218,7 @@ var BopMap = map[string]BinaryOp{
 	">=": BopGreaterEq,
 	"<":  BopLess,
 	"<=": BopLessEq,
+	"in": BopIn,
 
 	"==": BopManifestEqual,
 	"!=": BopManifestUnequal,
@@ -494,6 +497,12 @@ type SuperIndex struct {
 	NodeBase
 	Index Node
 	Id    *Identifier
+}
+
+// Represents the e in super construct.
+type InSuper struct {
+	NodeBase
+	Index Node
 }
 
 // ---------------------------------------------------------------------------
