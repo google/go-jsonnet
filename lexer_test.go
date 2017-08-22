@@ -277,7 +277,7 @@ func TestLex(t *testing.T) {
 		// Copy the test tokens and append an EOF token
 		testTokens := append(tokens(nil), test.tokens...)
 		testTokens = append(testTokens, tEOF)
-		tokens, err := lex(test.name, test.input)
+		tokens, err := Lex(test.name, test.input)
 		var errString string
 		if err != nil {
 			errString = err.Error()
