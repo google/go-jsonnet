@@ -17,53 +17,85 @@ limitations under the License.
 package jsonnet
 
 import (
+	"bytes"
+	"flag"
+	"io/ioutil"
+	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/sergi/go-diff/diffmatchpatch"
 )
+
+var update = flag.Bool("update", false, "update .golden files")
 
 // Just a few simple sanity tests for now.  Eventually we'll share end-to-end tests with the C++
 // implementation but unsure if that should be done here or via some external framework.
 
 type mainTest struct {
-	name      string
-	input     string
-	golden    string
-	errString string
-}
-
-var mainTests = []mainTest{
-	{"numeric_literal", "100", "100", ""},
-	{"boolean_literal", "true", "true", ""},
-	{"simple_arith1", "3 + 3", "6", ""},
-	{"simple_arith2", "3 + 3 + 3", "9", ""},
-	{"simple_arith3", "(3 + 3) + (3 + 3)", "12", ""},
-	{"unicode", `"\u263A"`, `"☺"`, ""},
-	{"unicode2", `"\u263a"`, `"☺"`, ""},
-	{"escaped_single_quote", `"\\'"`, `"\\'"`, ""},
-	{"simple_arith_string", "\"aaa\" + \"bbb\"", "\"aaabbb\"", ""},
-	{"simple_arith_string2", "\"aaa\" + \"\"", "\"aaa\"", ""},
-	{"simple_arith_string3", "\"\" + \"bbb\"", "\"bbb\"", ""},
-	{"simple_arith_string_empty", "\"\" + \"\"", "\"\"", ""},
-	{"verbatim_string", `@"blah ☺"`, `"blah ☺"`, ""},
-	{"empty_array", "[]", "[ ]", ""},
-	{"array", "[1, 2, 1 + 2]", "[\n   1,\n   2,\n   3\n]", ""},
-	{"empty_object", "{}", "{ }", ""},
-	{"object", `{"x": 1+1}`, "{\n   \"x\": 2\n}", ""},
+	name   string
+	input  string
+	golden string
 }
 
 func TestMain(t *testing.T) {
-	for _, test := range mainTests {
-		vm := MakeVM()
-		output, err := vm.EvaluateSnippet(test.name, test.input)
-		var errString string
-		if err != nil {
-			errString = err.Error()
-		}
-		if errString != test.errString {
-			t.Errorf("%s: error result does not match. got\n\t%+v\nexpected\n\t%+v",
-				test.input, errString, test.errString)
-		}
-		if err == nil && output != test.golden {
-			t.Errorf("%s: got\n\t%+v\nexpected\n\t%+v", test.name, output, test.golden)
-		}
+	flag.Parse()
+	var mainTests []mainTest
+	match, err := filepath.Glob("testdata/*.input")
+	if err != nil {
+		t.Fatal(err)
 	}
+	for _, input := range match {
+		golden := input
+		name := input
+		if strings.HasSuffix(input, ".input") {
+			name = input[:len(input)-len(".input")]
+			golden = name + ".golden"
+		}
+		mainTests = append(mainTests, mainTest{name: name, input: input, golden: golden})
+	}
+	for _, test := range mainTests {
+		t.Run(test.name, func(t *testing.T) {
+			vm := MakeVM()
+			read := func(file string) []byte {
+				bytz, err := ioutil.ReadFile(file)
+				if err != nil {
+					t.Fatalf("reading file: %s: %v", file, err)
+				}
+				return bytz
+			}
+
+			input := read(test.input)
+			output, err := vm.EvaluateSnippet(test.name, string(input))
+			if err != nil {
+				t.Fail()
+				t.Errorf("evaluate snippet: %v", err)
+			}
+			if *update {
+				err := ioutil.WriteFile(test.golden, []byte(output), 0666)
+				if err != nil {
+					t.Errorf("error updating golden files: %v", err)
+				}
+				return
+			}
+			golden := read(test.golden)
+			if bytes.Compare(golden, []byte(output)) != 0 {
+				t.Fail()
+				t.Errorf("%s.input != %s\n", test.name, test.golden)
+				data := diff( output, string(golden),)
+				if err != nil {
+					t.Errorf("computing diff: %s", err)
+				}
+				t.Errorf("diff %s jsonnet %s.input\n", test.golden, test.name)
+				t.Errorf(string(data))
+
+			}
+		})
+	}
+}
+
+func diff(a, b string) string {
+	dmp := diffmatchpatch.New()
+	diffs := dmp.DiffMain(a, b, false)
+	return dmp.DiffPrettyText(diffs)
 }
