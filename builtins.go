@@ -16,7 +16,12 @@ limitations under the License.
 
 package jsonnet
 
-import "github.com/google/go-jsonnet/ast"
+import (
+	"math"
+	"sort"
+
+	"github.com/google/go-jsonnet/ast"
+)
 
 // TODO(sbarzowski) Is this the best option? It's the first one that worked for me...
 //go:generate esc -o std.go -pkg=jsonnet std/std.jsonnet
@@ -248,8 +253,81 @@ func builtinType(e *evaluator, xp potentialValue) (value, error) {
 	return makeValueString(x.typename()), nil
 }
 
+func makeDoubleCheck(e *evaluator, x float64) (value, error) {
+	if math.IsNaN(x) {
+		return nil, e.Error("Not a number")
+	}
+	if math.IsInf(x, 0) {
+		return nil, e.Error("Overflow")
+	}
+	return makeValueNumber(x), nil
+}
+
+// TODO(sbarzowski) perhaps it is too magical for Go style
+func liftNumeric(f func(float64) float64) func(*evaluator, potentialValue) (value, error) {
+	return func(e *evaluator, xp potentialValue) (value, error) {
+		x, err := e.evaluateNumber(xp)
+		if err != nil {
+			return nil, err
+		}
+		return makeDoubleCheck(e, f(x.value))
+	}
+}
+
+var builtinSqrt = liftNumeric(math.Sqrt)
+var builtinCeil = liftNumeric(math.Ceil)
+var builtinFloor = liftNumeric(math.Floor)
+var builtinSin = liftNumeric(math.Sin)
+var builtinCos = liftNumeric(math.Cos)
+var builtinTan = liftNumeric(math.Tan)
+var builtinAsin = liftNumeric(math.Asin)
+var builtinAcos = liftNumeric(math.Acos)
+var builtinAtan = liftNumeric(math.Atan)
+var builtinLog = liftNumeric(math.Log)
+var builtinExp = liftNumeric(math.Exp)
+
+func builtinObjectFieldsEx(e *evaluator, objp potentialValue, hiddenp potentialValue) (value, error) {
+	obj, err := e.evaluateObject(objp)
+	if err != nil {
+		return nil, err
+	}
+	hidden, err := e.evaluateBoolean(hiddenp)
+	if err != nil {
+		return nil, err
+	}
+	fields := objectFields(obj, hidden.value)
+	sort.Strings(fields)
+	elems := []potentialValue{}
+	for _, fieldname := range fields {
+		elems = append(elems, &readyValue{makeValueString(fieldname)})
+	}
+	return makeValueArray(elems), nil
+}
+
+func builtinObjectHasEx(e *evaluator, objp potentialValue, fnamep potentialValue, hiddenp potentialValue) (value, error) {
+	obj, err := e.evaluateObject(objp)
+	if err != nil {
+		return nil, err
+	}
+	fname, err := e.evaluateString(fnamep)
+	if err != nil {
+		return nil, err
+	}
+	hidden, err := e.evaluateBoolean(hiddenp)
+	if err != nil {
+		return nil, err
+	}
+	for _, fieldname := range objectFields(obj, hidden.value) {
+		if fieldname == fname.value {
+			return makeValueBoolean(true), nil
+		}
+	}
+	return makeValueBoolean(false), nil
+}
+
 type unaryBuiltin func(*evaluator, potentialValue) (value, error)
 type binaryBuiltin func(*evaluator, potentialValue, potentialValue) (value, error)
+type ternaryBuiltin func(*evaluator, potentialValue, potentialValue, potentialValue) (value, error)
 
 type UnaryBuiltin struct {
 	name       ast.Identifier
@@ -286,6 +364,21 @@ func (b *BinaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error
 }
 
 func (b *BinaryBuiltin) Parameters() ast.Identifiers {
+	return b.parameters
+}
+
+type TernaryBuiltin struct {
+	name       ast.Identifier
+	function   ternaryBuiltin
+	parameters ast.Identifiers
+}
+
+func (b *TernaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
+	// TODO check args
+	return b.function(getBuiltinEvaluator(e, b.name), args.positional[0], args.positional[1], args.positional[2])
+}
+
+func (b *TernaryBuiltin) Parameters() ast.Identifiers {
 	return b.parameters
 }
 
@@ -341,5 +434,18 @@ var funcBuiltins = map[string]evalCallable{
 	"length":          &UnaryBuiltin{name: "length", function: builtinLength, parameters: ast.Identifiers{"x"}},
 	"makeArray":       &BinaryBuiltin{name: "makeArray", function: builtinMakeArray, parameters: ast.Identifiers{"sz", "func"}},
 	"primitiveEquals": &BinaryBuiltin{name: "primitiveEquals", function: primitiveEquals, parameters: ast.Identifiers{"sz", "func"}},
+	"objectFieldsEx":  &BinaryBuiltin{name: "objectFields", function: builtinObjectFieldsEx, parameters: ast.Identifiers{"obj", "hidden"}},
+	"objectHasEx":     &TernaryBuiltin{name: "objectHasEx", function: builtinObjectHasEx, parameters: ast.Identifiers{"obj", "fname", "hidden"}},
 	"type":            &UnaryBuiltin{name: "type", function: builtinType, parameters: ast.Identifiers{"x"}},
+	"ceil":            &UnaryBuiltin{name: "ceil", function: builtinCeil, parameters: ast.Identifiers{"x"}},
+	"floor":           &UnaryBuiltin{name: "floor", function: builtinFloor, parameters: ast.Identifiers{"x"}},
+	"sqrt":            &UnaryBuiltin{name: "sqrt", function: builtinSqrt, parameters: ast.Identifiers{"x"}},
+	"sin":             &UnaryBuiltin{name: "sin", function: builtinSin, parameters: ast.Identifiers{"x"}},
+	"cos":             &UnaryBuiltin{name: "cos", function: builtinCos, parameters: ast.Identifiers{"x"}},
+	"tan":             &UnaryBuiltin{name: "tan", function: builtinTan, parameters: ast.Identifiers{"x"}},
+	"asin":            &UnaryBuiltin{name: "asin", function: builtinAsin, parameters: ast.Identifiers{"x"}},
+	"acos":            &UnaryBuiltin{name: "acos", function: builtinAcos, parameters: ast.Identifiers{"x"}},
+	"atan":            &UnaryBuiltin{name: "atan", function: builtinAtan, parameters: ast.Identifiers{"x"}},
+	"log":             &UnaryBuiltin{name: "log", function: builtinLog, parameters: ast.Identifiers{"x"}},
+	"exp":             &UnaryBuiltin{name: "exp", function: builtinExp, parameters: ast.Identifiers{"x"}},
 }
