@@ -46,7 +46,12 @@ type thunk struct {
 	body astNode
 }
 
-func makeThunk(name identifier, env environment, body astNode) *cachedThunk {
+// TODO(sbarzowski) feedback from dcunnin:
+//					makeThunk returning a cachedThunk is weird.
+//					Maybe call thunk 'exprThunk' (or astThunk but then it looks like an AST node).
+//					Then call cachedThunk just thunk?
+//					Or, call this makeCachedExprThunk because that's what it really is.
+func makeThunk(name identifier, env environment, body astNode) potentialValue {
 	return makeCachedThunk(&thunk{
 		name: name,
 		env:  env,
@@ -67,7 +72,7 @@ type callThunk struct {
 	args     callArguments
 }
 
-func makeCallThunk(ec evalCallable, args callArguments) *callThunk {
+func makeCallThunk(ec evalCallable, args callArguments) potentialValue {
 	return &callThunk{function: ec, args: args}
 }
 
