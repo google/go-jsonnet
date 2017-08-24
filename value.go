@@ -206,6 +206,13 @@ type selfBinding struct {
 	superDepth int
 }
 
+func makeUnboundSelfBinding() selfBinding {
+	return selfBinding{
+		nil,
+		123456789, // poison value
+	}
+}
+
 type valueObjectBase struct {
 	valueBase
 }

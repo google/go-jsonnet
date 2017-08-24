@@ -24,18 +24,19 @@ import (
 )
 
 type ImportedData struct {
+	err       error
 	foundHere string
 	content   string
 }
 
 type Importer interface {
-	Import(codeDir string, importedPath string) (*ImportedData, error)
+	Import(codeDir string, importedPath string) *ImportedData
 }
 
 type ImportCacheValue struct {
-	err  error
 	data *ImportedData
-	// nil if we haven't tried to execute it yet
+
+	// nil if we have only imported it via importstr
 	asCode potentialValue
 }
 
@@ -59,9 +60,8 @@ func (cache *ImportCache) importData(key importCacheKey) *ImportCacheValue {
 	if value, ok := cache.cache[key]; ok {
 		return &value
 	}
-	data, err := cache.importer.Import(key.dir, key.importedPath)
+	data := cache.importer.Import(key.dir, key.importedPath)
 	val := ImportCacheValue{
-		err:  err,
 		data: data,
 	}
 	cache.cache[key] = val
@@ -70,20 +70,20 @@ func (cache *ImportCache) importData(key importCacheKey) *ImportCacheValue {
 
 func (cache *ImportCache) ImportString(codeDir, importedPath string) (*valueString, error) {
 	data := cache.importData(importCacheKey{codeDir, importedPath})
-	if data.err != nil {
-		return nil, data.err
+	if data.data.err != nil {
+		return nil, data.data.err
 	}
 	// TODO(sbarzowski) wrap error in runtime error
 	return makeValueString(data.data.content), nil
 }
 
 func (cache *ImportCache) ImportCode(codeDir, importedPath string, e *evaluator) (value, error) {
-	data := cache.importData(importCacheKey{codeDir, importedPath})
-	if data.err != nil {
-		return nil, data.err
+	cached := cache.importData(importCacheKey{codeDir, importedPath})
+	if cached.data.err != nil {
+		return nil, cached.data.err
 	}
-	if data.asCode == nil {
-		ast, err := snippetToAST(data.data.foundHere, data.data.content)
+	if cached.asCode == nil {
+		ast, err := snippetToAST(cached.data.foundHere, cached.data.content)
 		if err != nil {
 			// TODO(sbarzowski) perhaps we should wrap (static) error here
 			// within a RuntimeError? Because whether we get this error or not
@@ -98,12 +98,12 @@ func (cache *ImportCache) ImportCode(codeDir, importedPath string, e *evaluator)
 			// computed and actually do the static part statically for all
 			// imports transitively.
 			// The same thinking applies to external variables.
-			data.asCode = makeErrorThunk(err)
+			cached.asCode = makeErrorThunk(err)
 		} else {
-			data.asCode = makeThunk("import", e.i.initialEnv, ast)
+			cached.asCode = makeThunk("import", e.i.initialEnv, ast)
 		}
 	}
-	return e.evaluate(data.asCode)
+	return e.evaluate(cached.asCode)
 }
 
 // Concrete importers
@@ -128,20 +128,20 @@ func tryPath(dir, importedPath string) (found bool, content []byte, foundHere st
 	return true, content, absPath, err
 }
 
-func (importer *FileImporter) Import(dir, importedPath string) (*ImportedData, error) {
+func (importer *FileImporter) Import(dir, importedPath string) *ImportedData {
 	found, content, foundHere, err := tryPath(dir, importedPath)
 	if err != nil {
-		return nil, err
+		return &ImportedData{err: err}
 	}
 
 	for i := 0; !found && i < len(importer.JPaths); i++ {
 		found, content, foundHere, err = tryPath(importer.JPaths[i], importedPath)
 		if err != nil {
-			return nil, err
+			return &ImportedData{err: err}
 		}
 	}
 
-	return &ImportedData{content: string(content), foundHere: foundHere}, nil
+	return &ImportedData{content: string(content), foundHere: foundHere}
 }
 
 type MemoryImporter struct {

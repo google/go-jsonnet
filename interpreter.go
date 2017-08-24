@@ -659,10 +659,7 @@ func buildStdObject(i *interpreter) (value, error) {
 func evaluateStd(i *interpreter) (value, error) {
 	beforeStdEnv := makeEnvironment(
 		bindingFrame{},
-		selfBinding{
-			nil,
-			123456789, // poison value
-		},
+		makeUnboundSelfBinding(),
 	)
 	evalLoc := makeLocationRangeMessage("During evaluation of std")
 	evalTrace := &TraceElement{loc: &evalLoc}
@@ -693,10 +690,7 @@ func buildInterpreter(ext vmExtMap, maxStack int, importer Importer) (*interpret
 		bindingFrame{
 			"std": &readyValue{stdObj},
 		},
-		selfBinding{
-			nil,
-			123456789, // poison value
-		},
+		makeUnboundSelfBinding(),
 	)
 	return &i, nil
 }
