@@ -319,9 +319,6 @@ func (i *interpreter) evaluate(a astNode, context *TraceContext) (value, error) 
 				return nil, e.Error("Field name was not a string.")
 			}
 
-			if err != nil {
-				return nil, err
-			}
 			if _, ok := fields[fieldName]; ok {
 				return nil, e.Error(fmt.Sprintf("Duplicate field name: \"%s\"", fieldName))
 			}
