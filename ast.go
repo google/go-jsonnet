@@ -33,6 +33,7 @@ type identifiers []identifier
 type astNode interface {
 	Loc() *LocationRange
 	FreeVariables() identifiers
+	setFreeVariables(identifiers)
 }
 type astNodes []astNode
 
@@ -51,6 +52,10 @@ func (n *astNodeBase) FreeVariables() identifiers {
 	return n.freeVariables
 }
 
+func (n *astNodeBase) setFreeVariables(idents identifiers) {
+	n.freeVariables = idents
+}
+
 // ---------------------------------------------------------------------------
 
 // +gen stringer
@@ -61,6 +66,8 @@ const (
 	astCompIf
 )
 
+// TODO(sbarzowski) separate types for two kinds
+// TODO(sbarzowski) bonus points for attaching ifs to the previous for
 type astCompSpec struct {
 	kind    astCompKind
 	varName *identifier // nil when kind != compSpecFor
@@ -77,6 +84,7 @@ type astApply struct {
 	arguments     astNodes
 	trailingComma bool
 	tailStrict    bool
+	// TODO(sbarzowski) support named arguments
 }
 
 // ---------------------------------------------------------------------------
@@ -223,18 +231,6 @@ type astBinary struct {
 
 // ---------------------------------------------------------------------------
 
-// astBuiltin represents built-in functions.
-//
-// There is no parse rule to build this AST.  Instead, it is used to build the
-// std object in the interpreter.
-type astBuiltin struct {
-	astNodeBase
-	id     int
-	params identifiers
-}
-
-// ---------------------------------------------------------------------------
-
 // astConditional represents if/then/else.
 //
 // After parsing, branchFalse can be nil indicating that no else branch
@@ -261,10 +257,10 @@ type astError struct {
 
 // ---------------------------------------------------------------------------
 
-// astFunction represents a function call. (jbeda: or is it function defn?)
+// astFunction represents a function definition
 type astFunction struct {
 	astNodeBase
-	parameters    identifiers
+	parameters    identifiers // TODO(sbarzowski) support default arguments
 	trailingComma bool
 	body          astNode
 }
