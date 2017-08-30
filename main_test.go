@@ -92,6 +92,7 @@ func TestMain(t *testing.T) {
 		}
 		mainTests = append(mainTests, mainTest{name: name, input: input, golden: golden})
 	}
+	errFormatter := ErrorFormatter{pretty: true}
 	for _, test := range mainTests {
 		t.Run(test.name, func(t *testing.T) {
 			vm := MakeVM()
@@ -109,7 +110,7 @@ func TestMain(t *testing.T) {
 			if err != nil {
 				// TODO(sbarzowski) perhaps somehow mark that we are processing
 				// an error. But for now we can treat them the same.
-				output = err.Error()
+				output = errFormatter.format(err)
 			}
 			output += "\n"
 			if *update {
@@ -189,18 +190,18 @@ func TestOneLineError(t *testing.T) {
 var minimalErrorTests = []errorFormattingTest{
 	{"error", `error "x"`, "RUNTIME ERROR: x\n" +
 		"	During evaluation	\n" +
-		"	error:1:1-9	<main>\n"}, // TODO(sbarzowski) if seems we have off-by-one in location
+		"	error:1:1-9	$\n"}, // TODO(sbarzowski) if seems we have off-by-one in location
 	{"error_in_func", `local x(n) = if n == 0 then error "x" else x(n - 1); x(3)`, "RUNTIME ERROR: x\n" +
 		"	During evaluation	\n" +
-		"	error_in_func:1:54-58	<main>\n" +
-		"	error_in_func:1:44-52	function <anonymous>\n" +
-		"	error_in_func:1:44-52	function <anonymous>\n" +
-		"	error_in_func:1:44-52	function <anonymous>\n" +
-		"	error_in_func:1:29-37	function <anonymous>\n" +
+		"	error_in_func:1:54-58	$\n" +
+		"	error_in_func:1:44-52	function <x>\n" +
+		"	error_in_func:1:44-52	function <x>\n" +
+		"	error_in_func:1:44-52	function <x>\n" +
+		"	error_in_func:1:29-37	function <x>\n" +
 		""},
 	{"error_in_error", `error (error "x")`, "RUNTIME ERROR: x\n" +
 		"	During evaluation	\n" +
-		"	error_in_error:1:8-16	<main>\n" +
+		"	error_in_error:1:8-16	$\n" +
 		""},
 }
 
@@ -210,3 +211,6 @@ func TestMinimalError(t *testing.T) {
 		return formatter.format(r)
 	})
 }
+
+// TODO(sbarzowski) test pretty errors once they are stable-ish
+// probably "golden" pattern is the right one for that

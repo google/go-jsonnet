@@ -43,7 +43,6 @@ func (rv *readyValue) bindToObject(sb selfBinding, origBinding bindingFrame, fie
 
 // thunk holds code and environment in which the code is supposed to be evaluated
 type thunk struct {
-	name ast.Identifier
 	env  environment
 	body ast.Node
 }
@@ -53,19 +52,15 @@ type thunk struct {
 //					Maybe call thunk 'exprThunk' (or astThunk but then it looks like an AST node).
 //					Then call cachedThunk just thunk?
 //					Or, call this makeCachedExprThunk because that's what it really is.
-func makeThunk(name ast.Identifier, env environment, body ast.Node) *cachedThunk {
+func makeThunk(env environment, body ast.Node) *cachedThunk {
 	return makeCachedThunk(&thunk{
-		name: name,
 		env:  env,
 		body: body,
 	})
 }
 
 func (t *thunk) getValue(i *interpreter, trace *TraceElement) (value, error) {
-	context := TraceContext{
-		Name: "thunk <" + string(t.name) + ">",
-	}
-	return i.EvalInCleanEnv(trace, &context, &t.env, t.body)
+	return i.EvalInCleanEnv(trace, &t.env, t.body)
 }
 
 // callThunk represents a concrete, but not yet evaluated call to a function
@@ -140,7 +135,7 @@ type codeUnboundField struct {
 
 func (f *codeUnboundField) bindToObject(sb selfBinding, origBindings bindingFrame, fieldName string) potentialValue {
 	// TODO(sbarzowski) better object names (perhaps include a field name too?)
-	return makeThunk("object_field", makeEnvironment(origBindings, sb), f.body)
+	return makeThunk(makeEnvironment(origBindings, sb), f.body)
 }
 
 // Provide additional bindings for a field. It shadows bindings from the object.
@@ -195,11 +190,7 @@ func (closure *closure) EvalCall(arguments callArguments, e *evaluator) (value, 
 		addBindings(closure.env.upValues, argThunks),
 		closure.env.sb,
 	)
-	// TODO(sbarzowski) better function names
-	context := TraceContext{
-		Name: "function <anonymous>",
-	}
-	return e.evalInCleanEnv(&context, &calledEnvironment, closure.function.Body)
+	return e.evalInCleanEnv(&calledEnvironment, closure.function.Body)
 }
 
 func (closure *closure) Parameters() ast.Identifiers {

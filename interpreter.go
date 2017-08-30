@@ -71,7 +71,7 @@ type callFrame struct {
 	// This makes callFrame a misnomer as it is technically not always a call...
 	isCall bool
 
-	// Tracing information about the place where (TODO)
+	// Tracing information about the place where it
 	trace *TraceElement
 
 	/** Reuse this stack frame for the purpose of tail call optimization. */
@@ -242,11 +242,11 @@ func (i *interpreter) getCurrentEnv(ast ast.Node) environment {
 	)
 }
 
-func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error) {
+func (i *interpreter) evaluate(a ast.Node) (value, error) {
 	e := &evaluator{
 		trace: &TraceElement{
 			loc:     a.Loc(),
-			context: context,
+			context: a.Context(),
 		},
 		i: i,
 	}
@@ -257,7 +257,7 @@ func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error)
 		var elements []potentialValue
 		for _, el := range ast.Elements {
 			env := makeEnvironment(i.capture(el.FreeVariables()), sb)
-			elThunk := makeThunk("array_element", env, el)
+			elThunk := makeThunk(env, el)
 			elements = append(elements, elThunk)
 		}
 		return makeValueArray(elements), nil
@@ -269,8 +269,8 @@ func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error)
 		// TODO(sbarzowski) it may make sense not to show a line in stack trace for operators
 		// 					at all in many cases. 1 + 2 + 3 + 4 + error "x" will show 5 lines
 		//					of stack trace now, and it's not that nice.
-		left := makeThunk("x", env, ast.Left)
-		right := makeThunk("y", env, ast.Right)
+		left := makeThunk(env, ast.Left)
+		right := makeThunk(env, ast.Right)
 
 		builtin := bopBuiltins[ast.Op]
 
@@ -282,7 +282,7 @@ func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error)
 
 	case *ast.Unary:
 		env := i.getCurrentEnv(ast)
-		arg := makeThunk("x", env, ast.Expr)
+		arg := makeThunk(env, ast.Expr)
 
 		builtin := uopBuiltins[ast.Op]
 
@@ -401,7 +401,7 @@ func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error)
 		vars := make(bindingFrame)
 		bindEnv := i.getCurrentEnv(a)
 		for _, bind := range ast.Binds {
-			th := makeThunk(bind.Variable, bindEnv, bind.Body)
+			th := makeThunk(bindEnv, bind.Body)
 
 			// recursive locals
 			vars[bind.Variable] = th
@@ -467,8 +467,7 @@ func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error)
 			positional: make([]potentialValue, len(ast.Arguments.Positional)),
 		}
 		for i, arg := range ast.Arguments.Positional {
-			// TODO(sbarzowski) better thunk name
-			arguments.positional[i] = makeThunk("arg", argEnv, arg)
+			arguments.positional[i] = makeThunk(argEnv, arg)
 		}
 
 		return e.evaluate(function.call(arguments))
@@ -700,13 +699,12 @@ func (i *interpreter) manifestAndSerializeJSON(trace *TraceElement, v value, mul
 	return buf.String(), nil
 }
 
-func (i *interpreter) EvalInCleanEnv(fromWhere *TraceElement, newContext *TraceContext,
-	env *environment, ast ast.Node) (value, error) {
+func (i *interpreter) EvalInCleanEnv(fromWhere *TraceElement, env *environment, ast ast.Node) (value, error) {
 	err := i.newCall(fromWhere, *env)
 	if err != nil {
 		return nil, err
 	}
-	val, err := i.evaluate(ast, newContext)
+	val, err := i.evaluate(ast)
 	i.stack.pop()
 	return val, err
 }
@@ -736,12 +734,11 @@ func evaluateStd(i *interpreter) (value, error) {
 	)
 	evalLoc := ast.MakeLocationRangeMessage("During evaluation of std")
 	evalTrace := &TraceElement{loc: &evalLoc}
-	node, err := snippetToAST("std.jsonnet", getStdCode())
+	node, err := snippetToAST("<std>", getStdCode())
 	if err != nil {
 		return nil, err
 	}
-	context := TraceContext{Name: "<stdlib>"}
-	return i.EvalInCleanEnv(evalTrace, &context, &beforeStdEnv, node)
+	return i.EvalInCleanEnv(evalTrace, &beforeStdEnv, node)
 }
 
 func prepareExtVars(i *interpreter, ext vmExtMap) map[ast.Identifier]potentialValue {
@@ -796,8 +793,7 @@ func evaluate(node ast.Node, ext vmExtMap, maxStack int, importer Importer) (str
 	evalTrace := &TraceElement{
 		loc: &evalLoc,
 	}
-	context := TraceContext{Name: "<main>"}
-	result, err := i.EvalInCleanEnv(evalTrace, &context, &i.initialEnv, node)
+	result, err := i.EvalInCleanEnv(evalTrace, &i.initialEnv, node)
 	if err != nil {
 		return "", err
 	}

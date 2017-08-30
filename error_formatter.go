@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"fmt"
 
+	"github.com/fatih/color"
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/parser"
 )
@@ -27,10 +28,13 @@ type ErrorFormatter struct {
 	// TODO(sbarzowski) use this
 	// MaxStackTraceSize  is the maximum length of stack trace before cropping
 	MaxStackTraceSize int
-	// TODO(sbarzowski) use these
+
+	// Examples of current state of the art.
+	// http://elm-lang.org/blog/compiler-errors-for-humans
+	// https://clang.llvm.org/diagnostics.html
 	pretty   bool
 	colorful bool
-	SP       SourceProvider
+	SP       *ast.SourceProvider
 }
 
 func (ef *ErrorFormatter) format(err error) string {
@@ -46,12 +50,13 @@ func (ef *ErrorFormatter) format(err error) string {
 
 func (ef *ErrorFormatter) formatRuntime(err *RuntimeError) string {
 	return err.Error() + "\n" + ef.buildStackTrace(err.StackTrace)
-	// TODO(sbarzowski) pretty stuff
 }
 
 func (ef *ErrorFormatter) formatStatic(err *parser.StaticError) string {
-	return err.Error() + "\n"
-	// TODO(sbarzowski) pretty stuff
+	var buf bytes.Buffer
+	buf.WriteString(err.Error() + "\n")
+	ef.showCode(&buf, err.Loc)
+	return buf.String()
 }
 
 const bugURL = "https://github.com/google/go-jsonnet/issues"
@@ -61,19 +66,41 @@ func (ef *ErrorFormatter) formatInternal(err error) string {
 		"Please report a bug here: " + bugURL + "\n"
 }
 
+func (ef *ErrorFormatter) showCode(buf *bytes.Buffer, loc ast.LocationRange) {
+	errFprintf := fmt.Fprintf
+	if ef.colorful {
+		errFprintf = color.New(color.FgRed).Fprintf
+	}
+	if loc.WithCode() {
+		// TODO(sbarzowski) include line numbers
+		// TODO(sbarzowski) underline errors instead of depending only on color
+		fmt.Fprintf(buf, "\n")
+		beginning := ast.LineBeginning(&loc)
+		ending := ast.LineEnding(&loc)
+		fmt.Fprintf(buf, "%v", ef.SP.GetSnippet(beginning))
+		errFprintf(buf, "%v", ef.SP.GetSnippet(loc))
+		fmt.Fprintf(buf, "%v", ef.SP.GetSnippet(ending))
+		buf.WriteByte('\n')
+	}
+	fmt.Fprintf(buf, "\n")
+}
+
 func (ef *ErrorFormatter) buildStackTrace(frames []TraceFrame) string {
 	// https://github.com/google/jsonnet/blob/master/core/libjsonnet.cpp#L594
 	var buf bytes.Buffer
 	for _, f := range frames {
+		// TODO(sbarzowski) make pretty format more readable (it's already useful)
+		if ef.pretty {
+			fmt.Fprintf(&buf, "-------------------------------------------------\n")
+		}
+		// TODO(sbarzowski) tabs are probably a bad idea
 		fmt.Fprintf(&buf, "\t%v\t%v\n", &f.Loc, f.Name)
+		if ef.pretty {
+			ef.showCode(&buf, f.Loc)
+		}
+
 		// TODO(sbarzowski) handle max stack trace size
 		// TODO(sbarzowski) I think the order of frames is reversed
 	}
 	return buf.String()
-}
-
-type SourceProvider interface {
-	// TODO(sbarzowski) problem: locationRange.FileName may not necessarily
-	// uniquely identify a file. But this is the interface we want to have here.
-	getCode(ast.LocationRange) string
 }

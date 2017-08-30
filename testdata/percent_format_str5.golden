@@ -1,1 +1,144 @@
 RUNTIME ERROR: Not enough values to format, got 1
+-------------------------------------------------
+	During evaluation	
+
+-------------------------------------------------
+		
+
+-------------------------------------------------
+	<std>:148:13-29	function <anonymous>
+
+            std.format(a, b)
+
+-------------------------------------------------
+	<std>:612:13-52	function <anonymous>
+
+            format_codes_arr(codes, vals, 0, 0, "")
+
+-------------------------------------------------
+	<std>:525:21-69	function <format_codes_arr>
+
+                    format_codes_arr(codes, arr, i + 1, j, v + code) tailstrict
+
+-------------------------------------------------
+	<std>:568:21-74	function <format_codes_arr>
+
+                    format_codes_arr(codes, arr, i + 1, j3, v + s_padded) tailstrict;
+
+-------------------------------------------------
+	<std>:525:21-69	function <format_codes_arr>
+
+                    format_codes_arr(codes, arr, i + 1, j, v + code) tailstrict
+
+-------------------------------------------------
+	<std>:568:21-74	function <format_codes_arr>
+
+                    format_codes_arr(codes, arr, i + 1, j3, v + s_padded) tailstrict;
+
+-------------------------------------------------
+	<std>:525:21-69	function <format_codes_arr>
+
+                    format_codes_arr(codes, arr, i + 1, j, v + code) tailstrict
+
+-------------------------------------------------
+	<std>:521:21-22	function <format_codes_arr>
+
+                    v
+
+-------------------------------------------------
+	<std>:525:60-68	thunk from <function <format_codes_arr>>
+
+                    format_codes_arr(codes, arr, i + 1, j, v + code) tailstrict
+
+-------------------------------------------------
+	<std>:525:60-61	thunk from <thunk from <function <format_codes_arr>>>
+
+                    format_codes_arr(codes, arr, i + 1, j, v + code) tailstrict
+
+-------------------------------------------------
+	<std>:568:61-73	thunk from <function <format_codes_arr>>
+
+                    format_codes_arr(codes, arr, i + 1, j3, v + s_padded) tailstrict;
+
+-------------------------------------------------
+	<std>:568:65-73	thunk from <thunk from <function <format_codes_arr>>>
+
+                    format_codes_arr(codes, arr, i + 1, j3, v + s_padded) tailstrict;
+
+-------------------------------------------------
+	<std>:562:29-53	thunk <s_padded> from <function <format_codes_arr>>
+
+                            pad_left(s, tmp.fw, " ");
+
+-------------------------------------------------
+	<std>:369:13-50	function <pad_left>
+
+            padding(w - std.length(str), s) + str;
+
+-------------------------------------------------
+	<std>:369:13-44	thunk from <function <pad_left>>
+
+            padding(w - std.length(str), s) + str;
+
+-------------------------------------------------
+	<std>:365:13-23	function <padding>
+
+            aux(w, "");
+
+-------------------------------------------------
+	<std>:361:20-26	function <aux>
+
+                if w <= 0 then
+
+-------------------------------------------------
+	<std>:361:20-21	thunk from <function <aux>>
+
+                if w <= 0 then
+
+-------------------------------------------------
+	<std>:365:17-18	thunk from <function <padding>>
+
+            aux(w, "");
+
+-------------------------------------------------
+	<std>:369:21-40	thunk from <thunk from <function <pad_left>>>
+
+            padding(w - std.length(str), s) + str;
+
+-------------------------------------------------
+	<builtin>	builtin function <length>
+
+-------------------------------------------------
+	<std>:369:36-39	thunk from <thunk from <thunk from <thunk from <function <pad_left>>>>>
+
+            padding(w - std.length(str), s) + str;
+
+-------------------------------------------------
+	<std>:562:38-39	thunk from <thunk <s_padded> from <function <format_codes_arr>>>
+
+                            pad_left(s, tmp.fw, " ");
+
+-------------------------------------------------
+	<std>:557:29-74	thunk <s> from <function <format_codes_arr>>
+
+                            format_code(val, code, tmp.fw, tmp2.prec, j2);
+
+-------------------------------------------------
+	<builtin>	builtin function <toString>
+
+-------------------------------------------------
+	<std>:454:30-33	thunk from <function <format_code>>
+
+                std.toString(val)
+
+-------------------------------------------------
+	<std>:557:41-44	thunk from <thunk <s> from <function <format_codes_arr>>>
+
+                            format_code(val, code, tmp.fw, tmp2.prec, j2);
+
+-------------------------------------------------
+	<std>:552:29-88	thunk <val> from <function <format_codes_arr>>
+
+                            error "Not enough values to format, got " + std.length(arr);
+
+

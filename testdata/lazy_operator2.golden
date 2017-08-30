@@ -1,1 +1,15 @@
 RUNTIME ERROR: should happen
+-------------------------------------------------
+	During evaluation	
+
+-------------------------------------------------
+	testdata/lazy_operator2:1:1-29	$
+
+true && error "should happen"
+
+-------------------------------------------------
+	testdata/lazy_operator2:1:9-29	thunk from <$>
+
+true && error "should happen"
+
+

@@ -1,1 +1,13 @@
 RUNTIME ERROR: x
+-------------------------------------------------
+	During evaluation	
+
+-------------------------------------------------
+	<builtin>	builtin function <primitiveEquals>
+
+-------------------------------------------------
+	testdata/std.primitiveEquals9:1:25-33	thunk from <$>
+
+std.primitiveEquals(42, error "x")
+
+

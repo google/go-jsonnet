@@ -1,1 +1,10 @@
 RUNTIME ERROR: Field name must be string, got number
+-------------------------------------------------
+	During evaluation	
+
+-------------------------------------------------
+	testdata/fieldname_not_string:1:1-15	$
+
+{ [1234]: 42 }
+
+

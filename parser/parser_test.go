@@ -16,6 +16,7 @@ limitations under the License.
 package parser
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -124,15 +125,19 @@ var tests = []string{
 
 func TestParser(t *testing.T) {
 	for _, s := range tests {
-		tokens, err := Lex("test", s)
-		if err != nil {
-			t.Errorf("Unexpected lex error\n  input: %v\n  error: %v", s, err)
-			continue
-		}
-		_, err = Parse(tokens)
-		if err != nil {
-			t.Errorf("Unexpected parse error\n  input: %v\n  error: %v", s, err)
-		}
+		t.Run(s, func(t *testing.T) {
+			fmt.Println(s)
+			tokens, err := Lex("test", s)
+			if err != nil {
+				t.Errorf("Unexpected lex error\n  input: %v\n  error: %v", s, err)
+				return
+			}
+			_, err = Parse(tokens)
+			if err != nil {
+				t.Errorf("Unexpected parse error\n  input: %v\n  error: %v", s, err)
+			}
+		})
+
 	}
 }
 
@@ -246,19 +251,21 @@ var errorTests = []testError{
 
 func TestParserErrors(t *testing.T) {
 	for _, s := range errorTests {
-		tokens, err := Lex("test", s.input)
-		if err != nil {
-			t.Errorf("Unexpected lex error\n  input: %v\n  error: %v", s.input, err)
-			continue
-		}
-		_, err = Parse(tokens)
-		if err == nil {
-			t.Errorf("Expected parse error but got success\n  input: %v", s.input)
-			continue
-		}
-		if err.Error() != s.err {
-			t.Errorf("Error string not as expected\n  input: %v\n  expected error: %v\n  actual error: %v", s.input, s.err, err.Error())
-		}
+		t.Run(s.input, func(t *testing.T) {
+			tokens, err := Lex("test", s.input)
+			if err != nil {
+				t.Errorf("Unexpected lex error\n  input: %v\n  error: %v", s.input, err)
+				return
+			}
+			_, err = Parse(tokens)
+			if err == nil {
+				t.Errorf("Expected parse error but got success\n  input: %v", s.input)
+				return
+			}
+			if err.Error() != s.err {
+				t.Errorf("Error string not as expected\n  input: %v\n  expected error: %v\n  actual error: %v", s.input, s.err, err.Error())
+			}
+		})
 	}
 
 }

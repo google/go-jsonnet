@@ -245,6 +245,7 @@ type position struct {
 type lexer struct {
 	fileName string // The file name being lexed, only used for errors
 	input    string // The input string
+	source   *ast.Source
 
 	pos  position // Current position in input
 	prev position // Previous position in input
@@ -263,6 +264,7 @@ func makeLexer(fn string, input string) *lexer {
 	return &lexer{
 		fileName:      fn,
 		input:         input,
+		source:        ast.BuildSource(input),
 		pos:           position{byteNo: 0, lineNo: 1, lineStart: 0},
 		prev:          position{byteNo: lexEOF, lineNo: 0, lineStart: 0},
 		tokenStartLoc: ast.Location{Line: 1, Column: 1},
@@ -337,7 +339,7 @@ func (l *lexer) emitFullToken(kind tokenKind, data, stringBlockIndent, stringBlo
 		data:                  data,
 		stringBlockIndent:     stringBlockIndent,
 		stringBlockTermIndent: stringBlockTermIndent,
-		loc: ast.MakeLocationRange(l.fileName, l.tokenStartLoc, l.location()),
+		loc: ast.MakeLocationRange(l.fileName, l.source, l.tokenStartLoc, l.location()),
 	})
 	l.fodder = fodder{}
 }
@@ -365,6 +367,10 @@ func (l *lexer) addCommentFodder(kind fodderKind) {
 
 func (l *lexer) addFodder(kind fodderKind, data string) {
 	l.fodder = append(l.fodder, fodderElement{kind: kind, data: data})
+}
+
+func (l *lexer) makeStaticErrorPoint(msg string, loc ast.Location) StaticError {
+	return StaticError{Msg: msg, Loc: ast.MakeLocationRange(l.fileName, l.source, loc, loc)}
 }
 
 // lexNumber will consume a number and emit a token.  It is assumed
@@ -431,9 +437,9 @@ outerLoop:
 			case r >= '0' && r <= '9':
 				state = numAfterDigit
 			default:
-				return MakeStaticErrorPoint(
+				return l.makeStaticErrorPoint(
 					fmt.Sprintf("Couldn't lex number, junk after decimal point: %v", strconv.QuoteRuneToASCII(r)),
-					l.fileName, l.prevLocation())
+					l.prevLocation())
 			}
 		case numAfterDigit:
 			switch {
@@ -451,17 +457,17 @@ outerLoop:
 			case r >= '0' && r <= '9':
 				state = numAfterExpDigit
 			default:
-				return MakeStaticErrorPoint(
+				return l.makeStaticErrorPoint(
 					fmt.Sprintf("Couldn't lex number, junk after 'E': %v", strconv.QuoteRuneToASCII(r)),
-					l.fileName, l.prevLocation())
+					l.prevLocation())
 			}
 		case numAfterExpSign:
 			if r >= '0' && r <= '9' {
 				state = numAfterExpDigit
 			} else {
-				return MakeStaticErrorPoint(
+				return l.makeStaticErrorPoint(
 					fmt.Sprintf("Couldn't lex number, junk after exponent sign: %v", strconv.QuoteRuneToASCII(r)),
-					l.fileName, l.prevLocation())
+					l.prevLocation())
 			}
 
 		case numAfterExpDigit:
@@ -558,8 +564,8 @@ func (l *lexer) lexSymbol() error {
 		l.resetTokenStart() // Throw out the leading /*
 		for r = l.next(); ; r = l.next() {
 			if r == lexEOF {
-				return MakeStaticErrorPoint("Multi-line comment has no terminating */",
-					l.fileName, commentStartLoc)
+				return l.makeStaticErrorPoint("Multi-line comment has no terminating */",
+					commentStartLoc)
 			}
 			if r == '*' && l.peek() == '/' {
 				commentData := l.input[l.tokenStart : l.pos.byteNo-1] // Don't include trailing */
@@ -584,8 +590,8 @@ func (l *lexer) lexSymbol() error {
 		numWhiteSpace := checkWhitespace(l.input[l.pos.byteNo:], l.input[l.pos.byteNo:])
 		stringBlockIndent := l.input[l.pos.byteNo : l.pos.byteNo+numWhiteSpace]
 		if numWhiteSpace == 0 {
-			return MakeStaticErrorPoint("Text block's first line must start with whitespace",
-				l.fileName, commentStartLoc)
+			return l.makeStaticErrorPoint("Text block's first line must start with whitespace",
+				commentStartLoc)
 		}
 
 		for {
@@ -595,8 +601,7 @@ func (l *lexer) lexSymbol() error {
 			l.acceptN(numWhiteSpace)
 			for r = l.next(); r != '\n'; r = l.next() {
 				if r == lexEOF {
-					return MakeStaticErrorPoint("Unexpected EOF",
-						l.fileName, commentStartLoc)
+					return l.makeStaticErrorPoint("Unexpected EOF", commentStartLoc)
 				}
 				cb.WriteRune(r)
 			}
@@ -618,8 +623,7 @@ func (l *lexer) lexSymbol() error {
 				}
 				l.backup()
 				if !strings.HasPrefix(l.input[l.pos.byteNo:], "|||") {
-					return MakeStaticErrorPoint("Text block not terminated with |||",
-						l.fileName, commentStartLoc)
+					return l.makeStaticErrorPoint("Text block not terminated with |||", commentStartLoc)
 				}
 				l.acceptN(3) // Skip '|||'
 				l.emitFullToken(tokenStringBlock, cb.String(),
@@ -710,7 +714,7 @@ func Lex(fn string, input string) (tokens, error) {
 			l.resetTokenStart() // Don't include the quotes in the token data
 			for r = l.next(); ; r = l.next() {
 				if r == lexEOF {
-					return nil, MakeStaticErrorPoint("Unterminated String", l.fileName, stringStartLoc)
+					return nil, l.makeStaticErrorPoint("Unterminated String", stringStartLoc)
 				}
 				if r == '"' {
 					l.backup()
@@ -728,7 +732,7 @@ func Lex(fn string, input string) (tokens, error) {
 			l.resetTokenStart() // Don't include the quotes in the token data
 			for r = l.next(); ; r = l.next() {
 				if r == lexEOF {
-					return nil, MakeStaticErrorPoint("Unterminated String", l.fileName, stringStartLoc)
+					return nil, l.makeStaticErrorPoint("Unterminated String", stringStartLoc)
 				}
 				if r == '\'' {
 					l.backup()
@@ -757,15 +761,14 @@ func Lex(fn string, input string) (tokens, error) {
 			} else if quot == '\'' {
 				kind = tokenVerbatimStringSingle
 			} else {
-				return nil, MakeStaticErrorPoint(
+				return nil, l.makeStaticErrorPoint(
 					fmt.Sprintf("Couldn't lex verbatim string, junk after '@': %v", quot),
-					l.fileName,
 					stringStartLoc,
 				)
 			}
 			for r = l.next(); ; r = l.next() {
 				if r == lexEOF {
-					return nil, MakeStaticErrorPoint("Unterminated String", l.fileName, stringStartLoc)
+					return nil, l.makeStaticErrorPoint("Unterminated String", stringStartLoc)
 				} else if r == quot {
 					if l.peek() == quot {
 						l.next()
@@ -799,9 +802,9 @@ func Lex(fn string, input string) (tokens, error) {
 					return nil, err
 				}
 			} else {
-				return nil, MakeStaticErrorPoint(
+				return nil, l.makeStaticErrorPoint(
 					fmt.Sprintf("Could not lex the character %s", strconv.QuoteRuneToASCII(r)),
-					l.fileName, l.prevLocation())
+					l.prevLocation())
 			}
 
 		}

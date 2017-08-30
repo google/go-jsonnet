@@ -48,20 +48,15 @@ func traceElementToTraceFrame(trace *TraceElement) TraceFrame {
 	tf := TraceFrame{Loc: *trace.loc}
 	if trace.context != nil {
 		// TODO(sbarzowski) maybe it should never be nil
-		tf.Name = trace.context.Name
+		tf.Name = *trace.context
 	} else {
 		tf.Name = ""
 	}
 	return tf
 }
 
-type TraceContext struct {
-	// Human readable name - e.g. function <foo>
-	Name string
-}
-
 // TODO(sbarzowski) better name
 type TraceElement struct {
 	loc     *ast.LocationRange
-	context *TraceContext
+	context ast.Context
 }

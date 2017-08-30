@@ -1,1 +1,10 @@
 RUNTIME ERROR: xxx
+-------------------------------------------------
+	During manifestation	
+
+-------------------------------------------------
+	testdata/object_comp_err_elem:1:11-21	
+
+{ ["x"]:  error "xxx" for x in [1] }
+
+

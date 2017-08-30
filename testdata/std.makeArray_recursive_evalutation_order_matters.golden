@@ -1,1 +1,2505 @@
 RUNTIME ERROR: Max stack frames exceeded.
+-------------------------------------------------
+	During evaluation	
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:64-72	$
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-57	thunk from <function <anonymous>>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+-------------------------------------------------
+	testdata/std.makeArray_recursive_evalutation_order_matters:1:51-61	function <anonymous>
+
+local arr = [0] + std.makeArray(2000, function(i) arr[i] + 1); arr[500]
+
+

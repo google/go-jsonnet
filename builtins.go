@@ -608,7 +608,7 @@ type UnaryBuiltin struct {
 
 func getBuiltinEvaluator(e *evaluator, name ast.Identifier) *evaluator {
 	loc := ast.MakeLocationRangeMessage("<builtin>")
-	context := TraceContext{Name: "builtin function <" + string(name) + ">"}
+	context := "builtin function <" + string(name) + ">"
 	trace := TraceElement{loc: &loc, context: &context}
 	return &evaluator{i: e.i, trace: &trace}
 }

@@ -162,11 +162,11 @@ func (e *evaluator) evaluateObject(pv potentialValue) (valueObject, error) {
 }
 
 func (e *evaluator) evalInCurrentContext(a ast.Node) (value, error) {
-	return e.i.evaluate(a, e.trace.context)
+	return e.i.evaluate(a)
 }
 
-func (e *evaluator) evalInCleanEnv(newContext *TraceContext, env *environment, ast ast.Node) (value, error) {
-	return e.i.EvalInCleanEnv(e.trace, newContext, env, ast)
+func (e *evaluator) evalInCleanEnv(env *environment, ast ast.Node) (value, error) {
+	return e.i.EvalInCleanEnv(e.trace, env, ast)
 }
 
 func (e *evaluator) lookUpVar(ident ast.Identifier) potentialValue {
