@@ -34,7 +34,7 @@ func (rv *readyValue) getValue(i *interpreter, t *TraceElement) (value, error) {
 	return rv.content, nil
 }
 
-func (rv *readyValue) bindToObject(sb selfBinding, origBinding bindingFrame) potentialValue {
+func (rv *readyValue) bindToObject(sb selfBinding, origBinding bindingFrame, fieldName string) potentialValue {
 	return rv
 }
 
@@ -76,6 +76,10 @@ type callThunk struct {
 
 func makeCallThunk(ec evalCallable, args callArguments) potentialValue {
 	return makeCachedThunk(&callThunk{function: ec, args: args})
+}
+
+func call(ec evalCallable, arguments ...potentialValue) potentialValue {
+	return makeCallThunk(ec, args(arguments...))
 }
 
 func (th *callThunk) getValue(i *interpreter, trace *TraceElement) (value, error) {
@@ -131,7 +135,7 @@ type codeUnboundField struct {
 	body ast.Node
 }
 
-func (f *codeUnboundField) bindToObject(sb selfBinding, origBindings bindingFrame) potentialValue {
+func (f *codeUnboundField) bindToObject(sb selfBinding, origBindings bindingFrame, fieldName string) potentialValue {
 	// TODO(sbarzowski) better object names (perhaps include a field name too?)
 	return makeThunk("object_field", makeEnvironment(origBindings, sb), f.body)
 }
@@ -143,7 +147,7 @@ type bindingsUnboundField struct {
 	bindings bindingFrame
 }
 
-func (f *bindingsUnboundField) bindToObject(sb selfBinding, origBindings bindingFrame) potentialValue {
+func (f *bindingsUnboundField) bindToObject(sb selfBinding, origBindings bindingFrame, fieldName string) potentialValue {
 	var upValues bindingFrame
 	upValues = make(bindingFrame)
 	for variable, pvalue := range origBindings {
@@ -152,7 +156,20 @@ func (f *bindingsUnboundField) bindToObject(sb selfBinding, origBindings binding
 	for variable, pvalue := range f.bindings {
 		upValues[variable] = pvalue
 	}
-	return f.inner.bindToObject(sb, upValues)
+	return f.inner.bindToObject(sb, upValues, fieldName)
+}
+
+type PlusSuperUnboundField struct {
+	inner unboundField
+}
+
+func (f *PlusSuperUnboundField) bindToObject(sb selfBinding, origBinding bindingFrame, fieldName string) potentialValue {
+	left := tryObjectIndex(sb.super(), fieldName, withHidden)
+	right := f.inner.bindToObject(sb, origBinding, fieldName)
+	if left != nil {
+		return call(bopBuiltins[ast.BopPlus], left, right)
+	}
+	return right
 }
 
 // evalCallables

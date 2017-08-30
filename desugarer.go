@@ -191,19 +191,6 @@ func desugarFields(location ast.LocationRange, fields *ast.ObjectFields, objLeve
 		}
 	}
 
-	// Remove +:
-	// TODO(dcunnin): this
-	for _, field := range *fields {
-		if !field.SuperSugar {
-			continue
-		}
-		/*
-			AST *super_f = alloc->make<SuperIndex>(field.expr1->location, field.expr1, nil)
-			field.expr2 = alloc->make<ast.Binary>(ast->location, super_f, BOP_PLUS, field.expr2)
-			field.superSugar = false
-		*/
-	}
-
 	return nil
 }
 
@@ -307,7 +294,7 @@ func buildDesugaredObject(nodeBase ast.NodeBase, fields ast.ObjectFields) *ast.D
 		if field.Kind == ast.ObjectAssert {
 			newAsserts = append(newAsserts, field.Expr2)
 		} else if field.Kind == ast.ObjectFieldExpr {
-			newFields = append(newFields, ast.DesugaredObjectField{field.Hide, field.Expr1, field.Expr2})
+			newFields = append(newFields, ast.DesugaredObjectField{field.Hide, field.Expr1, field.Expr2, field.SuperSugar})
 		} else {
 			panic(fmt.Sprintf("INTERNAL ERROR: field should have been desugared: %s", field.Kind))
 		}
@@ -400,6 +387,8 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 					Op:   ast.UopNot,
 					Expr: buildStdCall(desugaredBop[ast.BopManifestEqual], node.Left, node.Right),
 				}
+			} else if node.Op == ast.BopIn {
+				*astPtr = buildStdCall(funcname, node.Right, node.Left)
 			} else {
 				*astPtr = buildStdCall(funcname, node.Left, node.Right)
 			}

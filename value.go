@@ -301,6 +301,29 @@ func makeUnboundSelfBinding() selfBinding {
 	}
 }
 
+func objectBinding(obj valueObject) selfBinding {
+	return selfBinding{self: obj, superDepth: 0}
+}
+
+func (sb selfBinding) super() selfBinding {
+	return selfBinding{self: sb.self, superDepth: sb.superDepth + 1}
+}
+
+type Hidden int
+
+const (
+	withHidden Hidden = iota
+	withoutHidden
+)
+
+func withHiddenFromBool(with bool) Hidden {
+	if with {
+		return withHidden
+	} else {
+		return withoutHidden
+	}
+}
+
 // Hack - we need to distinguish not-checked-yet and no error situations
 // so we have a special value for no error and nil means that we don't know yet.
 var errNoErrorInObjectInvariants = errors.New("No error - assertions passed")
@@ -367,7 +390,7 @@ func checkAssertionsHelper(e *evaluator, obj valueObject, curr valueObject, supe
 		return nil
 	case *valueSimpleObject:
 		for _, assert := range curr.asserts {
-			_, err := e.evaluate(assert.bindToObject(selfBinding{self: obj, superDepth: superDepth}, curr.upValues))
+			_, err := e.evaluate(assert.bindToObject(selfBinding{self: obj, superDepth: superDepth}, curr.upValues, ""))
 			if err != nil {
 				return err
 			}
@@ -390,7 +413,7 @@ func checkAssertions(e *evaluator, obj valueObject) error {
 }
 
 func (o *valueSimpleObject) index(e *evaluator, field string) (value, error) {
-	return objectIndex(e, selfBinding{self: o, superDepth: 0}, field)
+	return objectIndex(e, objectBinding(o), field)
 }
 
 func (*valueSimpleObject) inheritanceSize() int {
@@ -416,7 +439,7 @@ type valueSimpleObjectField struct {
 
 // unboundField is a field that doesn't know yet in which object it is.
 type unboundField interface {
-	bindToObject(sb selfBinding, origBinding bindingFrame) potentialValue
+	bindToObject(sb selfBinding, origBinding bindingFrame, fieldName string) potentialValue
 }
 
 // valueExtendedObject represents an object created through inheritence (left + right).
@@ -445,7 +468,7 @@ type valueExtendedObject struct {
 }
 
 func (o *valueExtendedObject) index(e *evaluator, field string) (value, error) {
-	return objectIndex(e, selfBinding{self: o, superDepth: 0}, field)
+	return objectIndex(e, objectBinding(o), field)
 }
 
 func (o *valueExtendedObject) inheritanceSize() int {
@@ -488,23 +511,26 @@ func findField(curr value, minSuperDepth int, f string) (*valueSimpleObjectField
 	}
 }
 
-func superIndex(e *evaluator, currentSB selfBinding, field string) (value, error) {
-	superSB := selfBinding{self: currentSB.self, superDepth: currentSB.superDepth + 1}
-	return objectIndex(e, superSB, field)
-}
-
 func objectIndex(e *evaluator, sb selfBinding, fieldName string) (value, error) {
 	err := checkAssertions(e, sb.self)
 	if err != nil {
 		return nil, err
 	}
-	field, upValues, foundAt := findField(sb.self, sb.superDepth, fieldName)
-	if field == nil {
+	objp := tryObjectIndex(sb, fieldName, withHidden)
+	if objp == nil {
 		return nil, e.Error(fmt.Sprintf("Field does not exist: %s", fieldName))
+	}
+	return e.evaluate(objp)
+}
+
+func tryObjectIndex(sb selfBinding, fieldName string, h Hidden) potentialValue {
+	field, upValues, foundAt := findField(sb.self, sb.superDepth, fieldName)
+	if field == nil || (h == withoutHidden && field.hide == ast.ObjectFieldHidden) {
+		return nil
 	}
 	fieldSelfBinding := selfBinding{self: sb.self, superDepth: foundAt}
 
-	return e.evaluate(field.field.bindToObject(fieldSelfBinding, upValues))
+	return field.field.bindToObject(fieldSelfBinding, upValues, fieldName)
 }
 
 type fieldHideMap map[string]ast.ObjectFieldHide
@@ -534,10 +560,10 @@ func objectFieldsVisibility(obj valueObject) fieldHideMap {
 	return r
 }
 
-func objectFields(obj valueObject, manifesting bool) []string {
+func objectFields(obj valueObject, h Hidden) []string {
 	var r []string
 	for fieldName, hide := range objectFieldsVisibility(obj) {
-		if !manifesting || hide != ast.ObjectFieldHidden {
+		if h == withHidden || hide != ast.ObjectFieldHidden {
 			r = append(r, fieldName)
 		}
 	}

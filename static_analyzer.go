@@ -76,6 +76,11 @@ func analyzeVisit(a ast.Node, inObject bool, vars ast.IdentifierSet) error {
 		//nothing to do here
 	case *ast.ImportStr:
 		//nothing to do here
+	case *ast.InSuper:
+		if !inObject {
+			return parser.MakeStaticError("Can't use super outside of an object.", *a.Loc())
+		}
+		visitNext(a.Index, inObject, vars, s)
 	case *ast.SuperIndex:
 		if !inObject {
 			return parser.MakeStaticError("Can't use super outside of an object.", *a.Loc())

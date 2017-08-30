@@ -19,7 +19,9 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
+	"runtime/pprof"
 
 	"github.com/google/go-jsonnet"
 )
@@ -29,6 +31,17 @@ func usage() {
 }
 
 func main() {
+	// https://blog.golang.org/profiling-go-programs
+	var cpuprofile = os.Getenv("JSONNET_CPU_PROFILE")
+	if cpuprofile != "" {
+		f, err := os.Create(cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+
 	// TODO(sbarzowski) Be consistent about error codes with C++ maybe
 	vm := jsonnet.MakeVM()
 	if len(os.Args) != 2 {
