@@ -453,9 +453,10 @@ type Object struct {
 // ---------------------------------------------------------------------------
 
 type DesugaredObjectField struct {
-	Hide ObjectFieldHide
-	Name Node
-	Body Node
+	Hide      ObjectFieldHide
+	Name      Node
+	Body      Node
+	PlusSuper bool
 }
 type DesugaredObjectFields []DesugaredObjectField
 

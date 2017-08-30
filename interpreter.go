@@ -324,7 +324,11 @@ func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error)
 			if _, ok := fields[fieldName]; ok {
 				return nil, e.Error(duplicateFieldNameErrMsg(fieldName))
 			}
-			fields[fieldName] = valueSimpleObjectField{field.Hide, &codeUnboundField{field.Body}}
+			var f unboundField = &codeUnboundField{field.Body}
+			if field.PlusSuper {
+				f = &PlusSuperUnboundField{f}
+			}
+			fields[fieldName] = valueSimpleObjectField{field.Hide, f}
 		}
 		var asserts []unboundField
 		for _, assert := range ast.Asserts {
@@ -422,7 +426,19 @@ func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error)
 		if err != nil {
 			return nil, err
 		}
-		return superIndex(e, i.stack.getSelfBinding(), indexStr.getString())
+		return objectIndex(e, i.stack.getSelfBinding().super(), indexStr.getString())
+
+	case *ast.InSuper:
+		index, err := e.evalInCurrentContext(ast.Index)
+		if err != nil {
+			return nil, err
+		}
+		indexStr, err := e.getString(index)
+		if err != nil {
+			return nil, err
+		}
+		field := tryObjectIndex(i.stack.getSelfBinding().super(), indexStr.getString(), withHidden)
+		return makeValueBoolean(field != nil), nil
 
 	case *ast.Function:
 		return &valueFunction{
@@ -567,9 +583,7 @@ func (i *interpreter) manifestJSON(trace *TraceElement, v value, multiline bool,
 		buf.WriteString("null")
 
 	case valueObject:
-		// TODO(dcunnin): Run invariants (object-level assertions).
-
-		fieldNames := objectFields(v, true)
+		fieldNames := objectFields(v, withoutHidden)
 		sort.Strings(fieldNames)
 
 		err := checkAssertions(e, v)

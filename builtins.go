@@ -219,7 +219,7 @@ func builtinLength(e *evaluator, xp potentialValue) (value, error) {
 	var num int
 	switch x := x.(type) {
 	case valueObject:
-		num = len(objectFields(x, true))
+		num = len(objectFields(x, withoutHidden))
 	case *valueArray:
 		num = len(x.elements)
 	case *valueString:
@@ -511,7 +511,7 @@ func builtinObjectFieldsEx(e *evaluator, objp potentialValue, includeHiddenP pot
 	if err != nil {
 		return nil, err
 	}
-	fields := objectFields(obj, !includeHidden.value)
+	fields := objectFields(obj, withHiddenFromBool(includeHidden.value))
 	sort.Strings(fields)
 	elems := []potentialValue{}
 	for _, fieldname := range fields {
@@ -533,12 +533,9 @@ func builtinObjectHasEx(e *evaluator, objp potentialValue, fnamep potentialValue
 	if err != nil {
 		return nil, err
 	}
-	for _, fieldname := range objectFields(obj, !includeHidden.value) {
-		if fieldname == string(fname.value) {
-			return makeValueBoolean(true), nil
-		}
-	}
-	return makeValueBoolean(false), nil
+	h := withHiddenFromBool(includeHidden.value)
+	fieldp := tryObjectIndex(objectBinding(obj), string(fname.value), h)
+	return makeValueBoolean(fieldp != nil), nil
 }
 
 func builtinPow(e *evaluator, basep potentialValue, expp potentialValue) (value, error) {
@@ -657,6 +654,7 @@ var desugaredBop = map[ast.BinaryOp]ast.Identifier{
 	ast.BopPercent:         "mod",
 	ast.BopManifestEqual:   "equals",
 	ast.BopManifestUnequal: "notEquals", // Special case
+	ast.BopIn:              "objectHasAll",
 }
 
 var bopBuiltins = []*BinaryBuiltin{
