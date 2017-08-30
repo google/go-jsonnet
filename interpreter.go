@@ -313,7 +313,7 @@ func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error)
 			var fieldName string
 			switch fieldNameValue := fieldNameValue.(type) {
 			case *valueString:
-				fieldName = fieldNameValue.value
+				fieldName = fieldNameValue.getString()
 			case *valueNull:
 				// Omitted field.
 				continue
@@ -339,7 +339,7 @@ func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error)
 		if err != nil {
 			return nil, err
 		}
-		return nil, e.Error(msg.value)
+		return nil, e.Error(msg.getString())
 
 	case *ast.Index:
 		targetValue, err := e.evalInCurrentContext(ast.Target)
@@ -353,11 +353,14 @@ func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error)
 		switch target := targetValue.(type) {
 		// TODO(sbarzowski) better error handling if bad index type
 		case valueObject:
-			indexString := index.(*valueString).value
+			indexString := index.(*valueString).getString()
 			return target.index(e, indexString)
 		case *valueArray:
 			indexInt := int(index.(*valueNumber).value)
 			return e.evaluate(target.elements[indexInt])
+		case *valueString:
+			indexInt := int(index.(*valueNumber).value)
+			return target.index(e, indexInt)
 		}
 
 		return nil, e.Error(fmt.Sprintf("Value non indexable: %v", reflect.TypeOf(targetValue)))
@@ -417,7 +420,7 @@ func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error)
 		if err != nil {
 			return nil, err
 		}
-		return superIndex(e, i.stack.getSelfBinding(), indexStr.value)
+		return superIndex(e, i.stack.getSelfBinding(), indexStr.getString())
 
 	case *ast.Function:
 		return &valueFunction{
@@ -614,7 +617,7 @@ func (i *interpreter) manifestJSON(trace *TraceElement, v value, multiline bool,
 		}
 
 	case *valueString:
-		buf.WriteString(unparseString(v.value))
+		buf.WriteString(unparseString(v.getString()))
 
 	default:
 		return makeRuntimeError(

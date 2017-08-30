@@ -61,11 +61,57 @@ func (v *valueBase) aValue() {}
 
 type valueString struct {
 	valueBase
-	value string
+	// We use rune slices instead of strings for quick indexing
+	value []rune
+}
+
+func (s *valueString) index(e *evaluator, index int) (value, error) {
+	runeIndex := 0
+	for _, r := range s.value {
+		if runeIndex == index {
+			return makeValueString(string(r)), nil
+		}
+		runeIndex++
+	}
+	return nil, e.Error(fmt.Sprintf("Index %d out of bounds, not within [0, %v)", index, runeIndex))
+}
+
+func concatStrings(a, b *valueString) *valueString {
+	var result []rune
+	for _, r := range a.value {
+		result = append(result, r)
+	}
+	for _, r := range b.value {
+		result = append(result, r)
+	}
+	return &valueString{value: result}
+}
+
+func stringLessThan(a, b *valueString) bool {
+	var length int
+	if len(a.value) < len(b.value) {
+		length = len(a.value)
+	} else {
+		length = len(b.value)
+	}
+	for i := 0; i < length; i++ {
+		if a.value[i] != b.value[i] {
+			return a.value[i] < b.value[i]
+		}
+	}
+	return len(a.value) < len(b.value)
+}
+
+func (s *valueString) length() int {
+	return len(s.value)
+}
+
+func (s *valueString) getString() string {
+	return string(s.value)
 }
 
 func makeValueString(v string) *valueString {
-	return &valueString{value: v}
+	return &valueString{value: []rune(v)}
 }
 
 func (*valueString) typename() string {
