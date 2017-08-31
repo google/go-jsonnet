@@ -177,7 +177,7 @@ func (p *parser) parseArgument() (*ast.Identifier, ast.Node, error) {
 
 // TODO(sbarzowski) - this returned bool is weird
 // TODO(sbarzowski) - name - it's also used for parameters
-func (p *parser) parseArguments(end tokenKind, elementKind string) (*token, *ast.Arguments, bool, error) {
+func (p *parser) parseArguments(elementKind string) (*token, *ast.Arguments, bool, error) {
 	args := &ast.Arguments{}
 	gotComma := false
 	namedArgumentAdded := false
@@ -192,9 +192,7 @@ func (p *parser) parseArguments(end tokenKind, elementKind string) (*token, *ast
 			}
 		}
 
-		// TODO(check specifically for eof)
-
-		if next.kind == end {
+		if next.kind == tokenParenR {
 			// gotComma can be true or false here.
 			return p.pop(), args, gotComma, nil
 		}
@@ -222,23 +220,23 @@ func (p *parser) parseArguments(end tokenKind, elementKind string) (*token, *ast
 }
 
 // TODO(sbarzowski) - this returned bool is weird
-func (p *parser) parseParameters(end tokenKind, elementKind string) (*token, *ast.Parameters, bool, error) {
-	tok, args, trailingComma, err := p.parseArguments(end, elementKind)
+func (p *parser) parseParameters(elementKind string) (*ast.Parameters, bool, error) {
+	_, args, trailingComma, err := p.parseArguments(elementKind)
 	if err != nil {
-		return nil, nil, false, err
+		return nil, false, err
 	}
 	var params ast.Parameters
 	for _, arg := range args.Positional {
 		id, ok := astVarToIdentifier(arg)
 		if !ok {
-			return nil, nil, false, MakeStaticError(fmt.Sprintf("Expected simple identifier but got a complex expression."), *arg.Loc())
+			return nil, false, MakeStaticError(fmt.Sprintf("Expected simple identifier but got a complex expression."), *arg.Loc())
 		}
 		params.Positional = append(params.Positional, *id)
 	}
 	for _, arg := range args.Named {
 		params.Named = append(params.Named, ast.NamedParameter{Name: arg.Name, DefaultArg: arg.Arg})
 	}
-	return tok, &params, trailingComma, nil
+	return &params, trailingComma, nil
 }
 
 func (p *parser) parseBind(binds *ast.LocalBinds) error {
@@ -254,7 +252,7 @@ func (p *parser) parseBind(binds *ast.LocalBinds) error {
 
 	if p.peek().kind == tokenParenL {
 		p.pop()
-		_, params, gotComma, err := p.parseParameters(tokenParenR, "function parameter")
+		params, gotComma, err := p.parseParameters("function parameter")
 		if err != nil {
 			return err
 		}
@@ -455,7 +453,7 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 			if p.peek().kind == tokenParenL {
 				p.pop()
 				var err error
-				_, params, methComma, err = p.parseParameters(tokenParenR, "method parameter")
+				params, methComma, err = p.parseParameters("method parameter")
 				if err != nil {
 					return nil, nil, err
 				}
@@ -514,7 +512,7 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 			if p.peek().kind == tokenParenL {
 				p.pop()
 				isMethod = true
-				_, params, funcComma, err = p.parseParameters(tokenParenR, "function parameter")
+				params, funcComma, err = p.parseParameters("function parameter")
 				if err != nil {
 					return nil, nil, err
 				}
@@ -908,7 +906,7 @@ func (p *parser) parse(prec precedence) (ast.Node, error) {
 		p.pop()
 		next := p.pop()
 		if next.kind == tokenParenL {
-			_, params, gotComma, err := p.parseParameters(tokenParenR, "function parameter")
+			params, gotComma, err := p.parseParameters("function parameter")
 			if err != nil {
 				return nil, err
 			}
@@ -1121,7 +1119,7 @@ func (p *parser) parse(prec precedence) (ast.Node, error) {
 					Id:       &id,
 				}
 			case tokenParenL:
-				end, args, gotComma, err := p.parseArguments(tokenParenR, "function argument")
+				end, args, gotComma, err := p.parseArguments("function argument")
 				if err != nil {
 					return nil, err
 				}
