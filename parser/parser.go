@@ -128,38 +128,6 @@ func astVarToIdentifier(node ast.Node) (*ast.Identifier, bool) {
 	return nil, false
 }
 
-func (p *parser) parseCommaList(end tokenKind, elementKind string) (*token, ast.Nodes, bool, error) {
-	var exprs ast.Nodes
-	gotComma := false
-	first := true
-	for {
-		next := p.peek()
-		if !first && !gotComma {
-			if next.kind == tokenComma {
-				p.pop()
-				next = p.peek()
-				gotComma = true
-			}
-		}
-		if next.kind == end {
-			// gotComma can be true or false here.
-			return p.pop(), exprs, gotComma, nil
-		}
-
-		if !first && !gotComma {
-			return nil, nil, false, MakeStaticError(fmt.Sprintf("Expected a comma before next %s.", elementKind), next.loc)
-		}
-
-		expr, err := p.parse(maxPrecedence)
-		if err != nil {
-			return nil, nil, false, err
-		}
-		exprs = append(exprs, expr)
-		gotComma = false
-		first = false
-	}
-}
-
 func (p *parser) parseArgument() (*ast.Identifier, ast.Node, error) {
 	var id *ast.Identifier
 	if p.peek().kind == tokenIdentifier && p.doublePeek().kind == tokenOperator && p.doublePeek().data == "=" {
