@@ -105,7 +105,6 @@ func TestMain(t *testing.T) {
 			if bytes.Compare(golden, []byte(output)) != 0 {
 				// TODO(sbarzowski) better reporting of differences in whitespace
 				// missing newline issues can be very subtle now
-				t.Errorf("%#v %#v\n", golden, []byte(output))
 				t.Fail()
 				t.Errorf("Mismatch when running %s.input. Golden: %s\n", test.name, test.golden)
 				data := diff(output, string(golden))

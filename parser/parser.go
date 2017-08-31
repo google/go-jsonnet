@@ -152,13 +152,6 @@ func (p *parser) parseArguments(elementKind string) (*token, *ast.Arguments, boo
 	first := true
 	for {
 		next := p.peek()
-		if !first && !gotComma {
-			if next.kind == tokenComma {
-				p.pop()
-				next = p.peek()
-				gotComma = true
-			}
-		}
 
 		if next.kind == tokenParenR {
 			// gotComma can be true or false here.
@@ -182,8 +175,14 @@ func (p *parser) parseArguments(elementKind string) (*token, *ast.Arguments, boo
 			namedArgumentAdded = true
 			args.Named = append(args.Named, ast.NamedArgument{Name: *id, Arg: expr})
 		}
+
 		gotComma = false
 		first = false
+
+		if p.peek().kind == tokenComma {
+			p.pop()
+			gotComma = true
+		}
 	}
 }
 
