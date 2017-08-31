@@ -176,13 +176,14 @@ func (p *parser) parseArguments(elementKind string) (*token, *ast.Arguments, boo
 			args.Named = append(args.Named, ast.NamedArgument{Name: *id, Arg: expr})
 		}
 
-		gotComma = false
-		first = false
-
 		if p.peek().kind == tokenComma {
 			p.pop()
 			gotComma = true
+		} else {
+			gotComma = false
 		}
+
+		first = false
 	}
 }
 
