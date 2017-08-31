@@ -131,6 +131,10 @@ type valueArray struct {
 	elements []potentialValue
 }
 
+func (arr *valueArray) length() int {
+	return len(arr.elements)
+}
+
 func makeValueArray(elements []potentialValue) *valueArray {
 	return &valueArray{
 		elements: elements,

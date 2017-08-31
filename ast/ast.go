@@ -72,22 +72,16 @@ func (n *NodeBase) SetFreeVariables(idents Identifiers) {
 
 // ---------------------------------------------------------------------------
 
-// +gen stringer
-type CompKind int
-
-const (
-	CompFor CompKind = iota
-	CompIf
-)
-
-// TODO(sbarzowski) separate types for two kinds
-// TODO(sbarzowski) bonus points for attaching ifs to the previous for
-type CompSpec struct {
-	Kind    CompKind
-	VarName *Identifier // nil when kind != compSpecFor
-	Expr    Node
+type IfSpec struct {
+	Expr Node
 }
-type CompSpecs []CompSpec
+
+type ForSpec struct {
+	VarName    Identifier
+	Expr       Node
+	Conditions []IfSpec
+	Outer      *ForSpec
+}
 
 // ---------------------------------------------------------------------------
 
@@ -127,7 +121,7 @@ type ArrayComp struct {
 	NodeBase
 	Body          Node
 	TrailingComma bool
-	Specs         CompSpecs
+	Spec          ForSpec
 }
 
 // ---------------------------------------------------------------------------
@@ -467,7 +461,7 @@ type ObjectComp struct {
 	NodeBase
 	Fields        ObjectFields
 	TrailingComma bool
-	Specs         CompSpecs
+	Spec          ForSpec
 }
 
 // ---------------------------------------------------------------------------
