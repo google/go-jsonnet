@@ -39,13 +39,21 @@ var tests = []string{
 |||`,
 
 	`foo(bar)`,
+	`foo(bar,)`,
 	`foo(bar) tailstrict`,
+	`foo(bar=42)`,
+	`foo(bar=42,)`,
+	`foo(bar, baz=42)`,
 	`foo.bar`,
 	`foo[bar]`,
 
 	`true || false`,
 	`0 && 1 || 0`,
 	`0 && (1 || 0)`,
+
+	`function(x) x`,
+	`function(x=5) x`,
+	`function(x, y=5) x`,
 
 	`local foo = "bar"; foo`,
 	`local foo(bar) = bar; foo(1)`,
@@ -134,6 +142,10 @@ var errorTests = []testError{
 	{`,`, `test:1:1-2 Unexpected: (",", ",") while parsing terminal`},
 	{`function(a, b c)`, `test:1:15-16 Expected a comma before next function parameter, got (IDENTIFIER, "c").`},
 	{`function(a, 1)`, `test:1:13-14 Expected simple identifier but got a complex expression.`},
+	{`function(,)`, `test:1:10-11 Unexpected: (",", ",") while parsing terminal`},
+	{`function(a=)`, `test:1:12-13 Unexpected: (")", ")") while parsing terminal`},
+	{`function(a=,)`, `test:1:12-13 Unexpected: (",", ",") while parsing terminal`},
+	{`function(a=5, b)`, `test:1:15-16 Positional argument after a named argument is not allowed`},
 	{`a b`, `test:1:3-4 Did not expect: (IDENTIFIER, "b")`},
 	{`foo(a, bar(a b))`, `test:1:14-15 Expected a comma before next function argument, got (IDENTIFIER, "b").`},
 
