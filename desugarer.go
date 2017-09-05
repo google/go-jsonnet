@@ -213,7 +213,7 @@ func desugarFields(location ast.LocationRange, fields *ast.ObjectFields, objLeve
 func simpleLambda(body ast.Node, paramName ast.Identifier) ast.Node {
 	return &ast.Function{
 		Body:       body,
-		Parameters: ast.Identifiers{paramName},
+		Parameters: ast.Parameters{Positional: ast.Identifiers{paramName}},
 	}
 }
 

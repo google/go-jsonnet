@@ -74,6 +74,48 @@ func builtinMinus(e *evaluator, xp, yp potentialValue) (value, error) {
 	return makeValueNumber(x.value - y.value), nil
 }
 
+func builtinMult(e *evaluator, xp, yp potentialValue) (value, error) {
+	x, err := e.evaluateNumber(xp)
+	if err != nil {
+		return nil, err
+	}
+	y, err := e.evaluateNumber(yp)
+	if err != nil {
+		return nil, err
+	}
+	return makeValueNumber(x.value * y.value), nil
+}
+
+func builtinDiv(e *evaluator, xp, yp potentialValue) (value, error) {
+	x, err := e.evaluateNumber(xp)
+	if err != nil {
+		return nil, err
+	}
+	y, err := e.evaluateNumber(yp)
+	if err != nil {
+		return nil, err
+	}
+	if y.value == 0 {
+		return nil, e.Error("Division by zero.")
+	}
+	return makeDoubleCheck(e, x.value/y.value)
+}
+
+func builtinModulo(e *evaluator, xp, yp potentialValue) (value, error) {
+	x, err := e.evaluateNumber(xp)
+	if err != nil {
+		return nil, err
+	}
+	y, err := e.evaluateNumber(yp)
+	if err != nil {
+		return nil, err
+	}
+	if y.value == 0 {
+		return nil, e.Error("Division by zero.")
+	}
+	return makeDoubleCheck(e, math.Mod(x.value, y.value))
+}
+
 func builtinLess(e *evaluator, xp, yp potentialValue) (value, error) {
 	x, err := e.evaluate(xp)
 	if err != nil {
@@ -123,6 +165,21 @@ func builtinAnd(e *evaluator, xp, yp potentialValue) (value, error) {
 		return nil, err
 	}
 	if !x.value {
+		return x, nil
+	}
+	y, err := e.evaluateBoolean(yp)
+	if err != nil {
+		return nil, err
+	}
+	return y, nil
+}
+
+func builtinOr(e *evaluator, xp, yp potentialValue) (value, error) {
+	x, err := e.evaluateBoolean(xp)
+	if err != nil {
+		return nil, err
+	}
+	if x.value {
 		return x, nil
 	}
 	y, err := e.evaluateBoolean(yp)
@@ -303,7 +360,6 @@ func makeDoubleCheck(e *evaluator, x float64) (value, error) {
 	return makeValueNumber(x), nil
 }
 
-// TODO(sbarzowski) perhaps it is too magical for Go style
 func liftNumeric(f func(float64) float64) func(*evaluator, potentialValue) (value, error) {
 	return func(e *evaluator, xp potentialValue) (value, error) {
 		x, err := e.evaluateNumber(xp)
@@ -325,6 +381,29 @@ var builtinAcos = liftNumeric(math.Acos)
 var builtinAtan = liftNumeric(math.Atan)
 var builtinLog = liftNumeric(math.Log)
 var builtinExp = liftNumeric(math.Exp)
+
+func liftBitwise(f func(int64, int64) int64) func(*evaluator, potentialValue, potentialValue) (value, error) {
+	return func(e *evaluator, xp, yp potentialValue) (value, error) {
+		x, err := e.evaluateNumber(xp)
+		if err != nil {
+			return nil, err
+		}
+		y, err := e.evaluateNumber(yp)
+		if err != nil {
+			return nil, err
+		}
+		xInt := int64(x.value)
+		yInt := int64(y.value)
+		return makeDoubleCheck(e, float64(f(xInt, yInt)))
+	}
+}
+
+// TODO(sbarzowski) negative shifts
+var builtinShiftL = liftBitwise(func(x, y int64) int64 { return x << uint(y) })
+var builtinShiftR = liftBitwise(func(x, y int64) int64 { return x >> uint(y) })
+var builtinBitwiseAnd = liftBitwise(func(x, y int64) int64 { return x & y })
+var builtinBitwiseOr = liftBitwise(func(x, y int64) int64 { return x | y })
+var builtinBitwiseXor = liftBitwise(func(x, y int64) int64 { return x ^ y })
 
 func builtinObjectFieldsEx(e *evaluator, objp potentialValue, hiddenp potentialValue) (value, error) {
 	obj, err := e.evaluateObject(objp)
@@ -448,15 +527,15 @@ var desugaredBop = map[ast.BinaryOp]ast.Identifier{
 }
 
 var bopBuiltins = []*BinaryBuiltin{
-	ast.BopMult:    todo,
-	ast.BopDiv:     todo,
+	ast.BopMult:    &BinaryBuiltin{name: "operator*", function: builtinMult, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopDiv:     &BinaryBuiltin{name: "operator/", function: builtinDiv, parameters: ast.Identifiers{"x", "y"}},
 	ast.BopPercent: todo,
 
 	ast.BopPlus:  &BinaryBuiltin{name: "operator+", function: builtinPlus, parameters: ast.Identifiers{"x", "y"}},
 	ast.BopMinus: &BinaryBuiltin{name: "operator-", function: builtinMinus, parameters: ast.Identifiers{"x", "y"}},
 
-	ast.BopShiftL: todo,
-	ast.BopShiftR: todo,
+	ast.BopShiftL: &BinaryBuiltin{name: "operator<<", function: builtinShiftL, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopShiftR: &BinaryBuiltin{name: "operator>>", function: builtinShiftR, parameters: ast.Identifiers{"x", "y"}},
 
 	ast.BopGreater:   &BinaryBuiltin{name: "operator>", function: builtinGreater, parameters: ast.Identifiers{"x", "y"}},
 	ast.BopGreaterEq: &BinaryBuiltin{name: "operator>=", function: builtinGreaterEq, parameters: ast.Identifiers{"x", "y"}},
@@ -466,12 +545,12 @@ var bopBuiltins = []*BinaryBuiltin{
 	// bopManifestEqual:   <desugared>,
 	// bopManifestUnequal: <desugared>,
 
-	ast.BopBitwiseAnd: todo,
-	ast.BopBitwiseXor: todo,
-	ast.BopBitwiseOr:  todo,
+	ast.BopBitwiseAnd: &BinaryBuiltin{name: "operator&", function: builtinBitwiseAnd, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopBitwiseXor: &BinaryBuiltin{name: "operator^", function: builtinBitwiseXor, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopBitwiseOr:  &BinaryBuiltin{name: "operator|", function: builtinBitwiseOr, parameters: ast.Identifiers{"x", "y"}},
 
 	ast.BopAnd: &BinaryBuiltin{name: "operator&&", function: builtinAnd, parameters: ast.Identifiers{"x", "y"}},
-	ast.BopOr:  todo,
+	ast.BopOr:  &BinaryBuiltin{name: "operator||", function: builtinOr, parameters: ast.Identifiers{"x", "y"}},
 }
 
 var uopBuiltins = []*UnaryBuiltin{
@@ -503,4 +582,5 @@ var funcBuiltins = map[string]evalCallable{
 	"log":             &UnaryBuiltin{name: "log", function: builtinLog, parameters: ast.Identifiers{"x"}},
 	"exp":             &UnaryBuiltin{name: "exp", function: builtinExp, parameters: ast.Identifiers{"x"}},
 	"pow":             &BinaryBuiltin{name: "pow", function: builtinPow, parameters: ast.Identifiers{"base", "exp"}},
+	"modulo":          &BinaryBuiltin{name: "modulo", function: builtinModulo, parameters: ast.Identifiers{"x", "y"}},
 }
