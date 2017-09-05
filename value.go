@@ -66,14 +66,10 @@ type valueString struct {
 }
 
 func (s *valueString) index(e *evaluator, index int) (value, error) {
-	runeIndex := 0
-	for _, r := range s.value {
-		if runeIndex == index {
-			return makeValueString(string(r)), nil
-		}
-		runeIndex++
+	if 0 <= index && index < s.length() {
+		return makeValueString(string(s.value[index])), nil
 	}
-	return nil, e.Error(fmt.Sprintf("Index %d out of bounds, not within [0, %v)", index, runeIndex))
+	return nil, e.Error(fmt.Sprintf("Index %d out of bounds, not within [0, %v)", index, s.length()))
 }
 
 func concatStrings(a, b *valueString) *valueString {
