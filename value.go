@@ -73,7 +73,7 @@ func (s *valueString) index(e *evaluator, index int) (value, error) {
 }
 
 func concatStrings(a, b *valueString) *valueString {
-	var result []rune
+	result := make([]rune, 0, len(a.value)+len(b.value))
 	for _, r := range a.value {
 		result = append(result, r)
 	}
