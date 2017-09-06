@@ -460,7 +460,7 @@ func unparseString(v string) string {
 	for _, c := range v {
 		switch c {
 		case '"':
-			buf.WriteString("\n")
+			buf.WriteString("\\\"")
 		case '\\':
 			buf.WriteString("\\\\")
 		case '\b':

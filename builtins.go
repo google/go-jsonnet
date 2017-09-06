@@ -17,6 +17,7 @@ limitations under the License.
 package jsonnet
 
 import (
+	"bytes"
 	"math"
 	"sort"
 
@@ -150,6 +151,19 @@ func builtinLength(e *evaluator, xp potentialValue) (value, error) {
 		return nil, e.typeErrorGeneral(x)
 	}
 	return makeValueNumber(float64(num)), nil
+}
+
+func builtinToString(e *evaluator, xp potentialValue) (value, error) {
+	x, err := e.evaluate(xp)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	err = e.i.manifestJSON(e.trace, x, false, "", &buf)
+	if err != nil {
+		return nil, err
+	}
+	return makeValueString(buf.String()), nil
 }
 
 func builtinMakeArray(e *evaluator, szp potentialValue, funcp potentialValue) (value, error) {
@@ -432,6 +446,7 @@ var uopBuiltins = []*UnaryBuiltin{
 // TODO(sbarzowski) eliminate duplication in function names (e.g. build map from array or constants)
 var funcBuiltins = map[string]evalCallable{
 	"length":          &UnaryBuiltin{name: "length", function: builtinLength, parameters: ast.Identifiers{"x"}},
+	"toString":        &UnaryBuiltin{name: "toString", function: builtinToString, parameters: ast.Identifiers{"x"}},
 	"makeArray":       &BinaryBuiltin{name: "makeArray", function: builtinMakeArray, parameters: ast.Identifiers{"sz", "func"}},
 	"primitiveEquals": &BinaryBuiltin{name: "primitiveEquals", function: primitiveEquals, parameters: ast.Identifiers{"sz", "func"}},
 	"objectFieldsEx":  &BinaryBuiltin{name: "objectFields", function: builtinObjectFieldsEx, parameters: ast.Identifiers{"obj", "hidden"}},
