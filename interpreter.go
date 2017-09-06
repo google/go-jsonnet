@@ -439,9 +439,9 @@ func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error)
 		argEnv := i.getCurrentEnv(a)
 
 		arguments := callArguments{
-			positional: make([]potentialValue, len(ast.Arguments)),
+			positional: make([]potentialValue, len(ast.Arguments.Positional)),
 		}
-		for i, arg := range ast.Arguments {
+		for i, arg := range ast.Arguments.Positional {
 			// TODO(sbarzowski) better thunk name
 			arguments.positional[i] = makeThunk("arg", argEnv, arg)
 		}

@@ -149,7 +149,7 @@ type closure struct {
 func (closure *closure) EvalCall(arguments callArguments, e *evaluator) (value, error) {
 	argThunks := make(bindingFrame)
 	for i, arg := range arguments.positional {
-		argThunks[closure.function.Parameters[i]] = arg
+		argThunks[closure.function.Parameters.Positional[i]] = arg
 	}
 
 	calledEnvironment := makeEnvironment(
@@ -164,7 +164,7 @@ func (closure *closure) EvalCall(arguments callArguments, e *evaluator) (value, 
 }
 
 func (closure *closure) Parameters() ast.Identifiers {
-	return closure.function.Parameters
+	return closure.function.Parameters.Positional
 }
 
 func makeClosure(env environment, function *ast.Function) *closure {
