@@ -233,7 +233,7 @@ func primitiveEquals(e *evaluator, xp potentialValue, yp potentialValue) (value,
 		if err != nil {
 			return nil, err
 		}
-		return makeValueBoolean(string(left.value) == string(right.value)), nil
+		return makeValueBoolean(stringEqual(left, right)), nil
 	case *valueNull:
 		return makeValueBoolean(true), nil
 	case *valueFunction:

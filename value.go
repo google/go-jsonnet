@@ -98,6 +98,18 @@ func stringLessThan(a, b *valueString) bool {
 	return len(a.value) < len(b.value)
 }
 
+func stringEqual(a, b *valueString) bool {
+	if len(a.value) != len(b.value) {
+		return false
+	}
+	for i := 0; i < len(a.value); i++ {
+		if a.value[i] != b.value[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func (s *valueString) length() int {
 	return len(s.value)
 }
