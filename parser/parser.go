@@ -200,10 +200,10 @@ func (p *parser) parseParameters(elementKind string) (*ast.Parameters, bool, err
 		if !ok {
 			return nil, false, MakeStaticError(fmt.Sprintf("Expected simple identifier but got a complex expression."), *arg.Loc())
 		}
-		params.Positional = append(params.Positional, *id)
+		params.Required = append(params.Required, *id)
 	}
 	for _, arg := range args.Named {
-		params.Named = append(params.Named, ast.NamedParameter{Name: arg.Name, DefaultArg: arg.Arg})
+		params.Optional = append(params.Optional, ast.NamedParameter{Name: arg.Name, DefaultArg: arg.Arg})
 	}
 	return &params, trailingComma, nil
 }

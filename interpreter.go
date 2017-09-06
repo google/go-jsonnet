@@ -464,9 +464,14 @@ func (i *interpreter) evaluate(a ast.Node) (value, error) {
 
 		arguments := callArguments{
 			positional: make([]potentialValue, len(ast.Arguments.Positional)),
+			named:      make([]namedCallArgument, len(ast.Arguments.Named)),
 		}
 		for i, arg := range ast.Arguments.Positional {
 			arguments.positional[i] = makeThunk(argEnv, arg)
+		}
+
+		for i, arg := range ast.Arguments.Named {
+			arguments.named[i] = namedCallArgument{name: arg.Name, pv: makeThunk(argEnv, arg.Arg)}
 		}
 
 		return e.evaluate(function.call(arguments))

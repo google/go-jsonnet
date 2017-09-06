@@ -1,8 +1,8 @@
-RUNTIME ERROR: Missing argument: x
+RUNTIME ERROR: Unknown argument y
 -------------------------------------------------
-	testdata/bad_function_call:1:1-18	$
+	testdata/optional_args8:2:1-10	$
 
-(function(x) x)()
+foo(y=17)
 
 -------------------------------------------------
 	During evaluation	

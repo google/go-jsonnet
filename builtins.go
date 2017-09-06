@@ -224,7 +224,7 @@ func builtinLength(e *evaluator, xp potentialValue) (value, error) {
 	case *valueString:
 		num = x.length()
 	case *valueFunction:
-		num = len(x.parameters())
+		num = len(x.parameters().required)
 	default:
 		return nil, e.typeErrorGeneral(x)
 	}
@@ -614,13 +614,12 @@ func getBuiltinEvaluator(e *evaluator, name ast.Identifier) *evaluator {
 }
 
 func (b *UnaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
-
-	// TODO check args
+	args = normalizePositionalCallArgs(args, b.Parameters())
 	return b.function(getBuiltinEvaluator(e, b.name), args.positional[0])
 }
 
-func (b *UnaryBuiltin) Parameters() ast.Identifiers {
-	return b.parameters
+func (b *UnaryBuiltin) Parameters() Parameters {
+	return Parameters{required: b.parameters}
 }
 
 type BinaryBuiltin struct {
@@ -629,13 +628,36 @@ type BinaryBuiltin struct {
 	parameters ast.Identifiers
 }
 
+func normalizePositionalCallArgs(args callArguments, params Parameters) callArguments {
+	if len(args.named) == 0 {
+		return args
+	}
+	if len(params.optional) != 0 {
+		panic("Can't normalize arguments if optional parameters are present")
+	}
+	needed := make(map[ast.Identifier]int)
+	for i := len(args.positional); i < len(params.required); i++ {
+		needed[params.required[i-len(args.positional)]] = i
+	}
+	newArgs := callArguments{
+		positional: make([]potentialValue, len(params.required)),
+	}
+	for i, arg := range args.positional {
+		newArgs.positional[i] = arg
+	}
+	for _, arg := range args.named {
+		newArgs.positional[needed[arg.name]] = arg.pv
+	}
+	return newArgs
+}
+
 func (b *BinaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
-	// TODO check args
+	args = normalizePositionalCallArgs(args, b.Parameters())
 	return b.function(getBuiltinEvaluator(e, b.name), args.positional[0], args.positional[1])
 }
 
-func (b *BinaryBuiltin) Parameters() ast.Identifiers {
-	return b.parameters
+func (b *BinaryBuiltin) Parameters() Parameters {
+	return Parameters{required: b.parameters}
 }
 
 type TernaryBuiltin struct {
@@ -645,12 +667,12 @@ type TernaryBuiltin struct {
 }
 
 func (b *TernaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
-	// TODO check args
+	args = normalizePositionalCallArgs(args, b.Parameters())
 	return b.function(getBuiltinEvaluator(e, b.name), args.positional[0], args.positional[1], args.positional[2])
 }
 
-func (b *TernaryBuiltin) Parameters() ast.Identifiers {
-	return b.parameters
+func (b *TernaryBuiltin) Parameters() Parameters {
+	return Parameters{required: b.parameters}
 }
 
 var desugaredBop = map[ast.BinaryOp]ast.Identifier{
@@ -698,7 +720,7 @@ var uopBuiltins = []*UnaryBuiltin{
 var funcBuiltins = map[string]evalCallable{
 	"extVar":          &UnaryBuiltin{name: "extVar", function: builtinExtVar, parameters: ast.Identifiers{"x"}},
 	"length":          &UnaryBuiltin{name: "length", function: builtinLength, parameters: ast.Identifiers{"x"}},
-	"toString":        &UnaryBuiltin{name: "toString", function: builtinToString, parameters: ast.Identifiers{"x"}},
+	"toString":        &UnaryBuiltin{name: "toString", function: builtinToString, parameters: ast.Identifiers{"a"}},
 	"makeArray":       &BinaryBuiltin{name: "makeArray", function: builtinMakeArray, parameters: ast.Identifiers{"sz", "func"}},
 	"flatMap":         &BinaryBuiltin{name: "flatMap", function: builtinFlatMap, parameters: ast.Identifiers{"func", "arr"}},
 	"filter":          &BinaryBuiltin{name: "filter", function: builtinFilter, parameters: ast.Identifiers{"func", "arr"}},

@@ -86,28 +86,6 @@ func stringUnescape(loc *ast.LocationRange, s string) (string, error) {
 }
 
 func desugarFields(location ast.LocationRange, fields *ast.ObjectFields, objLevel int) error {
-
-	// Desugar children
-	for i := range *fields {
-		field := &((*fields)[i])
-		if field.Expr1 != nil {
-			err := desugar(&field.Expr1, objLevel)
-			if err != nil {
-				return err
-			}
-		}
-		err := desugar(&field.Expr2, objLevel+1)
-		if err != nil {
-			return err
-		}
-		if field.Expr3 != nil {
-			err := desugar(&field.Expr3, objLevel+1)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
 	// Simplify asserts
 	for i := range *fields {
 		field := &(*fields)[i]
@@ -187,7 +165,7 @@ func desugarFields(location ast.LocationRange, fields *ast.ObjectFields, objLeve
 func simpleLambda(body ast.Node, paramName ast.Identifier) ast.Node {
 	return &ast.Function{
 		Body:       body,
-		Parameters: ast.Parameters{Positional: ast.Identifiers{paramName}},
+		Parameters: ast.Parameters{Required: ast.Identifiers{paramName}},
 	}
 }
 
@@ -429,6 +407,13 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		}
 
 	case *ast.Function:
+		for i := range node.Parameters.Optional {
+			param := &node.Parameters.Optional[i]
+			err = desugar(&param.DefaultArg, objLevel)
+			if err != nil {
+				return
+			}
+		}
 		err = desugar(&node.Body, objLevel)
 		if err != nil {
 			return
@@ -476,7 +461,10 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 			node.Step = &ast.LiteralNull{}
 		}
 		*astPtr = buildStdCall("slice", node.Target, node.BeginIndex, node.EndIndex, node.Step)
-		desugar(astPtr, objLevel)
+		err = desugar(astPtr, objLevel)
+		if err != nil {
+			return
+		}
 
 	case *ast.Local:
 		for i := range node.Binds {
@@ -529,9 +517,33 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		}
 
 		*astPtr = buildDesugaredObject(node.NodeBase, node.Fields)
+		err = desugar(astPtr, objLevel)
+		if err != nil {
+			return
+		}
 
 	case *ast.DesugaredObject:
-		return nil
+		// Desugar children
+		for i := range node.Fields {
+			field := &((node.Fields)[i])
+			if field.Name != nil {
+				err := desugar(&field.Name, objLevel)
+				if err != nil {
+					return err
+				}
+			}
+			err := desugar(&field.Body, objLevel+1)
+			if err != nil {
+				return err
+			}
+		}
+		for i := range node.Asserts {
+			assert := &((node.Asserts)[i])
+			err := desugar(assert, objLevel+1)
+			if err != nil {
+				return err
+			}
+		}
 
 	case *ast.ObjectComp:
 		comp, err := desugarObjectComp(node, objLevel)

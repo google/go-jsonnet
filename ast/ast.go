@@ -322,8 +322,8 @@ type NamedParameter struct {
 }
 
 type Parameters struct {
-	Positional Identifiers
-	Named      []NamedParameter
+	Required Identifiers
+	Optional []NamedParameter
 }
 
 // ---------------------------------------------------------------------------

@@ -23,7 +23,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"unicode/utf8"
 
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
@@ -38,25 +37,6 @@ type mainTest struct {
 	name   string
 	input  string
 	golden string
-}
-
-func removeExcessiveWhitespace(s string) string {
-	var buf bytes.Buffer
-	separated := true
-	for i, w := 0, 0; i < len(s); i += w {
-		runeValue, width := utf8.DecodeRuneInString(s[i:])
-		if runeValue == '\n' || runeValue == ' ' {
-			if !separated {
-				buf.WriteString(" ")
-				separated = true
-			}
-		} else {
-			buf.WriteRune(runeValue)
-			separated = false
-		}
-		w = width
-	}
-	return buf.String()
 }
 
 func setExtVars(vm *VM) {

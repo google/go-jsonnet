@@ -1,8 +1,8 @@
-RUNTIME ERROR: Missing argument: x
+RUNTIME ERROR: Argument x already provided
 -------------------------------------------------
-	testdata/bad_function_call:1:1-18	$
+	testdata/optional_args11:1:1-30	$
 
-(function(x) x)()
+(function(x, y) 42)(42, x=42)
 
 -------------------------------------------------
 	During evaluation	
