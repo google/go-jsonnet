@@ -50,7 +50,7 @@ func builtinPlus(e *evaluator, xp, yp potentialValue) (value, error) {
 		if err != nil {
 			return nil, err
 		}
-		return makeValueString(left.value + right.value), nil
+		return concatStrings(left, right), nil
 	case valueObject:
 		right, err := e.evaluateObject(yp)
 		if err != nil {
@@ -74,7 +74,7 @@ func builtinMinus(e *evaluator, xp, yp potentialValue) (value, error) {
 	return makeValueNumber(x.value - y.value), nil
 }
 
-func builtinGreater(e *evaluator, xp, yp potentialValue) (value, error) {
+func builtinLess(e *evaluator, xp, yp potentialValue) (value, error) {
 	x, err := e.evaluate(xp)
 	if err != nil {
 		return nil, err
@@ -85,20 +85,20 @@ func builtinGreater(e *evaluator, xp, yp potentialValue) (value, error) {
 		if err != nil {
 			return nil, err
 		}
-		return makeValueBoolean(left.value > right.value), nil
+		return makeValueBoolean(left.value < right.value), nil
 	case *valueString:
 		right, err := e.evaluateString(yp)
 		if err != nil {
 			return nil, err
 		}
-		return makeValueBoolean(left.value > right.value), nil
+		return makeValueBoolean(stringLessThan(left, right)), nil
 	default:
 		return nil, e.typeErrorGeneral(x)
 	}
 }
 
-func builtinLess(e *evaluator, xp, yp potentialValue) (value, error) {
-	return builtinGreater(e, yp, xp)
+func builtinGreater(e *evaluator, xp, yp potentialValue) (value, error) {
+	return builtinLess(e, yp, xp)
 }
 
 func builtinGreaterEq(e *evaluator, xp, yp potentialValue) (value, error) {
@@ -144,7 +144,7 @@ func builtinLength(e *evaluator, xp potentialValue) (value, error) {
 	case *valueArray:
 		num = len(x.elements)
 	case *valueString:
-		num = len(x.value)
+		num = x.length()
 	case *valueFunction:
 		num = len(x.parameters())
 	default:
@@ -273,7 +273,7 @@ func primitiveEquals(e *evaluator, xp potentialValue, yp potentialValue) (value,
 		if err != nil {
 			return nil, err
 		}
-		return makeValueBoolean(left.value == right.value), nil
+		return makeValueBoolean(stringEqual(left, right)), nil
 	case *valueNull:
 		return makeValueBoolean(true), nil
 	case *valueFunction:
@@ -358,11 +358,23 @@ func builtinObjectHasEx(e *evaluator, objp potentialValue, fnamep potentialValue
 		return nil, err
 	}
 	for _, fieldname := range objectFields(obj, hidden.value) {
-		if fieldname == fname.value {
+		if fieldname == string(fname.value) {
 			return makeValueBoolean(true), nil
 		}
 	}
 	return makeValueBoolean(false), nil
+}
+
+func builtinPow(e *evaluator, basep potentialValue, expp potentialValue) (value, error) {
+	base, err := e.evaluateNumber(basep)
+	if err != nil {
+		return nil, err
+	}
+	exp, err := e.evaluateNumber(expp)
+	if err != nil {
+		return nil, err
+	}
+	return makeDoubleCheck(e, math.Pow(base.value, exp.value))
 }
 
 type unaryBuiltin func(*evaluator, potentialValue) (value, error)
@@ -451,8 +463,8 @@ var bopBuiltins = []*BinaryBuiltin{
 	ast.BopLess:      &BinaryBuiltin{name: "operator<,", function: builtinLess, parameters: ast.Identifiers{"x", "y"}},
 	ast.BopLessEq:    &BinaryBuiltin{name: "operator<=", function: builtinLessEq, parameters: ast.Identifiers{"x", "y"}},
 
-	ast.BopManifestEqual:   todo,
-	ast.BopManifestUnequal: todo,
+	// bopManifestEqual:   <desugared>,
+	// bopManifestUnequal: <desugared>,
 
 	ast.BopBitwiseAnd: todo,
 	ast.BopBitwiseXor: todo,
@@ -490,4 +502,5 @@ var funcBuiltins = map[string]evalCallable{
 	"atan":            &UnaryBuiltin{name: "atan", function: builtinAtan, parameters: ast.Identifiers{"x"}},
 	"log":             &UnaryBuiltin{name: "log", function: builtinLog, parameters: ast.Identifiers{"x"}},
 	"exp":             &UnaryBuiltin{name: "exp", function: builtinExp, parameters: ast.Identifiers{"x"}},
+	"pow":             &BinaryBuiltin{name: "pow", function: builtinPow, parameters: ast.Identifiers{"base", "exp"}},
 }
