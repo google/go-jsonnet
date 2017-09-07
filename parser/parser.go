@@ -353,7 +353,7 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 			if field.Kind != ast.ObjectFieldExpr {
 				return nil, nil, MakeStaticError("Object comprehensions can only have [e] fields.", next.loc)
 			}
-			specs, last, err := p.parseComprehensionSpecs(tokenBraceR)
+			spec, last, err := p.parseComprehensionSpecs(tokenBraceR)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -361,7 +361,7 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 				NodeBase:      ast.NewNodeBaseLoc(locFromTokens(tok, last)),
 				Fields:        fields,
 				TrailingComma: gotComma,
-				Specs:         *specs,
+				Spec:          *spec,
 			}, last, nil
 		}
 
@@ -537,50 +537,53 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 }
 
 /* parses for x in expr for y in expr if expr for z in expr ... */
-func (p *parser) parseComprehensionSpecs(end tokenKind) (*ast.CompSpecs, *token, error) {
-	var specs ast.CompSpecs
-	for {
-		varID, err := p.popExpect(tokenIdentifier)
-		if err != nil {
-			return nil, nil, err
-		}
-		id := ast.Identifier(varID.data)
-		_, err = p.popExpect(tokenIn)
-		if err != nil {
-			return nil, nil, err
-		}
-		arr, err := p.parse(maxPrecedence)
-		if err != nil {
-			return nil, nil, err
-		}
-		specs = append(specs, ast.CompSpec{
-			Kind:    ast.CompFor,
-			VarName: &id,
-			Expr:    arr,
-		})
+func (p *parser) parseComprehensionSpecs(end tokenKind) (*ast.ForSpec, *token, error) {
+	var ifSpecs []ast.IfSpec
 
-		maybeIf := p.pop()
-		for ; maybeIf.kind == tokenIf; maybeIf = p.pop() {
-			cond, err := p.parse(maxPrecedence)
-			if err != nil {
-				return nil, nil, err
-			}
-			specs = append(specs, ast.CompSpec{
-				Kind:    ast.CompIf,
-				VarName: nil,
-				Expr:    cond,
-			})
-		}
-		if maybeIf.kind == end {
-			return &specs, maybeIf, nil
-		}
-
-		if maybeIf.kind != tokenFor {
-			return nil, nil, MakeStaticError(
-				fmt.Sprintf("Expected for, if or %v after for clause, got: %v", end, maybeIf), maybeIf.loc)
-		}
-
+	varID, err := p.popExpect(tokenIdentifier)
+	if err != nil {
+		return nil, nil, err
 	}
+	id := ast.Identifier(varID.data)
+	_, err = p.popExpect(tokenIn)
+	if err != nil {
+		return nil, nil, err
+	}
+	arr, err := p.parse(maxPrecedence)
+	if err != nil {
+		return nil, nil, err
+	}
+	forSpec := &ast.ForSpec{
+		VarName: id,
+		Expr:    arr,
+	}
+
+	maybeIf := p.pop()
+	for ; maybeIf.kind == tokenIf; maybeIf = p.pop() {
+		cond, err := p.parse(maxPrecedence)
+		if err != nil {
+			return nil, nil, err
+		}
+		ifSpecs = append(ifSpecs, ast.IfSpec{
+			Expr: cond,
+		})
+	}
+	forSpec.Conditions = ifSpecs
+	if maybeIf.kind == end {
+		return forSpec, maybeIf, nil
+	}
+
+	if maybeIf.kind != tokenFor {
+		return nil, nil, MakeStaticError(
+			fmt.Sprintf("Expected for, if or %v after for clause, got: %v", end, maybeIf), maybeIf.loc)
+	}
+
+	nextSpec, last, err := p.parseComprehensionSpecs(end)
+	if err != nil {
+		return nil, nil, err
+	}
+	nextSpec.Outer = forSpec
+	return nextSpec, last, nil
 }
 
 // Assumes that the leading '[' has already been consumed and passed as tok.
@@ -609,7 +612,7 @@ func (p *parser) parseArray(tok *token) (ast.Node, error) {
 	if next.kind == tokenFor {
 		// It's a comprehension
 		p.pop()
-		specs, last, err := p.parseComprehensionSpecs(tokenBracketR)
+		spec, last, err := p.parseComprehensionSpecs(tokenBracketR)
 		if err != nil {
 			return nil, err
 		}
@@ -617,7 +620,7 @@ func (p *parser) parseArray(tok *token) (ast.Node, error) {
 			NodeBase:      ast.NewNodeBaseLoc(locFromTokens(tok, last)),
 			Body:          first,
 			TrailingComma: gotComma,
-			Specs:         *specs,
+			Spec:          *spec,
 		}, nil
 	}
 	// Not a comprehension: It can have more elements.

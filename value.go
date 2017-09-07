@@ -131,9 +131,24 @@ type valueArray struct {
 	elements []potentialValue
 }
 
+func (arr *valueArray) length() int {
+	return len(arr.elements)
+}
+
 func makeValueArray(elements []potentialValue) *valueArray {
+	// We don't want to keep a bigger array than necessary
+	// so we create a new one with minimal capacity
+	var arrayElems []potentialValue
+	if len(elements) == cap(elements) {
+		arrayElems = elements
+	} else {
+		arrayElems = make([]potentialValue, len(elements))
+		for i := range elements {
+			arrayElems[i] = elements[i]
+		}
+	}
 	return &valueArray{
-		elements: elements,
+		elements: arrayElems,
 	}
 }
 

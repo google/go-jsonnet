@@ -110,6 +110,23 @@ func (e *evaluator) evaluateBoolean(pv potentialValue) (*valueBoolean, error) {
 	return e.getBoolean(v)
 }
 
+func (e *evaluator) getArray(val value) (*valueArray, error) {
+	switch v := val.(type) {
+	case *valueArray:
+		return v, nil
+	default:
+		return nil, e.typeErrorSpecific(val, &valueArray{})
+	}
+}
+
+func (e *evaluator) evaluateArray(pv potentialValue) (*valueArray, error) {
+	v, err := e.evaluate(pv)
+	if err != nil {
+		return nil, err
+	}
+	return e.getArray(v)
+}
+
 func (e *evaluator) getFunction(val value) (*valueFunction, error) {
 	switch v := val.(type) {
 	case *valueFunction:

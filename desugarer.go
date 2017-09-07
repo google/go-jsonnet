@@ -210,17 +210,29 @@ func desugarFields(location ast.LocationRange, fields *ast.ObjectFields, objLeve
 	return nil
 }
 
-func desugarArrayComp(astComp *ast.ArrayComp, objLevel int) (ast.Node, error) {
-	return &ast.LiteralNull{}, nil
-	// TODO(sbarzowski) this
-	switch astComp.Specs[0].Kind {
-	case ast.CompFor:
-		panic("TODO")
-	case ast.CompIf:
-		panic("TODO")
-	default:
-		panic("TODO")
+func simpleLambda(body ast.Node, paramName ast.Identifier) ast.Node {
+	return &ast.Function{
+		Body:       body,
+		Parameters: ast.Identifiers{paramName},
 	}
+}
+
+func desugarForSpec(inside ast.Node, forSpec *ast.ForSpec) (ast.Node, error) {
+	// TODO(sbarzowski) support ifs
+	function := simpleLambda(inside, forSpec.VarName)
+	current := buildStdCall("flatMap", function, forSpec.Expr)
+	if forSpec.Outer == nil {
+		return current, nil
+	}
+	return desugarForSpec(current, forSpec.Outer)
+}
+
+func wrapInArray(inside ast.Node) ast.Node {
+	return &ast.Array{Elements: ast.Nodes{inside}}
+}
+
+func desugarArrayComp(comp *ast.ArrayComp, objLevel int) (ast.Node, error) {
+	return desugarForSpec(wrapInArray(comp.Body), &comp.Spec)
 }
 
 func desugarObjectComp(astComp *ast.ObjectComp, objLevel int) (ast.Node, error) {
@@ -306,6 +318,10 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 			return err
 		}
 		*astPtr = comp
+		err = desugar(astPtr, objLevel)
+		if err != nil {
+			return err
+		}
 
 	case *ast.Assert:
 		if node.Message == nil {
