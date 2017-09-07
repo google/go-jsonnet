@@ -38,25 +38,44 @@ func builtinPlus(e *evaluator, xp, yp potentialValue) (value, error) {
 	if err != nil {
 		return nil, err
 	}
+	y, err := e.evaluate(yp)
+	if err != nil {
+		return nil, err
+	}
+	switch right := y.(type) {
+	case *valueString:
+		left, err := builtinToString(e, xp)
+		if err != nil {
+			return nil, err
+		}
+		return concatStrings(left.(*valueString), right), nil
+
+	}
 	switch left := x.(type) {
 	case *valueNumber:
-		right, err := e.evaluateNumber(yp)
+		right, err := e.getNumber(y)
 		if err != nil {
 			return nil, err
 		}
 		return makeValueNumber(left.value + right.value), nil
 	case *valueString:
-		right, err := e.evaluateString(yp)
+		right, err := builtinToString(e, yp)
 		if err != nil {
 			return nil, err
 		}
-		return concatStrings(left, right), nil
+		return concatStrings(left, right.(*valueString)), nil
 	case valueObject:
-		right, err := e.evaluateObject(yp)
+		right, err := e.getObject(y)
 		if err != nil {
 			return nil, err
 		}
 		return makeValueExtendedObject(left, right), nil
+	case *valueArray:
+		right, err := e.getArray(y)
+		if err != nil {
+			return nil, err
+		}
+		return concatArrays(left, right), nil
 	default:
 		return nil, e.typeErrorGeneral(x)
 	}
@@ -214,6 +233,10 @@ func builtinToString(e *evaluator, xp potentialValue) (value, error) {
 	x, err := e.evaluate(xp)
 	if err != nil {
 		return nil, err
+	}
+	switch x := x.(type) {
+	case *valueString:
+		return x, nil
 	}
 	var buf bytes.Buffer
 	err = e.i.manifestJSON(e.trace, x, false, "", &buf)
@@ -405,16 +428,16 @@ var builtinBitwiseAnd = liftBitwise(func(x, y int64) int64 { return x & y })
 var builtinBitwiseOr = liftBitwise(func(x, y int64) int64 { return x | y })
 var builtinBitwiseXor = liftBitwise(func(x, y int64) int64 { return x ^ y })
 
-func builtinObjectFieldsEx(e *evaluator, objp potentialValue, hiddenp potentialValue) (value, error) {
+func builtinObjectFieldsEx(e *evaluator, objp potentialValue, includeHiddenP potentialValue) (value, error) {
 	obj, err := e.evaluateObject(objp)
 	if err != nil {
 		return nil, err
 	}
-	hidden, err := e.evaluateBoolean(hiddenp)
+	includeHidden, err := e.evaluateBoolean(includeHiddenP)
 	if err != nil {
 		return nil, err
 	}
-	fields := objectFields(obj, hidden.value)
+	fields := objectFields(obj, !includeHidden.value)
 	sort.Strings(fields)
 	elems := []potentialValue{}
 	for _, fieldname := range fields {
@@ -423,7 +446,7 @@ func builtinObjectFieldsEx(e *evaluator, objp potentialValue, hiddenp potentialV
 	return makeValueArray(elems), nil
 }
 
-func builtinObjectHasEx(e *evaluator, objp potentialValue, fnamep potentialValue, hiddenp potentialValue) (value, error) {
+func builtinObjectHasEx(e *evaluator, objp potentialValue, fnamep potentialValue, includeHiddenP potentialValue) (value, error) {
 	obj, err := e.evaluateObject(objp)
 	if err != nil {
 		return nil, err
@@ -432,11 +455,11 @@ func builtinObjectHasEx(e *evaluator, objp potentialValue, fnamep potentialValue
 	if err != nil {
 		return nil, err
 	}
-	hidden, err := e.evaluateBoolean(hiddenp)
+	includeHidden, err := e.evaluateBoolean(includeHiddenP)
 	if err != nil {
 		return nil, err
 	}
-	for _, fieldname := range objectFields(obj, hidden.value) {
+	for _, fieldname := range objectFields(obj, !includeHidden.value) {
 		if fieldname == string(fname.value) {
 			return makeValueBoolean(true), nil
 		}
