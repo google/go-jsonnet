@@ -591,9 +591,7 @@ func (i *interpreter) manifestJSON(trace *TraceElement, v value, multiline bool,
 				buf.WriteString(prefix)
 				buf.WriteString(indent2)
 
-				buf.WriteString("\"")
-				buf.WriteString(fieldName)
-				buf.WriteString("\"")
+				buf.WriteString(unparseString(fieldName))
 				buf.WriteString(": ")
 
 				// TODO(sbarzowski) body.Loc()
