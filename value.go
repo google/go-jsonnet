@@ -206,6 +206,17 @@ func makeValueArray(elements []potentialValue) *valueArray {
 	}
 }
 
+func concatArrays(a, b *valueArray) *valueArray {
+	result := make([]potentialValue, 0, len(a.elements)+len(b.elements))
+	for _, r := range a.elements {
+		result = append(result, r)
+	}
+	for _, r := range b.elements {
+		result = append(result, r)
+	}
+	return &valueArray{elements: result}
+}
+
 func (*valueArray) typename() string {
 	return "array"
 }

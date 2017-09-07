@@ -427,7 +427,7 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		if node.Step == nil {
 			node.Step = &ast.LiteralNull{}
 		}
-		*astPtr = buildStdCall("std.slice", node.Target, node.BeginIndex, node.EndIndex, node.Step)
+		*astPtr = buildStdCall("slice", node.Target, node.BeginIndex, node.EndIndex, node.Step)
 		desugar(astPtr, objLevel)
 
 	case *ast.Local:
