@@ -180,7 +180,10 @@ func builtinFlatMap(e *evaluator, funcp potentialValue, arrp potentialValue) (va
 		return nil, err
 	}
 	num := int(arr.length())
-	var elems []potentialValue
+	// Start with capacity of the original array.
+	// This may spare us a few reallocations.
+	// TODO(sbarzowski) verify that it actually helps
+	elems := make([]potentialValue, 0, num)
 	for i := 0; i < num; i++ {
 		returned, err := e.evaluateArray(fun.call(args(arr.elements[i])))
 		if err != nil {
