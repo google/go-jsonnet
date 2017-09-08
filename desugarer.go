@@ -217,9 +217,26 @@ func simpleLambda(body ast.Node, paramName ast.Identifier) ast.Node {
 	}
 }
 
+func buildAnd(left ast.Node, right ast.Node) ast.Node {
+	return &ast.Binary{Op: ast.BopAnd, Left: left, Right: right}
+}
+
 func desugarForSpec(inside ast.Node, forSpec *ast.ForSpec) (ast.Node, error) {
-	// TODO(sbarzowski) support ifs
-	function := simpleLambda(inside, forSpec.VarName)
+	var body ast.Node
+	if len(forSpec.Conditions) > 0 {
+		cond := forSpec.Conditions[0].Expr
+		for i := 1; i < len(forSpec.Conditions); i++ {
+			cond = buildAnd(cond, forSpec.Conditions[i].Expr)
+		}
+		body = &ast.Conditional{
+			Cond:        cond,
+			BranchTrue:  inside,
+			BranchFalse: &ast.Array{},
+		}
+	} else {
+		body = inside
+	}
+	function := simpleLambda(body, forSpec.VarName)
 	current := buildStdCall("flatMap", function, forSpec.Expr)
 	if forSpec.Outer == nil {
 		return current, nil
