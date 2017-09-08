@@ -215,8 +215,8 @@ func builtinLength(e *evaluator, xp potentialValue) (value, error) {
 	}
 	var num int
 	switch x := x.(type) {
-	case *valueSimpleObject:
-		panic("TODO getting all the fields")
+	case valueObject:
+		num = len(objectFields(x, true))
 	case *valueArray:
 		num = len(x.elements)
 	case *valueString:
