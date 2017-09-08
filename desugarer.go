@@ -349,6 +349,10 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 			BranchTrue:  node.Rest,
 			BranchFalse: &ast.Error{Expr: node.Message},
 		}
+		err = desugar(astPtr, objLevel)
+		if err != nil {
+			return err
+		}
 
 	case *ast.Binary:
 		// some operators get replaced by stdlib functions
