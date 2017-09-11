@@ -404,6 +404,14 @@ var builtinAcos = liftNumeric(math.Acos)
 var builtinAtan = liftNumeric(math.Atan)
 var builtinLog = liftNumeric(math.Log)
 var builtinExp = liftNumeric(math.Exp)
+var builtinMantissa = liftNumeric(func(f float64) float64 {
+	mantissa, _ := math.Frexp(f)
+	return mantissa
+})
+var builtinExponent = liftNumeric(func(f float64) float64 {
+	_, exponent := math.Frexp(f)
+	return float64(exponent)
+})
 
 func liftBitwise(f func(int64, int64) int64) func(*evaluator, potentialValue, potentialValue) (value, error) {
 	return func(e *evaluator, xp, yp potentialValue) (value, error) {
@@ -604,6 +612,8 @@ var funcBuiltins = map[string]evalCallable{
 	"atan":            &UnaryBuiltin{name: "atan", function: builtinAtan, parameters: ast.Identifiers{"x"}},
 	"log":             &UnaryBuiltin{name: "log", function: builtinLog, parameters: ast.Identifiers{"x"}},
 	"exp":             &UnaryBuiltin{name: "exp", function: builtinExp, parameters: ast.Identifiers{"x"}},
+	"mantissa":        &UnaryBuiltin{name: "mantissa", function: builtinMantissa, parameters: ast.Identifiers{"x"}},
+	"exponent":        &UnaryBuiltin{name: "exponent", function: builtinExponent, parameters: ast.Identifiers{"x"}},
 	"pow":             &BinaryBuiltin{name: "pow", function: builtinPow, parameters: ast.Identifiers{"base", "exp"}},
 	"modulo":          &BinaryBuiltin{name: "modulo", function: builtinModulo, parameters: ast.Identifiers{"x", "y"}},
 }
