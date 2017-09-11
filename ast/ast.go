@@ -377,7 +377,6 @@ type LiteralNumber struct {
 
 // ---------------------------------------------------------------------------
 
-// +gen stringer
 type LiteralStringKind int
 
 const (
@@ -398,7 +397,6 @@ type LiteralString struct {
 
 // ---------------------------------------------------------------------------
 
-// +gen stringer
 type ObjectFieldKind int
 
 const (
@@ -409,7 +407,6 @@ const (
 	ObjectLocal                            // local id = expr2
 )
 
-// +gen stringer
 type ObjectFieldHide int
 
 const (
