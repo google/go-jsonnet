@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
+	"fmt"
 	"math"
 	"sort"
 
@@ -384,6 +385,34 @@ func builtinMd5(e *evaluator, xp potentialValue) (value, error) {
 	return makeValueString(hex.EncodeToString(hash[:])), nil
 }
 
+// Maximum allowed unicode codepoint
+// https://en.wikipedia.org/wiki/Unicode#Architecture_and_terminology
+const codepointMax = 0x10FFFF
+
+func builtinChar(e *evaluator, xp potentialValue) (value, error) {
+	x, err := e.evaluateNumber(xp)
+	if err != nil {
+		return nil, err
+	}
+	if x.value > codepointMax {
+		return nil, e.Error(fmt.Sprintf("Invalid unicode codepoint, got %v", x.value))
+	} else if x.value < 0 {
+		return nil, e.Error(fmt.Sprintf("Codepoints must be >= 0, got %v", x.value))
+	}
+	return makeValueString(string(rune(x.value))), nil
+}
+
+func builtinCodepoint(e *evaluator, xp potentialValue) (value, error) {
+	x, err := e.evaluateString(xp)
+	if err != nil {
+		return nil, err
+	}
+	if x.length() != 1 {
+		return nil, e.Error(fmt.Sprintf("codepoint takes a string of length 1, got length %v", x.length()))
+	}
+	return makeValueNumber(float64(x.value[0])), nil
+}
+
 func makeDoubleCheck(e *evaluator, x float64) (value, error) {
 	if math.IsNaN(x) {
 		return nil, e.Error("Not a number")
@@ -612,6 +641,8 @@ var funcBuiltins = map[string]evalCallable{
 	"objectFieldsEx":  &BinaryBuiltin{name: "objectFields", function: builtinObjectFieldsEx, parameters: ast.Identifiers{"obj", "hidden"}},
 	"objectHasEx":     &TernaryBuiltin{name: "objectHasEx", function: builtinObjectHasEx, parameters: ast.Identifiers{"obj", "fname", "hidden"}},
 	"type":            &UnaryBuiltin{name: "type", function: builtinType, parameters: ast.Identifiers{"x"}},
+	"char":            &UnaryBuiltin{name: "char", function: builtinChar, parameters: ast.Identifiers{"x"}},
+	"codepoint":       &UnaryBuiltin{name: "codepoint", function: builtinCodepoint, parameters: ast.Identifiers{"x"}},
 	"ceil":            &UnaryBuiltin{name: "ceil", function: builtinCeil, parameters: ast.Identifiers{"x"}},
 	"floor":           &UnaryBuiltin{name: "floor", function: builtinFloor, parameters: ast.Identifiers{"x"}},
 	"sqrt":            &UnaryBuiltin{name: "sqrt", function: builtinSqrt, parameters: ast.Identifiers{"x"}},
