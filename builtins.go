@@ -18,6 +18,8 @@ package jsonnet
 
 import (
 	"bytes"
+	"crypto/md5"
+	"encoding/hex"
 	"math"
 	"sort"
 
@@ -373,6 +375,15 @@ func builtinType(e *evaluator, xp potentialValue) (value, error) {
 	return makeValueString(x.typename()), nil
 }
 
+func builtinMd5(e *evaluator, xp potentialValue) (value, error) {
+	x, err := e.evaluateString(xp)
+	if err != nil {
+		return nil, err
+	}
+	hash := md5.Sum([]byte(string(x.value)))
+	return makeValueString(hex.EncodeToString(hash[:])), nil
+}
+
 func makeDoubleCheck(e *evaluator, x float64) (value, error) {
 	if math.IsNaN(x) {
 		return nil, e.Error("Not a number")
@@ -616,4 +627,5 @@ var funcBuiltins = map[string]evalCallable{
 	"exponent":        &UnaryBuiltin{name: "exponent", function: builtinExponent, parameters: ast.Identifiers{"x"}},
 	"pow":             &BinaryBuiltin{name: "pow", function: builtinPow, parameters: ast.Identifiers{"base", "exp"}},
 	"modulo":          &BinaryBuiltin{name: "modulo", function: builtinModulo, parameters: ast.Identifiers{"x", "y"}},
+	"md5":             &UnaryBuiltin{name: "md5", function: builtinMd5, parameters: ast.Identifiers{"x"}},
 }
