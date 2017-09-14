@@ -16,6 +16,7 @@ limitations under the License.
 package jsonnet
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/google/go-jsonnet/ast"
@@ -269,6 +270,9 @@ type valueObject interface {
 	value
 	inheritanceSize() int
 	index(e *evaluator, field string) (value, error)
+	assertionsChecked() bool
+	setAssertionsCheckResult(err error)
+	getAssertionsCheckResult() error
 }
 
 type selfBinding struct {
@@ -276,7 +280,7 @@ type selfBinding struct {
 	// that this is not the same as context, because we could be inside a function,
 	// inside an object and then context would be the function, but self would still point
 	// to the object.
-	self value
+	self valueObject
 
 	// superDepth is the "super" level of self.  Sometimes, we look upwards in the
 	// inheritance tree, e.g. via an explicit use of super, or because a given field
@@ -297,12 +301,39 @@ func makeUnboundSelfBinding() selfBinding {
 	}
 }
 
+// Hack - we need to distinguish not-checked-yet and no error situations
+// so we have a special value for no error and nil means that we don't know yet.
+var errNoErrorInObjectInvariants = errors.New("No error - assertions passed")
+
 type valueObjectBase struct {
 	valueBase
+	assertionError error
 }
 
 func (*valueObjectBase) typename() string {
 	return "object"
+}
+
+func (obj *valueObjectBase) assertionsChecked() bool {
+	return obj.assertionError != nil
+}
+
+func (obj *valueObjectBase) setAssertionsCheckResult(err error) {
+	if err != nil {
+		obj.assertionError = err
+	} else {
+		obj.assertionError = errNoErrorInObjectInvariants
+	}
+}
+
+func (obj *valueObjectBase) getAssertionsCheckResult() error {
+	if obj.assertionError == nil {
+		panic("Assertions not checked yet")
+	}
+	if obj.assertionError == errNoErrorInObjectInvariants {
+		return nil
+	}
+	return obj.assertionError
 }
 
 // valueSimpleObject represents a flat object (no inheritance).
@@ -317,7 +348,43 @@ type valueSimpleObject struct {
 	valueObjectBase
 	upValues bindingFrame
 	fields   valueSimpleObjectFieldMap
-	asserts  []ast.Node
+	asserts  []unboundField
+}
+
+func checkAssertionsHelper(e *evaluator, obj valueObject, curr valueObject, superDepth int) error {
+	switch curr := curr.(type) {
+	case *valueExtendedObject:
+		err := checkAssertionsHelper(e, obj, curr.right, superDepth)
+		if err != nil {
+			return err
+		}
+		err = checkAssertionsHelper(e, obj, curr.left, superDepth+curr.right.inheritanceSize())
+		if err != nil {
+			return err
+		}
+		return nil
+	case *valueSimpleObject:
+		for _, assert := range curr.asserts {
+			_, err := e.evaluate(assert.bindToObject(selfBinding{self: obj, superDepth: superDepth}, curr.upValues))
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	default:
+		panic(fmt.Sprintf("Unknown object type %#v", obj))
+	}
+}
+
+func checkAssertions(e *evaluator, obj valueObject) error {
+	if !obj.assertionsChecked() {
+		// Assertions may refer to the object that will normally
+		// trigger checking of assertions, resulting in an endless recursion.
+		// To avoid that, while we check them, we treat them as already passed.
+		obj.setAssertionsCheckResult(errNoErrorInObjectInvariants)
+		obj.setAssertionsCheckResult(checkAssertionsHelper(e, obj, obj, 0))
+	}
+	return obj.getAssertionsCheckResult()
 }
 
 func (o *valueSimpleObject) index(e *evaluator, field string) (value, error) {
@@ -328,7 +395,7 @@ func (*valueSimpleObject) inheritanceSize() int {
 	return 1
 }
 
-func makeValueSimpleObject(b bindingFrame, fields valueSimpleObjectFieldMap, asserts ast.Nodes) *valueSimpleObject {
+func makeValueSimpleObject(b bindingFrame, fields valueSimpleObjectFieldMap, asserts []unboundField) *valueSimpleObject {
 	return &valueSimpleObject{
 		upValues: b,
 		fields:   fields,
@@ -425,6 +492,10 @@ func superIndex(e *evaluator, currentSB selfBinding, field string) (value, error
 }
 
 func objectIndex(e *evaluator, sb selfBinding, fieldName string) (value, error) {
+	err := checkAssertions(e, sb.self)
+	if err != nil {
+		return nil, err
+	}
 	field, upValues, foundAt := findField(sb.self, sb.superDepth, fieldName)
 	if field == nil {
 		return nil, e.Error(fmt.Sprintf("Field does not exist: %s", fieldName))

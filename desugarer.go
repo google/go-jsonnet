@@ -110,10 +110,23 @@ func desugarFields(location ast.LocationRange, fields *ast.ObjectFields, objLeve
 
 	// Simplify asserts
 	// TODO(dcunnin): this
-	for _, field := range *fields {
+	for i := range *fields {
+		field := &(*fields)[i]
 		if field.Kind != ast.ObjectAssert {
 			continue
 		}
+		msg := field.Expr3
+		if msg == nil {
+			msg = buildLiteralString("Object assertion failed.")
+		}
+		field.Expr3 = nil
+		onFailure := &ast.Error{Expr: msg}
+		assertion := &ast.Conditional{
+			Cond:        field.Expr2,
+			BranchTrue:  &ast.LiteralBoolean{Value: true}, // ignored anyway
+			BranchFalse: onFailure,
+		}
+		field.Expr2 = assertion
 		/*
 			AST *msg = field.expr3
 			field.expr3 = nil

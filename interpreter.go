@@ -326,8 +326,12 @@ func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error)
 			}
 			fields[fieldName] = valueSimpleObjectField{field.Hide, &codeUnboundField{field.Body}}
 		}
+		var asserts []unboundField
+		for _, assert := range ast.Asserts {
+			asserts = append(asserts, &codeUnboundField{assert})
+		}
 		upValues := i.capture(ast.FreeVariables())
-		return makeValueSimpleObject(upValues, fields, ast.Asserts), nil
+		return makeValueSimpleObject(upValues, fields, asserts), nil
 
 	case *ast.Error:
 		msgVal, err := e.evalInCurrentContext(ast.Expr)
@@ -569,6 +573,11 @@ func (i *interpreter) manifestJSON(trace *TraceElement, v value, multiline bool,
 
 		fieldNames := objectFields(v, true)
 		sort.Strings(fieldNames)
+
+		err := checkAssertions(e, v)
+		if err != nil {
+			return err
+		}
 
 		if len(fieldNames) == 0 {
 			buf.WriteString("{ }")
