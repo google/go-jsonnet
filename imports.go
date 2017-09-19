@@ -68,19 +68,18 @@ func (cache *ImportCache) importData(key importCacheKey) *ImportCacheValue {
 	return &val
 }
 
-func (cache *ImportCache) ImportString(codeDir, importedPath string) (*valueString, error) {
+func (cache *ImportCache) ImportString(codeDir, importedPath string, e *evaluator) (*valueString, error) {
 	data := cache.importData(importCacheKey{codeDir, importedPath})
 	if data.data.err != nil {
-		return nil, data.data.err
+		return nil, e.Error(data.data.err.Error())
 	}
-	// TODO(sbarzowski) wrap error in runtime error
 	return makeValueString(data.data.content), nil
 }
 
 func (cache *ImportCache) ImportCode(codeDir, importedPath string, e *evaluator) (value, error) {
 	cached := cache.importData(importCacheKey{codeDir, importedPath})
 	if cached.data.err != nil {
-		return nil, cached.data.err
+		return nil, e.Error(cached.data.err.Error())
 	}
 	if cached.asCode == nil {
 		node, err := snippetToAST(cached.data.foundHere, cached.data.content)
@@ -131,6 +130,7 @@ func tryPath(dir, importedPath string) (found bool, content []byte, foundHere st
 func (importer *FileImporter) Import(dir, importedPath string) *ImportedData {
 	found, content, foundHere, err := tryPath(dir, importedPath)
 	if err != nil {
+		fmt.Println(err)
 		return &ImportedData{err: err}
 	}
 
@@ -141,6 +141,11 @@ func (importer *FileImporter) Import(dir, importedPath string) *ImportedData {
 		}
 	}
 
+	if !found {
+		return &ImportedData{
+			err: fmt.Errorf("Couldn't open import %#v: No match locally or in the Jsonnet library paths.", importedPath),
+		}
+	}
 	return &ImportedData{content: string(content), foundHere: foundHere}
 }
 

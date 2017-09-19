@@ -373,7 +373,7 @@ func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error)
 	case *ast.ImportStr:
 		// TODO(sbarzowski) put this information in AST instead of getting it out of tracing data...
 		codeDir := path.Dir(e.trace.loc.FileName)
-		return i.importCache.ImportString(codeDir, ast.File)
+		return i.importCache.ImportString(codeDir, ast.File, e)
 
 	case *ast.LiteralBoolean:
 		return makeValueBoolean(ast.Value), nil
