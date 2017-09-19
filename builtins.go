@@ -563,7 +563,7 @@ func todoFunc(e *evaluator, x, y potentialValue) (value, error) {
 var todo = &BinaryBuiltin{function: todoFunc, parameters: ast.Identifiers{"x", "y"}}
 
 var desugaredBop = map[ast.BinaryOp]ast.Identifier{
-	//bopPercent,
+	ast.BopPercent:         "mod",
 	ast.BopManifestEqual:   "equals",
 	ast.BopManifestUnequal: "notEquals", // Special case
 }
