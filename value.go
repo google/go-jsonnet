@@ -315,6 +315,8 @@ func (*valueObjectBase) typename() string {
 }
 
 func (obj *valueObjectBase) assertionsChecked() bool {
+	// nil - not checked yet
+	// errNoErrorInObjectInvariants - we checked and there is no error (or checking in progress)
 	return obj.assertionError != nil
 }
 
