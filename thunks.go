@@ -131,9 +131,28 @@ type codeUnboundField struct {
 	body ast.Node
 }
 
-func (f *codeUnboundField) bindToObject(sb selfBinding, origBinding bindingFrame) potentialValue {
+func (f *codeUnboundField) bindToObject(sb selfBinding, origBindings bindingFrame) potentialValue {
 	// TODO(sbarzowski) better object names (perhaps include a field name too?)
-	return makeThunk("object_field", makeEnvironment(origBinding, sb), f.body)
+	return makeThunk("object_field", makeEnvironment(origBindings, sb), f.body)
+}
+
+// Provide additional bindings for a field. It shadows bindings from the object.
+type bindingsUnboundField struct {
+	inner unboundField
+	// in addition to "generic" binding frame from the object
+	bindings bindingFrame
+}
+
+func (f *bindingsUnboundField) bindToObject(sb selfBinding, origBindings bindingFrame) potentialValue {
+	var upValues bindingFrame
+	upValues = make(bindingFrame)
+	for variable, pvalue := range origBindings {
+		upValues[variable] = pvalue
+	}
+	for variable, pvalue := range f.bindings {
+		upValues[variable] = pvalue
+	}
+	return f.inner.bindToObject(sb, upValues)
 }
 
 // evalCallables

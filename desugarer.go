@@ -249,9 +249,31 @@ func desugarArrayComp(comp *ast.ArrayComp, objLevel int) (ast.Node, error) {
 	return desugarForSpec(wrapInArray(comp.Body), &comp.Spec)
 }
 
-func desugarObjectComp(astComp *ast.ObjectComp, objLevel int) (ast.Node, error) {
-	return &ast.LiteralNull{}, nil
-	// TODO(sbarzowski) this
+func desugarObjectComp(comp *ast.ObjectComp, objLevel int) (ast.Node, error) {
+
+	// TODO(sbarzowski) find a consistent convention to prevent desugaring the same thing twice
+	// here we deeply desugar fields and it will happen again
+	err := desugarFields(*comp.Loc(), &comp.Fields, objLevel+1)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(comp.Fields) != 1 {
+		panic("Too many fields in object comprehension, it should have been caught during parsing")
+	}
+
+	arrComp := ast.ArrayComp{
+		Body: buildDesugaredObject(comp.NodeBase, comp.Fields),
+		Spec: comp.Spec,
+	}
+
+	desugaredArrayComp, err := desugarArrayComp(&arrComp, objLevel)
+	if err != nil {
+		return nil, err
+	}
+
+	desugaredComp := buildStdCall("$objectFlatMerge", desugaredArrayComp)
+	return desugaredComp, nil
 }
 
 func buildLiteralString(value string) ast.Node {
@@ -275,6 +297,23 @@ func buildStdCall(builtinName ast.Identifier, args ...ast.Node) ast.Node {
 		Target:    builtin,
 		Arguments: ast.Arguments{Positional: args},
 	}
+}
+
+func buildDesugaredObject(nodeBase ast.NodeBase, fields ast.ObjectFields) *ast.DesugaredObject {
+	var newFields ast.DesugaredObjectFields
+	var newAsserts ast.Nodes
+
+	for _, field := range fields {
+		if field.Kind == ast.ObjectAssert {
+			newAsserts = append(newAsserts, field.Expr2)
+		} else if field.Kind == ast.ObjectFieldExpr {
+			newFields = append(newFields, ast.DesugaredObjectField{field.Hide, field.Expr1, field.Expr2})
+		} else {
+			panic(fmt.Sprintf("INTERNAL ERROR: field should have been desugared: %s", field.Kind))
+		}
+	}
+
+	return &ast.DesugaredObject{nodeBase, newAsserts, newFields}
 }
 
 // Desugar Jsonnet expressions to reduce the number of constructs the rest of the implementation
@@ -506,33 +545,21 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 			return
 		}
 
-		var newFields ast.DesugaredObjectFields
-		var newAsserts ast.Nodes
-
-		for _, field := range node.Fields {
-			if field.Kind == ast.ObjectAssert {
-				newAsserts = append(newAsserts, field.Expr2)
-			} else if field.Kind == ast.ObjectFieldExpr {
-				newFields = append(newFields, ast.DesugaredObjectField{field.Hide, field.Expr1, field.Expr2})
-			} else {
-				panic(fmt.Sprintf("INTERNAL ERROR: field should have been desugared: %s", field.Kind))
-			}
-		}
-
-		*astPtr = &ast.DesugaredObject{node.NodeBase, newAsserts, newFields}
+		*astPtr = buildDesugaredObject(node.NodeBase, node.Fields)
 
 	case *ast.DesugaredObject:
-		panic("Desugaring desugared object")
+		return nil
 
 	case *ast.ObjectComp:
 		comp, err := desugarObjectComp(node, objLevel)
 		if err != nil {
 			return err
 		}
+		err = desugar(&comp, objLevel)
+		if err != nil {
+			return err
+		}
 		*astPtr = comp
-
-	case *ast.ObjectComprehensionSimple:
-		panic("Desugaring desugared object comprehension")
 
 	case *ast.Self:
 		// Nothing to do.

@@ -318,11 +318,11 @@ func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error)
 				// Omitted field.
 				continue
 			default:
-				return nil, e.Error("Field name was not a string.")
+				return nil, e.Error(fmt.Sprintf("Field name must be string, got %v", fieldNameValue.typename()))
 			}
 
 			if _, ok := fields[fieldName]; ok {
-				return nil, e.Error(fmt.Sprintf("Duplicate field name: \"%s\"", fieldName))
+				return nil, e.Error(duplicateFieldNameErrMsg(fieldName))
 			}
 			fields[fieldName] = valueSimpleObjectField{field.Hide, &codeUnboundField{field.Body}}
 		}

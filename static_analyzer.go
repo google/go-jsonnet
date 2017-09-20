@@ -117,9 +117,6 @@ func analyzeVisit(a ast.Node, inObject bool, vars ast.IdentifierSet) error {
 		for _, assert := range a.Asserts {
 			visitNext(assert, true, vars, s)
 		}
-	case *ast.ObjectComprehensionSimple:
-		// TODO (sbarzowski) this
-		panic("Comprehensions not supported yet")
 	case *ast.Self:
 		if !inObject {
 			return parser.MakeStaticError("Can't use self outside of an object.", *a.Loc())

@@ -553,6 +553,42 @@ func builtinPow(e *evaluator, basep potentialValue, expp potentialValue) (value,
 	return makeDoubleCheck(e, math.Pow(base.value, exp.value))
 }
 
+func builtinUglyObjectFlatMerge(e *evaluator, objarrp potentialValue) (value, error) {
+	objarr, err := e.evaluateArray(objarrp)
+	if err != nil {
+		return nil, err
+	}
+	if len(objarr.elements) == 0 {
+		return &valueSimpleObject{}, nil
+	}
+	newFields := make(valueSimpleObjectFieldMap)
+	for _, elem := range objarr.elements {
+		obj, err := e.evaluateObject(elem)
+		if err != nil {
+			return nil, err
+		}
+		// starts getting ugly - we mess with object internals
+		simpleObj := obj.(*valueSimpleObject)
+		for fieldName, fieldVal := range simpleObj.fields {
+			if _, alreadyExists := newFields[fieldName]; alreadyExists {
+				return nil, e.Error(duplicateFieldNameErrMsg(fieldName))
+			}
+			newFields[fieldName] = valueSimpleObjectField{
+				hide: fieldVal.hide,
+				field: &bindingsUnboundField{
+					inner:    fieldVal.field,
+					bindings: simpleObj.upValues,
+				},
+			}
+		}
+	}
+	return makeValueSimpleObject(
+		nil, // no binding frame
+		newFields,
+		[]unboundField{}, // No asserts allowed
+	), nil
+}
+
 type unaryBuiltin func(*evaluator, potentialValue) (value, error)
 type binaryBuiltin func(*evaluator, potentialValue, potentialValue) (value, error)
 type ternaryBuiltin func(*evaluator, potentialValue, potentialValue, potentialValue) (value, error)
@@ -686,4 +722,7 @@ var funcBuiltins = map[string]evalCallable{
 	"pow":             &BinaryBuiltin{name: "pow", function: builtinPow, parameters: ast.Identifiers{"base", "exp"}},
 	"modulo":          &BinaryBuiltin{name: "modulo", function: builtinModulo, parameters: ast.Identifiers{"x", "y"}},
 	"md5":             &UnaryBuiltin{name: "md5", function: builtinMd5, parameters: ast.Identifiers{"x"}},
+
+	// internal
+	"$objectFlatMerge": &UnaryBuiltin{name: "$objectFlatMerge", function: builtinUglyObjectFlatMerge, parameters: ast.Identifiers{"x"}},
 }

@@ -543,3 +543,7 @@ func objectFields(obj valueObject, manifesting bool) []string {
 	}
 	return r
 }
+
+func duplicateFieldNameErrMsg(fieldName string) string {
+	return fmt.Sprintf("Duplicate field name: %s", unparseString(fieldName))
+}

@@ -69,12 +69,17 @@ func (vm *VM) ExtCode(key string, val string) {
 	vm.ext[key] = vmExt{value: val, isCode: true}
 }
 
-func (vm *VM) evaluateSnippet(filename string, snippet string) (string, error) {
+func (vm *VM) evaluateSnippet(filename string, snippet string) (output string, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
+		}
+	}()
 	node, err := snippetToAST(filename, snippet)
 	if err != nil {
 		return "", err
 	}
-	output, err := evaluate(node, vm.ext, vm.MaxStack, &FileImporter{})
+	output, err = evaluate(node, vm.ext, vm.MaxStack, &FileImporter{})
 	if err != nil {
 		return "", err
 	}
@@ -86,11 +91,6 @@ func (vm *VM) evaluateSnippet(filename string, snippet string) (string, error) {
 //
 // The filename parameter is only used for error messages.
 func (vm *VM) EvaluateSnippet(filename string, snippet string) (json string, formattedErr error) {
-	defer func() {
-		if r := recover(); r != nil {
-			formattedErr = errors.New(vm.ef.format(fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())))
-		}
-	}()
 	json, err := vm.evaluateSnippet(filename, snippet)
 	if err != nil {
 		return "", errors.New(vm.ef.format(err))
@@ -107,7 +107,6 @@ func snippetToAST(filename string, snippet string) (ast.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	// fmt.Println(ast.(dumpable).dump())
 	err = desugarFile(&node)
 	if err != nil {
 		return nil, err
