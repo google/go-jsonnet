@@ -482,18 +482,6 @@ type ObjectComp struct {
 
 // ---------------------------------------------------------------------------
 
-// ObjectComprehensionSimple represents post-desugaring object
-// comprehension { [e]: e for x in e }.
-type ObjectComprehensionSimple struct {
-	NodeBase
-	Field Node
-	Value Node
-	Id    Identifier
-	Array Node
-}
-
-// ---------------------------------------------------------------------------
-
 // Self represents the self keyword.
 type Self struct{ NodeBase }
 
