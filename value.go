@@ -443,7 +443,13 @@ func objectFieldsVisibility(obj valueObject) fieldHideMap {
 		r = objectFieldsVisibility(obj.left)
 		rightMap := objectFieldsVisibility(obj.right)
 		for k, v := range rightMap {
-			r[k] = v
+			if v == ast.ObjectFieldInherit {
+				if _, alreadyExists := r[k]; !alreadyExists {
+					r[k] = v
+				}
+			} else {
+				r[k] = v
+			}
 		}
 		return r
 
