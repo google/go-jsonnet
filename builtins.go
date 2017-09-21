@@ -292,6 +292,32 @@ func builtinFlatMap(e *evaluator, funcp potentialValue, arrp potentialValue) (va
 	return makeValueArray(elems), nil
 }
 
+func builtinFilter(e *evaluator, funcp potentialValue, arrp potentialValue) (value, error) {
+	arr, err := e.evaluateArray(arrp)
+	if err != nil {
+		return nil, err
+	}
+	fun, err := e.evaluateFunction(funcp)
+	if err != nil {
+		return nil, err
+	}
+	num := int(arr.length())
+	// Start with capacity of the original array.
+	// This may spare us a few reallocations.
+	// TODO(sbarzowski) verify that it actually helps
+	elems := make([]potentialValue, 0, num)
+	for i := 0; i < num; i++ {
+		included, err := e.evaluateBoolean(fun.call(args(arr.elements[i])))
+		if err != nil {
+			return nil, err
+		}
+		if included.value {
+			elems = append(elems, arr.elements[i])
+		}
+	}
+	return makeValueArray(elems), nil
+}
+
 func builtinNegation(e *evaluator, xp potentialValue) (value, error) {
 	x, err := e.evaluateBoolean(xp)
 	if err != nil {
@@ -608,6 +634,7 @@ var funcBuiltins = map[string]evalCallable{
 	"toString":        &UnaryBuiltin{name: "toString", function: builtinToString, parameters: ast.Identifiers{"x"}},
 	"makeArray":       &BinaryBuiltin{name: "makeArray", function: builtinMakeArray, parameters: ast.Identifiers{"sz", "func"}},
 	"flatMap":         &BinaryBuiltin{name: "flatMap", function: builtinFlatMap, parameters: ast.Identifiers{"func", "arr"}},
+	"filter":          &BinaryBuiltin{name: "filter", function: builtinFilter, parameters: ast.Identifiers{"func", "arr"}},
 	"primitiveEquals": &BinaryBuiltin{name: "primitiveEquals", function: primitiveEquals, parameters: ast.Identifiers{"sz", "func"}},
 	"objectFieldsEx":  &BinaryBuiltin{name: "objectFields", function: builtinObjectFieldsEx, parameters: ast.Identifiers{"obj", "hidden"}},
 	"objectHasEx":     &TernaryBuiltin{name: "objectHasEx", function: builtinObjectHasEx, parameters: ast.Identifiers{"obj", "fname", "hidden"}},
