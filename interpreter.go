@@ -366,13 +366,11 @@ func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error)
 		return nil, e.Error(fmt.Sprintf("Value non indexable: %v", reflect.TypeOf(targetValue)))
 
 	case *ast.Import:
-		// TODO(sbarzowski) put this information in AST instead of getting it out of tracing data...
-		codeDir := path.Dir(e.trace.loc.FileName)
+		codeDir := path.Dir(ast.Loc().FileName)
 		return i.importCache.ImportCode(codeDir, ast.File, e)
 
 	case *ast.ImportStr:
-		// TODO(sbarzowski) put this information in AST instead of getting it out of tracing data...
-		codeDir := path.Dir(e.trace.loc.FileName)
+		codeDir := path.Dir(ast.Loc().FileName)
 		return i.importCache.ImportString(codeDir, ast.File, e)
 
 	case *ast.LiteralBoolean:
