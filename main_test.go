@@ -62,15 +62,15 @@ func removeExcessiveWhitespace(s string) string {
 func TestMain(t *testing.T) {
 	flag.Parse()
 	var mainTests []mainTest
-	match, err := filepath.Glob("testdata/*.input")
+	match, err := filepath.Glob("testdata/*.jsonnet")
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, input := range match {
 		golden := input
 		name := input
-		if strings.HasSuffix(input, ".input") {
-			name = input[:len(input)-len(".input")]
+		if strings.HasSuffix(input, ".jsonnet") {
+			name = input[:len(input)-len(".jsonnet")]
 			golden = name + ".golden"
 		}
 		mainTests = append(mainTests, mainTest{name: name, input: input, golden: golden})
@@ -106,12 +106,12 @@ func TestMain(t *testing.T) {
 				// TODO(sbarzowski) better reporting of differences in whitespace
 				// missing newline issues can be very subtle now
 				t.Fail()
-				t.Errorf("Mismatch when running %s.input. Golden: %s\n", test.name, test.golden)
+				t.Errorf("Mismatch when running %s.jsonnet. Golden: %s\n", test.name, test.golden)
 				data := diff(output, string(golden))
 				if err != nil {
 					t.Errorf("computing diff: %s", err)
 				}
-				t.Errorf("diff %s jsonnet %s.input\n", test.golden, test.name)
+				t.Errorf("diff %s jsonnet %s.jsonnet\n", test.golden, test.name)
 				t.Errorf(string(data))
 
 			}
