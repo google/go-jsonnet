@@ -130,7 +130,6 @@ func tryPath(dir, importedPath string) (found bool, content []byte, foundHere st
 func (importer *FileImporter) Import(dir, importedPath string) *ImportedData {
 	found, content, foundHere, err := tryPath(dir, importedPath)
 	if err != nil {
-		fmt.Println(err)
 		return &ImportedData{err: err}
 	}
 
