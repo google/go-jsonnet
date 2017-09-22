@@ -75,7 +75,7 @@ type callThunk struct {
 }
 
 func makeCallThunk(ec evalCallable, args callArguments) potentialValue {
-	return &callThunk{function: ec, args: args}
+	return makeCachedThunk(&callThunk{function: ec, args: args})
 }
 
 func (th *callThunk) getValue(i *interpreter, trace *TraceElement) (value, error) {
