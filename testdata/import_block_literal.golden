@@ -1,0 +1,1 @@
+testdata/import_block_literal:(1:8)-(3:4) Block string literals not allowed in imports

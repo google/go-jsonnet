@@ -438,10 +438,18 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		}
 
 	case *ast.Import:
-		// Nothing to do.
+		var file ast.Node = node.File
+		err = desugar(&file, objLevel)
+		if err != nil {
+			return
+		}
 
 	case *ast.ImportStr:
-		// Nothing to do.
+		var file ast.Node = node.File
+		err = desugar(&file, objLevel)
+		if err != nil {
+			return
+		}
 
 	case *ast.Index:
 		err = desugar(&node.Target, objLevel)

@@ -715,7 +715,7 @@ func (p *parser) parseTerminal() (ast.Node, error) {
 		return &ast.LiteralString{
 			NodeBase:    ast.NewNodeBaseLoc(tok.loc),
 			Value:       tok.data,
-			Kind:        ast.StringDouble,
+			Kind:        ast.StringBlock,
 			BlockIndent: tok.stringBlockIndent,
 		}, nil
 	case tokenVerbatimStringDouble:
@@ -902,9 +902,12 @@ func (p *parser) parse(prec precedence) (ast.Node, error) {
 			return nil, err
 		}
 		if lit, ok := body.(*ast.LiteralString); ok {
+			if lit.Kind == ast.StringBlock {
+				return nil, MakeStaticError("Block string literals not allowed in imports", *body.Loc())
+			}
 			return &ast.Import{
 				NodeBase: ast.NewNodeBaseLoc(locFromTokenAST(begin, body)),
-				File:     lit.Value,
+				File:     lit,
 			}, nil
 		}
 		return nil, MakeStaticError("Computed imports are not allowed", *body.Loc())
@@ -916,9 +919,12 @@ func (p *parser) parse(prec precedence) (ast.Node, error) {
 			return nil, err
 		}
 		if lit, ok := body.(*ast.LiteralString); ok {
+			if lit.Kind == ast.StringBlock {
+				return nil, MakeStaticError("Block string literals not allowed in imports", *body.Loc())
+			}
 			return &ast.ImportStr{
 				NodeBase: ast.NewNodeBaseLoc(locFromTokenAST(begin, body)),
-				File:     lit.Value,
+				File:     lit,
 			}, nil
 		}
 		return nil, MakeStaticError("Computed imports are not allowed", *body.Loc())
