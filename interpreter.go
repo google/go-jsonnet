@@ -189,17 +189,23 @@ func makeCallStack(limit int) callStack {
 	}
 }
 
-// TODO(dcunnin): Add string output.
 // TODO(dcunnin): Add multi output.
 
 // Keeps current execution context and evaluates things
 type interpreter struct {
-	stack          callStack      // TODO what is it?
-	idArrayElement ast.Identifier // TODO what is it?
-	idInvariant    ast.Identifier // TODO what is it?
-	externalVars   vmExtMap       // TODO what is it?
+	// Current stack. It is used for:
+	// 1) Keeping environment (object we're in, variables)
+	// 2) Diagnostic information in case of failure
+	stack callStack
 
-	initialEnv  environment
+	// External variables
+	extVars map[ast.Identifier]potentialValue
+
+	// The clean environment in which we execute imports, extVars as well
+	// as the main program. It contains std.
+	initialEnv environment
+
+	// Keeps imports
 	importCache *ImportCache
 }
 
@@ -253,7 +259,7 @@ func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error)
 		var elements []potentialValue
 		for _, el := range ast.Elements {
 			env := makeEnvironment(i.capture(el.FreeVariables()), sb)
-			elThunk := makeThunk(i.idArrayElement, env, el)
+			elThunk := makeThunk("array_element", env, el)
 			elements = append(elements, elThunk)
 		}
 		return makeValueArray(elements), nil
@@ -692,13 +698,29 @@ func evaluateStd(i *interpreter) (value, error) {
 	return i.EvalInCleanEnv(evalTrace, &context, &beforeStdEnv, node)
 }
 
+func prepareExtVars(i *interpreter, ext vmExtMap) map[ast.Identifier]potentialValue {
+	result := make(map[ast.Identifier]potentialValue)
+	for name, content := range ext {
+		if content.isCode {
+			varLoc := ast.MakeLocationRangeMessage("During evaluation")
+			varTrace := &TraceElement{
+				loc: &varLoc,
+			}
+			e := &evaluator{
+				i:     i,
+				trace: varTrace,
+			}
+			result[ast.Identifier(name)] = codeToPV(e, "<extvar:"+name+">", content.value)
+		} else {
+			result[ast.Identifier(name)] = &readyValue{makeValueString(content.value)}
+		}
+	}
+	return result
+}
+
 func buildInterpreter(ext vmExtMap, maxStack int, importer Importer) (*interpreter, error) {
 	i := interpreter{
-		stack:          makeCallStack(maxStack),
-		idArrayElement: ast.Identifier("array_element"),
-		idInvariant:    ast.Identifier("object_assert"),
-		externalVars:   ext,
-
+		stack:       makeCallStack(maxStack),
 		importCache: MakeImportCache(importer),
 	}
 
@@ -713,7 +735,19 @@ func buildInterpreter(ext vmExtMap, maxStack int, importer Importer) (*interpret
 		},
 		makeUnboundSelfBinding(),
 	)
+
+	i.extVars = prepareExtVars(&i, ext)
+
 	return &i, nil
+}
+
+func manifest(e *evaluator, v value) (string, error) {
+	var buffer bytes.Buffer
+	err := e.i.manifestJSON(e.trace, v, true, "", &buffer)
+	if err != nil {
+		return "", err
+	}
+	return buffer.String(), nil
 }
 
 func evaluate(node ast.Node, ext vmExtMap, maxStack int, importer Importer) (string, error) {
@@ -730,14 +764,13 @@ func evaluate(node ast.Node, ext vmExtMap, maxStack int, importer Importer) (str
 	if err != nil {
 		return "", err
 	}
-	var buffer bytes.Buffer
 	manifestationLoc := ast.MakeLocationRangeMessage("During manifestation")
 	manifestationTrace := &TraceElement{
 		loc: &manifestationLoc,
 	}
-	err = i.manifestJSON(manifestationTrace, result, true, "", &buffer)
-	if err != nil {
-		return "", err
+	e := &evaluator{
+		i:     i,
+		trace: manifestationTrace,
 	}
-	return buffer.String(), nil
+	return manifest(e, result)
 }

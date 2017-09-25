@@ -59,6 +59,23 @@ func removeExcessiveWhitespace(s string) string {
 	return buf.String()
 }
 
+func setExtVars(vm *VM) {
+	// TODO(sbarzowski) extract, so that it's possible to define extvars per-test
+	// Check that it doesn't get evaluated.
+	vm.ExtVar("stringVar", "2 + 2")
+	// Check that it gets evaluated.
+	vm.ExtCode("codeVar", "3 + 3")
+	// Check that if it's not used, runtime and static errors don't occur.
+	vm.ExtCode("errorVar", "error 'xxx'")
+	vm.ExtCode("staticErrorVar", ")")
+	// Check that environment doesn't leak
+	vm.ExtCode("UndeclaredX", "x")
+	// Tricky evaluation
+	vm.ExtCode("selfRecursiveVar", `[42, std.extVar("selfRecursiveVar")[0] + 1]`)
+	vm.ExtCode("mutuallyRecursiveVar1", `[42, std.extVar("mutuallyRecursiveVar2")[0] + 1]`)
+	vm.ExtCode("mutuallyRecursiveVar2", `[42, std.extVar("mutuallyRecursiveVar1")[0] + 1]`)
+}
+
 func TestMain(t *testing.T) {
 	flag.Parse()
 	var mainTests []mainTest
@@ -78,6 +95,7 @@ func TestMain(t *testing.T) {
 	for _, test := range mainTests {
 		t.Run(test.name, func(t *testing.T) {
 			vm := MakeVM()
+			setExtVars(vm)
 			read := func(file string) []byte {
 				bytz, err := ioutil.ReadFile(file)
 				if err != nil {

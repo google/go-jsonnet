@@ -76,31 +76,26 @@ func (cache *ImportCache) ImportString(codeDir, importedPath string, e *evaluato
 	return makeValueString(data.data.content), nil
 }
 
+func codeToPV(e *evaluator, filename string, code string) potentialValue {
+	node, err := snippetToAST(filename, code)
+	if err != nil {
+		// TODO(sbarzowski) we should wrap (static) error here
+		// within a RuntimeError. Because whether we get this error or not
+		// actually depends on what happens in Runtime (whether import gets
+		// evaluated).
+		// The same thinking applies to external variables.
+		return makeErrorThunk(err)
+	}
+	return makeThunk("_", e.i.initialEnv, node)
+}
+
 func (cache *ImportCache) ImportCode(codeDir, importedPath string, e *evaluator) (value, error) {
 	cached := cache.importData(importCacheKey{codeDir, importedPath})
 	if cached.data.err != nil {
 		return nil, e.Error(cached.data.err.Error())
 	}
 	if cached.asCode == nil {
-		node, err := snippetToAST(cached.data.foundHere, cached.data.content)
-		if err != nil {
-			// TODO(sbarzowski) perhaps we should wrap (static) error here
-			// within a RuntimeError? Because whether we get this error or not
-			// actually depends on what happens in Runtime (whether import gets
-			// evaluated).
-			// On the other hand if the user is doing the standard reasonable thing
-			// and imports unconditionally and actually uses the imports then
-			// just showing the static error may be less confusing (however
-			// when previous runtime error prevents a static error that's really
-			// confusing)
-			// Alternatively we could take advantage of imports not being
-			// computed and actually do the static part statically for all
-			// imports transitively.
-			// The same thinking applies to external variables.
-			cached.asCode = makeErrorThunk(err)
-		} else {
-			cached.asCode = makeThunk("import", e.i.initialEnv, node)
-		}
+		cached.asCode = codeToPV(e, cached.data.foundHere, cached.data.content)
 	}
 	return e.evaluate(cached.asCode)
 }

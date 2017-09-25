@@ -586,6 +586,18 @@ func builtinUglyObjectFlatMerge(e *evaluator, objarrp potentialValue) (value, er
 	), nil
 }
 
+func builtinExtVar(e *evaluator, namep potentialValue) (value, error) {
+	name, err := e.evaluateString(namep)
+	if err != nil {
+		return nil, err
+	}
+	index := ast.Identifier(name.getString())
+	if pv, ok := e.i.extVars[index]; ok {
+		return e.evaluate(pv)
+	}
+	return nil, e.Error("Undefined external variable: " + string(index))
+}
+
 type unaryBuiltin func(*evaluator, potentialValue) (value, error)
 type binaryBuiltin func(*evaluator, potentialValue, potentialValue) (value, error)
 type ternaryBuiltin func(*evaluator, potentialValue, potentialValue, potentialValue) (value, error)
@@ -693,6 +705,7 @@ var uopBuiltins = []*UnaryBuiltin{
 
 // TODO(sbarzowski) eliminate duplication in function names (e.g. build map from array or constants)
 var funcBuiltins = map[string]evalCallable{
+	"extVar":          &UnaryBuiltin{name: "extVar", function: builtinExtVar, parameters: ast.Identifiers{"x"}},
 	"length":          &UnaryBuiltin{name: "length", function: builtinLength, parameters: ast.Identifiers{"x"}},
 	"toString":        &UnaryBuiltin{name: "toString", function: builtinToString, parameters: ast.Identifiers{"x"}},
 	"makeArray":       &BinaryBuiltin{name: "makeArray", function: builtinMakeArray, parameters: ast.Identifiers{"sz", "func"}},
