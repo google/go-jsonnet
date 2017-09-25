@@ -371,11 +371,11 @@ func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error)
 
 	case *ast.Import:
 		codeDir := path.Dir(ast.Loc().FileName)
-		return i.importCache.ImportCode(codeDir, ast.File, e)
+		return i.importCache.ImportCode(codeDir, ast.File.Value, e)
 
 	case *ast.ImportStr:
 		codeDir := path.Dir(ast.Loc().FileName)
-		return i.importCache.ImportString(codeDir, ast.File, e)
+		return i.importCache.ImportString(codeDir, ast.File.Value, e)
 
 	case *ast.LiteralBoolean:
 		return makeValueBoolean(ast.Value), nil

@@ -300,7 +300,7 @@ type Parameters struct {
 // Import represents import "file".
 type Import struct {
 	NodeBase
-	File string
+	File *LiteralString
 }
 
 // ---------------------------------------------------------------------------
@@ -308,7 +308,7 @@ type Import struct {
 // ImportStr represents importstr "file".
 type ImportStr struct {
 	NodeBase
-	File string
+	File *LiteralString
 }
 
 // ---------------------------------------------------------------------------
