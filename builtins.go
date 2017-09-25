@@ -17,7 +17,6 @@ limitations under the License.
 package jsonnet
 
 import (
-	"bytes"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -241,12 +240,11 @@ func builtinToString(e *evaluator, xp potentialValue) (value, error) {
 	case *valueString:
 		return x, nil
 	}
-	var buf bytes.Buffer
-	err = e.i.manifestJSON(e.trace, x, false, "", &buf)
+	s, err := e.i.manifestAndSerializeJSON(e.trace, x, false, "")
 	if err != nil {
 		return nil, err
 	}
-	return makeValueString(buf.String()), nil
+	return makeValueString(s), nil
 }
 
 func builtinMakeArray(e *evaluator, szp potentialValue, funcp potentialValue) (value, error) {

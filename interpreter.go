@@ -525,15 +525,83 @@ func unparseNumber(v float64) string {
 	return fmt.Sprintf("%.17g", v)
 }
 
-// TODO(sbarzowski) Perhaps it should be a builtin?
-// TODO(sbarzowski) Perhaps we should separate recursive evaluation from serialization?
-// 					Strictly evaluating something may be useful by itself.
-func (i *interpreter) manifestJSON(trace *TraceElement, v value, multiline bool, indent string, buf *bytes.Buffer) error {
-	// TODO(dcunnin): All the other types...
+// manifestJSON converts to standard JSON representation as in "encoding/json" package
+func (i *interpreter) manifestJSON(trace *TraceElement, v value) (interface{}, error) {
 	e := &evaluator{i: i, trace: trace}
 	switch v := v.(type) {
+
+	case *valueBoolean:
+		return v.value, nil
+
+	case *valueFunction:
+		return nil, makeRuntimeError("Couldn't manifest function in JSON output.", i.getCurrentStackTrace(trace))
+
+	case *valueNumber:
+		return v.value, nil
+
+	case *valueString:
+		return v.getString(), nil
+
+	case *valueNull:
+		return nil, nil
+
 	case *valueArray:
-		if len(v.elements) == 0 {
+		result := make([]interface{}, 0, len(v.elements))
+		for _, th := range v.elements {
+			elVal, err := th.getValue(i, trace) // TODO(sbarzowski) perhaps manifestJSON should just take potentialValue
+			if err != nil {
+				return nil, err
+			}
+			elem, err := i.manifestJSON(trace, elVal)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, elem)
+		}
+		return result, nil
+
+	case valueObject:
+		fieldNames := objectFields(v, withoutHidden)
+		sort.Strings(fieldNames)
+
+		err := checkAssertions(e, v)
+		if err != nil {
+			return nil, err
+		}
+
+		result := make(map[string]interface{})
+
+		for _, fieldName := range fieldNames {
+			fieldVal, err := v.index(e, fieldName)
+			if err != nil {
+				return nil, err
+			}
+
+			field, err := i.manifestJSON(trace, fieldVal)
+			if err != nil {
+				return nil, err
+			}
+			result[fieldName] = field
+		}
+
+		return result, nil
+
+	default:
+		return nil, makeRuntimeError(
+			fmt.Sprintf("Manifesting this value not implemented yet: %s", reflect.TypeOf(v)),
+			i.getCurrentStackTrace(trace),
+		)
+
+	}
+}
+
+func serializeJSON(v interface{}, multiline bool, indent string, buf *bytes.Buffer) {
+	switch v := v.(type) {
+	case nil:
+		buf.WriteString("null")
+
+	case []interface{}:
+		if len(v) == 0 {
 			buf.WriteString("[ ]")
 		} else {
 			var prefix string
@@ -545,20 +613,10 @@ func (i *interpreter) manifestJSON(trace *TraceElement, v value, multiline bool,
 				prefix = "["
 				indent2 = indent
 			}
-			for _, th := range v.elements {
-				// if th.body != nil {
-				// 	tloc = th.body.Loc()
-				// }
-				elVal, err := th.getValue(i, trace) // TODO(sbarzowski) perhaps manifestJSON should just take potentialValue
-				if err != nil {
-					return err
-				}
+			for _, elem := range v {
 				buf.WriteString(prefix)
 				buf.WriteString(indent2)
-				err = i.manifestJSON(trace, elVal, multiline, indent2, buf)
-				if err != nil {
-					return err
-				}
+				serializeJSON(elem, multiline, indent2, buf)
 				if multiline {
 					prefix = ",\n"
 				} else {
@@ -572,30 +630,22 @@ func (i *interpreter) manifestJSON(trace *TraceElement, v value, multiline bool,
 			buf.WriteString("]")
 		}
 
-	case *valueBoolean:
-		if v.value {
+	case bool:
+		if v {
 			buf.WriteString("true")
 		} else {
 			buf.WriteString("false")
 		}
 
-	case *valueFunction:
-		return makeRuntimeError("Couldn't manifest function in JSON output.", i.getCurrentStackTrace(trace))
+	case float64:
+		buf.WriteString(unparseNumber(v))
 
-	case *valueNumber:
-		buf.WriteString(unparseNumber(v.value))
-
-	case *valueNull:
-		buf.WriteString("null")
-
-	case valueObject:
-		fieldNames := objectFields(v, withoutHidden)
-		sort.Strings(fieldNames)
-
-		err := checkAssertions(e, v)
-		if err != nil {
-			return err
+	case map[string]interface{}:
+		fieldNames := make([]string, 0, len(v))
+		for name := range v {
+			fieldNames = append(fieldNames, name)
 		}
+		sort.Strings(fieldNames)
 
 		if len(fieldNames) == 0 {
 			buf.WriteString("{ }")
@@ -610,10 +660,7 @@ func (i *interpreter) manifestJSON(trace *TraceElement, v value, multiline bool,
 				indent2 = indent
 			}
 			for _, fieldName := range fieldNames {
-				fieldVal, err := v.index(e, fieldName)
-				if err != nil {
-					return err
-				}
+				fieldVal := v[fieldName]
 
 				buf.WriteString(prefix)
 				buf.WriteString(indent2)
@@ -621,11 +668,7 @@ func (i *interpreter) manifestJSON(trace *TraceElement, v value, multiline bool,
 				buf.WriteString(unparseString(fieldName))
 				buf.WriteString(": ")
 
-				// TODO(sbarzowski) body.Loc()
-				err = i.manifestJSON(trace, fieldVal, multiline, indent2, buf)
-				if err != nil {
-					return err
-				}
+				serializeJSON(fieldVal, multiline, indent2, buf)
 
 				if multiline {
 					prefix = ",\n"
@@ -641,17 +684,26 @@ func (i *interpreter) manifestJSON(trace *TraceElement, v value, multiline bool,
 			buf.WriteString("}")
 		}
 
-	case *valueString:
-		buf.WriteString(unparseString(v.getString()))
+	case string:
+		buf.WriteString(unparseString(v))
 
 	default:
-		return makeRuntimeError(
-			fmt.Sprintf("Manifesting this value not implemented yet: %s", reflect.TypeOf(v)),
-			i.getCurrentStackTrace(trace),
-		)
-
+		panic(fmt.Sprintf("Unsupported value for serialization %#+v", v))
 	}
-	return nil
+}
+
+// TODO(sbarzowski) Perhaps it should be a builtin?
+// TODO(sbarzowski) Perhaps we should separate recursive evaluation from serialization?
+// 					Strictly evaluating something may be useful by itself.
+//					For example may help with error reporting from custom serialization functions.
+func (i *interpreter) manifestAndSerializeJSON(trace *TraceElement, v value, multiline bool, indent string) (string, error) {
+	var buf bytes.Buffer
+	manifested, err := i.manifestJSON(trace, v)
+	if err != nil {
+		return "", err
+	}
+	serializeJSON(manifested, multiline, indent, &buf)
+	return buf.String(), nil
 }
 
 func (i *interpreter) EvalInCleanEnv(fromWhere *TraceElement, newContext *TraceContext,
@@ -741,15 +793,6 @@ func buildInterpreter(ext vmExtMap, maxStack int, importer Importer) (*interpret
 	return &i, nil
 }
 
-func manifest(e *evaluator, v value) (string, error) {
-	var buffer bytes.Buffer
-	err := e.i.manifestJSON(e.trace, v, true, "", &buffer)
-	if err != nil {
-		return "", err
-	}
-	return buffer.String(), nil
-}
-
 func evaluate(node ast.Node, ext vmExtMap, maxStack int, importer Importer) (string, error) {
 	i, err := buildInterpreter(ext, maxStack, importer)
 	if err != nil {
@@ -768,9 +811,9 @@ func evaluate(node ast.Node, ext vmExtMap, maxStack int, importer Importer) (str
 	manifestationTrace := &TraceElement{
 		loc: &manifestationLoc,
 	}
-	e := &evaluator{
-		i:     i,
-		trace: manifestationTrace,
+	s, err := i.manifestAndSerializeJSON(manifestationTrace, result, true, "")
+	if err != nil {
+		return "", err
 	}
-	return manifest(e, result)
+	return s, nil
 }
