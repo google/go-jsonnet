@@ -208,8 +208,6 @@ func addContext(node ast.Node, context *string, bind string) {
 	if node == nil {
 		return
 	}
-	// TODO(sbarzowski) avoid "thunk from <thunk from..."
-	thunkContext := "thunk from <" + *context + ">"
 
 	node.SetContext(context)
 
@@ -255,6 +253,9 @@ func addContext(node ast.Node, context *string, bind string) {
 		for _, child := range directChildren(node) {
 			addContext(child, context, anonymous)
 		}
+
+		// TODO(sbarzowski) avoid "thunk from <thunk from..."
+		thunkContext := "thunk from <" + *context + ">"
 		for _, child := range thunkChildren(node) {
 			addContext(child, &thunkContext, anonymous)
 		}
