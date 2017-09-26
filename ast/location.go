@@ -30,8 +30,9 @@ type Source struct {
 
 // Location represents a single location in an (unspecified) file.
 type Location struct {
-	Line   int
-	Column int // bytes? runes? real columns?
+	Line int
+	// TODO(sbarzowski) Should be runes (unicode codepoints), but it's bytes.
+	Column int
 }
 
 // IsSet returns if this Location has been set.

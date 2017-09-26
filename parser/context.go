@@ -194,7 +194,16 @@ func objectContext(objName string) *string {
 	return &r
 }
 
-// TODO(sbarzowski) type alias for context
+// addContext adds context to a node and its whole subtree.
+//
+// context is the surrounding context of a node (e.g. a function it's in)
+//
+// bind is a name that the node is bound to, i.e. if node is a local bind body
+// then bind is its name. For nodes that are not bound to variables `anonymous`
+// should be passed. For example:
+// local x = 2 + 2; x
+// In such case bind for binary node 2 + 2 is "x" and for every other node,
+// including its children, its anonymous.
 func addContext(node ast.Node, context *string, bind string) {
 	if node == nil {
 		return
@@ -209,8 +218,8 @@ func addContext(node ast.Node, context *string, bind string) {
 		funContext := functionContext(bind)
 		addContext(node.Body, funContext, anonymous)
 		for i := range node.Parameters.Named {
-			// TODO(sbarzowski) what should the context of a default argument be?
-			addContext(node.Parameters.Named[i].DefaultArg, context, anonymous)
+			// Default arguments have the same context as the function body.
+			addContext(node.Parameters.Named[i].DefaultArg, funContext, anonymous)
 		}
 	case *ast.Object:
 		// TODO(sbarzowski) include fieldname, maybe even chains
@@ -223,6 +232,7 @@ func addContext(node ast.Node, context *string, bind string) {
 
 			if field.MethodSugar {
 				for i := range field.Params.Named {
+					// TODO(sbarzowski) check context here
 					addContext(field.Params.Named[i].DefaultArg, context, anonymous)
 				}
 				addContext(field.Method, objContext, anonymous)

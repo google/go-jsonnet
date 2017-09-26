@@ -299,7 +299,7 @@ func (p *parser) parseObjectAssignmentOp() (plusSugar bool, hide ast.ObjectField
 // +gen set
 type LiteralField string
 
-// parse object of object comprehension without leading brace
+// Parse object or object comprehension without leading brace
 func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 	var fields ast.ObjectFields
 	literalFields := make(literalFieldSet)

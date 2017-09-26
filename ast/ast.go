@@ -45,7 +45,7 @@ type Nodes []Node
 
 type NodeBase struct {
 	loc           LocationRange
-	context       *string
+	context       Context
 	freeVariables Identifiers
 }
 

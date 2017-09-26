@@ -71,7 +71,7 @@ type callFrame struct {
 	// This makes callFrame a misnomer as it is technically not always a call...
 	isCall bool
 
-	// Tracing information about the place where it
+	// Tracing information about the place where it was called from.
 	trace *TraceElement
 
 	/** Reuse this stack frame for the purpose of tail call optimization. */
