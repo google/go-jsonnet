@@ -244,6 +244,16 @@ func (f *valueFunction) parameters() ast.Identifiers {
 	return f.ec.Parameters()
 }
 
+func checkArguments(e *evaluator, args callArguments, params ast.Identifiers) error {
+	// TODO(sbarzowski) this will get much more complicated with named params
+	numPassed := len(args.positional)
+	numExpected := len(params)
+	if numPassed != numExpected {
+		return e.Error(fmt.Sprintf("function expected %v argument(s), but got %v", numExpected, numPassed))
+	}
+	return nil
+}
+
 func (f *valueFunction) typename() string {
 	return "function"
 }

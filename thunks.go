@@ -80,7 +80,10 @@ func makeCallThunk(ec evalCallable, args callArguments) potentialValue {
 
 func (th *callThunk) getValue(i *interpreter, trace *TraceElement) (value, error) {
 	evaluator := makeEvaluator(i, trace)
-	// TODO(sbarzowski): actually this trace is kinda useless inside...
+	err := checkArguments(evaluator, th.args, th.function.Parameters())
+	if err != nil {
+		return nil, err
+	}
 	return th.function.EvalCall(th.args, evaluator)
 }
 
