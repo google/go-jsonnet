@@ -353,7 +353,7 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 			if field.Kind != ast.ObjectFieldExpr {
 				return nil, nil, MakeStaticError("Object comprehensions can only have [e] fields.", next.loc)
 			}
-			spec, last, err := p.parseComprehensionSpecs(tokenBraceR)
+			spec, _, last, err := p.parseComprehensionSpecs(tokenBraceR)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -537,21 +537,21 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 }
 
 /* parses for x in expr for y in expr if expr for z in expr ... */
-func (p *parser) parseComprehensionSpecs(end tokenKind) (*ast.ForSpec, *token, error) {
+func (p *parser) parseComprehensionSpecs(end tokenKind) (*ast.ForSpec, *ast.ForSpec, *token, error) {
 	var ifSpecs []ast.IfSpec
 
 	varID, err := p.popExpect(tokenIdentifier)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	id := ast.Identifier(varID.data)
 	_, err = p.popExpect(tokenIn)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	arr, err := p.parse(maxPrecedence)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	forSpec := &ast.ForSpec{
 		VarName: id,
@@ -562,7 +562,7 @@ func (p *parser) parseComprehensionSpecs(end tokenKind) (*ast.ForSpec, *token, e
 	for ; maybeIf.kind == tokenIf; maybeIf = p.pop() {
 		cond, err := p.parse(maxPrecedence)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		ifSpecs = append(ifSpecs, ast.IfSpec{
 			Expr: cond,
@@ -570,20 +570,20 @@ func (p *parser) parseComprehensionSpecs(end tokenKind) (*ast.ForSpec, *token, e
 	}
 	forSpec.Conditions = ifSpecs
 	if maybeIf.kind == end {
-		return forSpec, maybeIf, nil
+		return forSpec, forSpec, maybeIf, nil
 	}
 
 	if maybeIf.kind != tokenFor {
-		return nil, nil, MakeStaticError(
+		return nil, nil, nil, MakeStaticError(
 			fmt.Sprintf("Expected for, if or %v after for clause, got: %v", end, maybeIf), maybeIf.loc)
 	}
 
-	nextSpec, last, err := p.parseComprehensionSpecs(end)
+	lastSpec, nextSpec, lastToken, err := p.parseComprehensionSpecs(end)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	nextSpec.Outer = forSpec
-	return nextSpec, last, nil
+	return lastSpec, forSpec, lastToken, nil
 }
 
 // Assumes that the leading '[' has already been consumed and passed as tok.
@@ -612,7 +612,7 @@ func (p *parser) parseArray(tok *token) (ast.Node, error) {
 	if next.kind == tokenFor {
 		// It's a comprehension
 		p.pop()
-		spec, last, err := p.parseComprehensionSpecs(tokenBracketR)
+		spec, _, last, err := p.parseComprehensionSpecs(tokenBracketR)
 		if err != nil {
 			return nil, err
 		}
