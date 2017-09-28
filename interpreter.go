@@ -690,10 +690,6 @@ func serializeJSON(v interface{}, multiline bool, indent string, buf *bytes.Buff
 	}
 }
 
-// TODO(sbarzowski) Perhaps it should be a builtin?
-// TODO(sbarzowski) Perhaps we should separate recursive evaluation from serialization?
-// 					Strictly evaluating something may be useful by itself.
-//					For example may help with error reporting from custom serialization functions.
 func (i *interpreter) manifestAndSerializeJSON(trace *TraceElement, v value, multiline bool, indent string) (string, error) {
 	var buf bytes.Buffer
 	manifested, err := i.manifestJSON(trace, v)
