@@ -655,13 +655,6 @@ func (b *TernaryBuiltin) Parameters() ast.Identifiers {
 	return b.parameters
 }
 
-func todoFunc(e *evaluator, x, y potentialValue) (value, error) {
-	return nil, e.Error("not implemented yet")
-}
-
-// so that we don't get segfaults
-var todo = &BinaryBuiltin{function: todoFunc, parameters: ast.Identifiers{"x", "y"}}
-
 var desugaredBop = map[ast.BinaryOp]ast.Identifier{
 	ast.BopPercent:         "mod",
 	ast.BopManifestEqual:   "equals",
@@ -670,9 +663,9 @@ var desugaredBop = map[ast.BinaryOp]ast.Identifier{
 }
 
 var bopBuiltins = []*BinaryBuiltin{
-	ast.BopMult:    &BinaryBuiltin{name: "operator*", function: builtinMult, parameters: ast.Identifiers{"x", "y"}},
-	ast.BopDiv:     &BinaryBuiltin{name: "operator/", function: builtinDiv, parameters: ast.Identifiers{"x", "y"}},
-	ast.BopPercent: todo,
+	ast.BopMult: &BinaryBuiltin{name: "operator*", function: builtinMult, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopDiv:  &BinaryBuiltin{name: "operator/", function: builtinDiv, parameters: ast.Identifiers{"x", "y"}},
+	// ast.BopPercent:  <desugared>,
 
 	ast.BopPlus:  &BinaryBuiltin{name: "operator+", function: builtinPlus, parameters: ast.Identifiers{"x", "y"}},
 	ast.BopMinus: &BinaryBuiltin{name: "operator-", function: builtinMinus, parameters: ast.Identifiers{"x", "y"}},
