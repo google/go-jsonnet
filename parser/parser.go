@@ -371,7 +371,8 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 		first = false
 
 		switch next.kind {
-		case tokenBracketL, tokenIdentifier, tokenStringDouble, tokenStringSingle, tokenStringBlock:
+		case tokenBracketL, tokenIdentifier, tokenStringDouble, tokenStringSingle,
+			tokenStringBlock, tokenVerbatimStringDouble, tokenVerbatimStringSingle:
 			var kind ast.ObjectFieldKind
 			var expr1 ast.Node
 			var id *ast.Identifier
@@ -379,30 +380,10 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 			case tokenIdentifier:
 				kind = ast.ObjectFieldID
 				id = (*ast.Identifier)(&next.data)
-			case tokenStringDouble:
+			case tokenStringDouble, tokenStringSingle,
+				tokenStringBlock, tokenVerbatimStringDouble, tokenVerbatimStringSingle:
 				kind = ast.ObjectFieldStr
-				expr1 = &ast.LiteralString{
-					NodeBase: ast.NewNodeBaseLoc(next.loc),
-					Value:    next.data,
-					Kind:     ast.StringDouble,
-				}
-			case tokenStringSingle:
-				kind = ast.ObjectFieldStr
-				expr1 = &ast.LiteralString{
-					NodeBase: ast.NewNodeBaseLoc(next.loc),
-					Value:    next.data,
-					Kind:     ast.StringSingle,
-				}
-			case tokenStringBlock:
-				kind = ast.ObjectFieldStr
-				expr1 = &ast.LiteralString{
-					NodeBase:    ast.NewNodeBaseLoc(next.loc),
-					Value:       next.data,
-					Kind:        ast.StringBlock,
-					BlockIndent: next.stringBlockIndent,
-				}
-			// TODO(sbarzowski) are verbatim string literals allowed here?
-			// if so, maybe it's time we extracted string literal creation somewhere...
+				expr1 = tokenStringToAst(next)
 			default:
 				kind = ast.ObjectFieldExpr
 				var err error
@@ -657,6 +638,44 @@ func (p *parser) parseArray(tok *token) (ast.Node, error) {
 	}, nil
 }
 
+func tokenStringToAst(tok *token) *ast.LiteralString {
+	switch tok.kind {
+	case tokenStringSingle:
+		return &ast.LiteralString{
+			NodeBase: ast.NewNodeBaseLoc(tok.loc),
+			Value:    tok.data,
+			Kind:     ast.StringSingle,
+		}
+	case tokenStringDouble:
+		return &ast.LiteralString{
+			NodeBase: ast.NewNodeBaseLoc(tok.loc),
+			Value:    tok.data,
+			Kind:     ast.StringDouble,
+		}
+	case tokenStringBlock:
+		return &ast.LiteralString{
+			NodeBase:    ast.NewNodeBaseLoc(tok.loc),
+			Value:       tok.data,
+			Kind:        ast.StringBlock,
+			BlockIndent: tok.stringBlockIndent,
+		}
+	case tokenVerbatimStringDouble:
+		return &ast.LiteralString{
+			NodeBase: ast.NewNodeBaseLoc(tok.loc),
+			Value:    tok.data,
+			Kind:     ast.VerbatimStringDouble,
+		}
+	case tokenVerbatimStringSingle:
+		return &ast.LiteralString{
+			NodeBase: ast.NewNodeBaseLoc(tok.loc),
+			Value:    tok.data,
+			Kind:     ast.VerbatimStringSingle,
+		}
+	default:
+		panic(fmt.Sprintf("Not a string token %#+v", tok))
+	}
+}
+
 func (p *parser) parseTerminal() (ast.Node, error) {
 	tok := p.pop()
 	switch tok.kind {
@@ -699,37 +718,9 @@ func (p *parser) parseTerminal() (ast.Node, error) {
 			Value:          num,
 			OriginalString: tok.data,
 		}, nil
-	case tokenStringSingle:
-		return &ast.LiteralString{
-			NodeBase: ast.NewNodeBaseLoc(tok.loc),
-			Value:    tok.data,
-			Kind:     ast.StringSingle,
-		}, nil
-	case tokenStringDouble:
-		return &ast.LiteralString{
-			NodeBase: ast.NewNodeBaseLoc(tok.loc),
-			Value:    tok.data,
-			Kind:     ast.StringDouble,
-		}, nil
-	case tokenStringBlock:
-		return &ast.LiteralString{
-			NodeBase:    ast.NewNodeBaseLoc(tok.loc),
-			Value:       tok.data,
-			Kind:        ast.StringBlock,
-			BlockIndent: tok.stringBlockIndent,
-		}, nil
-	case tokenVerbatimStringDouble:
-		return &ast.LiteralString{
-			NodeBase: ast.NewNodeBaseLoc(tok.loc),
-			Value:    tok.data,
-			Kind:     ast.VerbatimStringDouble,
-		}, nil
-	case tokenVerbatimStringSingle:
-		return &ast.LiteralString{
-			NodeBase: ast.NewNodeBaseLoc(tok.loc),
-			Value:    tok.data,
-			Kind:     ast.VerbatimStringSingle,
-		}, nil
+	case tokenStringDouble, tokenStringSingle,
+		tokenStringBlock, tokenVerbatimStringDouble, tokenVerbatimStringSingle:
+		return tokenStringToAst(tok), nil
 	case tokenFalse:
 		return &ast.LiteralBoolean{
 			NodeBase: ast.NewNodeBaseLoc(tok.loc),
