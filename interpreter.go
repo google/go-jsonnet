@@ -243,8 +243,6 @@ func (i *interpreter) getCurrentEnv(ast ast.Node) environment {
 }
 
 func (i *interpreter) evaluate(a ast.Node, context *TraceContext) (value, error) {
-	// TODO(dcunnin): All the other cases...
-
 	e := &evaluator{
 		trace: &TraceElement{
 			loc:     a.Loc(),
