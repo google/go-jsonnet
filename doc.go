@@ -25,5 +25,3 @@ text.
 See http://jsonnet.org/ for a full language description and tutorial.
 */
 package jsonnet
-
-//go:generate gen
