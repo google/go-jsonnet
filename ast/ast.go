@@ -76,6 +76,24 @@ type IfSpec struct {
 	Expr Node
 }
 
+// Example:
+// expr for x in arr1 for y in arr2 for z in arr3
+// The order is the same as in python, i.e. the leftmost is the outermost.
+//
+// Our internal representation reflects how they are semantically nested:
+// ForSpec(z, outer=ForSpec(y, outer=ForSpec(x, outer=nil)))
+// Any ifspecs are attached to the relevant ForSpec.
+//
+// Ifs are attached to the one on the left, for example:
+// expr for x in arr1 for y in arr2 if x % 2 == 0 for z in arr3
+// The if is attached to the y forspec.
+//
+// It desugares to:
+// flatMap(\x ->
+//         flatMap(\y ->
+//                 flatMap(\z -> [expr], arr3)
+//                 arr2)
+//         arr3)
 type ForSpec struct {
 	VarName    Identifier
 	Expr       Node

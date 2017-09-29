@@ -538,33 +538,34 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 
 /* parses for x in expr for y in expr if expr for z in expr ... */
 func (p *parser) parseComprehensionSpecs(end tokenKind) (*ast.ForSpec, *token, error) {
-	var parseComprehensionSpecsHelper func() (*ast.ForSpec, *ast.ForSpec, *token, error)
-	parseComprehensionSpecsHelper = func() (*ast.ForSpec, *ast.ForSpec, *token, error) {
+	var parseComprehensionSpecsHelper func(outer *ast.ForSpec) (*ast.ForSpec, *token, error)
+	parseComprehensionSpecsHelper = func(outer *ast.ForSpec) (*ast.ForSpec, *token, error) {
 		var ifSpecs []ast.IfSpec
 
 		varID, err := p.popExpect(tokenIdentifier)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, err
 		}
 		id := ast.Identifier(varID.data)
 		_, err = p.popExpect(tokenIn)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, err
 		}
 		arr, err := p.parse(maxPrecedence)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, err
 		}
 		forSpec := &ast.ForSpec{
 			VarName: id,
 			Expr:    arr,
+			Outer:   outer,
 		}
 
 		maybeIf := p.pop()
 		for ; maybeIf.kind == tokenIf; maybeIf = p.pop() {
 			cond, err := p.parse(maxPrecedence)
 			if err != nil {
-				return nil, nil, nil, err
+				return nil, nil, err
 			}
 			ifSpecs = append(ifSpecs, ast.IfSpec{
 				Expr: cond,
@@ -572,23 +573,17 @@ func (p *parser) parseComprehensionSpecs(end tokenKind) (*ast.ForSpec, *token, e
 		}
 		forSpec.Conditions = ifSpecs
 		if maybeIf.kind == end {
-			return forSpec, forSpec, maybeIf, nil
+			return forSpec, maybeIf, nil
 		}
 
 		if maybeIf.kind != tokenFor {
-			return nil, nil, nil, MakeStaticError(
+			return nil, nil, MakeStaticError(
 				fmt.Sprintf("Expected for, if or %v after for clause, got: %v", end, maybeIf), maybeIf.loc)
 		}
 
-		lastSpec, nextSpec, lastToken, err := parseComprehensionSpecsHelper()
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		nextSpec.Outer = forSpec
-		return lastSpec, forSpec, lastToken, nil
+		return parseComprehensionSpecsHelper(forSpec)
 	}
-	outer, _, lastToken, err := parseComprehensionSpecsHelper()
-	return outer, lastToken, err
+	return parseComprehensionSpecsHelper(nil)
 }
 
 // Assumes that the leading '[' has already been consumed and passed as tok.
