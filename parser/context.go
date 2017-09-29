@@ -31,10 +31,16 @@ const anonymous = "anonymous"
 
 // directChildren are children of AST node that are executed in the same context
 // and environment as their parent
+//
+// They must satisfy the following rules:
+// * (no-delayed-evaluation) They are evaluated when their parent is evaluated or never.
+// * (no-indirect-evaluation) They cannot be evaluated during evaluation of any non-direct children
+// * (same-environment) They must be evaluated in the same environment as their parent
 func directChildren(node ast.Node) []ast.Node {
 	switch node := node.(type) {
 	case *ast.Apply:
 		return []ast.Node{node.Target}
+		// TODO(sbarzowski) tailstrict call arguments (once we have tailstrict)
 	case *ast.ApplyBrace:
 		return []ast.Node{node.Left, node.Right}
 	case *ast.Array:
@@ -70,7 +76,7 @@ func directChildren(node ast.Node) []ast.Node {
 	case *ast.LiteralString:
 		return nil
 	case *ast.Object:
-		return nil
+		return objectFieldsDirectChildren(node.Fields)
 	case *ast.ArrayComp:
 		result := []ast.Node{}
 		spec := &node.Spec
@@ -83,8 +89,16 @@ func directChildren(node ast.Node) []ast.Node {
 		}
 		return result
 	case *ast.ObjectComp:
-		///////////////////////////////////////////////////
-		return nil
+		result := objectFieldsDirectChildren(node.Fields)
+		spec := &node.Spec
+		for spec != nil {
+			result = append(result, spec.Expr)
+			for _, ifspec := range spec.Conditions {
+				result = append(result, ifspec.Expr)
+			}
+			spec = spec.Outer
+		}
+		return result
 	case *ast.Self:
 		return nil
 	case *ast.SuperIndex:
@@ -103,6 +117,9 @@ func directChildren(node ast.Node) []ast.Node {
 // and capture environment from parent (thunked)
 // TODO(sbarzowski) Make sure it works well with boundary cases like tailstrict arguments,
 //					make it more precise.
+// Rules:
+// * (same-environment) They must be evaluated in the same environment as their parent
+// * (not-direct) If they can be direct children, they should (and cannot be thunked).
 func thunkChildren(node ast.Node) []ast.Node {
 	switch node := node.(type) {
 	case *ast.Apply:
@@ -129,7 +146,6 @@ func thunkChildren(node ast.Node) []ast.Node {
 	case *ast.Error:
 		return nil
 	case *ast.Function:
-		// TODO(sbarzowski) what to do with default args
 		return nil
 	case *ast.Import:
 		return nil
@@ -151,12 +167,10 @@ func thunkChildren(node ast.Node) []ast.Node {
 	case *ast.LiteralString:
 		return nil
 	case *ast.Object:
-		// TODO(sbarzowski) complicated
 		return nil
 	case *ast.ArrayComp:
 		return []ast.Node{node.Body}
 	case *ast.ObjectComp:
-		// TODO(sbarzowski) complicated
 		return nil
 	case *ast.Self:
 		return nil
@@ -172,16 +186,99 @@ func thunkChildren(node ast.Node) []ast.Node {
 	panic(fmt.Sprintf("thunkChildren: Unknown node %#v", node))
 }
 
-// children that are neither direct nor thunked, e.g. object field body
-// func specialChildren(node ast.Node) []ast.Node {
+func objectFieldsDirectChildren(fields ast.ObjectFields) ast.Nodes {
+	result := ast.Nodes{}
+	for _, field := range fields {
+		if field.Expr1 != nil {
+			result = append(result, field.Expr1)
+		}
+	}
+	return result
+}
 
-// }
+func inObjectFieldsChildren(fields ast.ObjectFields) ast.Nodes {
+	result := ast.Nodes{}
+	for _, field := range fields {
+		if field.MethodSugar {
+			result = append(result, field.Method)
+		} else {
+			if field.Expr2 != nil {
+				result = append(result, field.Expr2)
+			}
+			if field.Expr3 != nil {
+				result = append(result, field.Expr3)
+			}
+		}
+	}
+	return result
+}
+
+// children that are neither direct nor thunked, e.g. object field body
+// They are evaluated in a different environment from their parent.
+func specialChildren(node ast.Node) []ast.Node {
+	switch node := node.(type) {
+	case *ast.Apply:
+		return nil
+	case *ast.ApplyBrace:
+		return nil
+	case *ast.Array:
+		return nil
+	case *ast.Assert:
+		return nil
+	case *ast.Binary:
+		return nil
+	case *ast.Conditional:
+		return nil
+	case *ast.Dollar:
+		return nil
+	case *ast.Error:
+		return nil
+	case *ast.Function:
+		// TODO(sbarzowski) this
+		return nil
+	case *ast.Import:
+		return nil
+	case *ast.ImportStr:
+		return nil
+	case *ast.Index:
+		return nil
+	case *ast.Slice:
+		return nil
+	case *ast.Local:
+		return nil
+	case *ast.LiteralBoolean:
+		return nil
+	case *ast.LiteralNull:
+		return nil
+	case *ast.LiteralNumber:
+		return nil
+	case *ast.LiteralString:
+		return nil
+	case *ast.Object:
+		return inObjectFieldsChildren(node.Fields)
+	case *ast.ArrayComp:
+		return []ast.Node{node.Body}
+	case *ast.ObjectComp:
+
+	case *ast.Self:
+		return nil
+	case *ast.SuperIndex:
+		return nil
+	case *ast.InSuper:
+		return nil
+	case *ast.Unary:
+		return nil
+	case *ast.Var:
+		return nil
+	}
+	panic(fmt.Sprintf("specialChildren: Unknown node %#v", node))
+}
 
 func children(node ast.Node) []ast.Node {
 	var result []ast.Node
 	result = append(result, directChildren(node)...)
 	result = append(result, thunkChildren(node)...)
-	// TODO(sbarzowski) specialChildren
+	result = append(result, specialChildren(node)...)
 	return result
 }
 
@@ -222,24 +319,34 @@ func addContext(node ast.Node, context *string, bind string) {
 		}
 	case *ast.Object:
 		// TODO(sbarzowski) include fieldname, maybe even chains
-		objContext := objectContext(bind)
-		for i := range node.Fields {
-			field := &node.Fields[i]
 
+		outOfObject := directChildren(node)
+		for _, f := range outOfObject {
 			// This actually is evaluated outside of object
-			addContext(field.Expr1, context, anonymous)
-
-			if field.MethodSugar {
-				for i := range field.Params.Named {
-					// TODO(sbarzowski) check context here
-					addContext(field.Params.Named[i].DefaultArg, context, anonymous)
-				}
-				addContext(field.Method, objContext, anonymous)
-			} else {
-				addContext(field.Expr2, objContext, anonymous)
-				addContext(field.Expr3, objContext, anonymous)
-			}
+			addContext(f, context, anonymous)
 		}
+
+		objContext := objectContext(bind)
+		inObject := inObjectFieldsChildren(node.Fields)
+		for _, f := range inObject {
+			// This actually is evaluated outside of object
+			addContext(f, objContext, anonymous)
+		}
+
+	case *ast.ObjectComp:
+		outOfObject := directChildren(node)
+		for _, f := range outOfObject {
+			// This actually is evaluated outside of object
+			addContext(f, context, anonymous)
+		}
+
+		objContext := objectContext(bind)
+		inObject := inObjectFieldsChildren(node.Fields)
+		for _, f := range inObject {
+			// This actually is evaluated outside of object
+			addContext(f, objContext, anonymous)
+		}
+
 	case *ast.Local:
 		for _, bind := range node.Binds {
 			namedThunkContext := "thunk <" + string(bind.Variable) + "> from <" + *context + ">"

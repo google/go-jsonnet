@@ -8,7 +8,7 @@ RUNTIME ERROR: x
 1 & error "x"
 
 -------------------------------------------------
-	testdata/bitwise_and4:1:5-13	thunk from <$>
+	testdata/bitwise_and4:1:5-13	$
 
 1 & error "x"
 

@@ -14,7 +14,7 @@ RUNTIME ERROR: Field does not exist: x
 	<builtin>	builtin function <primitiveEquals>
 
 -------------------------------------------------
-	<std>:971:33-35	thunk from <thunk from <function <anonymous>>>
+	<std>:971:33-35	thunk from <function <anonymous>>
 
         if !std.primitiveEquals(ta, tb) then
 
@@ -27,7 +27,7 @@ RUNTIME ERROR: Field does not exist: x
         local ta = std.type(a);
 
 -------------------------------------------------
-	testdata/object_invariant7:1:16-21	thunk from <object <anonymous>>
+	testdata/object_invariant7:1:16-21	object <anonymous>
 
 { x: 5, assert super.x == 5 } 
 

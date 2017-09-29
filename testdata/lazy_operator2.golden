@@ -8,7 +8,7 @@ RUNTIME ERROR: should happen
 true && error "should happen"
 
 -------------------------------------------------
-	testdata/lazy_operator2:1:9-29	thunk from <$>
+	testdata/lazy_operator2:1:9-29	$
 
 true && error "should happen"
 

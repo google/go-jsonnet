@@ -8,7 +8,7 @@ RUNTIME ERROR: xxx
 false || error "xxx"
 
 -------------------------------------------------
-	testdata/or4:1:10-20	thunk from <$>
+	testdata/or4:1:10-20	$
 
 false || error "xxx"
 

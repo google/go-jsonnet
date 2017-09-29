@@ -6,7 +6,7 @@ RUNTIME ERROR: x
 	<builtin>	builtin function <flatMap>
 
 -------------------------------------------------
-	testdata/arrcomp_if6:1:20-28	thunk from <$>
+	testdata/arrcomp_if6:1:20-28	$
 
 [x for x in [1] if error "x"]
 

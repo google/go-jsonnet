@@ -41,7 +41,7 @@ RUNTIME ERROR: Format required number at 0, got string
                     format_codes_arr(codes, arr, i + 1, j, v + code) tailstrict
 
 -------------------------------------------------
-	<std>:525:60-61	thunk from <thunk from <function <format_codes_arr>>>
+	<std>:525:60-61	thunk from <function <format_codes_arr>>
 
                     format_codes_arr(codes, arr, i + 1, j, v + code) tailstrict
 
@@ -51,7 +51,7 @@ RUNTIME ERROR: Format required number at 0, got string
                     format_codes_arr(codes, arr, i + 1, j3, v + s_padded) tailstrict;
 
 -------------------------------------------------
-	<std>:568:65-73	thunk from <thunk from <function <format_codes_arr>>>
+	<std>:568:65-73	thunk from <function <format_codes_arr>>
 
                     format_codes_arr(codes, arr, i + 1, j3, v + s_padded) tailstrict;
 
@@ -66,7 +66,7 @@ RUNTIME ERROR: Format required number at 0, got string
             padding(w - std.length(str), s) + str;
 
 -------------------------------------------------
-	<std>:369:13-44	thunk from <function <pad_left>>
+	<std>:369:13-44	function <pad_left>
 
             padding(w - std.length(str), s) + str;
 
@@ -81,7 +81,7 @@ RUNTIME ERROR: Format required number at 0, got string
                 if w <= 0 then
 
 -------------------------------------------------
-	<std>:361:20-21	thunk from <function <aux>>
+	<std>:361:20-21	function <aux>
 
                 if w <= 0 then
 
@@ -91,7 +91,7 @@ RUNTIME ERROR: Format required number at 0, got string
             aux(w, "");
 
 -------------------------------------------------
-	<std>:369:21-40	thunk from <thunk from <function <pad_left>>>
+	<std>:369:21-40	thunk from <function <pad_left>>
 
             padding(w - std.length(str), s) + str;
 
@@ -99,7 +99,7 @@ RUNTIME ERROR: Format required number at 0, got string
 	<builtin>	builtin function <length>
 
 -------------------------------------------------
-	<std>:369:36-39	thunk from <thunk from <thunk from <thunk from <function <pad_left>>>>>
+	<std>:369:36-39	thunk from <thunk from <function <pad_left>>>
 
             padding(w - std.length(str), s) + str;
 
