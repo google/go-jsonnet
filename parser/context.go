@@ -42,7 +42,7 @@ func directChildren(node ast.Node) []ast.Node {
 	case *ast.Assert:
 		return []ast.Node{node.Cond, node.Message, node.Rest}
 	case *ast.Binary:
-		return nil
+		return []ast.Node{node.Left, node.Right}
 	case *ast.Conditional:
 		return []ast.Node{node.Cond, node.BranchTrue, node.BranchFalse}
 	case *ast.Dollar:
@@ -72,8 +72,18 @@ func directChildren(node ast.Node) []ast.Node {
 	case *ast.Object:
 		return nil
 	case *ast.ArrayComp:
-		return nil
+		result := []ast.Node{}
+		spec := &node.Spec
+		for spec != nil {
+			result = append(result, spec.Expr)
+			for _, ifspec := range spec.Conditions {
+				result = append(result, ifspec.Expr)
+			}
+			spec = spec.Outer
+		}
+		return result
 	case *ast.ObjectComp:
+		///////////////////////////////////////////////////
 		return nil
 	case *ast.Self:
 		return nil
@@ -82,7 +92,7 @@ func directChildren(node ast.Node) []ast.Node {
 	case *ast.InSuper:
 		return []ast.Node{node.Index}
 	case *ast.Unary:
-		return nil
+		return []ast.Node{node.Expr}
 	case *ast.Var:
 		return nil
 	}
@@ -111,7 +121,7 @@ func thunkChildren(node ast.Node) []ast.Node {
 	case *ast.Assert:
 		return nil
 	case *ast.Binary:
-		return []ast.Node{node.Left, node.Right}
+		return nil
 	case *ast.Conditional:
 		return nil
 	case *ast.Dollar:
@@ -144,16 +154,7 @@ func thunkChildren(node ast.Node) []ast.Node {
 		// TODO(sbarzowski) complicated
 		return nil
 	case *ast.ArrayComp:
-		result := []ast.Node{node.Body}
-		spec := &node.Spec
-		for spec != nil {
-			result = append(result, spec.Expr)
-			for _, ifspec := range spec.Conditions {
-				result = append(result, ifspec.Expr)
-			}
-			spec = spec.Outer
-		}
-		return result
+		return []ast.Node{node.Body}
 	case *ast.ObjectComp:
 		// TODO(sbarzowski) complicated
 		return nil
@@ -164,7 +165,7 @@ func thunkChildren(node ast.Node) []ast.Node {
 	case *ast.InSuper:
 		return nil
 	case *ast.Unary:
-		return []ast.Node{node.Expr}
+		return nil
 	case *ast.Var:
 		return nil
 	}
