@@ -109,7 +109,6 @@ func desugarFields(location ast.LocationRange, fields *ast.ObjectFields, objLeve
 	}
 
 	// Simplify asserts
-	// TODO(dcunnin): this
 	for i := range *fields {
 		field := &(*fields)[i]
 		if field.Kind != ast.ObjectAssert {
@@ -130,7 +129,6 @@ func desugarFields(location ast.LocationRange, fields *ast.ObjectFields, objLeve
 	}
 
 	// Remove methods
-	// TODO(dcunnin): this
 	for i := range *fields {
 		field := &((*fields)[i])
 		if !field.MethodSugar {
@@ -403,7 +401,6 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		if err != nil {
 			return
 		}
-		// TODO(dcunnin): Need to handle bopPercent, bopManifestUnequal, bopManifestEqual
 
 	case *ast.Conditional:
 		err = desugar(&node.Cond, objLevel)
@@ -453,7 +450,7 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		}
 		if node.Id != nil {
 			if node.Index != nil {
-				panic("TODO")
+				panic(fmt.Sprintf("Node with both Id and Index: %#+v", node))
 			}
 			node.Index = makeStr(string(*node.Id))
 			node.Id = nil
@@ -585,6 +582,5 @@ func desugarFile(ast *ast.Node) error {
 	if err != nil {
 		return err
 	}
-	// TODO(dcunnin): wrap in std local
 	return nil
 }
