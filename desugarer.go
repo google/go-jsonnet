@@ -518,15 +518,17 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		// Nothing to do.
 
 	case *ast.LiteralString:
-		if node.Kind != ast.VerbatimStringDouble && node.Kind != ast.VerbatimStringSingle {
+		if node.Kind != ast.VerbatimStringDouble &&
+			node.Kind != ast.VerbatimStringSingle &&
+			node.Kind != ast.StringBlock {
 			unescaped, err := stringUnescape(node.Loc(), node.Value)
 			if err != nil {
 				return err
 			}
 			node.Value = unescaped
-			node.Kind = ast.StringDouble
-			node.BlockIndent = ""
 		}
+		node.Kind = ast.StringDouble
+		node.BlockIndent = ""
 	case *ast.Object:
 		// Hidden variable to allow $ binding.
 		if objLevel == 0 {
