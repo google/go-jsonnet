@@ -1,8 +1,8 @@
 RUNTIME ERROR: Cannot test equality of functions
 -------------------------------------------------
-	During evaluation	
+	<builtin>	builtin function <primitiveEquals>
 
 -------------------------------------------------
-	<builtin>	builtin function <primitiveEquals>
+	During evaluation	
 
 

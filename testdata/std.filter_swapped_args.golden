@@ -1,8 +1,8 @@
 RUNTIME ERROR: Unexpected type function, expected array
 -------------------------------------------------
-	During evaluation	
+	<builtin>	builtin function <filter>
 
 -------------------------------------------------
-	<builtin>	builtin function <filter>
+	During evaluation	
 
 

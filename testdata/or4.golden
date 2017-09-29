@@ -1,6 +1,8 @@
 RUNTIME ERROR: xxx
 -------------------------------------------------
-	During evaluation	
+	testdata/or4:1:10-20	$
+
+false || error "xxx"
 
 -------------------------------------------------
 	testdata/or4:1:1-20	$
@@ -8,8 +10,6 @@ RUNTIME ERROR: xxx
 false || error "xxx"
 
 -------------------------------------------------
-	testdata/or4:1:10-20	$
-
-false || error "xxx"
+	During evaluation	
 
 

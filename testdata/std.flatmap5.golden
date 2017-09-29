@@ -1,16 +1,16 @@
 RUNTIME ERROR: a
 -------------------------------------------------
-	During evaluation	
+	testdata/std.flatmap5:1:21-28	function <failWith>
 
--------------------------------------------------
-	<builtin>	builtin function <type>
+local failWith(x) = error x;
 
 -------------------------------------------------
 	<builtin>	builtin function <flatMap>
 
 -------------------------------------------------
-	testdata/std.flatmap5:1:21-28	function <failWith>
+	<builtin>	builtin function <type>
 
-local failWith(x) = error x;
+-------------------------------------------------
+	During evaluation	
 
 

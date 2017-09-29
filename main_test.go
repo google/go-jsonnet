@@ -189,19 +189,20 @@ func TestOneLineError(t *testing.T) {
 // TODO(sbarzowski) checking if the whitespace is right is quite unpleasant, what can we do about it?
 var minimalErrorTests = []errorFormattingTest{
 	{"error", `error "x"`, "RUNTIME ERROR: x\n" +
+		"	error:1:1-9	$\n" + // TODO(sbarzowski) if seems we have off-by-one in location
 		"	During evaluation	\n" +
-		"	error:1:1-9	$\n"}, // TODO(sbarzowski) if seems we have off-by-one in location
+		""},
 	{"error_in_func", `local x(n) = if n == 0 then error "x" else x(n - 1); x(3)`, "RUNTIME ERROR: x\n" +
-		"	During evaluation	\n" +
-		"	error_in_func:1:54-58	$\n" +
-		"	error_in_func:1:44-52	function <x>\n" +
-		"	error_in_func:1:44-52	function <x>\n" +
-		"	error_in_func:1:44-52	function <x>\n" +
 		"	error_in_func:1:29-37	function <x>\n" +
+		"	error_in_func:1:44-52	function <x>\n" +
+		"	error_in_func:1:44-52	function <x>\n" +
+		"	error_in_func:1:44-52	function <x>\n" +
+		"	error_in_func:1:54-58	$\n" +
+		"	During evaluation	\n" +
 		""},
 	{"error_in_error", `error (error "x")`, "RUNTIME ERROR: x\n" +
-		"	During evaluation	\n" +
 		"	error_in_error:1:8-16	$\n" +
+		"	During evaluation	\n" +
 		""},
 }
 

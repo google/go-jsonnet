@@ -1,19 +1,92 @@
 RUNTIME ERROR: Format required number at 0, got string
 -------------------------------------------------
-	During evaluation	
+	<std>:(457:21)-(458:57)	function <format_code>
+
+                    error "Format required number at "
+                          + i + ", got " + std.type(val)
 
 -------------------------------------------------
-		
+	<std>:557:29-74	thunk <s> from <function <format_codes_arr>>
+
+                            format_code(val, code, tmp.fw, tmp2.prec, j2);
 
 -------------------------------------------------
-	<std>:148:13-29	function <anonymous>
+	<std>:562:38-39	thunk from <thunk <s_padded> from <function <format_codes_arr>>>
 
-            std.format(a, b)
+                            pad_left(s, tmp.fw, " ");
 
 -------------------------------------------------
-	<std>:612:13-52	function <anonymous>
+	<std>:369:36-39	thunk from <thunk from <function <pad_left>>>
 
-            format_codes_arr(codes, vals, 0, 0, "")
+            padding(w - std.length(str), s) + str;
+
+-------------------------------------------------
+	<builtin>	builtin function <length>
+
+-------------------------------------------------
+	<std>:369:21-40	thunk from <function <pad_left>>
+
+            padding(w - std.length(str), s) + str;
+
+-------------------------------------------------
+	<std>:365:17-18	thunk from <function <padding>>
+
+            aux(w, "");
+
+-------------------------------------------------
+	<std>:361:20-21	function <aux>
+
+                if w <= 0 then
+
+-------------------------------------------------
+	<std>:361:20-26	function <aux>
+
+                if w <= 0 then
+
+-------------------------------------------------
+	<std>:365:13-23	function <padding>
+
+            aux(w, "");
+
+-------------------------------------------------
+	<std>:369:13-44	function <pad_left>
+
+            padding(w - std.length(str), s) + str;
+
+-------------------------------------------------
+	<std>:369:13-50	function <pad_left>
+
+            padding(w - std.length(str), s) + str;
+
+-------------------------------------------------
+	<std>:562:29-53	thunk <s_padded> from <function <format_codes_arr>>
+
+                            pad_left(s, tmp.fw, " ");
+
+-------------------------------------------------
+	<std>:568:65-73	thunk from <function <format_codes_arr>>
+
+                    format_codes_arr(codes, arr, i + 1, j3, v + s_padded) tailstrict;
+
+-------------------------------------------------
+	<std>:568:61-73	thunk from <function <format_codes_arr>>
+
+                    format_codes_arr(codes, arr, i + 1, j3, v + s_padded) tailstrict;
+
+-------------------------------------------------
+	<std>:525:60-61	thunk from <function <format_codes_arr>>
+
+                    format_codes_arr(codes, arr, i + 1, j, v + code) tailstrict
+
+-------------------------------------------------
+	<std>:525:60-68	thunk from <function <format_codes_arr>>
+
+                    format_codes_arr(codes, arr, i + 1, j, v + code) tailstrict
+
+-------------------------------------------------
+	<std>:521:21-22	function <format_codes_arr>
+
+                    v
 
 -------------------------------------------------
 	<std>:525:21-69	function <format_codes_arr>
@@ -31,92 +104,19 @@ RUNTIME ERROR: Format required number at 0, got string
                     format_codes_arr(codes, arr, i + 1, j, v + code) tailstrict
 
 -------------------------------------------------
-	<std>:521:21-22	function <format_codes_arr>
+	<std>:612:13-52	function <anonymous>
 
-                    v
-
--------------------------------------------------
-	<std>:525:60-68	thunk from <function <format_codes_arr>>
-
-                    format_codes_arr(codes, arr, i + 1, j, v + code) tailstrict
+            format_codes_arr(codes, vals, 0, 0, "")
 
 -------------------------------------------------
-	<std>:525:60-61	thunk from <function <format_codes_arr>>
+	<std>:148:13-29	function <anonymous>
 
-                    format_codes_arr(codes, arr, i + 1, j, v + code) tailstrict
-
--------------------------------------------------
-	<std>:568:61-73	thunk from <function <format_codes_arr>>
-
-                    format_codes_arr(codes, arr, i + 1, j3, v + s_padded) tailstrict;
+            std.format(a, b)
 
 -------------------------------------------------
-	<std>:568:65-73	thunk from <function <format_codes_arr>>
-
-                    format_codes_arr(codes, arr, i + 1, j3, v + s_padded) tailstrict;
+		
 
 -------------------------------------------------
-	<std>:562:29-53	thunk <s_padded> from <function <format_codes_arr>>
-
-                            pad_left(s, tmp.fw, " ");
-
--------------------------------------------------
-	<std>:369:13-50	function <pad_left>
-
-            padding(w - std.length(str), s) + str;
-
--------------------------------------------------
-	<std>:369:13-44	function <pad_left>
-
-            padding(w - std.length(str), s) + str;
-
--------------------------------------------------
-	<std>:365:13-23	function <padding>
-
-            aux(w, "");
-
--------------------------------------------------
-	<std>:361:20-26	function <aux>
-
-                if w <= 0 then
-
--------------------------------------------------
-	<std>:361:20-21	function <aux>
-
-                if w <= 0 then
-
--------------------------------------------------
-	<std>:365:17-18	thunk from <function <padding>>
-
-            aux(w, "");
-
--------------------------------------------------
-	<std>:369:21-40	thunk from <function <pad_left>>
-
-            padding(w - std.length(str), s) + str;
-
--------------------------------------------------
-	<builtin>	builtin function <length>
-
--------------------------------------------------
-	<std>:369:36-39	thunk from <thunk from <function <pad_left>>>
-
-            padding(w - std.length(str), s) + str;
-
--------------------------------------------------
-	<std>:562:38-39	thunk from <thunk <s_padded> from <function <format_codes_arr>>>
-
-                            pad_left(s, tmp.fw, " ");
-
--------------------------------------------------
-	<std>:557:29-74	thunk <s> from <function <format_codes_arr>>
-
-                            format_code(val, code, tmp.fw, tmp2.prec, j2);
-
--------------------------------------------------
-	<std>:(457:21)-(458:57)	function <format_code>
-
-                    error "Format required number at "
-                          + i + ", got " + std.type(val)
+	During evaluation	
 
 

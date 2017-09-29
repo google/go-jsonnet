@@ -1,8 +1,8 @@
 RUNTIME ERROR: Codepoints must be >= 0, got -1
 -------------------------------------------------
-	During evaluation	
+	<builtin>	builtin function <char>
 
 -------------------------------------------------
-	<builtin>	builtin function <char>
+	During evaluation	
 
 

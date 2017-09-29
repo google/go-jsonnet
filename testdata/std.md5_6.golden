@@ -1,8 +1,8 @@
 RUNTIME ERROR: Unexpected type number, expected string
 -------------------------------------------------
-	During evaluation	
+	<builtin>	builtin function <md5>
 
 -------------------------------------------------
-	<builtin>	builtin function <md5>
+	During evaluation	
 
 

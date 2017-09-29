@@ -1,13 +1,13 @@
 RUNTIME ERROR: xxx
 -------------------------------------------------
-	During evaluation	
+	testdata/type_error:1:10-20	thunk from <$>
+
+std.type(error "xxx")
 
 -------------------------------------------------
 	<builtin>	builtin function <type>
 
 -------------------------------------------------
-	testdata/type_error:1:10-20	thunk from <$>
-
-std.type(error "xxx")
+	During evaluation	
 
 

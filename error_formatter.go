@@ -88,7 +88,8 @@ func (ef *ErrorFormatter) showCode(buf *bytes.Buffer, loc ast.LocationRange) {
 func (ef *ErrorFormatter) buildStackTrace(frames []TraceFrame) string {
 	// https://github.com/google/jsonnet/blob/master/core/libjsonnet.cpp#L594
 	var buf bytes.Buffer
-	for _, f := range frames {
+	for i := len(frames) - 1; i >= 0; i-- {
+		f := frames[i]
 		// TODO(sbarzowski) make pretty format more readable (it's already useful)
 		if ef.pretty {
 			fmt.Fprintf(&buf, "-------------------------------------------------\n")

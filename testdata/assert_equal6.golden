@@ -1,6 +1,8 @@
 RUNTIME ERROR: Assertion failed. [31m != 
 -------------------------------------------------
-	During evaluation	
+	<std>:649:13-56	function <anonymous>
+
+            error "Assertion failed. " + a + " != " + b,
 
 -------------------------------------------------
 	testdata/assert_equal6:1:1-34	$
@@ -8,8 +10,6 @@ RUNTIME ERROR: Assertion failed. [31m !=
 std.assertEqual("\u001b[31m", "")
 
 -------------------------------------------------
-	<std>:649:13-56	function <anonymous>
-
-            error "Assertion failed. " + a + " != " + b,
+	During evaluation	
 
 

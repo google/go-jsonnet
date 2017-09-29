@@ -1,8 +1,8 @@
 RUNTIME ERROR: Unexpected type number, expected object
 -------------------------------------------------
-	During evaluation	
+	<builtin>	builtin function <objectHasEx>
 
 -------------------------------------------------
-	<builtin>	builtin function <objectHasEx>
+	During evaluation	
 
 

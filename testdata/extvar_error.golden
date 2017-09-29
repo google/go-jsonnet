@@ -1,13 +1,13 @@
 RUNTIME ERROR: xxx
 -------------------------------------------------
-	During evaluation	
+	<extvar:errorVar>:1:1-11	$
+
+error 'xxx'
 
 -------------------------------------------------
 	<builtin>	builtin function <extVar>
 
 -------------------------------------------------
-	<extvar:errorVar>:1:1-11	$
-
-error 'xxx'
+	During evaluation	
 
 

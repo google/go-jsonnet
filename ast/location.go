@@ -31,7 +31,7 @@ type Source struct {
 // Location represents a single location in an (unspecified) file.
 type Location struct {
 	Line int
-	// TODO(sbarzowski) Should be runes (unicode codepoints), but it's bytes.
+	// Column is a byte offset from the beginning of the line
 	Column int
 }
 

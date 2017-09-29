@@ -1,13 +1,13 @@
 RUNTIME ERROR: x
 -------------------------------------------------
-	During evaluation	
+	testdata/std.filter2:1:12-20	thunk from <$>
+
+std.filter(error "x", [])
 
 -------------------------------------------------
 	<builtin>	builtin function <filter>
 
 -------------------------------------------------
-	testdata/std.filter2:1:12-20	thunk from <$>
-
-std.filter(error "x", [])
+	During evaluation	
 
 

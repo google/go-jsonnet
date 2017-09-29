@@ -1,8 +1,8 @@
 RUNTIME ERROR: Invalid unicode codepoint, got 1.114112e+06
 -------------------------------------------------
-	During evaluation	
+	<builtin>	builtin function <char>
 
 -------------------------------------------------
-	<builtin>	builtin function <char>
+	During evaluation	
 
 

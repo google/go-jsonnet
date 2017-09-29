@@ -1,10 +1,10 @@
 RUNTIME ERROR: Couldn't open import "no chance a file with this name exists": No match locally or in the Jsonnet library paths.
 -------------------------------------------------
-	During evaluation	
-
--------------------------------------------------
 	testdata/nonexistent_import:1:1-50	$
 
 importstr 'no chance a file with this name exists'
+
+-------------------------------------------------
+	During evaluation	
 
 

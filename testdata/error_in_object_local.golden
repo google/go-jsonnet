@@ -1,6 +1,8 @@
 RUNTIME ERROR: xxx
 -------------------------------------------------
-	During manifestation	
+	testdata/error_in_object_local:1:20-29	function <anonymous>
+
+{ local foo(bar) = error bar, baz: foo("xxx") }
 
 -------------------------------------------------
 	testdata/error_in_object_local:1:36-46	object <anonymous>
@@ -8,8 +10,6 @@ RUNTIME ERROR: xxx
 { local foo(bar) = error bar, baz: foo("xxx") }
 
 -------------------------------------------------
-	testdata/error_in_object_local:1:20-29	function <anonymous>
-
-{ local foo(bar) = error bar, baz: foo("xxx") }
+	During manifestation	
 
 

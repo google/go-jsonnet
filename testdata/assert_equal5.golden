@@ -2,7 +2,9 @@ RUNTIME ERROR: Assertion failed.
   != 
 
 -------------------------------------------------
-	During evaluation	
+	<std>:649:13-56	function <anonymous>
+
+            error "Assertion failed. " + a + " != " + b,
 
 -------------------------------------------------
 	testdata/assert_equal5:1:1-29	$
@@ -10,8 +12,6 @@ RUNTIME ERROR: Assertion failed.
 std.assertEqual("\n ", "\n")
 
 -------------------------------------------------
-	<std>:649:13-56	function <anonymous>
-
-            error "Assertion failed. " + a + " != " + b,
+	During evaluation	
 
 

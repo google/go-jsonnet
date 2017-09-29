@@ -1,8 +1,8 @@
 RUNTIME ERROR: Duplicate field name: "x"
 -------------------------------------------------
-	During evaluation	
+	<builtin>	builtin function <$objectFlatMerge>
 
 -------------------------------------------------
-	<builtin>	builtin function <$objectFlatMerge>
+	During evaluation	
 
 

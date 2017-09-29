@@ -1,6 +1,43 @@
 RUNTIME ERROR: xxx
 -------------------------------------------------
-	During evaluation	
+	testdata/recursive_thunk:1:35-45	function <bar>
+
+local bar(th, x) = if x == 0 then error "xxx" else th;
+
+-------------------------------------------------
+	testdata/recursive_thunk:2:16-38	function <foo>
+
+local foo(x) = bar(foo(x - 1), x - 1);
+
+-------------------------------------------------
+	testdata/recursive_thunk:2:20-30	thunk from <function <foo>>
+
+local foo(x) = bar(foo(x - 1), x - 1);
+
+-------------------------------------------------
+	testdata/recursive_thunk:1:52-54	function <bar>
+
+local bar(th, x) = if x == 0 then error "xxx" else th;
+
+-------------------------------------------------
+	testdata/recursive_thunk:2:16-38	function <foo>
+
+local foo(x) = bar(foo(x - 1), x - 1);
+
+-------------------------------------------------
+	testdata/recursive_thunk:2:20-30	thunk from <function <foo>>
+
+local foo(x) = bar(foo(x - 1), x - 1);
+
+-------------------------------------------------
+	testdata/recursive_thunk:1:52-54	function <bar>
+
+local bar(th, x) = if x == 0 then error "xxx" else th;
+
+-------------------------------------------------
+	testdata/recursive_thunk:2:16-38	function <foo>
+
+local foo(x) = bar(foo(x - 1), x - 1);
 
 -------------------------------------------------
 	testdata/recursive_thunk:3:1-7	$
@@ -8,43 +45,6 @@ RUNTIME ERROR: xxx
 foo(3)
 
 -------------------------------------------------
-	testdata/recursive_thunk:2:16-38	function <foo>
-
-local foo(x) = bar(foo(x - 1), x - 1);
-
--------------------------------------------------
-	testdata/recursive_thunk:1:52-54	function <bar>
-
-local bar(th, x) = if x == 0 then error "xxx" else th;
-
--------------------------------------------------
-	testdata/recursive_thunk:2:20-30	thunk from <function <foo>>
-
-local foo(x) = bar(foo(x - 1), x - 1);
-
--------------------------------------------------
-	testdata/recursive_thunk:2:16-38	function <foo>
-
-local foo(x) = bar(foo(x - 1), x - 1);
-
--------------------------------------------------
-	testdata/recursive_thunk:1:52-54	function <bar>
-
-local bar(th, x) = if x == 0 then error "xxx" else th;
-
--------------------------------------------------
-	testdata/recursive_thunk:2:20-30	thunk from <function <foo>>
-
-local foo(x) = bar(foo(x - 1), x - 1);
-
--------------------------------------------------
-	testdata/recursive_thunk:2:16-38	function <foo>
-
-local foo(x) = bar(foo(x - 1), x - 1);
-
--------------------------------------------------
-	testdata/recursive_thunk:1:35-45	function <bar>
-
-local bar(th, x) = if x == 0 then error "xxx" else th;
+	During evaluation	
 
 

@@ -1,6 +1,8 @@
 RUNTIME ERROR: x
 -------------------------------------------------
-	During evaluation	
+	testdata/bitwise_xor7:1:5-13	$
+
+1 ^ error "x"
 
 -------------------------------------------------
 	testdata/bitwise_xor7:1:1-13	$
@@ -8,8 +10,6 @@ RUNTIME ERROR: x
 1 ^ error "x"
 
 -------------------------------------------------
-	testdata/bitwise_xor7:1:5-13	$
-
-1 ^ error "x"
+	During evaluation	
 
 

@@ -1,8 +1,8 @@
 RUNTIME ERROR: primitiveEquals operates on primitive types, got object
 -------------------------------------------------
-	During evaluation	
+	<builtin>	builtin function <primitiveEquals>
 
 -------------------------------------------------
-	<builtin>	builtin function <primitiveEquals>
+	During evaluation	
 
 

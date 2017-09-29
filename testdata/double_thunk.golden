@@ -1,9 +1,6 @@
 RUNTIME ERROR: xxx
 -------------------------------------------------
-	During evaluation	
-
--------------------------------------------------
-	testdata/double_thunk:1:37-38	$
+	testdata/double_thunk:1:21-31	thunk <y> from <thunk <x> from <$>>
 
 local x = local y = error "xxx"; y; x
 
@@ -13,8 +10,11 @@ local x = local y = error "xxx"; y; x
 local x = local y = error "xxx"; y; x
 
 -------------------------------------------------
-	testdata/double_thunk:1:21-31	thunk <y> from <thunk <x> from <$>>
+	testdata/double_thunk:1:37-38	$
 
 local x = local y = error "xxx"; y; x
+
+-------------------------------------------------
+	During evaluation	
 
 
