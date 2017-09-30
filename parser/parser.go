@@ -538,52 +538,52 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 
 /* parses for x in expr for y in expr if expr for z in expr ... */
 func (p *parser) parseComprehensionSpecs(end tokenKind) (*ast.ForSpec, *token, error) {
-	var ifSpecs []ast.IfSpec
+	var parseComprehensionSpecsHelper func(outer *ast.ForSpec) (*ast.ForSpec, *token, error)
+	parseComprehensionSpecsHelper = func(outer *ast.ForSpec) (*ast.ForSpec, *token, error) {
+		var ifSpecs []ast.IfSpec
 
-	varID, err := p.popExpect(tokenIdentifier)
-	if err != nil {
-		return nil, nil, err
-	}
-	id := ast.Identifier(varID.data)
-	_, err = p.popExpect(tokenIn)
-	if err != nil {
-		return nil, nil, err
-	}
-	arr, err := p.parse(maxPrecedence)
-	if err != nil {
-		return nil, nil, err
-	}
-	forSpec := &ast.ForSpec{
-		VarName: id,
-		Expr:    arr,
-	}
-
-	maybeIf := p.pop()
-	for ; maybeIf.kind == tokenIf; maybeIf = p.pop() {
-		cond, err := p.parse(maxPrecedence)
+		varID, err := p.popExpect(tokenIdentifier)
 		if err != nil {
 			return nil, nil, err
 		}
-		ifSpecs = append(ifSpecs, ast.IfSpec{
-			Expr: cond,
-		})
-	}
-	forSpec.Conditions = ifSpecs
-	if maybeIf.kind == end {
-		return forSpec, maybeIf, nil
-	}
+		id := ast.Identifier(varID.data)
+		_, err = p.popExpect(tokenIn)
+		if err != nil {
+			return nil, nil, err
+		}
+		arr, err := p.parse(maxPrecedence)
+		if err != nil {
+			return nil, nil, err
+		}
+		forSpec := &ast.ForSpec{
+			VarName: id,
+			Expr:    arr,
+			Outer:   outer,
+		}
 
-	if maybeIf.kind != tokenFor {
-		return nil, nil, MakeStaticError(
-			fmt.Sprintf("Expected for, if or %v after for clause, got: %v", end, maybeIf), maybeIf.loc)
-	}
+		maybeIf := p.pop()
+		for ; maybeIf.kind == tokenIf; maybeIf = p.pop() {
+			cond, err := p.parse(maxPrecedence)
+			if err != nil {
+				return nil, nil, err
+			}
+			ifSpecs = append(ifSpecs, ast.IfSpec{
+				Expr: cond,
+			})
+		}
+		forSpec.Conditions = ifSpecs
+		if maybeIf.kind == end {
+			return forSpec, maybeIf, nil
+		}
 
-	nextSpec, last, err := p.parseComprehensionSpecs(end)
-	if err != nil {
-		return nil, nil, err
+		if maybeIf.kind != tokenFor {
+			return nil, nil, MakeStaticError(
+				fmt.Sprintf("Expected for, if or %v after for clause, got: %v", end, maybeIf), maybeIf.loc)
+		}
+
+		return parseComprehensionSpecsHelper(forSpec)
 	}
-	nextSpec.Outer = forSpec
-	return nextSpec, last, nil
+	return parseComprehensionSpecsHelper(nil)
 }
 
 // Assumes that the leading '[' has already been consumed and passed as tok.
