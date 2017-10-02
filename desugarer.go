@@ -228,6 +228,11 @@ func desugarArrayComp(comp *ast.ArrayComp, objLevel int) (ast.Node, error) {
 
 func desugarObjectComp(comp *ast.ObjectComp, objLevel int) (ast.Node, error) {
 
+	if objLevel == 0 {
+		dollar := ast.Identifier("$")
+		comp.Fields = append(comp.Fields, ast.ObjectFieldLocalNoMethod(&dollar, &ast.Self{}))
+	}
+
 	// TODO(sbarzowski) find a consistent convention to prevent desugaring the same thing twice
 	// here we deeply desugar fields and it will happen again
 	err := desugarFields(*comp.Loc(), &comp.Fields, objLevel+1)
