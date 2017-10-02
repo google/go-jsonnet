@@ -201,10 +201,7 @@ type interpreter struct {
 	// External variables
 	extVars map[ast.Identifier]potentialValue
 
-	// The clean environment in which we execute imports, extVars as well
-	// as the main program. It contains std.
-	//initialEnv environment
-
+	// A part of std object common to all files
 	baseStd valueObject
 
 	// Keeps imports
