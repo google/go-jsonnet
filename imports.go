@@ -86,7 +86,7 @@ func codeToPV(e *evaluator, filename string, code string) potentialValue {
 		// The same thinking applies to external variables.
 		return makeErrorThunk(err)
 	}
-	return makeThunk(e.i.initialEnv, node)
+	return makeThunk(makeInitialEnv(filename, e.i.baseStd), node)
 }
 
 func (cache *ImportCache) ImportCode(codeDir, importedPath string, e *evaluator) (value, error) {

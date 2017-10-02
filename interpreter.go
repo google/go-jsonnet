@@ -203,7 +203,9 @@ type interpreter struct {
 
 	// The clean environment in which we execute imports, extVars as well
 	// as the main program. It contains std.
-	initialEnv environment
+	//initialEnv environment
+
+	baseStd valueObject
 
 	// Keeps imports
 	importCache *ImportCache
@@ -709,7 +711,7 @@ func (i *interpreter) EvalInCleanEnv(fromWhere *TraceElement, env *environment, 
 	return val, err
 }
 
-func buildStdObject(i *interpreter) (value, error) {
+func buildStdObject(i *interpreter) (valueObject, error) {
 	objVal, err := evaluateStd(i)
 	if err != nil {
 		return nil, err
@@ -761,6 +763,14 @@ func prepareExtVars(i *interpreter, ext vmExtMap) map[ast.Identifier]potentialVa
 	return result
 }
 
+func buildObject(hide ast.ObjectFieldHide, fields map[string]value) valueObject {
+	fieldMap := valueSimpleObjectFieldMap{}
+	for name, v := range fields {
+		fieldMap[name] = valueSimpleObjectField{hide, &readyValue{v}}
+	}
+	return makeValueSimpleObject(bindingFrame{}, fieldMap, nil)
+}
+
 func buildInterpreter(ext vmExtMap, maxStack int, importer Importer) (*interpreter, error) {
 	i := interpreter{
 		stack:       makeCallStack(maxStack),
@@ -772,16 +782,23 @@ func buildInterpreter(ext vmExtMap, maxStack int, importer Importer) (*interpret
 		return nil, err
 	}
 
-	i.initialEnv = makeEnvironment(
-		bindingFrame{
-			"std": &readyValue{stdObj},
-		},
-		makeUnboundSelfBinding(),
-	)
+	i.baseStd = stdObj
 
 	i.extVars = prepareExtVars(&i, ext)
 
 	return &i, nil
+}
+
+func makeInitialEnv(filename string, baseStd valueObject) environment {
+	fileSpecific := buildObject(ast.ObjectFieldHidden, map[string]value{
+		"thisFile": makeValueString(filename),
+	})
+	return makeEnvironment(
+		bindingFrame{
+			"std": &readyValue{makeValueExtendedObject(baseStd, fileSpecific)},
+		},
+		makeUnboundSelfBinding(),
+	)
 }
 
 func evaluate(node ast.Node, ext vmExtMap, maxStack int, importer Importer) (string, error) {
@@ -793,7 +810,8 @@ func evaluate(node ast.Node, ext vmExtMap, maxStack int, importer Importer) (str
 	evalTrace := &TraceElement{
 		loc: &evalLoc,
 	}
-	result, err := i.EvalInCleanEnv(evalTrace, &i.initialEnv, node)
+	env := makeInitialEnv(node.Loc().FileName, i.baseStd)
+	result, err := i.EvalInCleanEnv(evalTrace, &env, node)
 	if err != nil {
 		return "", err
 	}
