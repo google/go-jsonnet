@@ -22,12 +22,27 @@ import (
 	"log"
 	"os"
 	"runtime/pprof"
+	"strings"
 
 	"github.com/google/go-jsonnet"
 )
 
 func usage() {
 	fmt.Println("usage: jsonnet <filename>")
+}
+
+func getVar(s string) (string, string, error) {
+	parts := strings.SplitN(s, "=", 2)
+	name := parts[0]
+	if len(parts) == 1 {
+		content, exists := os.LookupEnv(name)
+		if exists {
+			return name, content, nil
+		}
+		return "", "", fmt.Errorf("ERROR: Environment variable %v was undefined.", name)
+	} else {
+		return name, parts[1], nil
+	}
 }
 
 func main() {
@@ -43,12 +58,40 @@ func main() {
 	}
 
 	// TODO(sbarzowski) Be consistent about error codes with C++ maybe
+	var filename string
+
 	vm := jsonnet.MakeVM()
-	if len(os.Args) != 2 {
-		usage()
-		os.Exit(1)
+	for i := 1; i < len(os.Args); i++ {
+		arg := os.Args[i]
+		switch arg {
+		case "--tla-str":
+			panic("NOT SUPPORTED YET")
+		case "--tla-code":
+			panic("NOT SUPPORTED YET")
+		case "--ext-code":
+			i++
+			name, content, err := getVar(os.Args[i])
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err.Error())
+				os.Exit(1)
+			}
+			vm.ExtCode(name, content)
+		case "--ext-str":
+			i++
+			name, content, err := getVar(os.Args[i])
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err.Error())
+				os.Exit(1)
+			}
+			vm.ExtVar(name, content)
+		default:
+			if filename != "" {
+				usage()
+				os.Exit(1)
+			}
+			filename = arg
+		}
 	}
-	filename := os.Args[1]
 	snippet, err := ioutil.ReadFile(filename)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading input file: %v\n", err.Error())
