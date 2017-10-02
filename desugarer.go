@@ -518,9 +518,7 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		// Nothing to do.
 
 	case *ast.LiteralString:
-		if node.Kind != ast.VerbatimStringDouble &&
-			node.Kind != ast.VerbatimStringSingle &&
-			node.Kind != ast.StringBlock {
+		if node.Kind.FullyEscaped() {
 			unescaped, err := stringUnescape(node.Loc(), node.Value)
 			if err != nil {
 				return err
