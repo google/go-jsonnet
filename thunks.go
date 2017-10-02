@@ -38,8 +38,18 @@ func (rv *readyValue) bindToObject(sb selfBinding, origBinding bindingFrame, fie
 	return rv
 }
 
+func (rv *readyValue) aPotentialValue() {}
+
 // potentialValues
 // -------------------------------------
+
+// evaluable is something that can be evaluated and the result is always the same
+// It may require computation every time evaluation is requested (in contrast with
+// potentialValue which guarantees that computation happens at most once).
+type evaluable interface {
+	// fromWhere keeps the information from where the evaluation was requested.
+	getValue(i *interpreter, fromWhere *TraceElement) (value, error)
+}
 
 // thunk holds code and environment in which the code is supposed to be evaluated
 type thunk struct {
@@ -99,10 +109,10 @@ func (th *callThunk) getValue(i *interpreter, trace *TraceElement) (value, error
 // TODO(sbarzowski) force use cached/ready everywhere? perhaps an interface tag?
 // TODO(sbarzowski) investigate efficiency of various representations
 type cachedThunk struct {
-	pv potentialValue
+	pv evaluable
 }
 
-func makeCachedThunk(pv potentialValue) *cachedThunk {
+func makeCachedThunk(pv evaluable) *cachedThunk {
 	return &cachedThunk{pv}
 }
 
@@ -117,6 +127,8 @@ func (t *cachedThunk) getValue(i *interpreter, trace *TraceElement) (value, erro
 	return v, nil
 }
 
+func (t *cachedThunk) aPotentialValue() {}
+
 // errorThunk can be used when potentialValue is expected, but we already
 // know that something went wrong
 type errorThunk struct {
@@ -130,6 +142,8 @@ func (th *errorThunk) getValue(i *interpreter, trace *TraceElement) (value, erro
 func makeErrorThunk(err error) *errorThunk {
 	return &errorThunk{err}
 }
+
+func (th *errorThunk) aPotentialValue() {}
 
 // unboundFields
 // -------------------------------------

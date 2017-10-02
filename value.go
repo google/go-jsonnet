@@ -40,14 +40,15 @@ type value interface {
 // are not calculated before they are used). It is also a useful abstraction
 // in other cases like error handling.
 //
-// It may or may not require computation.
-//
-// Getting the value a second time may or may not result in additional evaluation.
+// It may or may not require arbitrary computation when getValue is called the
+// first time, but any subsequent calls will immediately return.
 //
 // TODO(sbarzowski) perhaps call it just "Thunk"?
 type potentialValue interface {
 	// fromWhere keeps the information from where the evaluation was requested.
 	getValue(i *interpreter, fromWhere *TraceElement) (value, error)
+
+	aPotentialValue()
 }
 
 // A set of variables with associated potentialValues.
