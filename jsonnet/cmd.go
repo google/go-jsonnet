@@ -65,9 +65,21 @@ func main() {
 		arg := os.Args[i]
 		switch arg {
 		case "--tla-str":
-			panic("NOT SUPPORTED YET")
+			i++
+			name, content, err := getVar(os.Args[i])
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err.Error())
+				os.Exit(1)
+			}
+			vm.TLAVar(name, content)
 		case "--tla-code":
-			panic("NOT SUPPORTED YET")
+			i++
+			name, content, err := getVar(os.Args[i])
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err.Error())
+				os.Exit(1)
+			}
+			vm.TLACode(name, content)
 		case "--ext-code":
 			i++
 			name, content, err := getVar(os.Args[i])
