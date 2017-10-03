@@ -128,22 +128,14 @@ func desugarFields(location ast.LocationRange, fields *ast.ObjectFields, objLeve
 		field.Expr2 = assertion
 	}
 
-	// Remove methods
 	for i := range *fields {
 		field := &((*fields)[i])
-		if !field.MethodSugar {
+		if field.Method == nil {
 			continue
 		}
-		origBody := field.Expr2
-		function := &ast.Function{
-			// TODO(sbarzowski) better location
-			NodeBase:   ast.NewNodeBaseLoc(*origBody.Loc()),
-			Parameters: *field.Params,
-			Body:       origBody,
-		}
-		field.MethodSugar = false
-		field.Params = nil
-		field.Expr2 = function
+		field.Expr2 = field.Method
+		field.Method = nil
+		// Body of the function already desugared through expr2
 	}
 
 	// Remove object-level locals
@@ -483,19 +475,11 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 
 	case *ast.Local:
 		for i := range node.Binds {
-			if node.Binds[i].FunctionSugar {
-				origBody := node.Binds[i].Body
-				function := &ast.Function{
-					// TODO(sbarzowski) better location
-					NodeBase:   ast.NewNodeBaseLoc(*origBody.Loc()),
-					Parameters: *node.Binds[i].Params,
-					Body:       origBody,
-				}
+			if node.Binds[i].Fun != nil {
 				node.Binds[i] = ast.LocalBind{
-					Variable:      node.Binds[i].Variable,
-					Body:          function,
-					FunctionSugar: false,
-					Params:        nil,
+					Variable: node.Binds[i].Variable,
+					Body:     node.Binds[i].Fun,
+					Fun:      nil,
 				}
 			}
 			err = desugar(&node.Binds[i].Body, objLevel)

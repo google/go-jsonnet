@@ -36,10 +36,6 @@ func MakeStaticErrorMsg(msg string) StaticError {
 	return StaticError{Msg: msg}
 }
 
-func MakeStaticErrorPoint(msg string, fn string, l ast.Location) StaticError {
-	return StaticError{Msg: msg, Loc: ast.MakeLocationRange(fn, l, l)}
-}
-
 func MakeStaticError(msg string, lr ast.LocationRange) StaticError {
 	return StaticError{Msg: msg, Loc: lr}
 }

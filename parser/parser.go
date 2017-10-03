@@ -61,11 +61,11 @@ func makeUnexpectedError(t *token, while string) error {
 }
 
 func locFromTokens(begin, end *token) ast.LocationRange {
-	return ast.MakeLocationRange(begin.loc.FileName, begin.loc.Begin, end.loc.End)
+	return ast.LocationRangeBetween(&begin.loc, &end.loc)
 }
 
 func locFromTokenAST(begin *token, end ast.Node) ast.LocationRange {
-	return ast.MakeLocationRange(begin.loc.FileName, begin.loc.Begin, end.Loc().End)
+	return ast.LocationRangeBetween(&begin.loc, end.Loc())
 }
 
 // ---------------------------------------------------------------------------
@@ -219,36 +219,36 @@ func (p *parser) parseBind(binds *ast.LocalBinds) error {
 		}
 	}
 
+	var fun *ast.Function
 	if p.peek().kind == tokenParenL {
 		p.pop()
 		params, gotComma, err := p.parseParameters("function parameter")
 		if err != nil {
 			return err
 		}
-		_, err = p.popExpectOp("=")
-		if err != nil {
-			return err
-		}
-		body, err := p.parse(maxPrecedence)
-		if err != nil {
-			return err
-		}
-		*binds = append(*binds, ast.LocalBind{
-			Variable:      ast.Identifier(varID.data),
-			Body:          body,
-			FunctionSugar: true,
-			Params:        params,
+		fun = &ast.Function{
+			Parameters:    *params,
 			TrailingComma: gotComma,
+		}
+	}
+
+	_, err = p.popExpectOp("=")
+	if err != nil {
+		return err
+	}
+	body, err := p.parse(maxPrecedence)
+	if err != nil {
+		return err
+	}
+
+	if fun != nil {
+		fun.Body = body
+		*binds = append(*binds, ast.LocalBind{
+			Variable: ast.Identifier(varID.data),
+			Body:     body,
+			Fun:      fun,
 		})
 	} else {
-		_, err = p.popExpectOp("=")
-		if err != nil {
-			return err
-		}
-		body, err := p.parse(maxPrecedence)
-		if err != nil {
-			return err
-		}
 		*binds = append(*binds, ast.LocalBind{
 			Variable: ast.Identifier(varID.data),
 			Body:     body,
@@ -299,6 +299,7 @@ func (p *parser) parseObjectAssignmentOp() (plusSugar bool, hide ast.ObjectField
 // +gen set
 type LiteralField string
 
+// Parse object or object comprehension without leading brace
 func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 	var fields ast.ObjectFields
 	literalFields := make(literalFieldSet)
@@ -451,11 +452,21 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 				return nil, nil, err
 			}
 
+			var method *ast.Function
+			if isMethod {
+				method = &ast.Function{
+					Parameters:    *params,
+					TrailingComma: methComma,
+					Body:          body,
+				}
+			}
+
 			fields = append(fields, ast.ObjectField{
 				Kind:          kind,
 				Hide:          hide,
 				SuperSugar:    plusSugar,
 				MethodSugar:   isMethod,
+				Method:        method,
 				Expr1:         expr1,
 				Id:            id,
 				Params:        params,
@@ -474,6 +485,8 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 			if binds.Contains(id) {
 				return nil, nil, MakeStaticError(fmt.Sprintf("Duplicate local var: %v", id), varID.loc)
 			}
+
+			// TODO(sbarzowski) Can we reuse regular local bind parsing here?
 
 			isMethod := false
 			funcComma := false
@@ -496,6 +509,15 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 				return nil, nil, err
 			}
 
+			var method *ast.Function
+			if isMethod {
+				method = &ast.Function{
+					Parameters:    *params,
+					TrailingComma: funcComma,
+					Body:          body,
+				}
+			}
+
 			binds.Add(id)
 
 			fields = append(fields, ast.ObjectField{
@@ -503,6 +525,7 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 				Hide:          ast.ObjectFieldVisible,
 				SuperSugar:    false,
 				MethodSugar:   isMethod,
+				Method:        method,
 				Id:            &id,
 				Params:        params,
 				TrailingComma: funcComma,
@@ -1164,6 +1187,8 @@ func Parse(t tokens) (ast.Node, error) {
 	if p.peek().kind != tokenEndOfFile {
 		return nil, MakeStaticError(fmt.Sprintf("Did not expect: %v", p.peek()), p.peek().loc)
 	}
+
+	addContext(expr, &topLevelContext, anonymous)
 
 	return expr, nil
 }

@@ -1,1 +1,10 @@
 RUNTIME ERROR: Unexpected type string, expected boolean
+-------------------------------------------------
+	testdata/or5:1:2-14	$
+
+"xxx" || true
+
+-------------------------------------------------
+	During evaluation	
+
+

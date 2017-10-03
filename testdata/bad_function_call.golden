@@ -1,1 +1,10 @@
 RUNTIME ERROR: function expected 1 argument(s), but got 0
+-------------------------------------------------
+	testdata/bad_function_call:1:1-18	$
+
+(function(x) x)()
+
+-------------------------------------------------
+	During evaluation	
+
+

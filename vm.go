@@ -55,7 +55,7 @@ func MakeVM() *VM {
 		MaxStack: 500,
 		MaxTrace: 20,
 		ext:      make(vmExtMap),
-		ef:       ErrorFormatter{},
+		ef:       ErrorFormatter{pretty: true, colorful: true},
 	}
 }
 

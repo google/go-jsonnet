@@ -1,1 +1,34 @@
 RUNTIME ERROR: Field does not exist: x
+-------------------------------------------------
+	testdata/object_invariant7:1:16-21	object <anonymous>
+
+{ x: 5, assert super.x == 5 } 
+
+-------------------------------------------------
+	<std>:969:29-30	thunk from <thunk <ta> from <function <anonymous>>>
+
+        local ta = std.type(a);
+
+-------------------------------------------------
+	<builtin>	builtin function <type>
+
+-------------------------------------------------
+	<std>:971:33-35	thunk from <function <anonymous>>
+
+        if !std.primitiveEquals(ta, tb) then
+
+-------------------------------------------------
+	<builtin>	builtin function <primitiveEquals>
+
+-------------------------------------------------
+	<std>:971:12-40	function <anonymous>
+
+        if !std.primitiveEquals(ta, tb) then
+
+-------------------------------------------------
+		
+
+-------------------------------------------------
+	During manifestation	
+
+
