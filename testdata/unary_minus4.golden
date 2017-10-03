@@ -1,1 +1,10 @@
 RUNTIME ERROR: Unexpected type string, expected number
+-------------------------------------------------
+	testdata/unary_minus4:1:1-6	$
+
+-"xxx"
+
+-------------------------------------------------
+	During evaluation	
+
+
