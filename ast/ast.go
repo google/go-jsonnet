@@ -416,6 +416,16 @@ const (
 	VerbatimStringSingle
 )
 
+func (k LiteralStringKind) FullyEscaped() bool {
+	switch k {
+	case StringSingle, StringDouble:
+		return true
+	case StringBlock, VerbatimStringDouble, VerbatimStringSingle:
+		return false
+	}
+	panic(fmt.Sprintf("Unknown string kind: %v", k))
+}
+
 // LiteralString represents a JSON string
 type LiteralString struct {
 	NodeBase
