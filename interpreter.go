@@ -753,7 +753,7 @@ func evaluateStd(i *interpreter) (value, error) {
 	return i.EvalInCleanEnv(evalTrace, &beforeStdEnv, node)
 }
 
-func prepareExtVars(i *interpreter, ext vmExtMap) map[ast.Identifier]potentialValue {
+func prepareExtVars(i *interpreter, ext vmExtMap, kind string) map[ast.Identifier]potentialValue {
 	result := make(map[ast.Identifier]potentialValue)
 	for name, content := range ext {
 		if content.isCode {
@@ -765,7 +765,7 @@ func prepareExtVars(i *interpreter, ext vmExtMap) map[ast.Identifier]potentialVa
 				i:     i,
 				trace: varTrace,
 			}
-			result[ast.Identifier(name)] = codeToPV(e, "<extvar:"+name+">", content.value)
+			result[ast.Identifier(name)] = codeToPV(e, "<"+kind+":"+name+">", content.value)
 		} else {
 			result[ast.Identifier(name)] = &readyValue{makeValueString(content.value)}
 		}
@@ -794,7 +794,7 @@ func buildInterpreter(ext vmExtMap, maxStack int, importer Importer) (*interpret
 
 	i.baseStd = stdObj
 
-	i.extVars = prepareExtVars(&i, ext)
+	i.extVars = prepareExtVars(&i, ext, "extvar")
 
 	return &i, nil
 }
@@ -811,7 +811,7 @@ func makeInitialEnv(filename string, baseStd valueObject) environment {
 	)
 }
 
-func evaluate(node ast.Node, ext vmExtMap, maxStack int, importer Importer) (string, error) {
+func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, maxStack int, importer Importer) (string, error) {
 	i, err := buildInterpreter(ext, maxStack, importer)
 	if err != nil {
 		return "", err
@@ -824,6 +824,24 @@ func evaluate(node ast.Node, ext vmExtMap, maxStack int, importer Importer) (str
 	result, err := i.EvalInCleanEnv(evalTrace, &env, node)
 	if err != nil {
 		return "", err
+	}
+	if len(tla) != 0 {
+		// If it's not a function, ignore TLA
+		if f, ok := result.(*valueFunction); ok {
+			toplevelArgMap := prepareExtVars(i, tla, "top-level-arg")
+			args := callArguments{}
+			for argName, pv := range toplevelArgMap {
+				args.named = append(args.named, namedCallArgument{name: argName, pv: pv})
+			}
+			funcLoc := ast.MakeLocationRangeMessage("Top-level-function")
+			funcTrace := &TraceElement{
+				loc: &funcLoc,
+			}
+			result, err = f.call(args).getValue(i, funcTrace)
+			if err != nil {
+				return "", err
+			}
+		}
 	}
 	manifestationLoc := ast.MakeLocationRangeMessage("During manifestation")
 	manifestationTrace := &TraceElement{

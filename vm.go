@@ -34,14 +34,18 @@ type VM struct {
 	MaxStack int
 	MaxTrace int // The number of lines of stack trace to display (0 for all of them).
 	ext      vmExtMap
+	tla      vmExtMap
 	importer Importer
 	ef       ErrorFormatter
 }
 
-// External variable (or code) provided before execution
+// External variable or top level argument provided before execution
 type vmExt struct {
-	value  string // what is it?
-	isCode bool   // what is it?
+	// jsonnet code to evaluate or string to pass
+	value string
+	// isCode determines whether it should be evaluated as jsonnet code or
+	// treated as string.
+	isCode bool
 }
 
 type vmExtMap map[string]vmExt
@@ -51,6 +55,7 @@ func MakeVM() *VM {
 	return &VM{
 		MaxStack: 500,
 		ext:      make(vmExtMap),
+		tla:      make(vmExtMap),
 		ef:       ErrorFormatter{pretty: true, colorful: true, MaxStackTraceSize: 20},
 		importer: &FileImporter{},
 	}
@@ -61,9 +66,19 @@ func (vm *VM) ExtVar(key string, val string) {
 	vm.ext[key] = vmExt{value: val, isCode: false}
 }
 
-// ExtCode binds a Jsonnet external code var to the given value.
+// ExtCode binds a Jsonnet external code var to the given code.
 func (vm *VM) ExtCode(key string, val string) {
 	vm.ext[key] = vmExt{value: val, isCode: true}
+}
+
+// TLAVar binds a Jsonnet top level argument to the given value.
+func (vm *VM) TLAVar(key string, val string) {
+	vm.tla[key] = vmExt{value: val, isCode: false}
+}
+
+// TLACode binds a Jsonnet top level argument to the given code.
+func (vm *VM) TLACode(key string, val string) {
+	vm.tla[key] = vmExt{value: val, isCode: true}
 }
 
 // Importer sets Importer to use during evaluation (import callback)
@@ -81,7 +96,7 @@ func (vm *VM) evaluateSnippet(filename string, snippet string) (output string, e
 	if err != nil {
 		return "", err
 	}
-	output, err = evaluate(node, vm.ext, vm.MaxStack, vm.importer)
+	output, err = evaluate(node, vm.ext, vm.tla, vm.MaxStack, vm.importer)
 	if err != nil {
 		return "", err
 	}
