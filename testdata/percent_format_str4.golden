@@ -10,16 +10,6 @@ RUNTIME ERROR: Too many values to format: 2, expected 1
                     format_codes_arr(codes, arr, i + 1, j, v + code) tailstrict
 
 -------------------------------------------------
-	<std>:568:21-74	function <format_codes_arr>
-
-                    format_codes_arr(codes, arr, i + 1, j3, v + s_padded) tailstrict;
-
--------------------------------------------------
-	<std>:525:21-69	function <format_codes_arr>
-
-                    format_codes_arr(codes, arr, i + 1, j, v + code) tailstrict
-
--------------------------------------------------
 	<std>:612:13-52	function <anonymous>
 
             format_codes_arr(codes, vals, 0, 0, "")

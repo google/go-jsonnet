@@ -74,17 +74,26 @@ type callFrame struct {
 	// Tracing information about the place where it was called from.
 	trace *TraceElement
 
-	/** Reuse this stack frame for the purpose of tail call optimization. */
-	tailCall bool // TODO what is it?
+	// Whether this frame can be removed from the stack when it doesn't affect
+	// the evaluation result, but in case of an error, it won't appear on the
+	// stack trace.
+	// It's used for tail call optimization.
+	trimmable bool
 
 	env environment
 }
 
 func dumpCallFrame(c *callFrame) string {
-	return fmt.Sprintf("<callFrame isCall = %t location = %v tailCall = %t>",
+	var loc ast.LocationRange
+	if c.trace == nil || c.trace.loc == nil {
+		loc = ast.MakeLocationRangeMessage("?")
+	} else {
+		loc = *c.trace.loc
+	}
+	return fmt.Sprintf("<callFrame isCall = %t location = %v trimmable = %t>",
 		c.isCall,
-		*c.trace.loc,
-		c.tailCall,
+		loc,
+		c.trimmable,
 	)
 }
 
@@ -105,24 +114,27 @@ func dumpCallStack(c *callStack) string {
 }
 
 func (s *callStack) top() *callFrame {
-	return s.stack[len(s.stack)-1]
+	r := s.stack[len(s.stack)-1]
+	return r
 }
 
-func (s *callStack) pop() {
-	if s.top().isCall {
-		s.calls--
+// It might've been popped already by tail call optimization.
+// We check if it was trimmed by comparing the current stack size to the position
+// of the frame we want to pop.
+func (s *callStack) popIfExists(whichFrame int) {
+	if len(s.stack) == whichFrame {
+		if s.top().isCall {
+			s.calls--
+		}
+		s.stack = s.stack[:len(s.stack)-1]
 	}
-	s.stack = s.stack[:len(s.stack)-1]
 }
 
-// TODO(sbarzowski) I don't get this. When we have a tail call why can't we just
-// pop the last call from stack before pushing our new thing.
-// https://github.com/google/go-jsonnet/pull/24#pullrequestreview-58524217
-/** If there is a tailstrict annotated frame followed by some locals, pop them all. */
+/** If there is a trimmable frame followed by some locals, pop them all. */
 func (s *callStack) tailCallTrimStack() {
 	for i := len(s.stack) - 1; i >= 0; i-- {
 		if s.stack[i].isCall {
-			if !s.stack[i].tailCall { // TODO(sbarzowski) we may need to check some more stuff
+			if !s.stack[i].trimmable {
 				return
 			}
 			// Remove this stack frame and everything above it
@@ -133,18 +145,23 @@ func (s *callStack) tailCallTrimStack() {
 	}
 }
 
-func (i *interpreter) newCall(trace *TraceElement, env environment) error {
+type tailCallStatus int
+
+const (
+	nonTailCall tailCallStatus = iota
+	tailCall
+)
+
+func (i *interpreter) newCall(trace *TraceElement, env environment, trimmable bool) error {
 	s := &i.stack
-	s.tailCallTrimStack()
 	if s.calls >= s.limit {
-		// TODO(sbarzowski) add tracing information
 		return makeRuntimeError("Max stack frames exceeded.", i.getCurrentStackTrace(trace))
 	}
 	s.stack = append(s.stack, &callFrame{
-		isCall:   true,
-		trace:    trace,
-		env:      env,
-		tailCall: false,
+		isCall:    true,
+		trace:     trace,
+		env:       env,
+		trimmable: trimmable,
 	})
 	s.calls++
 	return nil
@@ -239,7 +256,7 @@ func (i *interpreter) getCurrentEnv(ast ast.Node) environment {
 	)
 }
 
-func (i *interpreter) evaluate(a ast.Node) (value, error) {
+func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 	e := &evaluator{
 		trace: &TraceElement{
 			loc:     a.Loc(),
@@ -290,7 +307,7 @@ func (i *interpreter) evaluate(a ast.Node) (value, error) {
 		return result, nil
 
 	case *ast.Conditional:
-		cond, err := e.evalInCurrentContext(ast.Cond)
+		cond, err := e.evalInCurrentContext(ast.Cond, nonTailCall)
 		if err != nil {
 			return nil, err
 		}
@@ -299,15 +316,15 @@ func (i *interpreter) evaluate(a ast.Node) (value, error) {
 			return nil, err
 		}
 		if condBool.value {
-			return e.evalInCurrentContext(ast.BranchTrue)
+			return e.evalInCurrentContext(ast.BranchTrue, tc)
 		}
-		return e.evalInCurrentContext(ast.BranchFalse)
+		return e.evalInCurrentContext(ast.BranchFalse, tc)
 
 	case *ast.DesugaredObject:
 		// Evaluate all the field names.  Check for null, dups, etc.
 		fields := make(simpleObjectFieldMap)
 		for _, field := range ast.Fields {
-			fieldNameValue, err := e.evalInCurrentContext(field.Name)
+			fieldNameValue, err := e.evalInCurrentContext(field.Name, nonTailCall)
 			if err != nil {
 				return nil, err
 			}
@@ -339,7 +356,7 @@ func (i *interpreter) evaluate(a ast.Node) (value, error) {
 		return makeValueSimpleObject(upValues, fields, asserts), nil
 
 	case *ast.Error:
-		msgVal, err := e.evalInCurrentContext(ast.Expr)
+		msgVal, err := e.evalInCurrentContext(ast.Expr, nonTailCall)
 		if err != nil {
 			// error when evaluating error message
 			return nil, err
@@ -351,11 +368,11 @@ func (i *interpreter) evaluate(a ast.Node) (value, error) {
 		return nil, e.Error(msg.getString())
 
 	case *ast.Index:
-		targetValue, err := e.evalInCurrentContext(ast.Target)
+		targetValue, err := e.evalInCurrentContext(ast.Target, nonTailCall)
 		if err != nil {
 			return nil, err
 		}
-		index, err := e.evalInCurrentContext(ast.Index)
+		index, err := e.evalInCurrentContext(ast.Index, nonTailCall)
 		if err != nil {
 			return nil, err
 		}
@@ -372,7 +389,8 @@ func (i *interpreter) evaluate(a ast.Node) (value, error) {
 				return nil, err
 			}
 			// TODO(https://github.com/google/jsonnet/issues/377): non-integer indexes should be an error
-			return e.evaluate(target.elements[int(indexInt.value)])
+			return e.evaluateTailCall(target.elements[int(indexInt.value)], tc)
+
 		case *valueString:
 			indexInt, err := e.getNumber(index)
 			if err != nil {
@@ -415,10 +433,12 @@ func (i *interpreter) evaluate(a ast.Node) (value, error) {
 			bindEnv.upValues[bind.Variable] = th
 		}
 		i.newLocal(vars)
+		sz := len(i.stack.stack)
 		// Add new stack frame, with new thunk for this variable
 		// execute body WRT stack frame.
-		v, err := e.evalInCurrentContext(ast.Body)
-		i.stack.pop()
+		v, err := e.evalInCurrentContext(ast.Body, tc)
+		i.stack.popIfExists(sz)
+
 		return v, err
 
 	case *ast.Self:
@@ -426,10 +446,10 @@ func (i *interpreter) evaluate(a ast.Node) (value, error) {
 		return sb.self, nil
 
 	case *ast.Var:
-		return e.evaluate(e.lookUpVar(ast.Id))
+		return e.evaluateTailCall(e.lookUpVar(ast.Id), tc)
 
 	case *ast.SuperIndex:
-		index, err := e.evalInCurrentContext(ast.Index)
+		index, err := e.evalInCurrentContext(ast.Index, nonTailCall)
 		if err != nil {
 			return nil, err
 		}
@@ -440,7 +460,7 @@ func (i *interpreter) evaluate(a ast.Node) (value, error) {
 		return objectIndex(e, i.stack.getSelfBinding().super(), indexStr.getString())
 
 	case *ast.InSuper:
-		index, err := e.evalInCurrentContext(ast.Index)
+		index, err := e.evalInCurrentContext(ast.Index, nonTailCall)
 		if err != nil {
 			return nil, err
 		}
@@ -458,7 +478,7 @@ func (i *interpreter) evaluate(a ast.Node) (value, error) {
 
 	case *ast.Apply:
 		// Eval target
-		target, err := e.evalInCurrentContext(ast.Target)
+		target, err := e.evalInCurrentContext(ast.Target, nonTailCall)
 		if err != nil {
 			return nil, err
 		}
@@ -469,10 +489,10 @@ func (i *interpreter) evaluate(a ast.Node) (value, error) {
 
 		// environment in which we can evaluate arguments
 		argEnv := i.getCurrentEnv(a)
-
 		arguments := callArguments{
 			positional: make([]potentialValue, len(ast.Arguments.Positional)),
 			named:      make([]namedCallArgument, len(ast.Arguments.Named)),
+			tailstrict: ast.TailStrict,
 		}
 		for i, arg := range ast.Arguments.Positional {
 			arguments.positional[i] = makeThunk(argEnv, arg)
@@ -481,8 +501,7 @@ func (i *interpreter) evaluate(a ast.Node) (value, error) {
 		for i, arg := range ast.Arguments.Named {
 			arguments.named[i] = namedCallArgument{name: arg.Name, pv: makeThunk(argEnv, arg.Arg)}
 		}
-
-		return e.evaluate(function.call(arguments))
+		return e.evaluateTailCall(function.call(arguments), tc)
 
 	default:
 		return nil, e.Error(fmt.Sprintf("Executing this AST type not implemented yet: %v", reflect.TypeOf(a)))
@@ -557,7 +576,7 @@ func (i *interpreter) manifestJSON(trace *TraceElement, v value) (interface{}, e
 	case *valueArray:
 		result := make([]interface{}, 0, len(v.elements))
 		for _, th := range v.elements {
-			elVal, err := th.getValue(i, trace) // TODO(sbarzowski) perhaps manifestJSON should just take potentialValue
+			elVal, err := e.evaluate(th)
 			if err != nil {
 				return nil, err
 			}
@@ -711,13 +730,17 @@ func (i *interpreter) manifestAndSerializeJSON(trace *TraceElement, v value, mul
 	return buf.String(), nil
 }
 
-func (i *interpreter) EvalInCleanEnv(fromWhere *TraceElement, env *environment, ast ast.Node) (value, error) {
-	err := i.newCall(fromWhere, *env)
+func (i *interpreter) EvalInCleanEnv(fromWhere *TraceElement, env *environment, ast ast.Node, trimmable bool) (value, error) {
+	err := i.newCall(fromWhere, *env, trimmable)
 	if err != nil {
 		return nil, err
 	}
-	val, err := i.evaluate(ast)
-	i.stack.pop()
+	stackSize := len(i.stack.stack)
+
+	val, err := i.evaluate(ast, tailCall)
+
+	i.stack.popIfExists(stackSize)
+
 	return val, err
 }
 
@@ -750,7 +773,7 @@ func evaluateStd(i *interpreter) (value, error) {
 	if err != nil {
 		return nil, err
 	}
-	return i.EvalInCleanEnv(evalTrace, &beforeStdEnv, node)
+	return i.EvalInCleanEnv(evalTrace, &beforeStdEnv, node, false)
 }
 
 func prepareExtVars(i *interpreter, ext vmExtMap, kind string) map[ast.Identifier]potentialValue {
@@ -821,7 +844,7 @@ func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, maxStack int, importer 
 		loc: &evalLoc,
 	}
 	env := makeInitialEnv(node.Loc().FileName, i.baseStd)
-	result, err := i.EvalInCleanEnv(evalTrace, &env, node)
+	result, err := i.EvalInCleanEnv(evalTrace, &env, node, false)
 	if err != nil {
 		return "", err
 	}

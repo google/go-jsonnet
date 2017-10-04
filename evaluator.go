@@ -42,6 +42,13 @@ func (e *evaluator) evaluate(ph potentialValue) (value, error) {
 	return ph.getValue(e.i, e.trace)
 }
 
+func (e *evaluator) evaluateTailCall(ph potentialValue, tc tailCallStatus) (value, error) {
+	if tc == tailCall {
+		e.i.stack.tailCallTrimStack()
+	}
+	return ph.getValue(e.i, e.trace)
+}
+
 func (e *evaluator) Error(s string) error {
 	err := makeRuntimeError(s, e.i.getCurrentStackTrace(e.trace))
 	return err
@@ -161,12 +168,12 @@ func (e *evaluator) evaluateObject(pv potentialValue) (valueObject, error) {
 	return e.getObject(v)
 }
 
-func (e *evaluator) evalInCurrentContext(a ast.Node) (value, error) {
-	return e.i.evaluate(a)
+func (e *evaluator) evalInCurrentContext(a ast.Node, tc tailCallStatus) (value, error) {
+	return e.i.evaluate(a, tc)
 }
 
-func (e *evaluator) evalInCleanEnv(env *environment, ast ast.Node) (value, error) {
-	return e.i.EvalInCleanEnv(e.trace, env, ast)
+func (e *evaluator) evalInCleanEnv(env *environment, ast ast.Node, trimmable bool) (value, error) {
+	return e.i.EvalInCleanEnv(e.trace, env, ast, trimmable)
 }
 
 func (e *evaluator) lookUpVar(ident ast.Identifier) potentialValue {

@@ -70,7 +70,7 @@ func makeThunk(env environment, body ast.Node) *cachedThunk {
 }
 
 func (t *thunk) getValue(i *interpreter, trace *TraceElement) (value, error) {
-	return i.EvalInCleanEnv(trace, &t.env, t.body)
+	return i.EvalInCleanEnv(trace, &t.env, t.body, false)
 }
 
 // callThunk represents a concrete, but not yet evaluated call to a function
@@ -205,6 +205,16 @@ type closure struct {
 	params   Parameters
 }
 
+func forceThunks(e *evaluator, args bindingFrame) error {
+	for _, arg := range args {
+		_, err := e.evaluate(arg)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (closure *closure) EvalCall(arguments callArguments, e *evaluator) (value, error) {
 	argThunks := make(bindingFrame)
 	parameters := closure.Parameters()
@@ -234,11 +244,18 @@ func (closure *closure) EvalCall(arguments callArguments, e *evaluator) (value, 
 		}
 	}
 
+	if arguments.tailstrict {
+		err := forceThunks(e, argThunks)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	calledEnvironment = makeEnvironment(
 		addBindings(closure.env.upValues, argThunks),
 		closure.env.sb,
 	)
-	return e.evalInCleanEnv(&calledEnvironment, closure.function.Body)
+	return e.evalInCleanEnv(&calledEnvironment, closure.function.Body, arguments.tailstrict)
 }
 
 func (closure *closure) Parameters() Parameters {

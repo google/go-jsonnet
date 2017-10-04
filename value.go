@@ -328,6 +328,7 @@ type potentialValueInEnv interface {
 type callArguments struct {
 	positional []potentialValue
 	named      []namedCallArgument
+	tailstrict bool
 }
 
 type namedCallArgument struct {
