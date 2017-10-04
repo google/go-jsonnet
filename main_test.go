@@ -92,7 +92,7 @@ func TestMain(t *testing.T) {
 		}
 		mainTests = append(mainTests, mainTest{name: name, input: input, golden: golden})
 	}
-	errFormatter := ErrorFormatter{pretty: true}
+	errFormatter := ErrorFormatter{pretty: true, MaxStackTraceSize: 9}
 	for _, test := range mainTests {
 		t.Run(test.name, func(t *testing.T) {
 			vm := MakeVM()
@@ -207,7 +207,7 @@ var minimalErrorTests = []errorFormattingTest{
 }
 
 func TestMinimalError(t *testing.T) {
-	formatter := ErrorFormatter{}
+	formatter := ErrorFormatter{MaxStackTraceSize: 20}
 	genericTestErrorMessage(t, minimalErrorTests, func(r RuntimeError) string {
 		return formatter.format(r)
 	})

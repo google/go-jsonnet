@@ -53,9 +53,8 @@ type vmExtMap map[string]vmExt
 func MakeVM() *VM {
 	return &VM{
 		MaxStack: 500,
-		MaxTrace: 20,
 		ext:      make(vmExtMap),
-		ef:       ErrorFormatter{pretty: true, colorful: true},
+		ef:       ErrorFormatter{pretty: true, colorful: true, MaxStackTraceSize: 20},
 	}
 }
 

@@ -85,23 +85,36 @@ func (ef *ErrorFormatter) showCode(buf *bytes.Buffer, loc ast.LocationRange) {
 	fmt.Fprintf(buf, "\n")
 }
 
+func (ef *ErrorFormatter) frame(frame *TraceFrame, buf *bytes.Buffer) {
+	// TODO(sbarzowski) tabs are probably a bad idea
+	fmt.Fprintf(buf, "\t%v\t%v\n", frame.Loc.String(), frame.Name)
+	if ef.pretty {
+		ef.showCode(buf, frame.Loc)
+	}
+}
+
 func (ef *ErrorFormatter) buildStackTrace(frames []TraceFrame) string {
 	// https://github.com/google/jsonnet/blob/master/core/libjsonnet.cpp#L594
+	maxAbove := ef.MaxStackTraceSize / 2
+	maxBelow := ef.MaxStackTraceSize - maxAbove
 	var buf bytes.Buffer
-	for i := len(frames) - 1; i >= 0; i-- {
-		f := frames[i]
+	sz := len(frames)
+	for i := 0; i < sz; i++ {
 		// TODO(sbarzowski) make pretty format more readable (it's already useful)
 		if ef.pretty {
 			fmt.Fprintf(&buf, "-------------------------------------------------\n")
 		}
-		// TODO(sbarzowski) tabs are probably a bad idea
-		fmt.Fprintf(&buf, "\t%v\t%v\n", &f.Loc, f.Name)
-		if ef.pretty {
-			ef.showCode(&buf, f.Loc)
-		}
+		if i >= maxAbove && i < sz-maxBelow {
+			if ef.pretty {
+				fmt.Fprintf(&buf, "\t... (skipped %v frames)\n", sz-maxAbove-maxBelow)
+			} else {
+				buf.WriteString("\t...\n")
+			}
 
-		// TODO(sbarzowski) handle max stack trace size
-		// TODO(sbarzowski) I think the order of frames is reversed
+			i = sz - maxBelow - 1
+		} else {
+			ef.frame(&frames[sz-i-1], &buf)
+		}
 	}
 	return buf.String()
 }
