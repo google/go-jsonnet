@@ -18,11 +18,11 @@ RUNTIME ERROR: Not enough values to format, got 1
 	<builtin>	builtin function <toString>
 
 -------------------------------------------------
-	... (skipped 21 frames)
+	... (skipped 14 frames)
 -------------------------------------------------
-	<std>:525:21-69	function <format_codes_arr>
+	<std>:568:21-74	function <format_codes_arr>
 
-                    format_codes_arr(codes, arr, i + 1, j, v + code) tailstrict
+                    format_codes_arr(codes, arr, i + 1, j3, v + s_padded) tailstrict;
 
 -------------------------------------------------
 	<std>:612:13-52	function <anonymous>
