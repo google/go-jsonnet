@@ -25,7 +25,6 @@ import (
 )
 
 type ErrorFormatter struct {
-	// TODO(sbarzowski) use this
 	// MaxStackTraceSize  is the maximum length of stack trace before cropping
 	MaxStackTraceSize int
 

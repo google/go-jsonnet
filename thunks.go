@@ -100,8 +100,6 @@ func (th *callThunk) getValue(i *interpreter, trace *TraceElement) (value, error
 // the first evaluation.
 // Note: All potentialValues are required to provide the same value every time,
 // so it's only there for efficiency.
-// TODO(sbarzowski) better name?
-// TODO(sbarzowski) force use cached/ready everywhere? perhaps an interface tag?
 // TODO(sbarzowski) investigate efficiency of various representations
 type cachedThunk struct {
 	pv evaluable

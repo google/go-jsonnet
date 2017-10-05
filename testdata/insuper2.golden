@@ -1,5 +1,3 @@
-testdata/insuper2:1:11-13 Expected token OPERATOR but got (in, "in")
-
-{ } { "x" in super }
-
-
+{
+   "x": false
+}

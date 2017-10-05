@@ -468,8 +468,6 @@ type ObjectField struct {
 	Expr2, Expr3  Node        // In scope of the object (can see self).
 }
 
-// TODO(jbeda): Add the remaining constructor helpers here
-
 func ObjectFieldLocalNoMethod(id *Identifier, body Node) ObjectField {
 	return ObjectField{ObjectLocal, ObjectFieldVisible, false, false, nil, nil, id, nil, false, body, nil}
 }

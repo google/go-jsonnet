@@ -1,4 +1,4 @@
-RUNTIME ERROR: Field does not exist: x
+RUNTIME ERROR: Attempt to use super when there is no super class.
 -------------------------------------------------
 	testdata/object_invariant7:1:16-21	object <anonymous>
 
