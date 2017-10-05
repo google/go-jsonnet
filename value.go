@@ -166,13 +166,14 @@ func int64ToValue(i int64) *valueNumber {
 	return makeValueNumber(float64(i))
 }
 
-// TODO(dcunnin): Maybe intern values null, true, and false?
 type valueNull struct {
 	valueBase
 }
 
+var nullValue valueNull
+
 func makeValueNull() *valueNull {
-	return &valueNull{}
+	return &nullValue
 }
 
 func (*valueNull) typename() string {
@@ -274,9 +275,8 @@ func args(xs ...potentialValue) callArguments {
 // Object is a value that allows indexing (taking a value of a field)
 // and combining through mixin inheritence (operator +).
 //
-// Accessing a field multiple times results in multiple evaluations.
-// TODO(sbarzowski) This can be very easily avoided and currently innocent looking
-// 					code may be in fact exponential.
+// Note that every time a field is indexed it evaluates it again, there is
+// no caching of field values. See: https://github.com/google/go-jsonnet/issues/113
 type valueObject interface {
 	value
 	inheritanceSize() int
@@ -471,7 +471,6 @@ type unboundField interface {
 // This represenation allows us to implement "+" in O(1),
 // but requires going through the tree and trying subsequent leafs for field access.
 //
-// TODO(sbarzowski) consider other representations (this representation was chosen to stay close to C++ version)
 type valueExtendedObject struct {
 	valueObjectBase
 	left, right          valueObject
@@ -515,7 +514,6 @@ func findField(curr value, minSuperDepth int, f string) (*valueSimpleObjectField
 				return &field, curr.upValues, 0
 			}
 		}
-		// TODO(sbarzowski) add handling of "Attempt to use super when there is no super class."
 		return nil, nil, 0
 	default:
 		panic(fmt.Sprintf("Unknown object type %#v", curr))
@@ -526,6 +524,9 @@ func objectIndex(e *evaluator, sb selfBinding, fieldName string) (value, error) 
 	err := checkAssertions(e, sb.self)
 	if err != nil {
 		return nil, err
+	}
+	if sb.superDepth >= sb.self.inheritanceSize() {
+		return nil, e.Error("Attempt to use super when there is no super class.")
 	}
 	objp := tryObjectIndex(sb, fieldName, withHidden)
 	if objp == nil {

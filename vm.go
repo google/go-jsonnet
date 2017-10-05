@@ -28,8 +28,6 @@ import (
 // Note: There are no garbage collection params because we're using the native
 // Go garbage collector.
 
-// TODO(sbarzowski) prepare API that maps 1-1 to libjsonnet api
-
 // VM is the core interpreter and is the touchpoint used to parse and execute
 // Jsonnet.
 type VM struct {
@@ -40,7 +38,6 @@ type VM struct {
 	ef       ErrorFormatter
 }
 
-// TODO(sbarzowski) actually support these
 // External variable (or code) provided before execution
 type vmExt struct {
 	value  string // what is it?
