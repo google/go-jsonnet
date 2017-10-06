@@ -622,6 +622,10 @@ func (b *UnaryBuiltin) Parameters() Parameters {
 	return Parameters{required: b.parameters}
 }
 
+func (b *UnaryBuiltin) Name() ast.Identifier {
+	return b.name
+}
+
 type BinaryBuiltin struct {
 	name       ast.Identifier
 	function   binaryBuiltin
@@ -662,6 +666,10 @@ func (b *BinaryBuiltin) Parameters() Parameters {
 	return Parameters{required: b.parameters}
 }
 
+func (b *BinaryBuiltin) Name() ast.Identifier {
+	return b.name
+}
+
 type TernaryBuiltin struct {
 	name       ast.Identifier
 	function   ternaryBuiltin
@@ -675,6 +683,10 @@ func (b *TernaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, erro
 
 func (b *TernaryBuiltin) Parameters() Parameters {
 	return Parameters{required: b.parameters}
+}
+
+func (b *TernaryBuiltin) Name() ast.Identifier {
+	return b.name
 }
 
 var desugaredBop = map[ast.BinaryOp]ast.Identifier{
@@ -718,37 +730,49 @@ var uopBuiltins = []*UnaryBuiltin{
 	ast.UopMinus:      &UnaryBuiltin{name: "operator- (unary)", function: builtinUnaryMinus, parameters: ast.Identifiers{"x"}},
 }
 
-// TODO(sbarzowski) eliminate duplication in function names (e.g. build map from array or constants)
-var funcBuiltins = map[string]evalCallable{
-	"extVar":          &UnaryBuiltin{name: "extVar", function: builtinExtVar, parameters: ast.Identifiers{"x"}},
-	"length":          &UnaryBuiltin{name: "length", function: builtinLength, parameters: ast.Identifiers{"x"}},
-	"toString":        &UnaryBuiltin{name: "toString", function: builtinToString, parameters: ast.Identifiers{"a"}},
-	"makeArray":       &BinaryBuiltin{name: "makeArray", function: builtinMakeArray, parameters: ast.Identifiers{"sz", "func"}},
-	"flatMap":         &BinaryBuiltin{name: "flatMap", function: builtinFlatMap, parameters: ast.Identifiers{"func", "arr"}},
-	"filter":          &BinaryBuiltin{name: "filter", function: builtinFilter, parameters: ast.Identifiers{"func", "arr"}},
-	"primitiveEquals": &BinaryBuiltin{name: "primitiveEquals", function: primitiveEquals, parameters: ast.Identifiers{"sz", "func"}},
-	"objectFieldsEx":  &BinaryBuiltin{name: "objectFields", function: builtinObjectFieldsEx, parameters: ast.Identifiers{"obj", "hidden"}},
-	"objectHasEx":     &TernaryBuiltin{name: "objectHasEx", function: builtinObjectHasEx, parameters: ast.Identifiers{"obj", "fname", "hidden"}},
-	"type":            &UnaryBuiltin{name: "type", function: builtinType, parameters: ast.Identifiers{"x"}},
-	"char":            &UnaryBuiltin{name: "char", function: builtinChar, parameters: ast.Identifiers{"x"}},
-	"codepoint":       &UnaryBuiltin{name: "codepoint", function: builtinCodepoint, parameters: ast.Identifiers{"x"}},
-	"ceil":            &UnaryBuiltin{name: "ceil", function: builtinCeil, parameters: ast.Identifiers{"x"}},
-	"floor":           &UnaryBuiltin{name: "floor", function: builtinFloor, parameters: ast.Identifiers{"x"}},
-	"sqrt":            &UnaryBuiltin{name: "sqrt", function: builtinSqrt, parameters: ast.Identifiers{"x"}},
-	"sin":             &UnaryBuiltin{name: "sin", function: builtinSin, parameters: ast.Identifiers{"x"}},
-	"cos":             &UnaryBuiltin{name: "cos", function: builtinCos, parameters: ast.Identifiers{"x"}},
-	"tan":             &UnaryBuiltin{name: "tan", function: builtinTan, parameters: ast.Identifiers{"x"}},
-	"asin":            &UnaryBuiltin{name: "asin", function: builtinAsin, parameters: ast.Identifiers{"x"}},
-	"acos":            &UnaryBuiltin{name: "acos", function: builtinAcos, parameters: ast.Identifiers{"x"}},
-	"atan":            &UnaryBuiltin{name: "atan", function: builtinAtan, parameters: ast.Identifiers{"x"}},
-	"log":             &UnaryBuiltin{name: "log", function: builtinLog, parameters: ast.Identifiers{"x"}},
-	"exp":             &UnaryBuiltin{name: "exp", function: builtinExp, parameters: ast.Identifiers{"x"}},
-	"mantissa":        &UnaryBuiltin{name: "mantissa", function: builtinMantissa, parameters: ast.Identifiers{"x"}},
-	"exponent":        &UnaryBuiltin{name: "exponent", function: builtinExponent, parameters: ast.Identifiers{"x"}},
-	"pow":             &BinaryBuiltin{name: "pow", function: builtinPow, parameters: ast.Identifiers{"base", "exp"}},
-	"modulo":          &BinaryBuiltin{name: "modulo", function: builtinModulo, parameters: ast.Identifiers{"x", "y"}},
-	"md5":             &UnaryBuiltin{name: "md5", function: builtinMd5, parameters: ast.Identifiers{"x"}},
+type builtin interface {
+	evalCallable
+	Name() ast.Identifier
+}
+
+func buildBuiltinMap(builtins []builtin) map[string]evalCallable {
+	result := make(map[string]evalCallable)
+	for _, b := range builtins {
+		result[string(b.Name())] = b
+	}
+	return result
+}
+
+var funcBuiltins = buildBuiltinMap([]builtin{
+	&UnaryBuiltin{name: "extVar", function: builtinExtVar, parameters: ast.Identifiers{"x"}},
+	&UnaryBuiltin{name: "length", function: builtinLength, parameters: ast.Identifiers{"x"}},
+	&UnaryBuiltin{name: "toString", function: builtinToString, parameters: ast.Identifiers{"a"}},
+	&BinaryBuiltin{name: "makeArray", function: builtinMakeArray, parameters: ast.Identifiers{"sz", "func"}},
+	&BinaryBuiltin{name: "flatMap", function: builtinFlatMap, parameters: ast.Identifiers{"func", "arr"}},
+	&BinaryBuiltin{name: "filter", function: builtinFilter, parameters: ast.Identifiers{"func", "arr"}},
+	&BinaryBuiltin{name: "primitiveEquals", function: primitiveEquals, parameters: ast.Identifiers{"sz", "func"}},
+	&BinaryBuiltin{name: "objectFieldsEx", function: builtinObjectFieldsEx, parameters: ast.Identifiers{"obj", "hidden"}},
+	&TernaryBuiltin{name: "objectHasEx", function: builtinObjectHasEx, parameters: ast.Identifiers{"obj", "fname", "hidden"}},
+	&UnaryBuiltin{name: "type", function: builtinType, parameters: ast.Identifiers{"x"}},
+	&UnaryBuiltin{name: "char", function: builtinChar, parameters: ast.Identifiers{"x"}},
+	&UnaryBuiltin{name: "codepoint", function: builtinCodepoint, parameters: ast.Identifiers{"x"}},
+	&UnaryBuiltin{name: "ceil", function: builtinCeil, parameters: ast.Identifiers{"x"}},
+	&UnaryBuiltin{name: "floor", function: builtinFloor, parameters: ast.Identifiers{"x"}},
+	&UnaryBuiltin{name: "sqrt", function: builtinSqrt, parameters: ast.Identifiers{"x"}},
+	&UnaryBuiltin{name: "sin", function: builtinSin, parameters: ast.Identifiers{"x"}},
+	&UnaryBuiltin{name: "cos", function: builtinCos, parameters: ast.Identifiers{"x"}},
+	&UnaryBuiltin{name: "tan", function: builtinTan, parameters: ast.Identifiers{"x"}},
+	&UnaryBuiltin{name: "asin", function: builtinAsin, parameters: ast.Identifiers{"x"}},
+	&UnaryBuiltin{name: "acos", function: builtinAcos, parameters: ast.Identifiers{"x"}},
+	&UnaryBuiltin{name: "atan", function: builtinAtan, parameters: ast.Identifiers{"x"}},
+	&UnaryBuiltin{name: "log", function: builtinLog, parameters: ast.Identifiers{"x"}},
+	&UnaryBuiltin{name: "exp", function: builtinExp, parameters: ast.Identifiers{"x"}},
+	&UnaryBuiltin{name: "mantissa", function: builtinMantissa, parameters: ast.Identifiers{"x"}},
+	&UnaryBuiltin{name: "exponent", function: builtinExponent, parameters: ast.Identifiers{"x"}},
+	&BinaryBuiltin{name: "pow", function: builtinPow, parameters: ast.Identifiers{"base", "exp"}},
+	&BinaryBuiltin{name: "modulo", function: builtinModulo, parameters: ast.Identifiers{"x", "y"}},
+	&UnaryBuiltin{name: "md5", function: builtinMd5, parameters: ast.Identifiers{"x"}},
 
 	// internal
-	"$objectFlatMerge": &UnaryBuiltin{name: "$objectFlatMerge", function: builtinUglyObjectFlatMerge, parameters: ast.Identifiers{"x"}},
-}
+	&UnaryBuiltin{name: "$objectFlatMerge", function: builtinUglyObjectFlatMerge, parameters: ast.Identifiers{"x"}},
+})
