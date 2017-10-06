@@ -1,4 +1,4 @@
-RUNTIME ERROR: function expected 1 positional argument(s), but got 2
+RUNTIME ERROR: Function expected 1 positional argument(s), but got 2
 -------------------------------------------------
 	testdata/bad_function_call2:1:1-22	$
 

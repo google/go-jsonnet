@@ -1,4 +1,4 @@
-RUNTIME ERROR: Unknown argument y
+RUNTIME ERROR: Function has no parameter y
 -------------------------------------------------
 	testdata/optional_args8:2:1-10	$
 

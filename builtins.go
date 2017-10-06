@@ -614,8 +614,8 @@ func getBuiltinEvaluator(e *evaluator, name ast.Identifier) *evaluator {
 }
 
 func (b *UnaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
-	args = normalizePositionalCallArgs(args, b.Parameters())
-	return b.function(getBuiltinEvaluator(e, b.name), args.positional[0])
+	flatArgs := flattenArgs(args, b.Parameters())
+	return b.function(getBuiltinEvaluator(e, b.name), flatArgs[0])
 }
 
 func (b *UnaryBuiltin) Parameters() Parameters {
@@ -628,32 +628,34 @@ type BinaryBuiltin struct {
 	parameters ast.Identifiers
 }
 
-func normalizePositionalCallArgs(args callArguments, params Parameters) callArguments {
+// flattenArgs transforms all arguments to a simple array of positional arguments.
+// It's needed, because it's possible to use named arguments for required parameters.
+// For example both `toString("x")` and `toString(a="x")` are allowed.
+// It assumes that we have already checked for duplicates.
+func flattenArgs(args callArguments, params Parameters) []potentialValue {
 	if len(args.named) == 0 {
-		return args
+		return args.positional
 	}
 	if len(params.optional) != 0 {
 		panic("Can't normalize arguments if optional parameters are present")
 	}
 	needed := make(map[ast.Identifier]int)
+
 	for i := len(args.positional); i < len(params.required); i++ {
-		needed[params.required[i-len(args.positional)]] = i
+		needed[params.required[i]] = i
 	}
-	newArgs := callArguments{
-		positional: make([]potentialValue, len(params.required)),
-	}
-	for i, arg := range args.positional {
-		newArgs.positional[i] = arg
-	}
+
+	flatArgs := make([]potentialValue, len(params.required))
+	copy(flatArgs, args.positional)
 	for _, arg := range args.named {
-		newArgs.positional[needed[arg.name]] = arg.pv
+		flatArgs[needed[arg.name]] = arg.pv
 	}
-	return newArgs
+	return flatArgs
 }
 
 func (b *BinaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
-	args = normalizePositionalCallArgs(args, b.Parameters())
-	return b.function(getBuiltinEvaluator(e, b.name), args.positional[0], args.positional[1])
+	flatArgs := flattenArgs(args, b.Parameters())
+	return b.function(getBuiltinEvaluator(e, b.name), flatArgs[0], flatArgs[1])
 }
 
 func (b *BinaryBuiltin) Parameters() Parameters {
@@ -667,8 +669,8 @@ type TernaryBuiltin struct {
 }
 
 func (b *TernaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
-	args = normalizePositionalCallArgs(args, b.Parameters())
-	return b.function(getBuiltinEvaluator(e, b.name), args.positional[0], args.positional[1], args.positional[2])
+	flatArgs := flattenArgs(args, b.Parameters())
+	return b.function(getBuiltinEvaluator(e, b.name), flatArgs[0], flatArgs[1], flatArgs[2])
 }
 
 func (b *TernaryBuiltin) Parameters() Parameters {

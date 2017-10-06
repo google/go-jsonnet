@@ -211,8 +211,6 @@ func desugarObjectComp(comp *ast.ObjectComp, objLevel int) (ast.Node, error) {
 		comp.Fields = append(comp.Fields, ast.ObjectFieldLocalNoMethod(&dollar, &ast.Self{}))
 	}
 
-	// TODO(sbarzowski) find a consistent convention to prevent desugaring the same thing twice
-	// here we deeply desugar fields and it will happen again
 	err := desugarFields(*comp.Loc(), &comp.Fields, objLevel+1)
 	if err != nil {
 		return nil, err
@@ -361,6 +359,7 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 					Expr: buildStdCall(desugaredBop[ast.BopManifestEqual], node.Left, node.Right),
 				}
 			} else if node.Op == ast.BopIn {
+				// reversed order of arguments
 				*astPtr = buildStdCall(funcname, node.Right, node.Left)
 			} else {
 				*astPtr = buildStdCall(funcname, node.Left, node.Right)
@@ -523,7 +522,6 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		}
 
 	case *ast.DesugaredObject:
-		// Desugar children
 		for i := range node.Fields {
 			field := &((node.Fields)[i])
 			if field.Name != nil {
