@@ -195,3 +195,23 @@ func TestMinimalError(t *testing.T) {
 
 // TODO(sbarzowski) test pretty errors once they are stable-ish
 // probably "golden" pattern is the right one for that
+
+func TestCustomImporter(t *testing.T) {
+	vm := MakeVM()
+	vm.Importer(&MemoryImporter{
+		map[string]string{
+			"a.jsonnet": "2 + 2",
+			"b.jsonnet": "3 + 3",
+		},
+	})
+	input := `[import "a.jsonnet", importstr "b.jsonnet"]`
+	expected := `[ 4, "3 + 3" ]`
+	actual, err := vm.EvaluateSnippet("custom_import.jsonnet", input)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	actual = removeExcessiveWhitespace(actual)
+	if actual != expected {
+		t.Errorf("Expected %v, but got %v", expected, actual)
+	}
+}

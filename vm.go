@@ -52,6 +52,7 @@ func MakeVM() *VM {
 		MaxStack: 500,
 		ext:      make(vmExtMap),
 		ef:       ErrorFormatter{pretty: true, colorful: true, MaxStackTraceSize: 20},
+		importer: &FileImporter{},
 	}
 }
 
@@ -65,6 +66,11 @@ func (vm *VM) ExtCode(key string, val string) {
 	vm.ext[key] = vmExt{value: val, isCode: true}
 }
 
+// Importer sets Importer to use during evaluation (import callback)
+func (vm *VM) Importer(i Importer) {
+	vm.importer = i
+}
+
 func (vm *VM) evaluateSnippet(filename string, snippet string) (output string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -75,7 +81,7 @@ func (vm *VM) evaluateSnippet(filename string, snippet string) (output string, e
 	if err != nil {
 		return "", err
 	}
-	output, err = evaluate(node, vm.ext, vm.MaxStack, &FileImporter{})
+	output, err = evaluate(node, vm.ext, vm.MaxStack, vm.importer)
 	if err != nil {
 		return "", err
 	}

@@ -147,9 +147,9 @@ type MemoryImporter struct {
 	data map[string]string
 }
 
-func (importer *MemoryImporter) Import(dir, importedPath string) (*ImportedData, error) {
+func (importer *MemoryImporter) Import(dir, importedPath string) *ImportedData {
 	if content, ok := importer.data[importedPath]; ok {
-		return &ImportedData{content: content, foundHere: importedPath}, nil
+		return &ImportedData{content: content, foundHere: importedPath}
 	}
-	return nil, fmt.Errorf("Import not available %v", importedPath)
+	return &ImportedData{err: fmt.Errorf("Import not available %v", importedPath)}
 }
