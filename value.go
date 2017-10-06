@@ -28,9 +28,20 @@ import (
 type value interface {
 	aValue()
 
-	// TODO(sbarzowski) consider representing each type as golang object
-	typename() string
+	getType() *valueType
 }
+
+type valueType struct {
+	name string
+}
+
+var stringType = &valueType{"string"}
+var numberType = &valueType{"number"}
+var functionType = &valueType{"function"}
+var objectType = &valueType{"object"}
+var booleanType = &valueType{"boolean"}
+var nullType = &valueType{"null"}
+var arrayType = &valueType{"array"}
 
 // potentialValue is something that may be evaluated to a concrete value.
 // The result of the evaluation may *NOT* depend on the current state
@@ -124,8 +135,8 @@ func makeValueString(v string) *valueString {
 	return &valueString{value: []rune(v)}
 }
 
-func (*valueString) typename() string {
-	return "string"
+func (*valueString) getType() *valueType {
+	return stringType
 }
 
 type valueBoolean struct {
@@ -133,8 +144,8 @@ type valueBoolean struct {
 	value bool
 }
 
-func (*valueBoolean) typename() string {
-	return "boolean"
+func (*valueBoolean) getType() *valueType {
+	return booleanType
 }
 
 func makeValueBoolean(v bool) *valueBoolean {
@@ -150,8 +161,8 @@ type valueNumber struct {
 	value float64
 }
 
-func (*valueNumber) typename() string {
-	return "number"
+func (*valueNumber) getType() *valueType {
+	return numberType
 }
 
 func makeValueNumber(v float64) *valueNumber {
@@ -176,8 +187,8 @@ func makeValueNull() *valueNull {
 	return &nullValue
 }
 
-func (*valueNull) typename() string {
-	return "null"
+func (*valueNull) getType() *valueType {
+	return nullType
 }
 
 // ast.Array
@@ -220,8 +231,8 @@ func concatArrays(a, b *valueArray) *valueArray {
 	return &valueArray{elements: result}
 }
 
-func (*valueArray) typename() string {
-	return "array"
+func (*valueArray) getType() *valueType {
+	return arrayType
 }
 
 // ast.Function
@@ -256,8 +267,8 @@ func checkArguments(e *evaluator, args callArguments, params ast.Identifiers) er
 	return nil
 }
 
-func (f *valueFunction) typename() string {
-	return "function"
+func (f *valueFunction) getType() *valueType {
+	return functionType
 }
 
 type callArguments struct {
@@ -344,8 +355,8 @@ type valueObjectBase struct {
 	assertionError error
 }
 
-func (*valueObjectBase) typename() string {
-	return "object"
+func (*valueObjectBase) getType() *valueType {
+	return objectType
 }
 
 func (obj *valueObjectBase) assertionsChecked() bool {

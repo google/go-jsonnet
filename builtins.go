@@ -359,7 +359,7 @@ func primitiveEquals(e *evaluator, xp potentialValue, yp potentialValue) (value,
 	if err != nil {
 		return nil, err
 	}
-	if x.typename() != y.typename() { // TODO(sbarzowski) ugh, string comparison
+	if x.getType() != y.getType() {
 		return makeValueBoolean(false), nil
 	}
 	switch left := x.(type) {
@@ -387,7 +387,7 @@ func primitiveEquals(e *evaluator, xp potentialValue, yp potentialValue) (value,
 		return nil, e.Error("Cannot test equality of functions")
 	default:
 		return nil, e.Error(
-			"primitiveEquals operates on primitive types, got " + x.typename(),
+			"primitiveEquals operates on primitive types, got " + x.getType().name,
 		)
 	}
 }
@@ -397,7 +397,7 @@ func builtinType(e *evaluator, xp potentialValue) (value, error) {
 	if err != nil {
 		return nil, err
 	}
-	return makeValueString(x.typename()), nil
+	return makeValueString(x.getType().name), nil
 }
 
 func builtinMd5(e *evaluator, xp potentialValue) (value, error) {
