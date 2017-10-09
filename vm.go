@@ -31,12 +31,13 @@ import (
 // VM is the core interpreter and is the touchpoint used to parse and execute
 // Jsonnet.
 type VM struct {
-	MaxStack int
-	MaxTrace int // The number of lines of stack trace to display (0 for all of them).
-	ext      vmExtMap
-	tla      vmExtMap
-	importer Importer
-	ef       ErrorFormatter
+	MaxStack    int
+	MaxTrace    int // The number of lines of stack trace to display (0 for all of them).
+	ext         vmExtMap
+	tla         vmExtMap
+	nativeFuncs map[string]*nativeFunction
+	importer    Importer
+	ef          ErrorFormatter
 }
 
 // External variable or top level argument provided before execution
@@ -53,11 +54,12 @@ type vmExtMap map[string]vmExt
 // MakeVM creates a new VM with default parameters.
 func MakeVM() *VM {
 	return &VM{
-		MaxStack: 500,
-		ext:      make(vmExtMap),
-		tla:      make(vmExtMap),
-		ef:       ErrorFormatter{pretty: true, colorful: true, MaxStackTraceSize: 20},
-		importer: &FileImporter{},
+		MaxStack:    500,
+		ext:         make(vmExtMap),
+		tla:         make(vmExtMap),
+		nativeFuncs: make(map[string]*nativeFunction),
+		ef:          ErrorFormatter{pretty: true, colorful: true, MaxStackTraceSize: 20},
+		importer:    &FileImporter{},
 	}
 }
 
@@ -96,11 +98,16 @@ func (vm *VM) evaluateSnippet(filename string, snippet string) (output string, e
 	if err != nil {
 		return "", err
 	}
-	output, err = evaluate(node, vm.ext, vm.tla, vm.MaxStack, vm.importer)
+	output, err = evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importer)
 	if err != nil {
 		return "", err
 	}
 	return output, nil
+}
+
+// NativeFunction registers a native function
+func (vm *VM) NativeFunction(f *nativeFunction) {
+	vm.nativeFuncs[f.name] = f
 }
 
 // EvaluateSnippet evaluates a string containing Jsonnet code, return a JSON

@@ -589,11 +589,25 @@ func builtinExtVar(e *evaluator, namep potentialValue) (value, error) {
 	if err != nil {
 		return nil, err
 	}
-	index := ast.Identifier(name.getString())
+	index := name.getString()
 	if pv, ok := e.i.extVars[index]; ok {
 		return e.evaluate(pv)
 	}
 	return nil, e.Error("Undefined external variable: " + string(index))
+}
+
+func builtinNative(e *evaluator, namep potentialValue) (value, error) {
+	name, err := e.evaluateString(namep)
+	if err != nil {
+		return nil, err
+	}
+	index := name.getString()
+	if f, exists := e.i.nativeFuncs[index]; exists {
+		return &valueFunction{ec: f}, nil
+
+	}
+	return nil, e.Error(fmt.Sprintf("Unrecognized native function name: %v", index))
+
 }
 
 type unaryBuiltin func(*evaluator, potentialValue) (value, error)
@@ -772,6 +786,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&BinaryBuiltin{name: "pow", function: builtinPow, parameters: ast.Identifiers{"base", "exp"}},
 	&BinaryBuiltin{name: "modulo", function: builtinModulo, parameters: ast.Identifiers{"x", "y"}},
 	&UnaryBuiltin{name: "md5", function: builtinMd5, parameters: ast.Identifiers{"x"}},
+	&UnaryBuiltin{name: "native", function: builtinNative, parameters: ast.Identifiers{"x"}},
 
 	// internal
 	&UnaryBuiltin{name: "$objectFlatMerge", function: builtinUglyObjectFlatMerge, parameters: ast.Identifiers{"x"}},

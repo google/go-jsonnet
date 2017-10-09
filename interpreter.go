@@ -214,7 +214,10 @@ type interpreter struct {
 	stack callStack
 
 	// External variables
-	extVars map[ast.Identifier]potentialValue
+	extVars map[string]potentialValue
+
+	// Native functions
+	nativeFuncs map[string]*nativeFunction
 
 	// A part of std object common to all files
 	baseStd valueObject
@@ -730,6 +733,46 @@ func (i *interpreter) manifestAndSerializeJSON(trace *TraceElement, v value, mul
 	return buf.String(), nil
 }
 
+func jsonToValue(e *evaluator, v interface{}) (value, error) {
+	switch v := v.(type) {
+	case nil:
+		return &nullValue, nil
+
+	case []interface{}:
+		elems := make([]potentialValue, len(v))
+		for i, elem := range v {
+			val, err := jsonToValue(e, elem)
+			if err != nil {
+				return nil, err
+			}
+			elems[i] = &readyValue{val}
+		}
+		return makeValueArray(elems), nil
+
+	case bool:
+		return makeValueBoolean(v), nil
+	case float64:
+		return makeValueNumber(v), nil
+
+	case map[string]interface{}:
+		fieldMap := map[string]value{}
+		for name, f := range v {
+			val, err := jsonToValue(e, f)
+			if err != nil {
+				return nil, err
+			}
+			fieldMap[name] = val
+		}
+		return buildObject(ast.ObjectFieldInherit, fieldMap), nil
+
+	case string:
+		return makeValueString(v), nil
+
+	default:
+		return nil, e.Error(fmt.Sprintf("Not a json type: %#+v", v))
+	}
+}
+
 func (i *interpreter) EvalInCleanEnv(fromWhere *TraceElement, env *environment, ast ast.Node, trimmable bool) (value, error) {
 	err := i.newCall(fromWhere, *env, trimmable)
 	if err != nil {
@@ -776,8 +819,8 @@ func evaluateStd(i *interpreter) (value, error) {
 	return i.EvalInCleanEnv(evalTrace, &beforeStdEnv, node, false)
 }
 
-func prepareExtVars(i *interpreter, ext vmExtMap, kind string) map[ast.Identifier]potentialValue {
-	result := make(map[ast.Identifier]potentialValue)
+func prepareExtVars(i *interpreter, ext vmExtMap, kind string) map[string]potentialValue {
+	result := make(map[string]potentialValue)
 	for name, content := range ext {
 		if content.isCode {
 			varLoc := ast.MakeLocationRangeMessage("During evaluation")
@@ -788,9 +831,9 @@ func prepareExtVars(i *interpreter, ext vmExtMap, kind string) map[ast.Identifie
 				i:     i,
 				trace: varTrace,
 			}
-			result[ast.Identifier(name)] = codeToPV(e, "<"+kind+":"+name+">", content.value)
+			result[name] = codeToPV(e, "<"+kind+":"+name+">", content.value)
 		} else {
-			result[ast.Identifier(name)] = &readyValue{makeValueString(content.value)}
+			result[name] = &readyValue{makeValueString(content.value)}
 		}
 	}
 	return result
@@ -804,10 +847,11 @@ func buildObject(hide ast.ObjectFieldHide, fields map[string]value) valueObject 
 	return makeValueSimpleObject(bindingFrame{}, fieldMap, nil)
 }
 
-func buildInterpreter(ext vmExtMap, maxStack int, importer Importer) (*interpreter, error) {
+func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*nativeFunction, maxStack int, importer Importer) (*interpreter, error) {
 	i := interpreter{
 		stack:       makeCallStack(maxStack),
 		importCache: MakeImportCache(importer),
+		nativeFuncs: nativeFuncs,
 	}
 
 	stdObj, err := buildStdObject(&i)
@@ -834,8 +878,9 @@ func makeInitialEnv(filename string, baseStd valueObject) environment {
 	)
 }
 
-func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, maxStack int, importer Importer) (string, error) {
-	i, err := buildInterpreter(ext, maxStack, importer)
+// TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
+func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*nativeFunction, maxStack int, importer Importer) (string, error) {
+	i, err := buildInterpreter(ext, nativeFuncs, maxStack, importer)
 	if err != nil {
 		return "", err
 	}
@@ -854,7 +899,7 @@ func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, maxStack int, importer 
 			toplevelArgMap := prepareExtVars(i, tla, "top-level-arg")
 			args := callArguments{}
 			for argName, pv := range toplevelArgMap {
-				args.named = append(args.named, namedCallArgument{name: argName, pv: pv})
+				args.named = append(args.named, namedCallArgument{name: ast.Identifier(argName), pv: pv})
 			}
 			funcLoc := ast.MakeLocationRangeMessage("Top-level-function")
 			funcTrace := &TraceElement{
