@@ -383,7 +383,7 @@ func (obj *valueObjectBase) getAssertionsCheckResult() error {
 type valueSimpleObject struct {
 	valueObjectBase
 	upValues bindingFrame
-	fields   valueSimpleObjectFieldMap
+	fields   simpleObjectFieldMap
 	asserts  []unboundField
 }
 
@@ -431,7 +431,7 @@ func (*valueSimpleObject) inheritanceSize() int {
 	return 1
 }
 
-func makeValueSimpleObject(b bindingFrame, fields valueSimpleObjectFieldMap, asserts []unboundField) *valueSimpleObject {
+func makeValueSimpleObject(b bindingFrame, fields simpleObjectFieldMap, asserts []unboundField) *valueSimpleObject {
 	return &valueSimpleObject{
 		upValues: b,
 		fields:   fields,
@@ -439,11 +439,9 @@ func makeValueSimpleObject(b bindingFrame, fields valueSimpleObjectFieldMap, ass
 	}
 }
 
-type valueSimpleObjectFieldMap map[string]valueSimpleObjectField
+type simpleObjectFieldMap map[string]simpleObjectField
 
-// TODO(sbarzowski) this is not a value and the name suggests it is...
-// TODO(sbarzowski) better name? This is basically just a (hide, field) pair.
-type valueSimpleObjectField struct {
+type simpleObjectField struct {
 	hide  ast.ObjectFieldHide
 	field unboundField
 }
@@ -496,7 +494,7 @@ func makeValueExtendedObject(left, right valueObject) *valueExtendedObject {
 // findField returns a field in object curr, with superDepth at least minSuperDepth
 // It also returns an associated bindingFrame and actual superDepth that the field
 // was found at.
-func findField(curr value, minSuperDepth int, f string) (*valueSimpleObjectField, bindingFrame, int) {
+func findField(curr value, minSuperDepth int, f string) (*simpleObjectField, bindingFrame, int) {
 	switch curr := curr.(type) {
 	case *valueExtendedObject:
 		if curr.right.inheritanceSize() > minSuperDepth {
