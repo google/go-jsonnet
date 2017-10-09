@@ -305,7 +305,7 @@ func (i *interpreter) evaluate(a ast.Node) (value, error) {
 
 	case *ast.DesugaredObject:
 		// Evaluate all the field names.  Check for null, dups, etc.
-		fields := make(valueSimpleObjectFieldMap)
+		fields := make(simpleObjectFieldMap)
 		for _, field := range ast.Fields {
 			fieldNameValue, err := e.evalInCurrentContext(field.Name)
 			if err != nil {
@@ -329,7 +329,7 @@ func (i *interpreter) evaluate(a ast.Node) (value, error) {
 			if field.PlusSuper {
 				f = &PlusSuperUnboundField{f}
 			}
-			fields[fieldName] = valueSimpleObjectField{field.Hide, f}
+			fields[fieldName] = simpleObjectField{field.Hide, f}
 		}
 		var asserts []unboundField
 		for _, assert := range ast.Asserts {
@@ -734,7 +734,7 @@ func buildStdObject(i *interpreter) (valueObject, error) {
 	}
 
 	for name, value := range builtinFields {
-		obj.fields[name] = valueSimpleObjectField{ast.ObjectFieldHidden, value}
+		obj.fields[name] = simpleObjectField{ast.ObjectFieldHidden, value}
 	}
 	return obj, nil
 }
@@ -774,9 +774,9 @@ func prepareExtVars(i *interpreter, ext vmExtMap) map[ast.Identifier]potentialVa
 }
 
 func buildObject(hide ast.ObjectFieldHide, fields map[string]value) valueObject {
-	fieldMap := valueSimpleObjectFieldMap{}
+	fieldMap := simpleObjectFieldMap{}
 	for name, v := range fields {
-		fieldMap[name] = valueSimpleObjectField{hide, &readyValue{v}}
+		fieldMap[name] = simpleObjectField{hide, &readyValue{v}}
 	}
 	return makeValueSimpleObject(bindingFrame{}, fieldMap, nil)
 }

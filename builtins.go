@@ -556,7 +556,7 @@ func builtinUglyObjectFlatMerge(e *evaluator, objarrp potentialValue) (value, er
 	if len(objarr.elements) == 0 {
 		return &valueSimpleObject{}, nil
 	}
-	newFields := make(valueSimpleObjectFieldMap)
+	newFields := make(simpleObjectFieldMap)
 	for _, elem := range objarr.elements {
 		obj, err := e.evaluateObject(elem)
 		if err != nil {
@@ -568,7 +568,7 @@ func builtinUglyObjectFlatMerge(e *evaluator, objarrp potentialValue) (value, er
 			if _, alreadyExists := newFields[fieldName]; alreadyExists {
 				return nil, e.Error(duplicateFieldNameErrMsg(fieldName))
 			}
-			newFields[fieldName] = valueSimpleObjectField{
+			newFields[fieldName] = simpleObjectField{
 				hide: fieldVal.hide,
 				field: &bindingsUnboundField{
 					inner:    fieldVal.field,
