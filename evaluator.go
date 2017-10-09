@@ -76,6 +76,50 @@ func (e *evaluator) evaluateNumber(pv potentialValue) (*valueNumber, error) {
 	return e.getNumber(v)
 }
 
+func (e *evaluator) getInt(val value) (int, error) {
+	num, err := e.getNumber(val)
+	if err != nil {
+		return 0, err
+	}
+	// We conservatively convert ot int32, so that it can be machine-sized int
+	// on any machine. And it's used only for indexing anyway.
+	intNum := int(int32(num.value))
+	if float64(intNum) != num.value {
+		return 0, e.Error(fmt.Sprintf("Expected an integer, but got %v", num.value))
+	}
+	return intNum, nil
+}
+
+func (e *evaluator) evaluateInt(pv potentialValue) (int, error) {
+	v, err := e.evaluate(pv)
+	if err != nil {
+		return 0, err
+	}
+	return e.getInt(v)
+}
+
+func (e *evaluator) getInt64(val value) (int64, error) {
+	num, err := e.getNumber(val)
+	if err != nil {
+		return 0, err
+	}
+	// We conservatively convert ot int32, so that it can be machine-sized int
+	// on any machine. And it's used only for indexing anyway.
+	intNum := int64(num.value)
+	if float64(intNum) != num.value {
+		return 0, e.Error(fmt.Sprintf("Expected an integer, but got %v", num.value))
+	}
+	return intNum, nil
+}
+
+func (e *evaluator) evaluateInt64(pv potentialValue) (int64, error) {
+	v, err := e.evaluate(pv)
+	if err != nil {
+		return 0, err
+	}
+	return e.getInt64(v)
+}
+
 func (e *evaluator) getString(val value) (*valueString, error) {
 	switch v := val.(type) {
 	case *valueString:

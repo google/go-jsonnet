@@ -1,8 +1,6 @@
-RUNTIME ERROR: Expected an integer, but got 1e+30
+RUNTIME ERROR: Expected an integer, but got 2.5
 -------------------------------------------------
-	testdata/bitwise_and3:1:1-10	$
-
-1e30 & 42
+	<builtin>	builtin function <makeArray>
 
 -------------------------------------------------
 	During evaluation	

@@ -248,7 +248,7 @@ func builtinToString(e *evaluator, xp potentialValue) (value, error) {
 }
 
 func builtinMakeArray(e *evaluator, szp potentialValue, funcp potentialValue) (value, error) {
-	sz, err := e.evaluateNumber(szp)
+	sz, err := e.evaluateInt(szp)
 	if err != nil {
 		return nil, err
 	}
@@ -256,9 +256,8 @@ func builtinMakeArray(e *evaluator, szp potentialValue, funcp potentialValue) (v
 	if err != nil {
 		return nil, err
 	}
-	num := int(sz.value)
 	var elems []potentialValue
-	for i := 0; i < num; i++ {
+	for i := 0; i < sz; i++ {
 		elem := fun.call(args(&readyValue{intToValue(i)}))
 		elems = append(elems, elem)
 	}
@@ -274,7 +273,7 @@ func builtinFlatMap(e *evaluator, funcp potentialValue, arrp potentialValue) (va
 	if err != nil {
 		return nil, err
 	}
-	num := int(arr.length())
+	num := arr.length()
 	// Start with capacity of the original array.
 	// This may spare us a few reallocations.
 	// TODO(sbarzowski) verify that it actually helps
@@ -300,7 +299,7 @@ func builtinFilter(e *evaluator, funcp potentialValue, arrp potentialValue) (val
 	if err != nil {
 		return nil, err
 	}
-	num := int(arr.length())
+	num := arr.length()
 	// Start with capacity of the original array.
 	// This may spare us a few reallocations.
 	// TODO(sbarzowski) verify that it actually helps
@@ -479,17 +478,15 @@ var builtinExponent = liftNumeric(func(f float64) float64 {
 
 func liftBitwise(f func(int64, int64) int64) func(*evaluator, potentialValue, potentialValue) (value, error) {
 	return func(e *evaluator, xp, yp potentialValue) (value, error) {
-		x, err := e.evaluateNumber(xp)
+		x, err := e.evaluateInt64(xp)
 		if err != nil {
 			return nil, err
 		}
-		y, err := e.evaluateNumber(yp)
+		y, err := e.evaluateInt64(yp)
 		if err != nil {
 			return nil, err
 		}
-		xInt := int64(x.value)
-		yInt := int64(y.value)
-		return makeDoubleCheck(e, float64(f(xInt, yInt)))
+		return makeDoubleCheck(e, float64(f(x, y)))
 	}
 }
 
