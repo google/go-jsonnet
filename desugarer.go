@@ -298,6 +298,12 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 				return
 			}
 		}
+		for i := range node.Arguments.Named {
+			err = desugar(&node.Arguments.Named[i].Arg, objLevel)
+			if err != nil {
+				return
+			}
+		}
 
 	case *ast.ApplyBrace:
 		err = desugar(&node.Left, objLevel)

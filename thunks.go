@@ -287,6 +287,37 @@ func makeClosure(env environment, function *ast.Function) *closure {
 	}
 }
 
+type nativeFunction struct {
+	f      func([]interface{}) (interface{}, error)
+	params ast.Identifiers
+	name   string
+}
+
+func (native *nativeFunction) EvalCall(arguments callArguments, e *evaluator) (value, error) {
+	flatArgs := flattenArgs(arguments, native.Parameters())
+	nativeArgs := make([]interface{}, 0, len(flatArgs))
+	for _, arg := range flatArgs {
+		v, err := e.evaluate(arg)
+		if err != nil {
+			return nil, err
+		}
+		json, err := e.i.manifestJSON(e.trace, v)
+		if err != nil {
+			return nil, err
+		}
+		nativeArgs = append(nativeArgs, json)
+	}
+	resultJSON, err := native.f(nativeArgs)
+	if err != nil {
+		return nil, err
+	}
+	return jsonToValue(e, resultJSON)
+}
+
+func (native *nativeFunction) Parameters() Parameters {
+	return Parameters{required: native.params}
+}
+
 // partialPotentialValue
 // -------------------------------------
 

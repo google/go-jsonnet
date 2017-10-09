@@ -18,6 +18,7 @@ package jsonnet
 
 import (
 	"bytes"
+	"encoding/json"
 	"flag"
 	"io/ioutil"
 	"path/filepath"
@@ -25,6 +26,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
+	"github.com/google/go-jsonnet/ast"
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
@@ -100,6 +102,17 @@ func TestMain(t *testing.T) {
 				vm.ExtCode(name, value)
 			}
 
+			vm.NativeFunction(&nativeFunction{
+				name:   "jsonToString",
+				params: ast.Identifiers{"x"},
+				f: func(x []interface{}) (interface{}, error) {
+					bytes, err := json.Marshal(x[0])
+					if err != nil {
+						return nil, err
+					}
+					return string(bytes), nil
+				},
+			})
 			read := func(file string) []byte {
 				bytz, err := ioutil.ReadFile(file)
 				if err != nil {
