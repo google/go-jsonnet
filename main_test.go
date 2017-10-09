@@ -30,31 +30,42 @@ import (
 
 var update = flag.Bool("update", false, "update .golden files")
 
-// Just some simple sanity tests for now.  Eventually we'll share end-to-end tests with the C++
-// implementation but unsure if that should be done here or via some external framework.
 // TODO(sbarzowski) figure out how to measure coverage on the external tests
+
+type testMetadata struct {
+	extVars map[string]string
+	extCode map[string]string
+}
+
+var standardExtVars = map[string]string{
+	"stringVar": "2 + 2",
+}
+
+var standardExtCode = map[string]string{
+	"codeVar":               "3 + 3",
+	"errorVar":              "error 'xxx'",
+	"staticErrorVar":        ")",
+	"UndeclaredX":           "x",
+	"selfRecursiveVar":      `[42, std.extVar("selfRecursiveVar")[0] + 1]`,
+	"mutuallyRecursiveVar1": `[42, std.extVar("mutuallyRecursiveVar2")[0] + 1]`,
+	"mutuallyRecursiveVar2": `[42, std.extVar("mutuallyRecursiveVar1")[0] + 1]`,
+}
+
+var metadataForTests = map[string]testMetadata{
+	"testdata/extvar_code":               testMetadata{extVars: standardExtVars, extCode: standardExtCode},
+	"testdata/extvar_error":              testMetadata{extVars: standardExtVars, extCode: standardExtCode},
+	"testdata/extvar_hermetic":           testMetadata{extVars: standardExtVars, extCode: standardExtCode},
+	"testdata/extvar_mutually_recursive": testMetadata{extVars: standardExtVars, extCode: standardExtCode},
+	"testdata/extvar_self_recursive":     testMetadata{extVars: standardExtVars, extCode: standardExtCode},
+	"testdata/extvar_static_error":       testMetadata{extVars: standardExtVars, extCode: standardExtCode},
+	"testdata/extvar_string":             testMetadata{extVars: standardExtVars, extCode: standardExtCode},
+}
 
 type mainTest struct {
 	name   string
 	input  string
 	golden string
-}
-
-func setExtVars(vm *VM) {
-	// TODO(sbarzowski) extract, so that it's possible to define extvars per-test
-	// Check that it doesn't get evaluated.
-	vm.ExtVar("stringVar", "2 + 2")
-	// Check that it gets evaluated.
-	vm.ExtCode("codeVar", "3 + 3")
-	// Check that if it's not used, runtime and static errors don't occur.
-	vm.ExtCode("errorVar", "error 'xxx'")
-	vm.ExtCode("staticErrorVar", ")")
-	// Check that environment doesn't leak
-	vm.ExtCode("UndeclaredX", "x")
-	// Tricky evaluation
-	vm.ExtCode("selfRecursiveVar", `[42, std.extVar("selfRecursiveVar")[0] + 1]`)
-	vm.ExtCode("mutuallyRecursiveVar1", `[42, std.extVar("mutuallyRecursiveVar2")[0] + 1]`)
-	vm.ExtCode("mutuallyRecursiveVar2", `[42, std.extVar("mutuallyRecursiveVar1")[0] + 1]`)
+	meta   *testMetadata
 }
 
 func TestMain(t *testing.T) {
@@ -71,13 +82,24 @@ func TestMain(t *testing.T) {
 			name = input[:len(input)-len(".jsonnet")]
 			golden = name + ".golden"
 		}
-		mainTests = append(mainTests, mainTest{name: name, input: input, golden: golden})
+		var meta testMetadata
+		if val, exists := metadataForTests[name]; exists {
+			meta = val
+		}
+		mainTests = append(mainTests, mainTest{name: name, input: input, golden: golden, meta: &meta})
 	}
 	errFormatter := ErrorFormatter{pretty: true, MaxStackTraceSize: 9}
 	for _, test := range mainTests {
 		t.Run(test.name, func(t *testing.T) {
 			vm := MakeVM()
-			setExtVars(vm)
+
+			for name, value := range test.meta.extVars {
+				vm.ExtVar(name, value)
+			}
+			for name, value := range test.meta.extCode {
+				vm.ExtCode(name, value)
+			}
+
 			read := func(file string) []byte {
 				bytz, err := ioutil.ReadFile(file)
 				if err != nil {
