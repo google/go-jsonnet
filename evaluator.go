@@ -49,13 +49,13 @@ func (e *evaluator) Error(s string) error {
 
 func (e *evaluator) typeErrorSpecific(bad value, good value) error {
 	return e.Error(
-		fmt.Sprintf("Unexpected type %v, expected %v", bad.typename(), good.typename()),
+		fmt.Sprintf("Unexpected type %v, expected %v", bad.getType().name, good.getType().name),
 	)
 }
 
 func (e *evaluator) typeErrorGeneral(bad value) error {
 	return e.Error(
-		fmt.Sprintf("Unexpected type %v", bad.typename()),
+		fmt.Sprintf("Unexpected type %v", bad.getType().name),
 	)
 }
 

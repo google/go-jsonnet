@@ -189,8 +189,6 @@ func makeCallStack(limit int) callStack {
 	}
 }
 
-// TODO(dcunnin): Add multi output.
-
 // Keeps current execution context and evaluates things
 type interpreter struct {
 	// Current stack. It is used for:
@@ -321,7 +319,7 @@ func (i *interpreter) evaluate(a ast.Node) (value, error) {
 				// Omitted field.
 				continue
 			default:
-				return nil, e.Error(fmt.Sprintf("Field name must be string, got %v", fieldNameValue.typename()))
+				return nil, e.Error(fmt.Sprintf("Field name must be string, got %v", fieldNameValue.getType().name))
 			}
 
 			if _, ok := fields[fieldName]; ok {
