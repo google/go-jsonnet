@@ -362,16 +362,26 @@ func (i *interpreter) evaluate(a ast.Node) (value, error) {
 			return nil, err
 		}
 		switch target := targetValue.(type) {
-		// TODO(sbarzowski) better error handling if bad index type
 		case valueObject:
-			indexString := index.(*valueString).getString()
-			return target.index(e, indexString)
+			indexString, err := e.getString(index)
+			if err != nil {
+				return nil, err
+			}
+			return target.index(e, indexString.getString())
 		case *valueArray:
-			indexInt := int(index.(*valueNumber).value)
-			return e.evaluate(target.elements[indexInt])
+			indexInt, err := e.getNumber(index)
+			if err != nil {
+				return nil, err
+			}
+			// TODO(https://github.com/google/jsonnet/issues/377): non-integer indexes should be an error
+			return e.evaluate(target.elements[int(indexInt.value)])
 		case *valueString:
-			indexInt := int(index.(*valueNumber).value)
-			return target.index(e, indexInt)
+			indexInt, err := e.getNumber(index)
+			if err != nil {
+				return nil, err
+			}
+			// TODO(https://github.com/google/jsonnet/issues/377): non-integer indexes should be an error
+			return target.index(e, int(indexInt.value))
 		}
 
 		return nil, e.Error(fmt.Sprintf("Value non indexable: %v", reflect.TypeOf(targetValue)))
