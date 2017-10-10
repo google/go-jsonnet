@@ -235,24 +235,64 @@ type valueFunction struct {
 // TODO(sbarzowski) better name?
 type evalCallable interface {
 	EvalCall(args callArguments, e *evaluator) (value, error)
-	Parameters() ast.Identifiers
+	Parameters() Parameters
+}
+
+type partialPotentialValue interface {
+	inEnv(env *environment) potentialValue
 }
 
 func (f *valueFunction) call(args callArguments) potentialValue {
 	return makeCallThunk(f.ec, args)
 }
 
-func (f *valueFunction) parameters() ast.Identifiers {
+func (f *valueFunction) parameters() Parameters {
 	return f.ec.Parameters()
 }
 
-func checkArguments(e *evaluator, args callArguments, params ast.Identifiers) error {
-	// TODO(sbarzowski) this will get much more complicated with named params
+func checkArguments(e *evaluator, args callArguments, params Parameters) error {
+	received := make(map[ast.Identifier]bool)
+	accepted := make(map[ast.Identifier]bool)
+
 	numPassed := len(args.positional)
-	numExpected := len(params)
-	if numPassed != numExpected {
-		return e.Error(fmt.Sprintf("function expected %v argument(s), but got %v", numExpected, numPassed))
+	numExpected := len(params.required) + len(params.optional)
+
+	if numPassed > numExpected {
+		return e.Error(fmt.Sprintf("Function expected %v positional argument(s), but got %v", numExpected, numPassed))
 	}
+
+	for _, param := range params.required {
+		accepted[param] = true
+	}
+
+	for _, param := range params.optional {
+		accepted[param.name] = true
+	}
+
+	for i := range args.positional {
+		if i < len(params.required) {
+			received[params.required[i]] = true
+		} else {
+			received[params.optional[i-len(params.required)].name] = true
+		}
+	}
+
+	for _, arg := range args.named {
+		if _, present := received[arg.name]; present {
+			return e.Error(fmt.Sprintf("Argument %v already provided", arg.name))
+		}
+		if _, present := accepted[arg.name]; !present {
+			return e.Error(fmt.Sprintf("Function has no parameter %v", arg.name))
+		}
+		received[arg.name] = true
+	}
+
+	for _, param := range params.required {
+		if _, present := received[param]; !present {
+			return e.Error(fmt.Sprintf("Missing argument: %v", param))
+		}
+	}
+
 	return nil
 }
 
@@ -260,9 +300,28 @@ func (f *valueFunction) typename() string {
 	return "function"
 }
 
+type Parameters struct {
+	required ast.Identifiers
+	optional []namedParameter
+}
+
+type namedParameter struct {
+	name       ast.Identifier
+	defaultArg potentialValueInEnv
+}
+
+type potentialValueInEnv interface {
+	inEnv(env *environment) potentialValue
+}
+
 type callArguments struct {
 	positional []potentialValue
-	// TODO named arguments
+	named      []namedCallArgument
+}
+
+type namedCallArgument struct {
+	name ast.Identifier
+	pv   potentialValue
 }
 
 func args(xs ...potentialValue) callArguments {

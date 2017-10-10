@@ -46,6 +46,9 @@ func analyzeVisit(a ast.Node, inObject bool, vars ast.IdentifierSet) error {
 		for _, arg := range a.Arguments.Positional {
 			visitNext(arg, inObject, vars, s)
 		}
+		for _, arg := range a.Arguments.Named {
+			visitNext(arg.Arg, inObject, vars, s)
+		}
 	case *ast.Array:
 		for _, elem := range a.Elements {
 			visitNext(elem, inObject, vars, s)
@@ -60,18 +63,24 @@ func analyzeVisit(a ast.Node, inObject bool, vars ast.IdentifierSet) error {
 	case *ast.Error:
 		visitNext(a.Expr, inObject, vars, s)
 	case *ast.Function:
-		// TODO(sbarzowski) check duplicate function parameters
-		// or maybe somewhere else as it doesn't require any context
 		newVars := vars.Clone()
-		for _, param := range a.Parameters.Positional {
+		for _, param := range a.Parameters.Required {
 			newVars.Add(param)
+		}
+		for _, param := range a.Parameters.Optional {
+			newVars.Add(param.Name)
+		}
+		for _, param := range a.Parameters.Optional {
+			visitNext(param.DefaultArg, inObject, newVars, s)
 		}
 		visitNext(a.Body, inObject, newVars, s)
 		// Parameters are free inside the body, but not visible here or outside
-		for _, param := range a.Parameters.Positional {
+		for _, param := range a.Parameters.Required {
 			s.freeVars.Remove(param)
 		}
-		// TODO(sbarzowski) when we have default values of params check them
+		for _, param := range a.Parameters.Optional {
+			s.freeVars.Remove(param.Name)
+		}
 	case *ast.Import:
 		//nothing to do here
 	case *ast.ImportStr:

@@ -96,6 +96,18 @@ func (th *callThunk) getValue(i *interpreter, trace *TraceElement) (value, error
 	return th.function.EvalCall(th.args, evaluator)
 }
 
+// deferredThunk allows deferring creation of evaluable until it's actually needed.
+// It's useful for self-recursive structures.
+type deferredThunk func() evaluable
+
+func (th deferredThunk) getValue(i *interpreter, trace *TraceElement) (value, error) {
+	return th().getValue(i, trace)
+}
+
+func makeDeferredThunk(th deferredThunk) potentialValue {
+	return makeCachedThunk(th)
+}
+
 // cachedThunk is a wrapper that caches the value of a potentialValue after
 // the first evaluation.
 // Note: All potentialValues are required to provide the same value every time,
@@ -190,28 +202,81 @@ type closure struct {
 	// arguments should be added to it, before executing it
 	env      environment
 	function *ast.Function
+	params   Parameters
 }
 
 func (closure *closure) EvalCall(arguments callArguments, e *evaluator) (value, error) {
 	argThunks := make(bindingFrame)
+	parameters := closure.Parameters()
 	for i, arg := range arguments.positional {
-		argThunks[closure.function.Parameters.Positional[i]] = arg
+		var name ast.Identifier
+		if i < len(parameters.required) {
+			name = parameters.required[i]
+		} else {
+			name = parameters.optional[i-len(parameters.required)].name
+		}
+		argThunks[name] = arg
 	}
 
-	calledEnvironment := makeEnvironment(
+	for _, arg := range arguments.named {
+		argThunks[arg.name] = arg.pv
+	}
+
+	var calledEnvironment environment
+
+	for i := range parameters.optional {
+		param := &parameters.optional[i]
+		if _, exists := argThunks[param.name]; !exists {
+			argThunks[param.name] = makeDeferredThunk(func() evaluable {
+				// Default arguments are evaluated in the same environment as function body
+				return param.defaultArg.inEnv(&calledEnvironment)
+			})
+		}
+	}
+
+	calledEnvironment = makeEnvironment(
 		addBindings(closure.env.upValues, argThunks),
 		closure.env.sb,
 	)
 	return e.evalInCleanEnv(&calledEnvironment, closure.function.Body)
 }
 
-func (closure *closure) Parameters() ast.Identifiers {
-	return closure.function.Parameters.Positional
+func (closure *closure) Parameters() Parameters {
+	return closure.params
+
+}
+
+func prepareClosureParameters(parameters ast.Parameters, env environment) Parameters {
+	optionalParameters := make([]namedParameter, 0, len(parameters.Optional))
+	for _, named := range parameters.Optional {
+		optionalParameters = append(optionalParameters, namedParameter{
+			name: named.Name,
+			defaultArg: &defaultArgument{
+				body: named.DefaultArg,
+			},
+		})
+	}
+	return Parameters{
+		required: parameters.Required,
+		optional: optionalParameters,
+	}
 }
 
 func makeClosure(env environment, function *ast.Function) *closure {
 	return &closure{
 		env:      env,
 		function: function,
+		params:   prepareClosureParameters(function.Parameters, env),
 	}
+}
+
+// partialPotentialValue
+// -------------------------------------
+
+type defaultArgument struct {
+	body ast.Node
+}
+
+func (da *defaultArgument) inEnv(env *environment) potentialValue {
+	return makeThunk(*env, da.body)
 }

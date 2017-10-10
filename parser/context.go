@@ -313,9 +313,9 @@ func addContext(node ast.Node, context *string, bind string) {
 	case *ast.Function:
 		funContext := functionContext(bind)
 		addContext(node.Body, funContext, anonymous)
-		for i := range node.Parameters.Named {
+		for i := range node.Parameters.Optional {
 			// Default arguments have the same context as the function body.
-			addContext(node.Parameters.Named[i].DefaultArg, funContext, anonymous)
+			addContext(node.Parameters.Optional[i].DefaultArg, funContext, anonymous)
 		}
 	case *ast.Object:
 		// TODO(sbarzowski) include fieldname, maybe even chains

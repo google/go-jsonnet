@@ -4,3 +4,4 @@ coverage.out
 /tests_path.source
 /jsonnet/jsonnet
 *.so
+*.prof

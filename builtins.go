@@ -224,7 +224,7 @@ func builtinLength(e *evaluator, xp potentialValue) (value, error) {
 	case *valueString:
 		num = x.length()
 	case *valueFunction:
-		num = len(x.parameters())
+		num = len(x.parameters().required)
 	default:
 		return nil, e.typeErrorGeneral(x)
 	}
@@ -614,13 +614,12 @@ func getBuiltinEvaluator(e *evaluator, name ast.Identifier) *evaluator {
 }
 
 func (b *UnaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
-
-	// TODO check args
-	return b.function(getBuiltinEvaluator(e, b.name), args.positional[0])
+	flatArgs := flattenArgs(args, b.Parameters())
+	return b.function(getBuiltinEvaluator(e, b.name), flatArgs[0])
 }
 
-func (b *UnaryBuiltin) Parameters() ast.Identifiers {
-	return b.parameters
+func (b *UnaryBuiltin) Parameters() Parameters {
+	return Parameters{required: b.parameters}
 }
 
 type BinaryBuiltin struct {
@@ -629,13 +628,38 @@ type BinaryBuiltin struct {
 	parameters ast.Identifiers
 }
 
-func (b *BinaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
-	// TODO check args
-	return b.function(getBuiltinEvaluator(e, b.name), args.positional[0], args.positional[1])
+// flattenArgs transforms all arguments to a simple array of positional arguments.
+// It's needed, because it's possible to use named arguments for required parameters.
+// For example both `toString("x")` and `toString(a="x")` are allowed.
+// It assumes that we have already checked for duplicates.
+func flattenArgs(args callArguments, params Parameters) []potentialValue {
+	if len(args.named) == 0 {
+		return args.positional
+	}
+	if len(params.optional) != 0 {
+		panic("Can't normalize arguments if optional parameters are present")
+	}
+	needed := make(map[ast.Identifier]int)
+
+	for i := len(args.positional); i < len(params.required); i++ {
+		needed[params.required[i]] = i
+	}
+
+	flatArgs := make([]potentialValue, len(params.required))
+	copy(flatArgs, args.positional)
+	for _, arg := range args.named {
+		flatArgs[needed[arg.name]] = arg.pv
+	}
+	return flatArgs
 }
 
-func (b *BinaryBuiltin) Parameters() ast.Identifiers {
-	return b.parameters
+func (b *BinaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
+	flatArgs := flattenArgs(args, b.Parameters())
+	return b.function(getBuiltinEvaluator(e, b.name), flatArgs[0], flatArgs[1])
+}
+
+func (b *BinaryBuiltin) Parameters() Parameters {
+	return Parameters{required: b.parameters}
 }
 
 type TernaryBuiltin struct {
@@ -645,12 +669,12 @@ type TernaryBuiltin struct {
 }
 
 func (b *TernaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
-	// TODO check args
-	return b.function(getBuiltinEvaluator(e, b.name), args.positional[0], args.positional[1], args.positional[2])
+	flatArgs := flattenArgs(args, b.Parameters())
+	return b.function(getBuiltinEvaluator(e, b.name), flatArgs[0], flatArgs[1], flatArgs[2])
 }
 
-func (b *TernaryBuiltin) Parameters() ast.Identifiers {
-	return b.parameters
+func (b *TernaryBuiltin) Parameters() Parameters {
+	return Parameters{required: b.parameters}
 }
 
 var desugaredBop = map[ast.BinaryOp]ast.Identifier{
@@ -698,7 +722,7 @@ var uopBuiltins = []*UnaryBuiltin{
 var funcBuiltins = map[string]evalCallable{
 	"extVar":          &UnaryBuiltin{name: "extVar", function: builtinExtVar, parameters: ast.Identifiers{"x"}},
 	"length":          &UnaryBuiltin{name: "length", function: builtinLength, parameters: ast.Identifiers{"x"}},
-	"toString":        &UnaryBuiltin{name: "toString", function: builtinToString, parameters: ast.Identifiers{"x"}},
+	"toString":        &UnaryBuiltin{name: "toString", function: builtinToString, parameters: ast.Identifiers{"a"}},
 	"makeArray":       &BinaryBuiltin{name: "makeArray", function: builtinMakeArray, parameters: ast.Identifiers{"sz", "func"}},
 	"flatMap":         &BinaryBuiltin{name: "flatMap", function: builtinFlatMap, parameters: ast.Identifiers{"func", "arr"}},
 	"filter":          &BinaryBuiltin{name: "filter", function: builtinFilter, parameters: ast.Identifiers{"func", "arr"}},
