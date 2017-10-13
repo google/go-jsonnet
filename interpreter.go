@@ -268,11 +268,11 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		i: i,
 	}
 
-	switch ast := a.(type) {
+	switch node := a.(type) {
 	case *ast.Array:
 		sb := i.stack.getSelfBinding()
 		var elements []potentialValue
-		for _, el := range ast.Elements {
+		for _, el := range node.Elements {
 			env := makeEnvironment(i.capture(el.FreeVariables()), sb)
 			elThunk := makeThunk(env, el)
 			elements = append(elements, elThunk)
@@ -281,15 +281,15 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 
 	case *ast.Binary:
 		// Some binary operators are lazy, so thunks are needed in general
-		env := i.getCurrentEnv(ast)
+		env := i.getCurrentEnv(node)
 		// TODO(sbarzowski) make sure it displays nicely in stack trace (thunk names etc.)
 		// TODO(sbarzowski) it may make sense not to show a line in stack trace for operators
 		// 					at all in many cases. 1 + 2 + 3 + 4 + error "x" will show 5 lines
 		//					of stack trace now, and it's not that nice.
-		left := makeThunk(env, ast.Left)
-		right := makeThunk(env, ast.Right)
+		left := makeThunk(env, node.Left)
+		right := makeThunk(env, node.Right)
 
-		builtin := bopBuiltins[ast.Op]
+		builtin := bopBuiltins[node.Op]
 
 		result, err := builtin.function(e, left, right)
 		if err != nil {
@@ -298,10 +298,10 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		return result, nil
 
 	case *ast.Unary:
-		env := i.getCurrentEnv(ast)
-		arg := makeThunk(env, ast.Expr)
+		env := i.getCurrentEnv(node)
+		arg := makeThunk(env, node.Expr)
 
-		builtin := uopBuiltins[ast.Op]
+		builtin := uopBuiltins[node.Op]
 
 		result, err := builtin.function(e, arg)
 		if err != nil {
@@ -310,7 +310,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		return result, nil
 
 	case *ast.Conditional:
-		cond, err := e.evalInCurrentContext(ast.Cond, nonTailCall)
+		cond, err := e.evalInCurrentContext(node.Cond, nonTailCall)
 		if err != nil {
 			return nil, err
 		}
@@ -319,14 +319,14 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 			return nil, err
 		}
 		if condBool.value {
-			return e.evalInCurrentContext(ast.BranchTrue, tc)
+			return e.evalInCurrentContext(node.BranchTrue, tc)
 		}
-		return e.evalInCurrentContext(ast.BranchFalse, tc)
+		return e.evalInCurrentContext(node.BranchFalse, tc)
 
 	case *ast.DesugaredObject:
 		// Evaluate all the field names.  Check for null, dups, etc.
 		fields := make(simpleObjectFieldMap)
-		for _, field := range ast.Fields {
+		for _, field := range node.Fields {
 			fieldNameValue, err := e.evalInCurrentContext(field.Name, nonTailCall)
 			if err != nil {
 				return nil, err
@@ -352,14 +352,14 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 			fields[fieldName] = simpleObjectField{field.Hide, f}
 		}
 		var asserts []unboundField
-		for _, assert := range ast.Asserts {
+		for _, assert := range node.Asserts {
 			asserts = append(asserts, &codeUnboundField{assert})
 		}
-		upValues := i.capture(ast.FreeVariables())
+		upValues := i.capture(node.FreeVariables())
 		return makeValueSimpleObject(upValues, fields, asserts), nil
 
 	case *ast.Error:
-		msgVal, err := e.evalInCurrentContext(ast.Expr, nonTailCall)
+		msgVal, err := e.evalInCurrentContext(node.Expr, nonTailCall)
 		if err != nil {
 			// error when evaluating error message
 			return nil, err
@@ -371,11 +371,11 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		return nil, e.Error(msg.getString())
 
 	case *ast.Index:
-		targetValue, err := e.evalInCurrentContext(ast.Target, nonTailCall)
+		targetValue, err := e.evalInCurrentContext(node.Target, nonTailCall)
 		if err != nil {
 			return nil, err
 		}
-		index, err := e.evalInCurrentContext(ast.Index, nonTailCall)
+		index, err := e.evalInCurrentContext(node.Index, nonTailCall)
 		if err != nil {
 			return nil, err
 		}
@@ -406,29 +406,29 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		return nil, e.Error(fmt.Sprintf("Value non indexable: %v", reflect.TypeOf(targetValue)))
 
 	case *ast.Import:
-		codeDir := path.Dir(ast.Loc().FileName)
-		return i.importCache.ImportCode(codeDir, ast.File.Value, e)
+		codeDir := path.Dir(node.Loc().FileName)
+		return i.importCache.ImportCode(codeDir, node.File.Value, e)
 
 	case *ast.ImportStr:
-		codeDir := path.Dir(ast.Loc().FileName)
-		return i.importCache.ImportString(codeDir, ast.File.Value, e)
+		codeDir := path.Dir(node.Loc().FileName)
+		return i.importCache.ImportString(codeDir, node.File.Value, e)
 
 	case *ast.LiteralBoolean:
-		return makeValueBoolean(ast.Value), nil
+		return makeValueBoolean(node.Value), nil
 
 	case *ast.LiteralNull:
 		return makeValueNull(), nil
 
 	case *ast.LiteralNumber:
-		return makeValueNumber(ast.Value), nil
+		return makeValueNumber(node.Value), nil
 
 	case *ast.LiteralString:
-		return makeValueString(ast.Value), nil
+		return makeValueString(node.Value), nil
 
 	case *ast.Local:
 		vars := make(bindingFrame)
 		bindEnv := i.getCurrentEnv(a)
-		for _, bind := range ast.Binds {
+		for _, bind := range node.Binds {
 			th := makeThunk(bindEnv, bind.Body)
 
 			// recursive locals
@@ -439,7 +439,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		sz := len(i.stack.stack)
 		// Add new stack frame, with new thunk for this variable
 		// execute body WRT stack frame.
-		v, err := e.evalInCurrentContext(ast.Body, tc)
+		v, err := e.evalInCurrentContext(node.Body, tc)
 		i.stack.popIfExists(sz)
 
 		return v, err
@@ -449,10 +449,10 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		return sb.self, nil
 
 	case *ast.Var:
-		return e.evaluateTailCall(e.lookUpVar(ast.Id), tc)
+		return e.evaluateTailCall(e.lookUpVar(node.Id), tc)
 
 	case *ast.SuperIndex:
-		index, err := e.evalInCurrentContext(ast.Index, nonTailCall)
+		index, err := e.evalInCurrentContext(node.Index, nonTailCall)
 		if err != nil {
 			return nil, err
 		}
@@ -463,7 +463,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		return objectIndex(e, i.stack.getSelfBinding().super(), indexStr.getString())
 
 	case *ast.InSuper:
-		index, err := e.evalInCurrentContext(ast.Index, nonTailCall)
+		index, err := e.evalInCurrentContext(node.Index, nonTailCall)
 		if err != nil {
 			return nil, err
 		}
@@ -476,12 +476,12 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 
 	case *ast.Function:
 		return &valueFunction{
-			ec: makeClosure(i.getCurrentEnv(a), ast),
+			ec: makeClosure(i.getCurrentEnv(a), node),
 		}, nil
 
 	case *ast.Apply:
 		// Eval target
-		target, err := e.evalInCurrentContext(ast.Target, nonTailCall)
+		target, err := e.evalInCurrentContext(node.Target, nonTailCall)
 		if err != nil {
 			return nil, err
 		}
@@ -493,15 +493,15 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		// environment in which we can evaluate arguments
 		argEnv := i.getCurrentEnv(a)
 		arguments := callArguments{
-			positional: make([]potentialValue, len(ast.Arguments.Positional)),
-			named:      make([]namedCallArgument, len(ast.Arguments.Named)),
-			tailstrict: ast.TailStrict,
+			positional: make([]potentialValue, len(node.Arguments.Positional)),
+			named:      make([]namedCallArgument, len(node.Arguments.Named)),
+			tailstrict: node.TailStrict,
 		}
-		for i, arg := range ast.Arguments.Positional {
+		for i, arg := range node.Arguments.Positional {
 			arguments.positional[i] = makeThunk(argEnv, arg)
 		}
 
-		for i, arg := range ast.Arguments.Named {
+		for i, arg := range node.Arguments.Named {
 			arguments.named[i] = namedCallArgument{name: arg.Name, pv: makeThunk(argEnv, arg.Arg)}
 		}
 		return e.evaluateTailCall(function.call(arguments), tc)
