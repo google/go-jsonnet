@@ -9,19 +9,39 @@
 [Coverage Status Widget]: https://coveralls.io/repos/github/google/go-jsonnet/badge.svg?branch=master
 [Coverage Status]: https://coveralls.io/github/google/go-jsonnet?branch=master
 
-This is a port of [jsonnet](http://jsonnet.org/) to go.  It is very much a work in progress.
+This an implementation of [Jsonnet](http://jsonnet.org/) in pure Go.  It is
+feature complete but is not as heavily exercised as the [Jsonnet C++
+implementation](https://github.com/google/jsonnet).  Please try it out and give
+feedback.
 
-This implementation is largely based on the the [jsonnet C++ implementation](https://github.com/google/jsonnet).
-The precise revision is
-https://github.com/google/jsonnet/tree/27ddf2c2f7041c09316cf7c9ef13af9588fdd671 but when we reach
-feature parity with that revision, we will chase up all the recent changes on the C++ side.
+This code is known to work on Go 1.6 and above.
+
+## Build instructions
+
+```
+export GOPATH=$HOME/go-workspace
+mkdir -pv $GOPATH
+go get github.com/google/go-jsonnet
+cd $GOPATH/src/github.com/google/go-jsonnet
+cd jsonnet
+go build
+./jsonnet /dev/stdin <<< '{x: 1, y: self.x} + {x: 10}'
+{
+   "x": 10,
+   "y": 10
+}
+```
 
 ## Implementation Notes
 
-We are generating some helper classes on types by using http://clipperhouse.github.io/gen/.  Do the following to regenerate these if necessary:
+We are generating some helper classes on types by using
+http://clipperhouse.github.io/gen/.  Do the following to regenerate these if
+necessary:
 
 ```
+go get github.com/mjibson/esc
 go get github.com/clipperhouse/gen
 go get github.com/clipperhouse/set
+export PATH=$PATH:$GOPATH/bin  # If you haven't already
 go generate
 ```
