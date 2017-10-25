@@ -1,10 +1,1 @@
-RUNTIME ERROR: Expected an integer, but got 1e+30
--------------------------------------------------
-	testdata/bitwise_and3:1:1-10	$
-
-1e30 & 42
-
--------------------------------------------------
-	During evaluation	
-
-
+0
