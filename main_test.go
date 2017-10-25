@@ -102,7 +102,7 @@ func TestMain(t *testing.T) {
 				vm.ExtCode(name, value)
 			}
 
-			vm.NativeFunction(&nativeFunction{
+			vm.NativeFunction(&NativeFunction{
 				name:   "jsonToString",
 				params: ast.Identifiers{"x"},
 				f: func(x []interface{}) (interface{}, error) {

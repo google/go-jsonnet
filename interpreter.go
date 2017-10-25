@@ -217,7 +217,7 @@ type interpreter struct {
 	extVars map[string]potentialValue
 
 	// Native functions
-	nativeFuncs map[string]*nativeFunction
+	nativeFuncs map[string]*NativeFunction
 
 	// A part of std object common to all files
 	baseStd valueObject
@@ -847,7 +847,7 @@ func buildObject(hide ast.ObjectFieldHide, fields map[string]value) valueObject 
 	return makeValueSimpleObject(bindingFrame{}, fieldMap, nil)
 }
 
-func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*nativeFunction, maxStack int, importer Importer) (*interpreter, error) {
+func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*NativeFunction, maxStack int, importer Importer) (*interpreter, error) {
 	i := interpreter{
 		stack:       makeCallStack(maxStack),
 		importCache: MakeImportCache(importer),
@@ -879,7 +879,7 @@ func makeInitialEnv(filename string, baseStd valueObject) environment {
 }
 
 // TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
-func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*nativeFunction, maxStack int, importer Importer) (string, error) {
+func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction, maxStack int, importer Importer) (string, error) {
 	i, err := buildInterpreter(ext, nativeFuncs, maxStack, importer)
 	if err != nil {
 		return "", err

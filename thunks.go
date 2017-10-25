@@ -287,13 +287,13 @@ func makeClosure(env environment, function *ast.Function) *closure {
 	}
 }
 
-type nativeFunction struct {
+type NativeFunction struct {
 	f      func([]interface{}) (interface{}, error)
 	params ast.Identifiers
 	name   string
 }
 
-func (native *nativeFunction) EvalCall(arguments callArguments, e *evaluator) (value, error) {
+func (native *NativeFunction) EvalCall(arguments callArguments, e *evaluator) (value, error) {
 	flatArgs := flattenArgs(arguments, native.Parameters())
 	nativeArgs := make([]interface{}, 0, len(flatArgs))
 	for _, arg := range flatArgs {
@@ -314,7 +314,7 @@ func (native *nativeFunction) EvalCall(arguments callArguments, e *evaluator) (v
 	return jsonToValue(e, resultJSON)
 }
 
-func (native *nativeFunction) Parameters() Parameters {
+func (native *NativeFunction) Parameters() Parameters {
 	return Parameters{required: native.params}
 }
 
