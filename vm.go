@@ -35,7 +35,7 @@ type VM struct {
 	MaxTrace    int // The number of lines of stack trace to display (0 for all of them).
 	ext         vmExtMap
 	tla         vmExtMap
-	nativeFuncs map[string]*nativeFunction
+	nativeFuncs map[string]*NativeFunction
 	importer    Importer
 	ef          ErrorFormatter
 }
@@ -57,7 +57,7 @@ func MakeVM() *VM {
 		MaxStack:    500,
 		ext:         make(vmExtMap),
 		tla:         make(vmExtMap),
-		nativeFuncs: make(map[string]*nativeFunction),
+		nativeFuncs: make(map[string]*NativeFunction),
 		ef:          ErrorFormatter{pretty: true, colorful: true, MaxStackTraceSize: 20},
 		importer:    &FileImporter{},
 	}
@@ -106,7 +106,7 @@ func (vm *VM) evaluateSnippet(filename string, snippet string) (output string, e
 }
 
 // NativeFunction registers a native function
-func (vm *VM) NativeFunction(f *nativeFunction) {
+func (vm *VM) NativeFunction(f *NativeFunction) {
 	vm.nativeFuncs[f.name] = f
 }
 
