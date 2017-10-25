@@ -288,9 +288,9 @@ func makeClosure(env environment, function *ast.Function) *closure {
 }
 
 type NativeFunction struct {
-	f      func([]interface{}) (interface{}, error)
-	params ast.Identifiers
-	name   string
+	Func   func([]interface{}) (interface{}, error)
+	Params ast.Identifiers
+	Name   string
 }
 
 func (native *NativeFunction) EvalCall(arguments callArguments, e *evaluator) (value, error) {
@@ -307,7 +307,7 @@ func (native *NativeFunction) EvalCall(arguments callArguments, e *evaluator) (v
 		}
 		nativeArgs = append(nativeArgs, json)
 	}
-	resultJSON, err := native.f(nativeArgs)
+	resultJSON, err := native.Func(nativeArgs)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +315,7 @@ func (native *NativeFunction) EvalCall(arguments callArguments, e *evaluator) (v
 }
 
 func (native *NativeFunction) Parameters() Parameters {
-	return Parameters{required: native.params}
+	return Parameters{required: native.Params}
 }
 
 // partialPotentialValue
