@@ -110,8 +110,6 @@ func (e *evaluator) getInt64(val value) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	// We conservatively convert ot int32, so that it can be machine-sized int
-	// on any machine. And it's used only for indexing anyway.
 	intNum := int64(num.value)
 	if float64(intNum) != num.value {
 		return 0, e.Error(fmt.Sprintf("Expected an integer, but got %v", num.value))

@@ -478,15 +478,15 @@ var builtinExponent = liftNumeric(func(f float64) float64 {
 
 func liftBitwise(f func(int64, int64) int64) func(*evaluator, potentialValue, potentialValue) (value, error) {
 	return func(e *evaluator, xp, yp potentialValue) (value, error) {
-		x, err := e.evaluateInt64(xp)
+		x, err := e.evaluateNumber(xp)
 		if err != nil {
 			return nil, err
 		}
-		y, err := e.evaluateInt64(yp)
+		y, err := e.evaluateNumber(yp)
 		if err != nil {
 			return nil, err
 		}
-		return makeDoubleCheck(e, float64(f(x, y)))
+		return makeDoubleCheck(e, float64(f(int64(x.value), int64(y.value))))
 	}
 }
 
