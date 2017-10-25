@@ -103,9 +103,9 @@ func TestMain(t *testing.T) {
 			}
 
 			vm.NativeFunction(&NativeFunction{
-				name:   "jsonToString",
-				params: ast.Identifiers{"x"},
-				f: func(x []interface{}) (interface{}, error) {
+				Name:   "jsonToString",
+				Params: ast.Identifiers{"x"},
+				F: func(x []interface{}) (interface{}, error) {
 					bytes, err := json.Marshal(x[0])
 					if err != nil {
 						return nil, err

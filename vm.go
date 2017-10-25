@@ -107,7 +107,7 @@ func (vm *VM) evaluateSnippet(filename string, snippet string) (output string, e
 
 // NativeFunction registers a native function
 func (vm *VM) NativeFunction(f *NativeFunction) {
-	vm.nativeFuncs[f.name] = f
+	vm.nativeFuncs[f.Name] = f
 }
 
 // EvaluateSnippet evaluates a string containing Jsonnet code, return a JSON
