@@ -812,10 +812,7 @@ func evaluateStd(i *interpreter) (value, error) {
 	)
 	evalLoc := ast.MakeLocationRangeMessage("During evaluation of std")
 	evalTrace := &TraceElement{loc: &evalLoc}
-	node, err := snippetToAST("<std>", getStdCode())
-	if err != nil {
-		return nil, err
-	}
+	node := ast.StdAst
 	return i.EvalInCleanEnv(evalTrace, &beforeStdEnv, node, false)
 }
 
