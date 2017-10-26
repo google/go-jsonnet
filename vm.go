@@ -142,6 +142,10 @@ func snippetToAST(filename string, snippet string) (ast.Node, error) {
 	return node, nil
 }
 
+func SnippetToAST(filename string, snippet string) (ast.Node, error) {
+	return snippetToAST(filename, snippet)
+}
+
 func Version() string {
 	return "v0.9.5"
 }

@@ -28,8 +28,8 @@ import (
 
 // TODO(sbarzowski) Is this the best option? It's the first one that worked for me...
 //go:generate esc -o std.go -pkg=jsonnet std/std.jsonnet
-
-func getStdCode() string {
+//go:generate go run cmd/dumpstdlibast.go
+func GetStdCode() string {
 	return FSMustString(false, "/std/std.jsonnet")
 }
 
