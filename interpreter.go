@@ -723,14 +723,14 @@ func serializeJSON(v interface{}, multiline bool, indent string, buf *bytes.Buff
 	}
 }
 
-func (i *interpreter) manifestAndSerializeJSON(trace *TraceElement, v value, multiline bool, indent string) (string, error) {
+func (i *interpreter) manifestAndSerializeJSON(trace *TraceElement, v value, multiline bool, indent string) (*bytes.Buffer, error) {
 	var buf bytes.Buffer
 	manifested, err := i.manifestJSON(trace, v)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	serializeJSON(manifested, multiline, indent, &buf)
-	return buf.String(), nil
+	return &buf, nil
 }
 
 func jsonToValue(e *evaluator, v interface{}) (value, error) {
@@ -915,9 +915,10 @@ func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]
 	manifestationTrace := &TraceElement{
 		loc: &manifestationLoc,
 	}
-	s, err := i.manifestAndSerializeJSON(manifestationTrace, result, true, "")
+	buf, err := i.manifestAndSerializeJSON(manifestationTrace, result, true, "")
 	if err != nil {
 		return "", err
 	}
-	return s, nil
+	buf.WriteString("\n")
+	return buf.String(), nil
 }

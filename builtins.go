@@ -240,11 +240,11 @@ func builtinToString(e *evaluator, xp potentialValue) (value, error) {
 	case *valueString:
 		return x, nil
 	}
-	s, err := e.i.manifestAndSerializeJSON(e.trace, x, false, "")
+	buf, err := e.i.manifestAndSerializeJSON(e.trace, x, false, "")
 	if err != nil {
 		return nil, err
 	}
-	return makeValueString(s), nil
+	return makeValueString(buf.String()), nil
 }
 
 func builtinMakeArray(e *evaluator, szp potentialValue, funcp potentialValue) (value, error) {
