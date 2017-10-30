@@ -114,5 +114,5 @@ func main() {
 		fmt.Fprintf(os.Stderr, "%v\n", err.Error())
 		os.Exit(2)
 	}
-	fmt.Println(json)
+	fmt.Print(json)
 }
