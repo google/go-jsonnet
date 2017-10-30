@@ -31,13 +31,13 @@ import (
 // VM is the core interpreter and is the touchpoint used to parse and execute
 // Jsonnet.
 type VM struct {
-	MaxStack    int
-	MaxTrace    int // The number of lines of stack trace to display (0 for all of them).
-	ext         vmExtMap
-	tla         vmExtMap
-	nativeFuncs map[string]*NativeFunction
-	importer    Importer
-	ef          ErrorFormatter
+	MaxStack     int
+	MaxTrace     int // The number of lines of stack trace to display (0 for all of them).
+	ext          vmExtMap
+	tla          vmExtMap
+	nativeFuncs  map[string]*NativeFunction
+	importer     Importer
+	ef           ErrorFormatter
 	StringOutput bool
 }
 
@@ -89,7 +89,15 @@ func (vm *VM) Importer(i Importer) {
 	vm.importer = i
 }
 
-func (vm *VM) evaluateSnippet(filename string, snippet string) (output string, err error) {
+type evalKind = int
+
+const (
+	evalKindRegular = iota
+	evalKindMulti   = iota
+	evalKindStream  = iota
+)
+
+func (vm *VM) evaluateSnippet(filename string, snippet string, kind evalKind) (output interface{}, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
@@ -99,7 +107,14 @@ func (vm *VM) evaluateSnippet(filename string, snippet string) (output string, e
 	if err != nil {
 		return "", err
 	}
-	output, err = evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importer, vm.StringOutput)
+	switch kind {
+	case evalKindRegular:
+		output, err = evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importer, vm.StringOutput)
+	case evalKindMulti:
+		output, err = evaluateMulti(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importer, vm.StringOutput)
+	case evalKindStream:
+		output, err = evaluateStream(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importer)
+	}
 	if err != nil {
 		return "", err
 	}
@@ -116,11 +131,38 @@ func (vm *VM) NativeFunction(f *NativeFunction) {
 //
 // The filename parameter is only used for error messages.
 func (vm *VM) EvaluateSnippet(filename string, snippet string) (json string, formattedErr error) {
-	json, err := vm.evaluateSnippet(filename, snippet)
+	output, err := vm.evaluateSnippet(filename, snippet, evalKindRegular)
 	if err != nil {
 		return "", errors.New(vm.ef.format(err))
 	}
-	return json, nil
+	json = output.(string)
+	return
+}
+
+// EvaluateSnippetStream evaluates a string containing Jsonnet code to an array.
+// The array is returned as an array of JSON strings.
+//
+// The filename parameter is only used for error messages.
+func (vm *VM) EvaluateSnippetStream(filename string, snippet string) (docs []string, formattedErr error) {
+	output, err := vm.evaluateSnippet(filename, snippet, evalKindStream)
+	if err != nil {
+		return nil, errors.New(vm.ef.format(err))
+	}
+	docs = output.([]string)
+	return
+}
+
+// EvaluateSnippetStream evaluates a string containing Jsonnet code to an array.
+// The array is returned as an array of JSON strings.
+//
+// The filename parameter is only used for error messages.
+func (vm *VM) EvaluateSnippetMulti(filename string, snippet string) (files map[string]string, formattedErr error) {
+	output, err := vm.evaluateSnippet(filename, snippet, evalKindMulti)
+	if err != nil {
+		return nil, errors.New(vm.ef.format(err))
+	}
+	files = output.(map[string]string)
+	return
 }
 
 func snippetToAST(filename string, snippet string) (ast.Node, error) {
