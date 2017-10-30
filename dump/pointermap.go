@@ -20,19 +20,19 @@ import "reflect"
 
 type pointerMap struct {
 	allpointers       []uintptr
-	reusedPointers 	  []uintptr
+	reusedPointers    []uintptr
 	primitivePointers []uintptr
 }
 
 // GetPointers: Given a structure, it will recursively map all pointers mentioned in the tree,
 // breaking circular references and provide list of:
 // * all pointers
-// * all pointers that was referenced at least twice
+// * all pointers that were referenced at least twice
 // * all pointers that point to primitive type
-func GetPointers(v reflect.Value) ([]uintptr, []uintptr, []uintptr){
+func GetPointers(v reflect.Value) ([]uintptr, []uintptr, []uintptr) {
 	pm := &pointerMap{
-		allpointers: []uintptr{},
-		reusedPointers: []uintptr{},
+		allpointers:       []uintptr{},
+		reusedPointers:    []uintptr{},
 		primitivePointers: []uintptr{},
 	}
 	pm.getAllAndReusedPointers(v)
@@ -147,6 +147,3 @@ func (pm *pointerMap) addPointer(ptr uintptr) bool {
 	pm.allpointers = append(pm.allpointers, ptr)
 	return false
 }
-
-
-

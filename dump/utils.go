@@ -18,16 +18,12 @@ package dump
 
 import (
 	"io"
-	"strconv"
 	"reflect"
+	"strconv"
 )
 
 func printBool(w io.Writer, value bool) {
-	if value {
-		w.Write([]byte("true"))
-		return
-	}
-	w.Write([]byte("false"))
+	w.Write([]byte(strconv.FormatBool(value)))
 }
 
 func printInt(w io.Writer, val int64, base int) {
@@ -60,7 +56,6 @@ func printNil(w io.Writer) {
 	w.Write([]byte("nil"))
 }
 
-
 // deInterface returns values inside of non-nil interfaces when possible.
 // This is useful for data types like structs, arrays, slices, and maps which
 // can contain varying types packed inside an interface.
@@ -91,7 +86,7 @@ func isPrimitiveValue(v reflect.Value) bool {
 	case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Float32,
 		reflect.Float64, reflect.Complex64, reflect.Complex128, reflect.String:
-			return  true
+		return true
 	}
 	return false
 }

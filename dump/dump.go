@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-
 package dump
 
 import (
@@ -30,19 +29,19 @@ import (
 
 var packageNameStripperRegexp = regexp.MustCompile("\\b[a-zA-Z_]+[a-zA-Z_0-9]+\\.")
 
-// Options represents configuration options for litter
+// Options represents configuration option
 type Options struct {
 	StripPackageNames bool
 	HidePrivateFields bool
 	HomePackage       string
-	VariableName 	  string
+	VariableName      string
 }
 
 // Config is the default config used when calling Dump
 var Config = Options{
 	StripPackageNames: false,
 	HidePrivateFields: true,
-	VariableName: "p0",
+	VariableName:      "Obj",
 }
 
 type dumpState struct {
@@ -159,8 +158,9 @@ func (s *dumpState) dumpMap(v reflect.Value) {
 
 func (s *dumpState) dump(value interface{}) {
 	if value == nil {
-		s.w.Write([]byte("var" + s.config.VariableName + "=" ))
+		s.w.Write([]byte("var " + s.config.VariableName + " = "))
 		printNil(s.w)
+		s.newline()
 		return
 	}
 	v := reflect.ValueOf(value)
@@ -170,11 +170,13 @@ func (s *dumpState) dump(value interface{}) {
 
 	s.dumpReusedPointerVal(v)
 
-	s.w.Write([]byte("var " + s.config.VariableName + " = " ))
-	if v.Kind() == reflect.Ptr && v.IsNil(){
-			printNil(s.w)
+	s.w.Write([]byte("var " + s.config.VariableName + " = "))
+	if v.Kind() == reflect.Ptr && v.IsNil() {
+		printNil(s.w)
+	} else {
+		s.dumpVal(v)
 	}
-	s.dumpVal(v)
+	s.newline()
 }
 
 func (s *dumpState) printPrimitivePointer(value reflect.Value, pointerName string) {
@@ -477,18 +479,18 @@ func Sdump(value interface{}) string {
 // Dump a value to stdout according to the options
 func (o Options) Dump(value interface{}) {
 
-		state := newDumpState(value, &o)
-		state.w = os.Stdout
-		state.dump(value)
+	state := newDumpState(value, &o)
+	state.w = os.Stdout
+	state.dump(value)
 }
 
 // Sdump dumps a value to a string according to the options
 func (o Options) Sdump(value interface{}) string {
 	buf := new(bytes.Buffer)
 
-		state := newDumpState(value, &o)
-		state.w = buf
-		state.dump(value)
+	state := newDumpState(value, &o)
+	state.w = buf
+	state.dump(value)
 
 	return buf.String()
 }
