@@ -17,6 +17,7 @@ limitations under the License.
 package jsonnet
 
 import (
+	"bytes"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -240,7 +241,8 @@ func builtinToString(e *evaluator, xp potentialValue) (value, error) {
 	case *valueString:
 		return x, nil
 	}
-	buf, err := e.i.manifestAndSerializeJSON(e.trace, x, false, "")
+	var buf bytes.Buffer
+	err = e.i.manifestAndSerializeJSON(&buf, e.trace, x, false, "")
 	if err != nil {
 		return nil, err
 	}

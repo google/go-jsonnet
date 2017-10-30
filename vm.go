@@ -38,6 +38,7 @@ type VM struct {
 	nativeFuncs map[string]*NativeFunction
 	importer    Importer
 	ef          ErrorFormatter
+	StringOutput bool
 }
 
 // External variable or top level argument provided before execution
@@ -98,7 +99,7 @@ func (vm *VM) evaluateSnippet(filename string, snippet string) (output string, e
 	if err != nil {
 		return "", err
 	}
-	output, err = evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importer)
+	output, err = evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importer, vm.StringOutput)
 	if err != nil {
 		return "", err
 	}
