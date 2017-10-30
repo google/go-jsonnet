@@ -723,15 +723,27 @@ func serializeJSON(v interface{}, multiline bool, indent string, buf *bytes.Buff
 	}
 }
 
-func (i *interpreter) manifestAndSerializeJSON(trace *TraceElement, v value, multiline bool, indent string) (string, error) {
-	var buf bytes.Buffer
+func (i *interpreter) manifestAndSerializeJSON(
+		buf *bytes.Buffer, trace *TraceElement, v value, multiline bool, indent string) error {
 	manifested, err := i.manifestJSON(trace, v)
 	if err != nil {
-		return "", err
+		return err
 	}
-	serializeJSON(manifested, multiline, indent, &buf)
-	return buf.String(), nil
+	serializeJSON(manifested, multiline, indent, buf)
+	return nil
 }
+
+// manifestString expects the value to be a string and returns it.
+func (i *interpreter) manifestString(buf *bytes.Buffer, trace *TraceElement, v value) error {
+	switch v := v.(type) {
+	case *valueString:
+		buf.WriteString(v.getString())
+		return nil
+	default:
+		return makeRuntimeError(fmt.Sprint("Expected string result, got: " + v.getType().name), i.getCurrentStackTrace(trace))
+	}
+}
+
 
 func jsonToValue(e *evaluator, v interface{}) (value, error) {
 	switch v := v.(type) {
@@ -879,7 +891,8 @@ func makeInitialEnv(filename string, baseStd valueObject) environment {
 }
 
 // TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
-func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction, maxStack int, importer Importer) (string, error) {
+func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
+              maxStack int, importer Importer, stringOutput bool) (string, error) {
 	i, err := buildInterpreter(ext, nativeFuncs, maxStack, importer)
 	if err != nil {
 		return "", err
@@ -915,9 +928,15 @@ func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]
 	manifestationTrace := &TraceElement{
 		loc: &manifestationLoc,
 	}
-	s, err := i.manifestAndSerializeJSON(manifestationTrace, result, true, "")
+	var buf bytes.Buffer
+	if stringOutput {
+		err = i.manifestString(&buf, manifestationTrace, result)
+	} else {
+		err = i.manifestAndSerializeJSON(&buf, manifestationTrace, result, true, "")
+	}
 	if err != nil {
 		return "", err
 	}
-	return s, nil
+	buf.WriteString("\n")
+	return buf.String(), nil
 }

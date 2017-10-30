@@ -127,8 +127,8 @@ func TestMain(t *testing.T) {
 				// TODO(sbarzowski) perhaps somehow mark that we are processing
 				// an error. But for now we can treat them the same.
 				output = errFormatter.format(err)
+				output += "\n"
 			}
-			output += "\n"
 			if *update {
 				err := ioutil.WriteFile(test.golden, []byte(output), 0666)
 				if err != nil {
@@ -260,13 +260,13 @@ func TestCustomImporter(t *testing.T) {
 		},
 	})
 	input := `[import "a.jsonnet", importstr "b.jsonnet"]`
-	expected := `[ 4, "3 + 3" ]`
+	expected := `[ 4, "3 + 3" ] `
 	actual, err := vm.EvaluateSnippet("custom_import.jsonnet", input)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 	actual = removeExcessiveWhitespace(actual)
 	if actual != expected {
-		t.Errorf("Expected %v, but got %v", expected, actual)
+		t.Errorf("Expected %q, but got %q", expected, actual)
 	}
 }
