@@ -45,84 +45,84 @@ func TestSdumpPrimitives(t *testing.T) {
 			func() interface{} {
 				return 10
 			},
-			"var Obj = 10\n",
+			"var Obj = int(10)\n",
 		},
 		{
 			"int8",
 			func() interface{} {
 				return int8(10)
 			},
-			"var Obj = 10\n",
+			"var Obj = int8(10)\n",
 		},
 		{
 			"int16",
 			func() interface{} {
 				return int16(10)
 			},
-			"var Obj = 10\n",
+			"var Obj = int16(10)\n",
 		},
 		{
 			"int32",
 			func() interface{} {
 				return int32(10)
 			},
-			"var Obj = 10\n",
+			"var Obj = int32(10)\n",
 		},
 		{
 			"int64",
 			func() interface{} {
 				return int64(10)
 			},
-			"var Obj = 10\n",
+			"var Obj = int64(10)\n",
 		},
 		{
 			"uint",
 			func() interface{} {
 				return uint(10)
 			},
-			"var Obj = 10\n",
+			"var Obj = uint(10)\n",
 		},
 		{
 			"uint8",
 			func() interface{} {
 				return uint8(10)
 			},
-			"var Obj = 10\n",
+			"var Obj = uint8(10)\n",
 		},
 		{
 			"uint16",
 			func() interface{} {
 				return uint16(10)
 			},
-			"var Obj = 10\n",
+			"var Obj = uint16(10)\n",
 		},
 		{
 			"uint32",
 			func() interface{} {
 				return uint32(10)
 			},
-			"var Obj = 10\n",
+			"var Obj = uint32(10)\n",
 		},
 		{
 			"uint64",
 			func() interface{} {
 				return uint64(10)
 			},
-			"var Obj = 10\n",
+			"var Obj = uint64(10)\n",
 		},
 		{
 			"float32",
 			func() interface{} {
 				return float32(10.5)
 			},
-			"var Obj = 10.5\n",
+			"var Obj = float32(10.5)\n",
 		},
 		{
 			"float64",
 			func() interface{} {
 				return float64(10.5)
 			},
-			"var Obj = 10.5\n",
+			"var Obj = float64(10.5)\n",
 		},
 		{
 			"complex64",
@@ -189,7 +189,7 @@ var Obj = p0
 				var a = 10
 				return &a
 			},
-			`var p0Var = 10
+			`var p0Var = int(10)
 var p0 = &p0Var
 var Obj = p0
 `,
@@ -200,7 +200,7 @@ var Obj = p0
 				var a = int8(10)
 				return &a
 			},
-			`var p0Var = 10
+			`var p0Var = int8(10)
 var p0 = &p0Var
 var Obj = p0
 `,
@@ -211,7 +211,7 @@ var Obj = p0
 				var a = int16(10)
 				return &a
 			},
-			`var p0Var = 10
+			`var p0Var = int16(10)
 var p0 = &p0Var
 var Obj = p0
 `,
@@ -222,7 +222,7 @@ var Obj = p0
 				var a = int32(10)
 				return &a
 			},
-			`var p0Var = 10
+			`var p0Var = int32(10)
 var p0 = &p0Var
 var Obj = p0
 `,
@@ -233,7 +233,7 @@ var Obj = p0
 				var a = int64(10)
 				return &a
 			},
-			`var p0Var = 10
+			`var p0Var = int64(10)
 var p0 = &p0Var
 var Obj = p0
 `,
@@ -244,7 +244,7 @@ var Obj = p0
 				var a = uint(10)
 				return &a
 			},
-			`var p0Var = 10
+			`var p0Var = uint(10)
 var p0 = &p0Var
 var Obj = p0
 `,
@@ -255,7 +255,7 @@ var Obj = p0
 				var a = uint8(10)
 				return &a
 			},
-			`var p0Var = 10
+			`var p0Var = uint8(10)
 var p0 = &p0Var
 var Obj = p0
 `,
@@ -266,7 +266,7 @@ var Obj = p0
 				var a = uint16(10)
 				return &a
 			},
-			`var p0Var = 10
+			`var p0Var = uint16(10)
 var p0 = &p0Var
 var Obj = p0
 `,
@@ -277,7 +277,7 @@ var Obj = p0
 				var a = uint32(10)
 				return &a
 			},
-			`var p0Var = 10
+			`var p0Var = uint32(10)
 var p0 = &p0Var
 var Obj = p0
 `,
@@ -288,7 +288,7 @@ var Obj = p0
 				var a = uint64(10)
 				return &a
 			},
-			`var p0Var = 10
+			`var p0Var = uint64(10)
 var p0 = &p0Var
 var Obj = p0
 `,
@@ -299,7 +299,7 @@ var Obj = p0
 				var a = float32(10.5)
 				return &a
 			},
-			`var p0Var = 10.5
+			`var p0Var = float32(10.5)
 var p0 = &p0Var
 var Obj = p0
 `,
@@ -310,7 +310,7 @@ var Obj = p0
 				var a = float64(10.5)
 				return &a
 			},
-			`var p0Var = 10.5
+			`var p0Var = float64(10.5)
 var p0 = &p0Var
 var Obj = p0
 `,

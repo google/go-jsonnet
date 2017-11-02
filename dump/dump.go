@@ -187,21 +187,35 @@ func (s *dumpState) printPrimitivePointer(value reflect.Value, pointerName strin
 	case reflect.Bool:
 		printBool(s.w, v.Bool())
 
-	case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Int:
-		printInt(s.w, v.Int(), 10)
+	case reflect.Int:
+		printInt(s.w, v.Int(), 10, "int")
+	case reflect.Int8:
+		printInt(s.w, v.Int(), 10, "int8")
+	case reflect.Int16:
+		printInt(s.w, v.Int(), 10, "int16")
+	case reflect.Int32:
+		printInt(s.w, v.Int(), 10, "int32")
+	case reflect.Int64:
+		printInt(s.w, v.Int(), 10, "int64")
 
-	case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uint:
-		printUint(s.w, v.Uint(), 10)
+	case reflect.Uint:
+		printUint(s.w, v.Uint(), 10, "uint")
+	case reflect.Uint8:
+		printUint(s.w, v.Uint(), 10, "uint8")
+	case reflect.Uint16:
+		printUint(s.w, v.Uint(), 10, "uint16")
+	case reflect.Uint32:
+		printUint(s.w, v.Uint(), 10, "uint32")
+	case reflect.Uint64:
+		printUint(s.w, v.Uint(), 10, "uint64")
 
 	case reflect.Float32:
-		printFloat(s.w, v.Float(), 32)
-
+		printFloat(s.w, v.Float(), 32, "float32")
 	case reflect.Float64:
-		printFloat(s.w, v.Float(), 64)
+		printFloat(s.w, v.Float(), 64, "float64")
 
 	case reflect.Complex64:
 		printComplex(s.w, v.Complex(), 32)
-
 	case reflect.Complex128:
 		printComplex(s.w, v.Complex(), 64)
 
@@ -326,21 +340,35 @@ func (s *dumpState) dumpVal(value reflect.Value) {
 	case reflect.Bool:
 		printBool(s.w, v.Bool())
 
-	case reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Int:
-		printInt(s.w, v.Int(), 10)
+	case reflect.Int:
+		printInt(s.w, v.Int(), 10, "int")
+	case reflect.Int8:
+		printInt(s.w, v.Int(), 10, "int8")
+	case reflect.Int16:
+		printInt(s.w, v.Int(), 10, "int16")
+	case reflect.Int32:
+		printInt(s.w, v.Int(), 10, "int32")
+	case reflect.Int64:
+		printInt(s.w, v.Int(), 10, "int64")
 
-	case reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uint:
-		printUint(s.w, v.Uint(), 10)
+	case reflect.Uint:
+		printUint(s.w, v.Uint(), 10, "uint")
+	case reflect.Uint8:
+		printUint(s.w, v.Uint(), 10, "uint8")
+	case reflect.Uint16:
+		printUint(s.w, v.Uint(), 10, "uint16")
+	case reflect.Uint32:
+		printUint(s.w, v.Uint(), 10, "uint32")
+	case reflect.Uint64:
+		printUint(s.w, v.Uint(), 10, "uint64")
 
 	case reflect.Float32:
-		printFloat(s.w, v.Float(), 32)
-
+		printFloat(s.w, v.Float(), 32, "float32")
 	case reflect.Float64:
-		printFloat(s.w, v.Float(), 64)
+		printFloat(s.w, v.Float(), 64, "float64")
 
 	case reflect.Complex64:
 		printComplex(s.w, v.Complex(), 32)
-
 	case reflect.Complex128:
 		printComplex(s.w, v.Complex(), 64)
 
