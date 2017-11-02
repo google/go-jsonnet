@@ -4,13 +4,13 @@ Package dump can dump a Go data structure to Go source file, so that it can be s
 
 # Project Status
 * UnsafePointer is not supported yet
-* cyclic pointer is not supported yet
+* Cycles in the object graph are not supported yet
 
 # Implementation Notes
 
-## Aliase
+## Aliasing
 
-Primitive pointer and reused pointer will be aliased.
+Aliases to primitives and structs will be preserved in the objects described by the generated code.
 
 ### Primitive pointers
 ```go
