@@ -103,7 +103,7 @@ func (ef *ErrorFormatter) buildStackTrace(frames []TraceFrame) string {
 		if ef.pretty {
 			fmt.Fprintf(&buf, "-------------------------------------------------\n")
 		}
-		if i >= maxAbove && i < sz-maxBelow {
+		if ef.MaxStackTraceSize > 0 && i >= maxAbove && i < sz-maxBelow {
 			if ef.pretty {
 				fmt.Fprintf(&buf, "\t... (skipped %v frames)\n", sz-maxAbove-maxBelow)
 			} else {
