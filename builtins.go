@@ -285,6 +285,59 @@ func builtinFlatMap(e *evaluator, funcp potentialValue, arrp potentialValue) (va
 	return makeValueArray(elems), nil
 }
 
+func joinArrays(e *evaluator, sep *valueArray, arr *valueArray) (value, error) {
+	result := make([]potentialValue, 0, arr.length())
+	for i, elem := range arr.elements {
+		if i != 0 {
+			for _, subElem := range sep.elements {
+				result = append(result, subElem)
+			}
+		}
+		elemArr, err := e.evaluateArray(elem)
+		if err != nil {
+			return nil, err
+		}
+		for _, subElem := range elemArr.elements {
+			result = append(result, subElem)
+		}
+	}
+	return makeValueArray(result), nil
+}
+
+func joinStrings(e *evaluator, sep *valueString, arr *valueArray) (value, error) {
+	result := make([]rune, 0, arr.length())
+	for i, elem := range arr.elements {
+		if i != 0 {
+			result = append(result, sep.value...)
+		}
+		elemString, err := e.evaluateString(elem)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, elemString.value...)
+	}
+	return &valueString{value: result}, nil
+}
+
+func builtinJoin(e *evaluator, sepp potentialValue, arrp potentialValue) (value, error) {
+	arr, err := e.evaluateArray(arrp)
+	if err != nil {
+		return nil, err
+	}
+	sep, err := e.evaluate(sepp)
+	if err != nil {
+		return nil, err
+	}
+	switch sep := sep.(type) {
+	case *valueString:
+		return joinStrings(e, sep, arr)
+	case *valueArray:
+		return joinArrays(e, sep, arr)
+	default:
+		return nil, e.Error("join first parameter should be string or array, got " + sep.getType().name)
+	}
+}
+
 func builtinFilter(e *evaluator, funcp potentialValue, arrp potentialValue) (value, error) {
 	arr, err := e.evaluateArray(arrp)
 	if err != nil {
@@ -771,6 +824,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&UnaryBuiltin{name: "toString", function: builtinToString, parameters: ast.Identifiers{"a"}},
 	&BinaryBuiltin{name: "makeArray", function: builtinMakeArray, parameters: ast.Identifiers{"sz", "func"}},
 	&BinaryBuiltin{name: "flatMap", function: builtinFlatMap, parameters: ast.Identifiers{"func", "arr"}},
+	&BinaryBuiltin{name: "join", function: builtinJoin, parameters: ast.Identifiers{"sep", "arr"}},
 	&BinaryBuiltin{name: "filter", function: builtinFilter, parameters: ast.Identifiers{"func", "arr"}},
 	&BinaryBuiltin{name: "range", function: builtinRange, parameters: ast.Identifiers{"from", "to"}},
 	&BinaryBuiltin{name: "primitiveEquals", function: primitiveEquals, parameters: ast.Identifiers{"sz", "func"}},
