@@ -724,11 +724,14 @@ func (p *parser) parseTerminal() (ast.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		_, err = p.popExpect(tokenParenR)
+		tokRight, err := p.popExpect(tokenParenR)
 		if err != nil {
 			return nil, err
 		}
-		return inner, nil
+		return &ast.Parens{
+			NodeBase: ast.NewNodeBaseLoc(locFromTokens(tok, tokRight)),
+			Inner: inner,
+		}, nil
 
 	// Literals
 	case tokenNumber:
