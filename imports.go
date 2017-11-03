@@ -128,7 +128,7 @@ func (importer *FileImporter) Import(dir, importedPath string) *ImportedData {
 		return &ImportedData{err: err}
 	}
 
-	for i := 0; !found && i < len(importer.JPaths); i++ {
+	for i := len(importer.JPaths) - 1; !found && i >= 0; i-- {
 		found, content, foundHere, err = tryPath(importer.JPaths[i], importedPath)
 		if err != nil {
 			return &ImportedData{err: err}
