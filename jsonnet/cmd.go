@@ -115,7 +115,6 @@ func safeStrToInt(str string) (i int) {
 	i, err := strconv.Atoi(str)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "ERROR: Invalid integer \"%s\"", str)
-		usage(os.Stderr)
 		os.Exit(1)
 	}
 	return
@@ -182,7 +181,16 @@ func getVarFile(s string) (string, string, error) {
 	}
 }
 
-func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (bool, error) {
+type processArgsStatus = int
+const (
+	processArgsStatusContinue = iota
+	processArgsStatusSuccessUsage = iota
+	processArgsStatusFailureUsage = iota
+	processArgsStatusSuccess = iota
+	processArgsStatusFailure = iota
+)
+
+func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArgsStatus, error) {
 	args := simplifyArgs(givenArgs)
 	remainingArgs := make([]string, 0, 0)
 	i := 0
@@ -197,17 +205,16 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (bool, erro
 	for ; i < len(args); i++ {
 		arg := args[i]
 		if arg == "-h" || arg == "--help" {
-			usage(os.Stdout)
-			return false, nil
+			return processArgsStatusSuccessUsage, nil
 		} else if arg == "-v" || arg == "--version" {
 			version(os.Stdout)
-			return false, nil
+			return processArgsStatusSuccess, nil
 		} else if arg == "-e" || arg == "--exec" {
 			config.filenameIsCode = true
 		} else if arg == "-o" || arg == "--exec" {
 			outputFile := nextArg(&i, args)
 			if len(outputFile) == 0 {
-				return false, fmt.Errorf("ERROR: -o argument was empty string")
+				return processArgsStatusFailure, fmt.Errorf("ERROR: -o argument was empty string")
 			}
 			config.outputFile = outputFile
 		} else if arg == "--" {
@@ -221,14 +228,13 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (bool, erro
 			if arg == "-s" || arg == "--max-stack" {
 				l := safeStrToInt(nextArg(&i, args))
 				if l < 1 {
-					usage(os.Stderr)
-					return false, fmt.Errorf("ERROR: Invalid --max-stack value: %d", l)
+					return processArgsStatusFailure, fmt.Errorf("ERROR: Invalid --max-stack value: %d", l)
 				}
 				vm.MaxStack = l
 			} else if arg == "-J" || arg == "--jpath" {
 				dir := nextArg(&i, args)
 				if len(dir) == 0 {
-					return false, fmt.Errorf("ERROR: -J argument was empty string")
+					return processArgsStatusFailure, fmt.Errorf("ERROR: -J argument was empty string")
 				}
 				if dir[len(dir)-1] != '/' {
 					dir += "/"
@@ -238,70 +244,69 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (bool, erro
 				next := nextArg(&i, args)
 				name, content, err := getVarVal(next)
 				if err != nil {
-					return false, err
+					return processArgsStatusFailure, err
 				}
 				vm.ExtVar(name, content)
 			} else if arg == "--ext-str-file" {
 				next := nextArg(&i, args)
 				name, content, err := getVarFile(next)
 				if err != nil {
-					return false, err
+					return processArgsStatusFailure, err
 				}
 				vm.ExtVar(name, content)
 			} else if arg == "--ext-code" {
 				next := nextArg(&i, args)
 				name, content, err := getVarVal(next)
 				if err != nil {
-					return false, err
+					return processArgsStatusFailure, err
 				}
 				vm.ExtCode(name, content)
 			} else if arg == "--ext-code-file" {
 				next := nextArg(&i, args)
 				name, content, err := getVarFile(next)
 				if err != nil {
-					return false, err
+					return processArgsStatusFailure, err
 				}
 				vm.ExtCode(name, content)
 			} else if arg == "-A" || arg == "--tla-str" {
 				next := nextArg(&i, args)
 				name, content, err := getVarVal(next)
 				if err != nil {
-					return false, err
+					return processArgsStatusFailure, err
 				}
 				vm.TLAVar(name, content)
 			} else if arg == "--tla-str-file" {
 				next := nextArg(&i, args)
 				name, content, err := getVarFile(next)
 				if err != nil {
-					return false, err
+					return processArgsStatusFailure, err
 				}
 				vm.TLAVar(name, content)
 			} else if arg == "--tla-code" {
 				next := nextArg(&i, args)
 				name, content, err := getVarVal(next)
 				if err != nil {
-					return false, err
+					return processArgsStatusFailure, err
 				}
 				vm.TLACode(name, content)
 			} else if arg == "--tla-code-file" {
 				next := nextArg(&i, args)
 				name, content, err := getVarFile(next)
 				if err != nil {
-					return false, err
+					return processArgsStatusFailure, err
 				}
 				vm.TLACode(name, content)
 			} else if arg == "-t" || arg == "--max-trace" {
 				l := safeStrToInt(nextArg(&i, args))
 				if l < 0 {
-					usage(os.Stderr)
-					return false, fmt.Errorf("ERROR: Invalid --max-trace value: %d", l)
+					return processArgsStatusFailure, fmt.Errorf("ERROR: Invalid --max-trace value: %d", l)
 				}
-				vm.MaxTrace = l
+				vm.ErrorFormatter.MaxStackTraceSize = l
 			} else if arg == "-m" || arg == "--multi" {
 				config.evalMulti = true
 				outputDir := nextArg(&i, args)
 				if len(outputDir) == 0 {
-					return false, fmt.Errorf("ERROR: -m argument was empty string")
+					return processArgsStatusFailure, fmt.Errorf("ERROR: -m argument was empty string")
 				}
 				if outputDir[len(outputDir)-1] != '/' {
 					outputDir += "/"
@@ -312,13 +317,13 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (bool, erro
 			} else if arg == "-S" || arg == "--string" {
 				vm.StringOutput = true
 			} else if len(arg) > 1 && arg[0] == '-' {
-				return false, fmt.Errorf("ERROR: Unrecognized argument: %s", arg)
+				return processArgsStatusFailure, fmt.Errorf("ERROR: Unrecognized argument: %s", arg)
 			} else {
 				remainingArgs = append(remainingArgs, arg)
 			}
 
 		} else {
-			return false, fmt.Errorf("The Go implementation currently does not support jsonnet fmt.")
+			return processArgsStatusFailure, fmt.Errorf("The Go implementation currently does not support jsonnet fmt.")
 		}
 	}
 
@@ -327,23 +332,20 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (bool, erro
 		want = "code"
 	}
 	if len(remainingArgs) == 0 {
-		usage(os.Stderr)
-		return false, fmt.Errorf("ERROR: Must give %s", want)
+		return processArgsStatusFailureUsage, fmt.Errorf("ERROR: Must give %s", want)
 	}
 
 	// TODO(dcunnin): Formatter allows multiple files in test and in-place mode.
 	multipleFilesAllowed := false
 
 	if !multipleFilesAllowed {
-		filename := remainingArgs[0]
 		if len(remainingArgs) > 1 {
-			usage(os.Stderr)
-			return false, fmt.Errorf("ERROR: Already specified %s as \"%s", want, filename)
+			return processArgsStatusFailure, fmt.Errorf("ERROR: Only one %s is allowed", want)
 		}
 	}
 
 	config.inputFiles = remainingArgs
-	return true, nil
+	return processArgsStatusContinue, nil
 }
 
 // readInput gets Jsonnet code from the given place (file, commandline, stdin).
@@ -499,14 +501,31 @@ func main() {
 	vm := jsonnet.MakeVM()
 
 	config := makeConfig()
-	cont, err := processArgs(os.Args[1:], &config, vm)
+	status, err := processArgs(os.Args[1:], &config, vm)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
+	}
+	switch status {
+	case processArgsStatusContinue:
+		break
+	case processArgsStatusSuccessUsage:
+		usage(os.Stdout)
+		os.Exit(0)
+	case processArgsStatusFailureUsage:
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "")
+		}
+		usage(os.Stderr)
+		os.Exit(1)
+	case processArgsStatusSuccess:
+		os.Exit(0)
+	case processArgsStatusFailure:
 		os.Exit(1)
 	}
-	if !cont {
-		os.Exit(1)
-	}
+
+	vm.Importer(&jsonnet.FileImporter{
+		JPaths: config.evalJpath,
+	})
 
 	if config.cmd == commandEval {
 		if len(config.inputFiles) != 1 {
@@ -516,7 +535,19 @@ func main() {
 		filename := config.inputFiles[0]
 		input, err := readInput(config, &filename)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
+			var op string
+			switch typedErr := err.(type) {
+			case *os.PathError:
+				op = typedErr.Op
+				err = typedErr.Err
+			}
+			if op == "open" {
+				fmt.Fprintf(os.Stderr, "Opening input file: %s: %s\n", filename, err.Error())
+			} else if op == "read" {
+				fmt.Fprintf(os.Stderr, "Reading input file: %s: %s\n", filename, err.Error())
+			} else {
+				fmt.Fprintf(os.Stderr, err.Error())
+			}
 			os.Exit(1)
 		}
 		var output string
