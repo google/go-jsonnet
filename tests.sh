@@ -2,6 +2,8 @@
 
 set -e
 
+export IMPLEMENTATION=go
+
 (cd jsonnet; go build)
 source tests_path.source
 export DISABLE_LIB_TESTS=true
