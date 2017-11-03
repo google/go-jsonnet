@@ -953,7 +953,7 @@ func evaluateAux(i *interpreter, node ast.Node, tla vmExtMap) (value, *TraceElem
 			for argName, pv := range toplevelArgMap {
 				args.named = append(args.named, namedCallArgument{name: ast.Identifier(argName), pv: pv})
 			}
-			funcLoc := ast.MakeLocationRangeMessage("Top-level-function")
+			funcLoc := ast.MakeLocationRangeMessage("Top-level function")
 			funcTrace := &TraceElement{
 				loc: &funcLoc,
 			}
