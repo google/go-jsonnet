@@ -31,13 +31,13 @@ import (
 // VM is the core interpreter and is the touchpoint used to parse and execute
 // Jsonnet.
 type VM struct {
-	MaxStack     int
-	ext          vmExtMap
-	tla          vmExtMap
-	nativeFuncs  map[string]*NativeFunction
-	importer     Importer
-	ErrorFormatter           ErrorFormatter
-	StringOutput bool
+	MaxStack       int
+	ext            vmExtMap
+	tla            vmExtMap
+	nativeFuncs    map[string]*NativeFunction
+	importer       Importer
+	ErrorFormatter ErrorFormatter
+	StringOutput   bool
 }
 
 // External variable or top level argument provided before execution
@@ -54,12 +54,12 @@ type vmExtMap map[string]vmExt
 // MakeVM creates a new VM with default parameters.
 func MakeVM() *VM {
 	return &VM{
-		MaxStack:    500,
-		ext:         make(vmExtMap),
-		tla:         make(vmExtMap),
-		nativeFuncs: make(map[string]*NativeFunction),
-		ErrorFormatter:          ErrorFormatter{pretty: false, colorful: false, MaxStackTraceSize: 20},
-		importer:    &FileImporter{},
+		MaxStack:       500,
+		ext:            make(vmExtMap),
+		tla:            make(vmExtMap),
+		nativeFuncs:    make(map[string]*NativeFunction),
+		ErrorFormatter: ErrorFormatter{pretty: false, colorful: false, MaxStackTraceSize: 20},
+		importer:       &FileImporter{},
 	}
 }
 
