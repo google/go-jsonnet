@@ -39,6 +39,9 @@ func nextArg(i *int, args []string) string {
 	return args[*i]
 }
 
+// simplifyArgs transforms an array of commandline arguments so that
+// any -abc arg before the first -- (if any) are expanded into
+// -a -b -c.
 func simplifyArgs(args []string) (r []string) {
 	r = make([]string, 0, len(args)*2)
 	for i, arg := range args {
@@ -435,7 +438,6 @@ func writeMultiOutputFiles(output map[string]string, outputDir, outputFile strin
 
 // writeOutputStream writes the output as a YAML stream.
 func writeOutputStream(output []string, outputFile string) error {
-
 	var f *os.File
 
 	if outputFile == "" {
