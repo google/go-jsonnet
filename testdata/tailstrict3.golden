@@ -1,6 +1,6 @@
 RUNTIME ERROR: xxx
 -------------------------------------------------
-	testdata/tailstrict3:1:16-26	function <foo>
+	testdata/tailstrict3:1:16-27	function <foo>
 
 local foo(x, y=error "xxx")=x;
 

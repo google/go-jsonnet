@@ -1,11 +1,11 @@
 RUNTIME ERROR: xxx
 -------------------------------------------------
-	testdata/or4:1:10-20	$
+	testdata/or4:1:10-21	$
 
 false || error "xxx"
 
 -------------------------------------------------
-	testdata/or4:1:1-20	$
+	testdata/or4:1:1-21	$
 
 false || error "xxx"
 

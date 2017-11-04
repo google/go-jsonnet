@@ -1,6 +1,6 @@
 RUNTIME ERROR: x
 -------------------------------------------------
-	testdata/std.primitiveEquals10:1:21-29	thunk from <$>
+	testdata/std.primitiveEquals10:1:21-30	thunk from <$>
 
 std.primitiveEquals(error "x", 42)
 

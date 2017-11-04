@@ -1,6 +1,6 @@
 RUNTIME ERROR: Unexpected type string, expected number
 -------------------------------------------------
-	testdata/string_minus_number:1:2-9	$
+	testdata/string_minus_number:1:1-9	$
 
 "x" - 42
 

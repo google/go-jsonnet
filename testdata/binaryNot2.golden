@@ -1,6 +1,6 @@
 RUNTIME ERROR: Unexpected type string, expected number
 -------------------------------------------------
-	testdata/binaryNot2:1:1-6	$
+	testdata/binaryNot2:1:1-7	$
 
 ~"xxx"
 

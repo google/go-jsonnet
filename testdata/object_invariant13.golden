@@ -1,6 +1,6 @@
 RUNTIME ERROR: x
 -------------------------------------------------
-	testdata/object_invariant13:1:10-18	object <anonymous>
+	testdata/object_invariant13:1:10-19	object <anonymous>
 
 { assert error "x" }
 

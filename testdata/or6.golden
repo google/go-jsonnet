@@ -1,6 +1,6 @@
 RUNTIME ERROR: Unexpected type string, expected boolean
 -------------------------------------------------
-	testdata/or6:1:1-14	$
+	testdata/or6:1:1-15	$
 
 false || "xxx"
 

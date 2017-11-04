@@ -1,6 +1,6 @@
 RUNTIME ERROR: xxx
 -------------------------------------------------
-	testdata/error_from_array:1:2-12	thunk from <$>
+	testdata/error_from_array:1:2-13	thunk from <$>
 
 [error "xxx"][0]
 

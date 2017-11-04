@@ -1,6 +1,6 @@
 RUNTIME ERROR: xxx
 -------------------------------------------------
-	<extvar:errorVar>:1:1-11	$
+	<extvar:errorVar>:1:1-12	$
 
 error 'xxx'
 
