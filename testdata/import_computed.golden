@@ -1,4 +1,4 @@
-testdata/import_computed:1:9-16 Computed imports are not allowed
+testdata/import_computed:1:8-17 Computed imports are not allowed
 
 import "a" + "b"
 

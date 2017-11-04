@@ -1,6 +1,6 @@
 RUNTIME ERROR: xxx
 -------------------------------------------------
-	testdata/type_error:1:10-20	thunk from <$>
+	testdata/type_error:1:10-21	thunk from <$>
 
 std.type(error "xxx")
 

@@ -1,6 +1,6 @@
 RUNTIME ERROR: Index -1 out of bounds, not within [0, 4)
 -------------------------------------------------
-	testdata/string_index_negative:1:2-11	$
+	testdata/string_index_negative:1:1-11	$
 
 "abcd"[-1]
 

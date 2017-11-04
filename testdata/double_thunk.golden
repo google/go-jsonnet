@@ -1,6 +1,6 @@
 RUNTIME ERROR: xxx
 -------------------------------------------------
-	testdata/double_thunk:1:21-31	thunk <y> from <thunk <x> from <$>>
+	testdata/double_thunk:1:21-32	thunk <y> from <thunk <x> from <$>>
 
 local x = local y = error "xxx"; y; x
 

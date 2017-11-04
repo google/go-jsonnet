@@ -711,15 +711,13 @@ func Lex(fn string, input string) (tokens, error) {
 			// String literals
 		case '"':
 			stringStartLoc := l.prevLocation()
-			l.resetTokenStart() // Don't include the quotes in the token data
 			for r = l.next(); ; r = l.next() {
 				if r == lexEOF {
 					return nil, l.makeStaticErrorPoint("Unterminated String", stringStartLoc)
 				}
 				if r == '"' {
-					l.backup()
-					l.emitToken(tokenStringDouble)
-					_ = l.next()
+					// Don't include the quotes in the token data
+					l.emitFullToken(tokenStringDouble, l.input[l.tokenStart+1:l.pos.byteNo-1], "", "")
 					l.resetTokenStart()
 					break
 				}
@@ -729,15 +727,13 @@ func Lex(fn string, input string) (tokens, error) {
 			}
 		case '\'':
 			stringStartLoc := l.prevLocation()
-			l.resetTokenStart() // Don't include the quotes in the token data
 			for r = l.next(); ; r = l.next() {
 				if r == lexEOF {
 					return nil, l.makeStaticErrorPoint("Unterminated String", stringStartLoc)
 				}
 				if r == '\'' {
-					l.backup()
-					l.emitToken(tokenStringSingle)
-					r = l.next()
+					// Don't include the quotes in the token data
+					l.emitFullToken(tokenStringSingle, l.input[l.tokenStart+1:l.pos.byteNo-1], "", "")
 					l.resetTokenStart()
 					break
 				}

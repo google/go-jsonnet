@@ -1,6 +1,6 @@
 RUNTIME ERROR: xxx
 -------------------------------------------------
-	testdata/native4:1:28-38	thunk from <$>
+	testdata/native4:1:28-39	thunk from <$>
 
 std.native("jsonToString")(error "xxx")
 

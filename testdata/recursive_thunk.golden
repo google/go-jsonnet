@@ -1,6 +1,6 @@
 RUNTIME ERROR: xxx
 -------------------------------------------------
-	testdata/recursive_thunk:1:35-45	function <bar>
+	testdata/recursive_thunk:1:35-46	function <bar>
 
 local bar(th, x) = if x == 0 then error "xxx" else th;
 
