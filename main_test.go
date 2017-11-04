@@ -122,12 +122,15 @@ func TestMain(t *testing.T) {
 			}
 
 			input := read(test.input)
-			output, err := vm.evaluateSnippet(test.name, string(input))
+			rawOutput, err := vm.evaluateSnippet(test.name, string(input), evalKindRegular)
+			var output string
 			if err != nil {
 				// TODO(sbarzowski) perhaps somehow mark that we are processing
 				// an error. But for now we can treat them the same.
 				output = errFormatter.format(err)
 				output += "\n"
+			} else {
+				output = rawOutput.(string)
 			}
 			if *update {
 				err := ioutil.WriteFile(test.golden, []byte(output), 0666)
@@ -169,7 +172,7 @@ type errorFormattingTest struct {
 func genericTestErrorMessage(t *testing.T, tests []errorFormattingTest, format func(RuntimeError) string) {
 	for _, test := range tests {
 		vm := MakeVM()
-		output, err := vm.evaluateSnippet(test.name, test.input)
+		rawOutput, err := vm.evaluateSnippet(test.name, test.input, evalKindRegular)
 		var errString string
 		if err != nil {
 			switch typedErr := err.(type) {
@@ -178,8 +181,8 @@ func genericTestErrorMessage(t *testing.T, tests []errorFormattingTest, format f
 			default:
 				t.Errorf("%s: unexpected error: %v", test.name, err)
 			}
-
 		}
+		output := rawOutput.(string)
 		if errString != test.errString {
 			t.Errorf("%s: error result does not match. got\n\t%+#v\nexpected\n\t%+#v",
 				test.name, errString, test.errString)

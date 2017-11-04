@@ -724,7 +724,7 @@ func serializeJSON(v interface{}, multiline bool, indent string, buf *bytes.Buff
 }
 
 func (i *interpreter) manifestAndSerializeJSON(
-		buf *bytes.Buffer, trace *TraceElement, v value, multiline bool, indent string) error {
+	buf *bytes.Buffer, trace *TraceElement, v value, multiline bool, indent string) error {
 	manifested, err := i.manifestJSON(trace, v)
 	if err != nil {
 		return err
@@ -740,10 +740,55 @@ func (i *interpreter) manifestString(buf *bytes.Buffer, trace *TraceElement, v v
 		buf.WriteString(v.getString())
 		return nil
 	default:
-		return makeRuntimeError(fmt.Sprint("Expected string result, got: " + v.getType().name), i.getCurrentStackTrace(trace))
+		return makeRuntimeError(fmt.Sprintf("Expected string result, got: %s", v.getType().name), i.getCurrentStackTrace(trace))
 	}
 }
 
+func (i *interpreter) manifestAndSerializeMulti(trace *TraceElement, v value) (r map[string]string, err error) {
+	r = make(map[string]string)
+	json, err := i.manifestJSON(trace, v)
+	if err != nil {
+		return r, err
+	}
+	switch json := json.(type) {
+	case map[string]interface{}:
+		for filename, fileJson := range json {
+			var buf bytes.Buffer
+			serializeJSON(fileJson, true, "", &buf)
+			buf.WriteString("\n")
+			r[filename] = buf.String()
+		}
+	default:
+		msg := fmt.Sprintf("Multi mode: Top-level object was a %s, "+
+			"should be an object whose keys are filenames and values hold "+
+			"the JSON for that file.", v.getType().name)
+		return r, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+	}
+	return
+}
+
+func (i *interpreter) manifestAndSerializeYAMLStream(trace *TraceElement, v value) (r []string, err error) {
+	r = make([]string, 0)
+	json, err := i.manifestJSON(trace, v)
+	if err != nil {
+		return r, err
+	}
+	switch json := json.(type) {
+	case []interface{}:
+		for _, doc := range json {
+			var buf bytes.Buffer
+			serializeJSON(doc, true, "", &buf)
+			buf.WriteString("\n")
+			r = append(r, buf.String())
+		}
+	default:
+		msg := fmt.Sprintf("Stream mode: Top-level object was a %s, "+
+			"should be an array whose elements hold "+
+			"the JSON for each document in the stream.", v.getType().name)
+		return r, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+	}
+	return
+}
 
 func jsonToValue(e *evaluator, v interface{}) (value, error) {
 	switch v := v.(type) {
@@ -890,13 +935,7 @@ func makeInitialEnv(filename string, baseStd valueObject) environment {
 	)
 }
 
-// TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
-func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-              maxStack int, importer Importer, stringOutput bool) (string, error) {
-	i, err := buildInterpreter(ext, nativeFuncs, maxStack, importer)
-	if err != nil {
-		return "", err
-	}
+func evaluateAux(i *interpreter, node ast.Node, tla vmExtMap) (value, *TraceElement, error) {
 	evalLoc := ast.MakeLocationRangeMessage("During evaluation")
 	evalTrace := &TraceElement{
 		loc: &evalLoc,
@@ -904,7 +943,7 @@ func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]
 	env := makeInitialEnv(node.Loc().FileName, i.baseStd)
 	result, err := i.EvalInCleanEnv(evalTrace, &env, node, false)
 	if err != nil {
-		return "", err
+		return nil, nil, err
 	}
 	if len(tla) != 0 {
 		// If it's not a function, ignore TLA
@@ -914,13 +953,13 @@ func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]
 			for argName, pv := range toplevelArgMap {
 				args.named = append(args.named, namedCallArgument{name: ast.Identifier(argName), pv: pv})
 			}
-			funcLoc := ast.MakeLocationRangeMessage("Top-level-function")
+			funcLoc := ast.MakeLocationRangeMessage("Top-level function")
 			funcTrace := &TraceElement{
 				loc: &funcLoc,
 			}
 			result, err = f.call(args).getValue(i, funcTrace)
 			if err != nil {
-				return "", err
+				return nil, nil, err
 			}
 		}
 	}
@@ -928,6 +967,23 @@ func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]
 	manifestationTrace := &TraceElement{
 		loc: &manifestationLoc,
 	}
+	return result, manifestationTrace, nil
+}
+
+// TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
+func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
+	maxStack int, importer Importer, stringOutput bool) (string, error) {
+
+	i, err := buildInterpreter(ext, nativeFuncs, maxStack, importer)
+	if err != nil {
+		return "", err
+	}
+
+	result, manifestationTrace, err := evaluateAux(i, node, tla)
+	if err != nil {
+		return "", err
+	}
+
 	var buf bytes.Buffer
 	if stringOutput {
 		err = i.manifestString(&buf, manifestationTrace, result)
@@ -939,4 +995,38 @@ func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]
 	}
 	buf.WriteString("\n")
 	return buf.String(), nil
+}
+
+// TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
+func evaluateMulti(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
+	maxStack int, importer Importer, stringOutput bool) (map[string]string, error) {
+
+	i, err := buildInterpreter(ext, nativeFuncs, maxStack, importer)
+	if err != nil {
+		return nil, err
+	}
+
+	result, manifestationTrace, err := evaluateAux(i, node, tla)
+	if err != nil {
+		return nil, err
+	}
+
+	return i.manifestAndSerializeMulti(manifestationTrace, result)
+}
+
+// TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
+func evaluateStream(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
+	maxStack int, importer Importer) ([]string, error) {
+
+	i, err := buildInterpreter(ext, nativeFuncs, maxStack, importer)
+	if err != nil {
+		return nil, err
+	}
+
+	result, manifestationTrace, err := evaluateAux(i, node, tla)
+	if err != nil {
+		return nil, err
+	}
+
+	return i.manifestAndSerializeYAMLStream(manifestationTrace, result)
 }
