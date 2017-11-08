@@ -188,26 +188,26 @@ func (s *dumpState) printPrimitivePointer(value reflect.Value, pointerName strin
 		printBool(s.w, v.Bool())
 
 	case reflect.Int:
-		printInt(s.w, v.Int(), 10, "int")
+		printInt(s.w, v)
 	case reflect.Int8:
-		printInt(s.w, v.Int(), 10, "int8")
+		printInt(s.w, v)
 	case reflect.Int16:
-		printInt(s.w, v.Int(), 10, "int16")
+		printInt(s.w, v)
 	case reflect.Int32:
-		printInt(s.w, v.Int(), 10, "int32")
+		printInt(s.w, v)
 	case reflect.Int64:
-		printInt(s.w, v.Int(), 10, "int64")
+		printInt(s.w, v)
 
 	case reflect.Uint:
-		printUint(s.w, v.Uint(), 10, "uint")
+		printUint(s.w, v)
 	case reflect.Uint8:
-		printUint(s.w, v.Uint(), 10, "uint8")
+		printUint(s.w, v)
 	case reflect.Uint16:
-		printUint(s.w, v.Uint(), 10, "uint16")
+		printUint(s.w, v)
 	case reflect.Uint32:
-		printUint(s.w, v.Uint(), 10, "uint32")
+		printUint(s.w, v)
 	case reflect.Uint64:
-		printUint(s.w, v.Uint(), 10, "uint64")
+		printUint(s.w, v)
 
 	case reflect.Float32:
 		printFloat(s.w, v.Float(), 32, "float32")
@@ -341,26 +341,26 @@ func (s *dumpState) dumpVal(value reflect.Value) {
 		printBool(s.w, v.Bool())
 
 	case reflect.Int:
-		printInt(s.w, v.Int(), 10, "int")
+		printInt(s.w, v)
 	case reflect.Int8:
-		printInt(s.w, v.Int(), 10, "int8")
+		printInt(s.w, v)
 	case reflect.Int16:
-		printInt(s.w, v.Int(), 10, "int16")
+		printInt(s.w, v)
 	case reflect.Int32:
-		printInt(s.w, v.Int(), 10, "int32")
+		printInt(s.w, v)
 	case reflect.Int64:
-		printInt(s.w, v.Int(), 10, "int64")
+		printInt(s.w, v)
 
 	case reflect.Uint:
-		printUint(s.w, v.Uint(), 10, "uint")
+		printUint(s.w, v)
 	case reflect.Uint8:
-		printUint(s.w, v.Uint(), 10, "uint8")
+		printUint(s.w, v)
 	case reflect.Uint16:
-		printUint(s.w, v.Uint(), 10, "uint16")
+		printUint(s.w, v)
 	case reflect.Uint32:
-		printUint(s.w, v.Uint(), 10, "uint32")
+		printUint(s.w, v)
 	case reflect.Uint64:
-		printUint(s.w, v.Uint(), 10, "uint64")
+		printUint(s.w, v)
 
 	case reflect.Float32:
 		printFloat(s.w, v.Float(), 32, "float32")

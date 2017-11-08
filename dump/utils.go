@@ -21,18 +21,24 @@ import (
 	"io"
 	"reflect"
 	"strconv"
+	"strings"
 )
 
 func printBool(w io.Writer, value bool) {
 	w.Write([]byte(strconv.FormatBool(value)))
 }
 
-func printInt(w io.Writer, val int64, base int, intType string) {
-	w.Write([]byte(fmt.Sprintf("%s(%s)", intType, strconv.FormatInt(val, base))))
+func printInt(w io.Writer, val reflect.Value) {
+	typeName := fmt.Sprintf("%s", val.Type())
+	if strings.HasPrefix(typeName, "ast.") {
+		typeName = typeName[4:]
+	}
+	w.Write([]byte(fmt.Sprintf("%s(%s)", typeName, strconv.FormatInt(val.Int(), 10))))
 }
 
-func printUint(w io.Writer, val uint64, base int, uintType string) {
-	w.Write([]byte(fmt.Sprintf("%s(%s)", uintType, strconv.FormatUint(val, base))))
+func printUint(w io.Writer, val reflect.Value) {
+	typeName := fmt.Sprintf("%s", val.Type())
+	w.Write([]byte(fmt.Sprintf("%s(%s)", typeName, strconv.FormatUint(val.Uint(), 10))))
 }
 
 func printFloat(w io.Writer, val float64, precision int, floatType string) {
