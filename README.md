@@ -45,3 +45,11 @@ go get github.com/clipperhouse/set
 export PATH=$PATH:$GOPATH/bin  # If you haven't already
 go generate
 ```
+
+## Generated Stdlib
+
+To regenerate the standard library, do:
+
+```
+./reset_stdast_go.sh && go run cmd/dumpstdlibast.go
+```

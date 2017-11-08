@@ -193,7 +193,7 @@ var _escData = map[string]*_escFile{
 	"/std/std.jsonnet": {
 		local:   "std/std.jsonnet",
 		size:    42048,
-		modtime: 1509684595,
+		modtime: 1509761227,
 		compressed: `
 H4sIAAAJbogC/+w9f3PbNrL/61MgfHUr1bRsy47bOHFn0iS9812b9Jr0en2KRkNRlESbIlWSsuXm8t3f
 7gL8ARIAKTl5vXTO08tJIrC72F3sLhYL8PDLzrNodRf780XKBkfHD9lfomgeeOwydPvsaRAwepSw2Eu8
