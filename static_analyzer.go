@@ -145,7 +145,7 @@ func analyzeVisit(a ast.Node, inObject bool, vars ast.IdentifierSet) error {
 	default:
 		panic(fmt.Sprintf("Unexpected node %#v", a))
 	}
-	a.SetFreeVariables(s.freeVars.ToSlice())
+	a.SetFreeVariables(s.freeVars.ToOrderedSlice())
 	return s.err
 }
 
