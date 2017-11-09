@@ -14,6 +14,7 @@ limitations under the License.
 package main
 
 import (
+	"io/ioutil"
 	"os"
 
 	"github.com/google/go-jsonnet"
@@ -23,13 +24,18 @@ import (
 func main() {
 	filename := "ast/stdast.go"
 
-	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE,0644)
+	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		panic(err)
 	}
 	defer file.Close()
 
-	node, err := jsonnet.SnippetToAST("<std>", jsonnet.GetStdCode())
+	buf, err := ioutil.ReadFile("std/std.jsonnet")
+	if err != nil {
+		panic(err)
+	}
+
+	node, err := jsonnet.SnippetToAST("<std>", string(buf))
 	if err != nil {
 		panic(err)
 	}

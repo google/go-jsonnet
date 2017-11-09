@@ -27,13 +27,6 @@ import (
 	"github.com/google/go-jsonnet/ast"
 )
 
-// TODO(sbarzowski) Is this the best option? It's the first one that worked for me...
-//go:generate esc -o std.go -pkg=jsonnet std/std.jsonnet
-//go:generate go run cmd/dumpstdlibast.go
-func GetStdCode() string {
-	return FSMustString(false, "/std/std.jsonnet")
-}
-
 func builtinPlus(e *evaluator, xp, yp potentialValue) (value, error) {
 	// TODO(sbarzowski) more types, mixing types
 	// TODO(sbarzowski) perhaps a more elegant way to dispatch
