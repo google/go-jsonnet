@@ -267,7 +267,7 @@ func buildDesugaredObject(nodeBase ast.NodeBase, fields ast.ObjectFields) *ast.D
 		} else if field.Kind == ast.ObjectFieldExpr {
 			newFields = append(newFields, ast.DesugaredObjectField{field.Hide, field.Expr1, field.Expr2, field.SuperSugar})
 		} else {
-			panic(fmt.Sprintf("INTERNAL ERROR: field should have been desugared: %s", field.Kind))
+			panic(fmt.Sprintf("INTERNAL ERROR: field should have been desugared: %v", field.Kind))
 		}
 	}
 
