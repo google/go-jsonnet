@@ -39,7 +39,6 @@ http://clipperhouse.github.io/gen/.  Do the following to regenerate these if
 necessary:
 
 ```
-go get github.com/mjibson/esc
 go get github.com/clipperhouse/gen
 go get github.com/clipperhouse/set
 export PATH=$PATH:$GOPATH/bin  # If you haven't already
