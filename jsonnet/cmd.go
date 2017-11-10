@@ -117,7 +117,7 @@ func usage(o io.Writer) {
 func safeStrToInt(str string) (i int) {
 	i, err := strconv.Atoi(str)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "ERROR: Invalid integer \"%s\"", str)
+		fmt.Fprintf(os.Stderr, "ERROR: Invalid integer \"%s\"\n", str)
 		os.Exit(1)
 	}
 	return
