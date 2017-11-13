@@ -144,11 +144,11 @@ func (importer *FileImporter) Import(dir, importedPath string) *ImportedData {
 }
 
 type MemoryImporter struct {
-	data map[string]string
+	Data map[string]string
 }
 
 func (importer *MemoryImporter) Import(dir, importedPath string) *ImportedData {
-	if content, ok := importer.data[importedPath]; ok {
+	if content, ok := importer.Data[importedPath]; ok {
 		return &ImportedData{content: content, foundHere: importedPath}
 	}
 	return &ImportedData{err: fmt.Errorf("Import not available %v", importedPath)}
