@@ -24,9 +24,9 @@ import (
 )
 
 type ImportedData struct {
-	err       error
-	foundHere string
-	content   string
+	Err       error
+	FoundHere string
+	Content   string
 }
 
 type Importer interface {
@@ -70,10 +70,10 @@ func (cache *ImportCache) importData(key importCacheKey) *ImportCacheValue {
 
 func (cache *ImportCache) ImportString(codeDir, importedPath string, e *evaluator) (*valueString, error) {
 	data := cache.importData(importCacheKey{codeDir, importedPath})
-	if data.data.err != nil {
-		return nil, e.Error(data.data.err.Error())
+	if data.data.Err != nil {
+		return nil, e.Error(data.data.Err.Error())
 	}
-	return makeValueString(data.data.content), nil
+	return makeValueString(data.data.Content), nil
 }
 
 func codeToPV(e *evaluator, filename string, code string) potentialValue {
@@ -91,11 +91,11 @@ func codeToPV(e *evaluator, filename string, code string) potentialValue {
 
 func (cache *ImportCache) ImportCode(codeDir, importedPath string, e *evaluator) (value, error) {
 	cached := cache.importData(importCacheKey{codeDir, importedPath})
-	if cached.data.err != nil {
-		return nil, e.Error(cached.data.err.Error())
+	if cached.data.Err != nil {
+		return nil, e.Error(cached.data.Err.Error())
 	}
 	if cached.asCode == nil {
-		cached.asCode = codeToPV(e, cached.data.foundHere, cached.data.content)
+		cached.asCode = codeToPV(e, cached.data.FoundHere, cached.data.Content)
 	}
 	return e.evaluate(cached.asCode)
 }
@@ -125,22 +125,22 @@ func tryPath(dir, importedPath string) (found bool, content []byte, foundHere st
 func (importer *FileImporter) Import(dir, importedPath string) *ImportedData {
 	found, content, foundHere, err := tryPath(dir, importedPath)
 	if err != nil {
-		return &ImportedData{err: err}
+		return &ImportedData{Err: err}
 	}
 
 	for i := len(importer.JPaths) - 1; !found && i >= 0; i-- {
 		found, content, foundHere, err = tryPath(importer.JPaths[i], importedPath)
 		if err != nil {
-			return &ImportedData{err: err}
+			return &ImportedData{Err: err}
 		}
 	}
 
 	if !found {
 		return &ImportedData{
-			err: fmt.Errorf("Couldn't open import %#v: No match locally or in the Jsonnet library paths.", importedPath),
+			Err: fmt.Errorf("Couldn't open import %#v: No match locally or in the Jsonnet library paths.", importedPath),
 		}
 	}
-	return &ImportedData{content: string(content), foundHere: foundHere}
+	return &ImportedData{Content: string(content), FoundHere: foundHere}
 }
 
 type MemoryImporter struct {
@@ -149,7 +149,7 @@ type MemoryImporter struct {
 
 func (importer *MemoryImporter) Import(dir, importedPath string) *ImportedData {
 	if content, ok := importer.Data[importedPath]; ok {
-		return &ImportedData{content: content, foundHere: importedPath}
+		return &ImportedData{Content: content, FoundHere: importedPath}
 	}
-	return &ImportedData{err: fmt.Errorf("Import not available %v", importedPath)}
+	return &ImportedData{Err: fmt.Errorf("Import not available %v", importedPath)}
 }
