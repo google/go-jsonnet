@@ -214,7 +214,7 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 			return processArgsStatusSuccess, nil
 		} else if arg == "-e" || arg == "--exec" {
 			config.filenameIsCode = true
-		} else if arg == "-o" || arg == "--exec" {
+		} else if arg == "-o" || arg == "--output-file" {
 			outputFile := nextArg(&i, args)
 			if len(outputFile) == 0 {
 				return processArgsStatusFailure, fmt.Errorf("ERROR: -o argument was empty string")
