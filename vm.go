@@ -58,7 +58,7 @@ func MakeVM() *VM {
 		ext:            make(vmExtMap),
 		tla:            make(vmExtMap),
 		nativeFuncs:    make(map[string]*NativeFunction),
-		ErrorFormatter: ErrorFormatter{pretty: false, colorful: false, MaxStackTraceSize: 20},
+		ErrorFormatter: &termErrorFormatter{pretty: false, maxStackTraceSize: 20},
 		importer:       &FileImporter{},
 	}
 }
@@ -132,7 +132,7 @@ func (vm *VM) NativeFunction(f *NativeFunction) {
 func (vm *VM) EvaluateSnippet(filename string, snippet string) (json string, formattedErr error) {
 	output, err := vm.evaluateSnippet(filename, snippet, evalKindRegular)
 	if err != nil {
-		return "", errors.New(vm.ErrorFormatter.format(err))
+		return "", errors.New(vm.ErrorFormatter.Format(err))
 	}
 	json = output.(string)
 	return
@@ -145,7 +145,7 @@ func (vm *VM) EvaluateSnippet(filename string, snippet string) (json string, for
 func (vm *VM) EvaluateSnippetStream(filename string, snippet string) (docs []string, formattedErr error) {
 	output, err := vm.evaluateSnippet(filename, snippet, evalKindStream)
 	if err != nil {
-		return nil, errors.New(vm.ErrorFormatter.format(err))
+		return nil, errors.New(vm.ErrorFormatter.Format(err))
 	}
 	docs = output.([]string)
 	return
@@ -158,7 +158,7 @@ func (vm *VM) EvaluateSnippetStream(filename string, snippet string) (docs []str
 func (vm *VM) EvaluateSnippetMulti(filename string, snippet string) (files map[string]string, formattedErr error) {
 	output, err := vm.evaluateSnippet(filename, snippet, evalKindMulti)
 	if err != nil {
-		return nil, errors.New(vm.ErrorFormatter.format(err))
+		return nil, errors.New(vm.ErrorFormatter.Format(err))
 	}
 	files = output.(map[string]string)
 	return

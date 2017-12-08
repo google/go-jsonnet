@@ -90,7 +90,7 @@ func TestMain(t *testing.T) {
 		}
 		mainTests = append(mainTests, mainTest{name: name, input: input, golden: golden, meta: &meta})
 	}
-	errFormatter := ErrorFormatter{pretty: true, MaxStackTraceSize: 9}
+	errFormatter := termErrorFormatter{pretty: true, maxStackTraceSize: 9}
 	for _, test := range mainTests {
 		t.Run(test.name, func(t *testing.T) {
 			vm := MakeVM()
@@ -127,7 +127,7 @@ func TestMain(t *testing.T) {
 			if err != nil {
 				// TODO(sbarzowski) perhaps somehow mark that we are processing
 				// an error. But for now we can treat them the same.
-				output = errFormatter.format(err)
+				output = errFormatter.Format(err)
 				output += "\n"
 			} else {
 				output = rawOutput.(string)
@@ -226,9 +226,9 @@ var minimalErrorTests = []errorFormattingTest{
 }
 
 func TestMinimalError(t *testing.T) {
-	formatter := ErrorFormatter{MaxStackTraceSize: 20}
+	formatter := termErrorFormatter{maxStackTraceSize: 20}
 	genericTestErrorMessage(t, minimalErrorTests, func(r RuntimeError) string {
-		return formatter.format(r)
+		return formatter.Format(r)
 	})
 }
 

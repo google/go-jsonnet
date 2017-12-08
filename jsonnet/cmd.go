@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/google/go-jsonnet"
 )
 
@@ -185,12 +186,13 @@ func getVarFile(s string) (string, string, error) {
 }
 
 type processArgsStatus = int
+
 const (
-	processArgsStatusContinue = iota
+	processArgsStatusContinue     = iota
 	processArgsStatusSuccessUsage = iota
 	processArgsStatusFailureUsage = iota
-	processArgsStatusSuccess = iota
-	processArgsStatusFailure = iota
+	processArgsStatusSuccess      = iota
+	processArgsStatusFailure      = iota
 )
 
 func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArgsStatus, error) {
@@ -304,7 +306,7 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 				if l < 0 {
 					return processArgsStatusFailure, fmt.Errorf("ERROR: Invalid --max-trace value: %d", l)
 				}
-				vm.ErrorFormatter.MaxStackTraceSize = l
+				vm.ErrorFormatter.SetMaxStackTraceSize(l)
 			} else if arg == "-m" || arg == "--multi" {
 				config.evalMulti = true
 				outputDir := nextArg(&i, args)
@@ -501,6 +503,7 @@ func main() {
 	}
 
 	vm := jsonnet.MakeVM()
+	vm.ErrorFormatter.SetColorFormatter(color.New(color.FgRed).Fprintf)
 
 	config := makeConfig()
 	status, err := processArgs(os.Args[1:], &config, vm)
