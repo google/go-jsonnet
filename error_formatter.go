@@ -18,25 +18,50 @@ package jsonnet
 import (
 	"bytes"
 	"fmt"
+	"io"
 
-	"github.com/fatih/color"
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/parser"
 )
 
-type ErrorFormatter struct {
-	// MaxStackTraceSize  is the maximum length of stack trace before cropping
-	MaxStackTraceSize int
+type ErrorFormatter interface {
+	// Format static, runtime, and unexpected errors prior to printing them.
+	Format(err error) string
+
+	// Set the the maximum length of stack trace before cropping.
+	SetMaxStackTraceSize(size int)
+
+	// Set the color formatter for the location color.
+	SetColorFormatter(color ColorFormatter)
+}
+
+type ColorFormatter func(w io.Writer, f string, a ...interface{}) (n int, err error)
+
+var _ ErrorFormatter = &termErrorFormatter{}
+
+type termErrorFormatter struct {
+	// maxStackTraceSize  is the maximum length of stack trace before cropping
+	maxStackTraceSize int
 
 	// Examples of current state of the art.
 	// http://elm-lang.org/blog/compiler-errors-for-humans
 	// https://clang.llvm.org/diagnostics.html
-	pretty   bool
-	colorful bool
-	SP       *ast.SourceProvider
+	color  ColorFormatter
+	pretty bool
+
+	// sp is currently never set, but is used to format locations.
+	sp *ast.SourceProvider
 }
 
-func (ef *ErrorFormatter) format(err error) string {
+func (ef *termErrorFormatter) SetMaxStackTraceSize(size int) {
+	ef.maxStackTraceSize = size
+}
+
+func (ef *termErrorFormatter) SetColorFormatter(color ColorFormatter) {
+	ef.color = color
+}
+
+func (ef *termErrorFormatter) Format(err error) string {
 	switch err := err.(type) {
 	case RuntimeError:
 		return ef.formatRuntime(&err)
@@ -47,11 +72,11 @@ func (ef *ErrorFormatter) format(err error) string {
 	}
 }
 
-func (ef *ErrorFormatter) formatRuntime(err *RuntimeError) string {
+func (ef *termErrorFormatter) formatRuntime(err *RuntimeError) string {
 	return err.Error() + "\n" + ef.buildStackTrace(err.StackTrace)
 }
 
-func (ef *ErrorFormatter) formatStatic(err *parser.StaticError) string {
+func (ef *termErrorFormatter) formatStatic(err *parser.StaticError) string {
 	var buf bytes.Buffer
 	buf.WriteString(err.Error() + "\n")
 	ef.showCode(&buf, err.Loc)
@@ -60,15 +85,15 @@ func (ef *ErrorFormatter) formatStatic(err *parser.StaticError) string {
 
 const bugURL = "https://github.com/google/go-jsonnet/issues"
 
-func (ef *ErrorFormatter) formatInternal(err error) string {
+func (ef *termErrorFormatter) formatInternal(err error) string {
 	return "INTERNAL ERROR: " + err.Error() + "\n" +
 		"Please report a bug here: " + bugURL + "\n"
 }
 
-func (ef *ErrorFormatter) showCode(buf *bytes.Buffer, loc ast.LocationRange) {
+func (ef *termErrorFormatter) showCode(buf *bytes.Buffer, loc ast.LocationRange) {
 	errFprintf := fmt.Fprintf
-	if ef.colorful {
-		errFprintf = color.New(color.FgRed).Fprintf
+	if ef.color != nil {
+		errFprintf = ef.color
 	}
 	if loc.WithCode() {
 		// TODO(sbarzowski) include line numbers
@@ -76,15 +101,15 @@ func (ef *ErrorFormatter) showCode(buf *bytes.Buffer, loc ast.LocationRange) {
 		fmt.Fprintf(buf, "\n")
 		beginning := ast.LineBeginning(&loc)
 		ending := ast.LineEnding(&loc)
-		fmt.Fprintf(buf, "%v", ef.SP.GetSnippet(beginning))
-		errFprintf(buf, "%v", ef.SP.GetSnippet(loc))
-		fmt.Fprintf(buf, "%v", ef.SP.GetSnippet(ending))
+		fmt.Fprintf(buf, "%v", ef.sp.GetSnippet(beginning))
+		errFprintf(buf, "%v", ef.sp.GetSnippet(loc))
+		fmt.Fprintf(buf, "%v", ef.sp.GetSnippet(ending))
 		buf.WriteByte('\n')
 	}
 	fmt.Fprintf(buf, "\n")
 }
 
-func (ef *ErrorFormatter) frame(frame *TraceFrame, buf *bytes.Buffer) {
+func (ef *termErrorFormatter) frame(frame *TraceFrame, buf *bytes.Buffer) {
 	// TODO(sbarzowski) tabs are probably a bad idea
 	fmt.Fprintf(buf, "\t%v\t%v\n", frame.Loc.String(), frame.Name)
 	if ef.pretty {
@@ -92,10 +117,10 @@ func (ef *ErrorFormatter) frame(frame *TraceFrame, buf *bytes.Buffer) {
 	}
 }
 
-func (ef *ErrorFormatter) buildStackTrace(frames []TraceFrame) string {
+func (ef *termErrorFormatter) buildStackTrace(frames []TraceFrame) string {
 	// https://github.com/google/jsonnet/blob/master/core/libjsonnet.cpp#L594
-	maxAbove := ef.MaxStackTraceSize / 2
-	maxBelow := ef.MaxStackTraceSize - maxAbove
+	maxAbove := ef.maxStackTraceSize / 2
+	maxBelow := ef.maxStackTraceSize - maxAbove
 	var buf bytes.Buffer
 	sz := len(frames)
 	for i := 0; i < sz; i++ {
@@ -103,7 +128,7 @@ func (ef *ErrorFormatter) buildStackTrace(frames []TraceFrame) string {
 		if ef.pretty {
 			fmt.Fprintf(&buf, "-------------------------------------------------\n")
 		}
-		if ef.MaxStackTraceSize > 0 && i >= maxAbove && i < sz-maxBelow {
+		if ef.maxStackTraceSize > 0 && i >= maxAbove && i < sz-maxBelow {
 			if ef.pretty {
 				fmt.Fprintf(&buf, "\t... (skipped %v frames)\n", sz-maxAbove-maxBelow)
 			} else {
