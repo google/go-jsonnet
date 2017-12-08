@@ -311,6 +311,22 @@ func builtinFilter(e *evaluator, funcp potentialValue, arrp potentialValue) (val
 	return makeValueArray(elems), nil
 }
 
+func builtinRange(e *evaluator, fromp potentialValue, top potentialValue) (value, error) {
+	from, err := e.evaluateInt(fromp)
+	if err != nil {
+		return nil, err
+	}
+	to, err := e.evaluateInt(top)
+	if err != nil {
+		return nil, err
+	}
+	elems := make([]potentialValue, to-from+1)
+	for i := from; i <= to; i++ {
+		elems[i-from] = &readyValue{intToValue(i)}
+	}
+	return makeValueArray(elems), nil
+}
+
 func builtinNegation(e *evaluator, xp potentialValue) (value, error) {
 	x, err := e.evaluateBoolean(xp)
 	if err != nil {
@@ -756,6 +772,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&BinaryBuiltin{name: "makeArray", function: builtinMakeArray, parameters: ast.Identifiers{"sz", "func"}},
 	&BinaryBuiltin{name: "flatMap", function: builtinFlatMap, parameters: ast.Identifiers{"func", "arr"}},
 	&BinaryBuiltin{name: "filter", function: builtinFilter, parameters: ast.Identifiers{"func", "arr"}},
+	&BinaryBuiltin{name: "range", function: builtinRange, parameters: ast.Identifiers{"from", "to"}},
 	&BinaryBuiltin{name: "primitiveEquals", function: primitiveEquals, parameters: ast.Identifiers{"sz", "func"}},
 	&BinaryBuiltin{name: "objectFieldsEx", function: builtinObjectFieldsEx, parameters: ast.Identifiers{"obj", "hidden"}},
 	&TernaryBuiltin{name: "objectHasEx", function: builtinObjectHasEx, parameters: ast.Identifiers{"obj", "fname", "hidden"}},
