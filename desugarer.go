@@ -52,7 +52,7 @@ func stringUnescape(loc *ast.LocationRange, s string) (string, error) {
 			case '\\':
 				buf.WriteRune('\\')
 			case '/':
-				buf.WriteRune('/') // This one is odd, maybe a mistake.
+				buf.WriteRune('/') // See json.org, \/ is a valid escape.
 			case 'b':
 				buf.WriteRune('\b')
 			case 'f':
