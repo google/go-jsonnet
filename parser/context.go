@@ -274,7 +274,7 @@ func specialChildren(node ast.Node) []ast.Node {
 	panic(fmt.Sprintf("specialChildren: Unknown node %#v", node))
 }
 
-func children(node ast.Node) []ast.Node {
+func Children(node ast.Node) []ast.Node {
 	var result []ast.Node
 	result = append(result, directChildren(node)...)
 	result = append(result, thunkChildren(node)...)
