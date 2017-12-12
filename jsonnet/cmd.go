@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime/pprof"
 	"sort"
 	"strconv"
@@ -503,6 +504,11 @@ func main() {
 	vm := jsonnet.MakeVM()
 
 	config := makeConfig()
+	jsonnetPath := filepath.SplitList(os.Getenv("JSONNET_PATH"))
+	for i := len(jsonnetPath) - 1; i >= 0; i-- {
+		config.evalJpath = append(config.evalJpath, jsonnetPath[i])
+	}
+
 	status, err := processArgs(os.Args[1:], &config, vm)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
