@@ -83,7 +83,7 @@ func (vm *VM) TLACode(key string, val string) {
 	vm.tla[key] = vmExt{value: val, isCode: true}
 }
 
-// Importer sets Importer to use during evaluation (import callback)
+// Importer sets Importer to use during evaluation (import callback).
 func (vm *VM) Importer(i Importer) {
 	vm.importer = i
 }
@@ -120,7 +120,7 @@ func (vm *VM) evaluateSnippet(filename string, snippet string, kind evalKind) (o
 	return output, nil
 }
 
-// NativeFunction registers a native function
+// NativeFunction registers a native function.
 func (vm *VM) NativeFunction(f *NativeFunction) {
 	vm.nativeFuncs[f.Name] = f
 }
@@ -151,8 +151,8 @@ func (vm *VM) EvaluateSnippetStream(filename string, snippet string) (docs []str
 	return
 }
 
-// EvaluateSnippetStream evaluates a string containing Jsonnet code to an array.
-// The array is returned as an array of JSON strings.
+// EvaluateSnippetMulti evaluates a string containing Jsonnet code to key-value
+// pairs. The keys are field name strings and the values are JSON strings.
 //
 // The filename parameter is only used for error messages.
 func (vm *VM) EvaluateSnippetMulti(filename string, snippet string) (files map[string]string, formattedErr error) {
