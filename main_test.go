@@ -19,6 +19,7 @@ package jsonnet
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"io/ioutil"
 	"path/filepath"
@@ -81,6 +82,14 @@ var jsonToString = &NativeFunction{
 	},
 }
 
+var nativeError = &NativeFunction{
+	Name: "nativeError",
+	Params: ast.Identifiers{},
+	Func: func(x []interface{}) (interface{}, error) {
+		return nil, errors.New("Native function error")
+	},
+}
+
 type jsonnetInput struct {
 	name    string
 	input   []byte
@@ -106,6 +115,7 @@ func runJsonnet(i jsonnetInput) jsonnetResult {
 	}
 
 	vm.NativeFunction(jsonToString)
+	vm.NativeFunction(nativeError)
 
 	var output string
 
