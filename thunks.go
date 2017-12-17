@@ -309,7 +309,7 @@ func (native *NativeFunction) EvalCall(arguments callArguments, e *evaluator) (v
 	}
 	resultJSON, err := native.Func(nativeArgs)
 	if err != nil {
-		return nil, err
+		return nil, e.Error(err.Error())
 	}
 	return jsonToValue(e, resultJSON)
 }
