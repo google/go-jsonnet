@@ -22,6 +22,7 @@ import (
 	"errors"
 	"flag"
 	"io/ioutil"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -31,6 +32,7 @@ import (
 )
 
 var update = flag.Bool("update", false, "update .golden files")
+var jsonnetCmd = flag.String("cmd", "", "path to jsonnet command (if not specified or empty, internal implementation is used)")
 
 // TODO(sbarzowski) figure out how to measure coverage on the external tests
 
@@ -103,7 +105,7 @@ type jsonnetResult struct {
 	isError bool
 }
 
-func runJsonnet(i jsonnetInput) jsonnetResult {
+func runInternalJsonnet(i jsonnetInput) jsonnetResult {
 	vm := MakeVM()
 	errFormatter := termErrorFormatter{pretty: true, maxStackTraceSize: 9}
 
@@ -135,6 +137,43 @@ func runJsonnet(i jsonnetInput) jsonnetResult {
 	return jsonnetResult{
 		output:  output,
 		isError: isError,
+	}
+}
+
+func runJsonnetCommand(i jsonnetInput) jsonnetResult {
+	// TODO(sbarzowski) Special handling of errors (which may differ between versions)
+	input := bytes.NewBuffer(i.input)
+	var output bytes.Buffer
+	isError := false
+	cmd := exec.Cmd{
+		Path:   *jsonnetCmd,
+		Stdin:  input,
+		Stdout: &output,
+		Stderr: &output,
+		Args:   []string{"jsonnet", "-"},
+	}
+	err := cmd.Run()
+	if err != nil {
+		switch err := err.(type) {
+		case *exec.ExitError:
+			// It finished with non-zero exit code
+			isError = true
+		default:
+			// We weren't able to run it
+			panic(err)
+		}
+	}
+	return jsonnetResult{
+		output:  output.String(),
+		isError: isError,
+	}
+}
+
+func runJsonnet(i jsonnetInput) jsonnetResult {
+	if jsonnetCmd != nil && *jsonnetCmd != "" {
+		return runJsonnetCommand(i)
+	} else {
+		return runInternalJsonnet(i)
 	}
 }
 
