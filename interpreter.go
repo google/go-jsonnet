@@ -942,22 +942,20 @@ func evaluateAux(i *interpreter, node ast.Node, tla vmExtMap) (value, *TraceElem
 	if err != nil {
 		return nil, nil, err
 	}
-	if len(tla) != 0 {
-		// If it's not a function, ignore TLA
-		if f, ok := result.(*valueFunction); ok {
-			toplevelArgMap := prepareExtVars(i, tla, "top-level-arg")
-			args := callArguments{}
-			for argName, pv := range toplevelArgMap {
-				args.named = append(args.named, namedCallArgument{name: ast.Identifier(argName), pv: pv})
-			}
-			funcLoc := ast.MakeLocationRangeMessage("Top-level function")
-			funcTrace := &TraceElement{
-				loc: &funcLoc,
-			}
-			result, err = f.call(args).getValue(i, funcTrace)
-			if err != nil {
-				return nil, nil, err
-			}
+	// If it's not a function, ignore TLA
+	if f, ok := result.(*valueFunction); ok {
+		toplevelArgMap := prepareExtVars(i, tla, "top-level-arg")
+		args := callArguments{}
+		for argName, pv := range toplevelArgMap {
+			args.named = append(args.named, namedCallArgument{name: ast.Identifier(argName), pv: pv})
+		}
+		funcLoc := ast.MakeLocationRangeMessage("Top-level function")
+		funcTrace := &TraceElement{
+			loc: &funcLoc,
+		}
+		result, err = f.call(args).getValue(i, funcTrace)
+		if err != nil {
+			return nil, nil, err
 		}
 	}
 	manifestationLoc := ast.MakeLocationRangeMessage("During manifestation")
