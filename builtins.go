@@ -287,34 +287,53 @@ func builtinFlatMap(e *evaluator, funcp potentialValue, arrp potentialValue) (va
 
 func joinArrays(e *evaluator, sep *valueArray, arr *valueArray) (value, error) {
 	result := make([]potentialValue, 0, arr.length())
-	for i, elem := range arr.elements {
-		if i != 0 {
-			for _, subElem := range sep.elements {
-				result = append(result, subElem)
-			}
-		}
-		elemArr, err := e.evaluateArray(elem)
+	first := true
+	for _, elem := range arr.elements {
+		elemValue, err := e.evaluate(elem)
 		if err != nil {
 			return nil, err
 		}
-		for _, subElem := range elemArr.elements {
-			result = append(result, subElem)
+		switch v := elemValue.(type) {
+		case *valueNull:
+			continue
+		case *valueArray:
+			if !first {
+				for _, subElem := range sep.elements {
+					result = append(result, subElem)
+				}
+			}
+			for _, subElem := range v.elements {
+				result = append(result, subElem)
+			}
+		default:
+			return nil, e.typeErrorSpecific(elemValue, &valueArray{})
 		}
+		first = false
+
 	}
 	return makeValueArray(result), nil
 }
 
 func joinStrings(e *evaluator, sep *valueString, arr *valueArray) (value, error) {
 	result := make([]rune, 0, arr.length())
-	for i, elem := range arr.elements {
-		if i != 0 {
-			result = append(result, sep.value...)
-		}
-		elemString, err := e.evaluateString(elem)
+	first := true
+	for _, elem := range arr.elements {
+		elemValue, err := e.evaluate(elem)
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, elemString.value...)
+		switch v := elemValue.(type) {
+		case *valueNull:
+			continue
+		case *valueString:
+			if !first {
+				result = append(result, sep.value...)
+			}
+			result = append(result, v.value...)
+		default:
+			return nil, e.typeErrorSpecific(elemValue, &valueString{})
+		}
+		first = false
 	}
 	return &valueString{value: result}, nil
 }
