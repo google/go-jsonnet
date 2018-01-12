@@ -88,7 +88,7 @@ func (vm *VM) Importer(i Importer) {
 	vm.importer = i
 }
 
-type evalKind = int
+type evalKind int
 
 const (
 	evalKindRegular = iota
