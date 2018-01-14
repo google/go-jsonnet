@@ -186,7 +186,7 @@ func getVarFile(s string) (string, string, error) {
 	}
 }
 
-type processArgsStatus = int
+type processArgsStatus int
 
 const (
 	processArgsStatusContinue     = iota
