@@ -14,7 +14,7 @@ feature complete but is not as heavily exercised as the [Jsonnet C++
 implementation](https://github.com/google/jsonnet).  Please try it out and give
 feedback.
 
-This code is known to work on Go 1.6 and above.
+This code is known to work on Go 1.8 and above. We recommend always using the newest stable release of Go.
 
 ## Build instructions
 
