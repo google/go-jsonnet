@@ -549,7 +549,14 @@ var builtinAsin = liftNumeric(math.Asin)
 var builtinAcos = liftNumeric(math.Acos)
 var builtinAtan = liftNumeric(math.Atan)
 var builtinLog = liftNumeric(math.Log)
-var builtinExp = liftNumeric(math.Exp)
+var builtinExp = liftNumeric(func(f float64) float64 {
+	res := math.Exp(f)
+	if res == 0 && f > 0 {
+		return math.Inf(1)
+	} else {
+		return res
+	}
+})
 var builtinMantissa = liftNumeric(func(f float64) float64 {
 	mantissa, _ := math.Frexp(f)
 	return mantissa
