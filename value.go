@@ -200,6 +200,13 @@ type valueArray struct {
 	elements []potentialValue
 }
 
+func (arr *valueArray) index(e *evaluator, index int, tc tailCallStatus) (value, error) {
+	if 0 <= index && index < arr.length() {
+		return e.evaluateTailCall(arr.elements[index], tc)
+	}
+	return nil, e.Error(fmt.Sprintf("Index %d out of bounds, not within [0, %v)", index, arr.length()))
+}
+
 func (arr *valueArray) length() int {
 	return len(arr.elements)
 }

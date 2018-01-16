@@ -392,7 +392,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 				return nil, err
 			}
 			// TODO(https://github.com/google/jsonnet/issues/377): non-integer indexes should be an error
-			return e.evaluateTailCall(target.elements[int(indexInt.value)], tc)
+			return target.index(e, int(indexInt.value), tc)
 
 		case *valueString:
 			indexInt, err := e.getNumber(index)
