@@ -364,6 +364,12 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 			// error when evaluating error message
 			return nil, err
 		}
+		if msgVal.getType() != stringType {
+			msgVal, err = builtinToString(e, &readyValue{msgVal})
+			if err != nil {
+				return nil, err
+			}
+		}
 		msg, err := e.getString(msgVal)
 		if err != nil {
 			return nil, err
