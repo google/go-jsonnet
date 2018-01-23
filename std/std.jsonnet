@@ -24,6 +24,13 @@ limitations under the License.
 
     local std = self,
 
+    isString(v):: std.type(v) == "string",
+    isNumber(v):: std.type(v) == "number",
+    isBoolean(v):: std.type(v) == "boolean",
+    isObject(v):: std.type(v) == "object",
+    isArray(v):: std.type(v) == "array",
+    isFunction(v):: std.type(v) == "function",
+
     toString(a)::
         if std.type(a) == "string" then a else "" + a,
 
@@ -98,6 +105,32 @@ limitations under the License.
                     aux(str, delim, i2, arr, v + c) tailstrict;
             aux(str, c, 0, [], ""),
 
+    strReplace(str, from, to)::
+        assert std.type(str) == "string";
+        assert std.type(from) == "string";
+        assert std.type(to) == "string";
+        assert from != "" : "'from' string must not be zero length.";
+
+        // Cache for performance.
+        local str_len = std.length(str);
+        local from_len = std.length(from);
+
+        // True if from is at str[i].
+        local found_at(i) = str[i:i + from_len] == from;
+
+        // Return the remainder of 'str' starting with 'start_index' where
+        // all occurrences of 'from' after 'curr_index' are replaced with 'to'.
+        local replace_after(start_index, curr_index, acc) =
+            if curr_index > str_len then
+                acc + str[start_index:curr_index]
+            else if found_at(curr_index) then
+                local new_index = curr_index + std.length(from);
+                replace_after(new_index, new_index, acc + str[start_index:curr_index] + to)
+            else
+                replace_after(start_index, curr_index + 1, acc);
+
+        replace_after(0, 0, ""),
+
     range(from, to)::
         std.makeArray(to - from + 1, function(i) i + from),
 
@@ -163,6 +196,8 @@ limitations under the License.
                 running
             else if arr[i] == null then
                 aux(arr, i + 1, first, running) tailstrict
+            else if std.type(arr[i]) != std.type(sep) then
+                error "expected %s but arr[%d] was %s " % [std.type(sep), i, std.type(arr[i])]
             else if first then
                 aux(arr, i + 1, false, running + arr[i]) tailstrict
             else

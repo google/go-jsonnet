@@ -1,6 +1,6 @@
 RUNTIME ERROR: Assertion failed. {"x": 1} != {"x": 2}
 -------------------------------------------------
-	<std>:649:13-56	function <anonymous>
+	<std>:684:13-56	function <anonymous>
 
             error "Assertion failed. " + a + " != " + b,
 
