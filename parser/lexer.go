@@ -577,12 +577,22 @@ func (l *lexer) lexSymbol() error {
 		}
 	}
 
-	if r == '|' && strings.HasPrefix(l.input[l.pos.byteNo:], "||\n") {
+	if r == '|' && strings.HasPrefix(l.input[l.pos.byteNo:], "||") {
 		commentStartLoc := l.tokenStartLoc
-		l.acceptN(3) // Skip "||\n"
+		l.acceptN(2) // Skip "||"
 		var cb bytes.Buffer
 
-		// Skip leading blank lines
+		// Skip whitespace
+		for r = l.next(); r == ' ' || r == '\t' || r == '\r'; r = l.next() {
+		}
+
+		// Skip \n
+		if r != '\n' {
+			return l.makeStaticErrorPoint("Text block requires new line after |||.",
+				commentStartLoc)
+		}
+
+		// Process leading blank lines before calculating stringBlockIndent
 		for r = l.next(); r == '\n'; r = l.next() {
 			cb.WriteRune(r)
 		}
