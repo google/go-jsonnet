@@ -23,6 +23,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"runtime/pprof"
 	"sort"
 	"strconv"
@@ -570,6 +571,19 @@ func main() {
 			outputArray, err = vm.EvaluateSnippetStream(filename, input)
 		} else {
 			output, err = vm.EvaluateSnippet(filename, input)
+		}
+
+		var memprofile = os.Getenv("JSONNET_MEM_PROFILE")
+		if memprofile != "" {
+			f, err := os.Create(memprofile)
+			if err != nil {
+				log.Fatal("could not create memory profile: ", err)
+			}
+			runtime.GC() // get up-to-date statistics
+			if err := pprof.WriteHeapProfile(f); err != nil {
+				log.Fatal("could not write memory profile: ", err)
+			}
+			f.Close()
 		}
 
 		if err != nil {
