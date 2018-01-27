@@ -48,7 +48,7 @@ type importCacheKey struct {
 	importedPath string
 }
 
-type importCacheMap map[importCacheKey]ImportCacheValue
+type importCacheMap map[importCacheKey]*ImportCacheValue
 
 type ImportCache struct {
 	cache    importCacheMap
@@ -61,15 +61,15 @@ func MakeImportCache(importer Importer) *ImportCache {
 
 func (cache *ImportCache) importData(key importCacheKey) *ImportCacheValue {
 	if cached, ok := cache.cache[key]; ok {
-		return &cached
+		return cached
 	}
 	data, err := cache.importer.Import(key.dir, key.importedPath)
-	cached := ImportCacheValue{
+	cached := &ImportCacheValue{
 		data: data,
-		err: err,
+		err:  err,
 	}
 	cache.cache[key] = cached
-	return &cached
+	return cached
 }
 
 func (cache *ImportCache) ImportString(codeDir, importedPath string, e *evaluator) (*valueString, error) {
