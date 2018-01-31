@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 
 	"github.com/google/go-jsonnet/ast"
 )
@@ -635,6 +636,28 @@ func builtinPow(e *evaluator, basep potentialValue, expp potentialValue) (value,
 	return makeDoubleCheck(e, math.Pow(base.value, exp.value))
 }
 
+func builtinStrReplace(e *evaluator, strp, fromp, top potentialValue) (value, error) {
+	str, err := e.evaluateString(strp)
+	if err != nil {
+		return nil, err
+	}
+	from, err := e.evaluateString(fromp)
+	if err != nil {
+		return nil, err
+	}
+	to, err := e.evaluateString(top)
+	if err != nil {
+		return nil, err
+	}
+	sStr := str.getString()
+	sFrom := from.getString()
+	sTo := to.getString()
+	if len(sFrom) == 0 {
+		return nil, e.Error("'from' string must not be zero length.")
+	}
+	return makeValueString(strings.Replace(sStr, sFrom, sTo, -1)), nil
+}
+
 func builtinUglyObjectFlatMerge(e *evaluator, objarrp potentialValue) (value, error) {
 	objarr, err := e.evaluateArray(objarrp)
 	if err != nil {
@@ -875,6 +898,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&BinaryBuiltin{name: "pow", function: builtinPow, parameters: ast.Identifiers{"base", "exp"}},
 	&BinaryBuiltin{name: "modulo", function: builtinModulo, parameters: ast.Identifiers{"x", "y"}},
 	&UnaryBuiltin{name: "md5", function: builtinMd5, parameters: ast.Identifiers{"x"}},
+	&TernaryBuiltin{name: "strReplace", function: builtinStrReplace, parameters: ast.Identifiers{"str", "from", "to"}},
 	&UnaryBuiltin{name: "native", function: builtinNative, parameters: ast.Identifiers{"x"}},
 
 	// internal
