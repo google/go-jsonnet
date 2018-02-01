@@ -129,7 +129,13 @@ limitations under the License.
             else
                 replace_after(start_index, curr_index + 1, acc);
 
-        replace_after(0, 0, ""),
+        // if from_len==1, then we replace by splitting and rejoining the
+        // string which is much faster than recursing on replace_after
+        if from_len == 1 then
+            std.join(to, std.split(str, from))
+        else
+            replace_after(0, 0, ""),
+
 
     range(from, to)::
         std.makeArray(to - from + 1, function(i) i + from),
@@ -189,6 +195,22 @@ limitations under the License.
             error ("std.map second param must be array / string, got " + std.type(arr))
         else
             std.makeArray(std.length(arr), function(i) func(arr[i])),
+
+    mapWithIndex(func, arr)::
+        if std.type(func) != "function" then
+            error ("std.mapWithIndex first param must be function, got " + std.type(func))
+        else if std.type(arr) != "array" && std.type(arr) != "string" then
+            error ("std.mapWithIndex second param must be array, got " + std.type(arr))
+        else
+            std.makeArray(std.length(arr), function(i) func(i, arr[i])),
+
+    mapWithKey(func, obj)::
+        if std.type(func) != "function" then
+            error ("std.mapWithKey first param must be function, got " + std.type(func))
+        else if std.type(obj) != "object" then
+            error ("std.mapWithKey second param must be object, got " + std.type(obj))
+        else
+            { [k]: func(k, obj[k]) for k in std.objectFields(obj) },
 
     join(sep, arr)::
         local aux(arr, i, first, running) =
