@@ -229,9 +229,9 @@ var errorTests = []testError{
 	{`function a a`, `test:1:10-11 Expected ( but got (IDENTIFIER, "a")`},
 
 	{`import (a b)`, `test:1:11-12 Expected token ")" but got (IDENTIFIER, "b")`},
-	{`import (a+b)`, `test:1:9-12 Computed imports are not allowed`},
+	{`import (a+b)`, `test:1:8-13 Computed imports are not allowed`},
 	{`importstr (a b)`, `test:1:14-15 Expected token ")" but got (IDENTIFIER, "b")`},
-	{`importstr (a+b)`, `test:1:12-15 Computed imports are not allowed`},
+	{`importstr (a+b)`, `test:1:11-16 Computed imports are not allowed`},
 
 	{`local a = b ()`, `test:1:15 Expected , or ; but got end of file`},
 	{`local a = b; (a b)`, `test:1:17-18 Expected token ")" but got (IDENTIFIER, "b")`},

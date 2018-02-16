@@ -560,6 +560,13 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		}
 		*astPtr = comp
 
+	case *ast.Parens:
+		*astPtr = node.Inner
+		err = desugar(astPtr, objLevel)
+		if err != nil {
+			return err
+		}
+
 	case *ast.Self:
 		// Nothing to do.
 

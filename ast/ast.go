@@ -520,6 +520,15 @@ type ObjectComp struct {
 
 // ---------------------------------------------------------------------------
 
+// Parens represents parentheses
+//   ( e )
+type Parens struct {
+	NodeBase
+	Inner        Node
+}
+
+// ---------------------------------------------------------------------------
+
 // Self represents the self keyword.
 type Self struct{ NodeBase }
 
