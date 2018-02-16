@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -172,17 +173,18 @@ func getVarVal(s string) (string, string, error) {
 	}
 }
 
-func getVarFile(s string) (string, string, error) {
+func getVarFile(s string, imp string) (string, string, error) {
 	parts := strings.SplitN(s, "=", 2)
 	name := parts[0]
 	if len(parts) == 1 {
 		return "", "", fmt.Errorf("ERROR: argument not in form <var>=<file> \"%s\".", s)
 	} else {
-		b, err := ioutil.ReadFile(parts[1])
-		if err != nil {
-			return "", "", err
-		}
-		return name, string(b), nil
+		var b bytes.Buffer
+		b.WriteString(imp)
+		b.WriteString(" @'")
+		b.WriteString(strings.Replace(parts[1], "'", "''", -1))
+		b.WriteString("'")
+		return name, b.String(), nil
 	}
 }
 
@@ -255,11 +257,11 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 				vm.ExtVar(name, content)
 			} else if arg == "--ext-str-file" {
 				next := nextArg(&i, args)
-				name, content, err := getVarFile(next)
+				name, content, err := getVarFile(next, "importstr")
 				if err != nil {
 					return processArgsStatusFailure, err
 				}
-				vm.ExtVar(name, content)
+				vm.ExtCode(name, content)
 			} else if arg == "--ext-code" {
 				next := nextArg(&i, args)
 				name, content, err := getVarVal(next)
@@ -269,7 +271,7 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 				vm.ExtCode(name, content)
 			} else if arg == "--ext-code-file" {
 				next := nextArg(&i, args)
-				name, content, err := getVarFile(next)
+				name, content, err := getVarFile(next, "import")
 				if err != nil {
 					return processArgsStatusFailure, err
 				}
@@ -283,11 +285,11 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 				vm.TLAVar(name, content)
 			} else if arg == "--tla-str-file" {
 				next := nextArg(&i, args)
-				name, content, err := getVarFile(next)
+				name, content, err := getVarFile(next, "importstr")
 				if err != nil {
 					return processArgsStatusFailure, err
 				}
-				vm.TLAVar(name, content)
+				vm.TLACode(name, content)
 			} else if arg == "--tla-code" {
 				next := nextArg(&i, args)
 				name, content, err := getVarVal(next)
@@ -297,7 +299,7 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 				vm.TLACode(name, content)
 			} else if arg == "--tla-code-file" {
 				next := nextArg(&i, args)
-				name, content, err := getVarFile(next)
+				name, content, err := getVarFile(next, "import")
 				if err != nil {
 					return processArgsStatusFailure, err
 				}
