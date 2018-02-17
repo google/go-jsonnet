@@ -412,11 +412,11 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		return nil, e.Error(fmt.Sprintf("Value non indexable: %v", reflect.TypeOf(targetValue)))
 
 	case *ast.Import:
-		codeDir := path.Dir(node.Loc().FileName)
+		codeDir, _ := path.Split(node.Loc().FileName)
 		return i.importCache.ImportCode(codeDir, node.File.Value, e)
 
 	case *ast.ImportStr:
-		codeDir := path.Dir(node.Loc().FileName)
+		codeDir, _ := path.Split(node.Loc().FileName)
 		return i.importCache.ImportString(codeDir, node.File.Value, e)
 
 	case *ast.LiteralBoolean:
