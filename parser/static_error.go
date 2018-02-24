@@ -32,14 +32,17 @@ type StaticError struct {
 	Msg string
 }
 
+// MakeStaticErrorMsg returns a StaticError with a message.
 func MakeStaticErrorMsg(msg string) StaticError {
 	return StaticError{Msg: msg}
 }
 
+// MakeStaticError returns a StaticError with a message and a LocationRange.
 func MakeStaticError(msg string, lr ast.LocationRange) StaticError {
 	return StaticError{Msg: msg, Loc: lr}
 }
 
+// Error returns the string representation of a StaticError.
 func (err StaticError) Error() string {
 	loc := ""
 	if err.Loc.IsSet() {

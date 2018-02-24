@@ -71,11 +71,11 @@ func locFromTokenAST(begin *token, end ast.Node) ast.LocationRange {
 // ---------------------------------------------------------------------------
 
 type parser struct {
-	t     tokens
+	t     Tokens
 	currT int
 }
 
-func makeParser(t tokens) *parser {
+func makeParser(t Tokens) *parser {
 	return &parser{
 		t: t,
 	}
@@ -298,13 +298,14 @@ func (p *parser) parseObjectAssignmentOp() (plusSugar bool, hide ast.ObjectField
 	return
 }
 
+// A LiteralField is a field of an object or object comprehension.
 // +gen set
 type LiteralField string
 
 // Parse object or object comprehension without leading brace
 func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 	var fields ast.ObjectFields
-	literalFields := make(literalFieldSet)
+	literalFields := make(LiteralFieldSet)
 	binds := make(ast.IdentifierSet)
 
 	gotComma := false
@@ -730,7 +731,7 @@ func (p *parser) parseTerminal() (ast.Node, error) {
 		}
 		return &ast.Parens{
 			NodeBase: ast.NewNodeBaseLoc(locFromTokens(tok, tokRight)),
-			Inner: inner,
+			Inner:    inner,
 		}, nil
 
 	// Literals
@@ -1173,7 +1174,8 @@ func (p *parser) parse(prec precedence) (ast.Node, error) {
 
 // ---------------------------------------------------------------------------
 
-func Parse(t tokens) (ast.Node, error) {
+// Parse parses a slice of tokens into a parse tree.
+func Parse(t Tokens) (ast.Node, error) {
 	p := makeParser(t)
 	expr, err := p.parse(maxPrecedence)
 	if err != nil {
