@@ -101,16 +101,16 @@ const (
 
 var tokenKindStrings = []string{
 	// Symbols
-	tokenBraceL:    "\"{\"",
-	tokenBraceR:    "\"}\"",
-	tokenBracketL:  "\"[\"",
-	tokenBracketR:  "\"]\"",
-	tokenComma:     "\",\"",
-	tokenDollar:    "\"$\"",
-	tokenDot:       "\".\"",
-	tokenParenL:    "\"(\"",
-	tokenParenR:    "\")\"",
-	tokenSemicolon: "\";\"",
+	tokenBraceL:    `"{"`,
+	tokenBraceR:    `"}"`,
+	tokenBracketL:  `"["`,
+	tokenBracketR:  `"]"`,
+	tokenComma:     `","`,
+	tokenDollar:    `"$"`,
+	tokenDot:       `"."`,
+	tokenParenL:    `"("`,
+	tokenParenR:    `")"`,
+	tokenSemicolon: `";"`,
 
 	// Arbitrary length lexemes
 	tokenIdentifier:           "IDENTIFIER",
