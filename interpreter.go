@@ -758,9 +758,9 @@ func (i *interpreter) manifestAndSerializeMulti(trace *TraceElement, v value) (r
 	}
 	switch json := json.(type) {
 	case map[string]interface{}:
-		for filename, fileJson := range json {
+		for filename, fileJSON := range json {
 			var buf bytes.Buffer
-			serializeJSON(fileJson, true, "", &buf)
+			serializeJSON(fileJSON, true, "", &buf)
 			buf.WriteString("\n")
 			r[filename] = buf.String()
 		}

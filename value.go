@@ -73,6 +73,8 @@ func (v *valueBase) aValue() {}
 // Primitive values
 // -------------------------------------
 
+// valueString represents a string value, internally using a []rune for quick
+// indexing.
 type valueString struct {
 	valueBase
 	// We use rune slices instead of strings for quick indexing
@@ -319,6 +321,8 @@ func (f *valueFunction) getType() *valueType {
 	return functionType
 }
 
+// Parameters represents required position and optional named parameters for a
+// function definition.
 type Parameters struct {
 	required ast.Identifiers
 	optional []namedParameter
@@ -399,8 +403,10 @@ func (sb selfBinding) super() selfBinding {
 	return selfBinding{self: sb.self, superDepth: sb.superDepth + 1}
 }
 
+// Hidden represents wether to include hidden fields in a lookup.
 type Hidden int
 
+// With/without hidden fields
 const (
 	withHidden Hidden = iota
 	withoutHidden
@@ -409,14 +415,13 @@ const (
 func withHiddenFromBool(with bool) Hidden {
 	if with {
 		return withHidden
-	} else {
-		return withoutHidden
 	}
+	return withoutHidden
 }
 
 // Hack - we need to distinguish not-checked-yet and no error situations
 // so we have a special value for no error and nil means that we don't know yet.
-var errNoErrorInObjectInvariants = errors.New("No error - assertions passed")
+var errNoErrorInObjectInvariants = errors.New("no error - assertions passed")
 
 type valueObjectBase struct {
 	valueBase

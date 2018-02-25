@@ -7,6 +7,8 @@ import (
 	"github.com/google/go-jsonnet/parser"
 )
 
+// ErrorWriter encapsulates a writer and an error state indicating when at least
+// one error has been written to the writer.
 type ErrorWriter struct {
 	ErrorsFound bool
 	Writer      io.Writer
@@ -17,7 +19,7 @@ func (e *ErrorWriter) writeError(err parser.StaticError) {
 	e.Writer.Write([]byte(err.Error() + "\n"))
 }
 
-type Variable struct {
+type variable struct {
 	name     ast.Identifier
 	declNode ast.Node
 	uses     []ast.Node
@@ -29,14 +31,15 @@ type Variable struct {
 // It is global, i.e. it holds the same data regardless of scope we're
 // currently analyzing.
 type LintingInfo struct {
-	variables []Variable
+	variables []variable
 }
 
+// Lint analyses a node and reports any issues it encounters to an error writer.
 func Lint(node ast.Node, e *ErrorWriter) {
 	lintingInfo := LintingInfo{
 		variables: nil,
 	}
-	std := Variable{
+	std := variable{
 		name:     "std",
 		declNode: nil,
 		uses:     nil,

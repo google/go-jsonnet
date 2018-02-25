@@ -554,9 +554,8 @@ var builtinExp = liftNumeric(func(f float64) float64 {
 	res := math.Exp(f)
 	if res == 0 && f > 0 {
 		return math.Inf(1)
-	} else {
-		return res
 	}
+	return res
 })
 var builtinMantissa = liftNumeric(func(f float64) float64 {
 	mantissa, _ := math.Frexp(f)
@@ -720,13 +719,13 @@ func builtinNative(e *evaluator, namep potentialValue) (value, error) {
 
 }
 
-type unaryBuiltin func(*evaluator, potentialValue) (value, error)
-type binaryBuiltin func(*evaluator, potentialValue, potentialValue) (value, error)
-type ternaryBuiltin func(*evaluator, potentialValue, potentialValue, potentialValue) (value, error)
+type unaryBuiltinFunc func(*evaluator, potentialValue) (value, error)
+type binaryBuiltinFunc func(*evaluator, potentialValue, potentialValue) (value, error)
+type ternaryBuiltinFunc func(*evaluator, potentialValue, potentialValue, potentialValue) (value, error)
 
-type UnaryBuiltin struct {
+type unaryBuiltin struct {
 	name       ast.Identifier
-	function   unaryBuiltin
+	function   unaryBuiltinFunc
 	parameters ast.Identifiers
 }
 
@@ -737,22 +736,22 @@ func getBuiltinEvaluator(e *evaluator, name ast.Identifier) *evaluator {
 	return &evaluator{i: e.i, trace: &trace}
 }
 
-func (b *UnaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
+func (b *unaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
 	flatArgs := flattenArgs(args, b.Parameters())
 	return b.function(getBuiltinEvaluator(e, b.name), flatArgs[0])
 }
 
-func (b *UnaryBuiltin) Parameters() Parameters {
+func (b *unaryBuiltin) Parameters() Parameters {
 	return Parameters{required: b.parameters}
 }
 
-func (b *UnaryBuiltin) Name() ast.Identifier {
+func (b *unaryBuiltin) Name() ast.Identifier {
 	return b.name
 }
 
-type BinaryBuiltin struct {
+type binaryBuiltin struct {
 	name       ast.Identifier
-	function   binaryBuiltin
+	function   binaryBuiltinFunc
 	parameters ast.Identifiers
 }
 
@@ -781,35 +780,35 @@ func flattenArgs(args callArguments, params Parameters) []potentialValue {
 	return flatArgs
 }
 
-func (b *BinaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
+func (b *binaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
 	flatArgs := flattenArgs(args, b.Parameters())
 	return b.function(getBuiltinEvaluator(e, b.name), flatArgs[0], flatArgs[1])
 }
 
-func (b *BinaryBuiltin) Parameters() Parameters {
+func (b *binaryBuiltin) Parameters() Parameters {
 	return Parameters{required: b.parameters}
 }
 
-func (b *BinaryBuiltin) Name() ast.Identifier {
+func (b *binaryBuiltin) Name() ast.Identifier {
 	return b.name
 }
 
-type TernaryBuiltin struct {
+type ternaryBuiltin struct {
 	name       ast.Identifier
-	function   ternaryBuiltin
+	function   ternaryBuiltinFunc
 	parameters ast.Identifiers
 }
 
-func (b *TernaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
+func (b *ternaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
 	flatArgs := flattenArgs(args, b.Parameters())
 	return b.function(getBuiltinEvaluator(e, b.name), flatArgs[0], flatArgs[1], flatArgs[2])
 }
 
-func (b *TernaryBuiltin) Parameters() Parameters {
+func (b *ternaryBuiltin) Parameters() Parameters {
 	return Parameters{required: b.parameters}
 }
 
-func (b *TernaryBuiltin) Name() ast.Identifier {
+func (b *ternaryBuiltin) Name() ast.Identifier {
 	return b.name
 }
 
@@ -820,38 +819,38 @@ var desugaredBop = map[ast.BinaryOp]ast.Identifier{
 	ast.BopIn:              "objectHasAll",
 }
 
-var bopBuiltins = []*BinaryBuiltin{
-	ast.BopMult: &BinaryBuiltin{name: "operator*", function: builtinMult, parameters: ast.Identifiers{"x", "y"}},
-	ast.BopDiv:  &BinaryBuiltin{name: "operator/", function: builtinDiv, parameters: ast.Identifiers{"x", "y"}},
+var bopBuiltins = []*binaryBuiltin{
+	ast.BopMult: &binaryBuiltin{name: "operator*", function: builtinMult, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopDiv:  &binaryBuiltin{name: "operator/", function: builtinDiv, parameters: ast.Identifiers{"x", "y"}},
 	// ast.BopPercent:  <desugared>,
 
-	ast.BopPlus:  &BinaryBuiltin{name: "operator+", function: builtinPlus, parameters: ast.Identifiers{"x", "y"}},
-	ast.BopMinus: &BinaryBuiltin{name: "operator-", function: builtinMinus, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopPlus:  &binaryBuiltin{name: "operator+", function: builtinPlus, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopMinus: &binaryBuiltin{name: "operator-", function: builtinMinus, parameters: ast.Identifiers{"x", "y"}},
 
-	ast.BopShiftL: &BinaryBuiltin{name: "operator<<", function: builtinShiftL, parameters: ast.Identifiers{"x", "y"}},
-	ast.BopShiftR: &BinaryBuiltin{name: "operator>>", function: builtinShiftR, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopShiftL: &binaryBuiltin{name: "operator<<", function: builtinShiftL, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopShiftR: &binaryBuiltin{name: "operator>>", function: builtinShiftR, parameters: ast.Identifiers{"x", "y"}},
 
-	ast.BopGreater:   &BinaryBuiltin{name: "operator>", function: builtinGreater, parameters: ast.Identifiers{"x", "y"}},
-	ast.BopGreaterEq: &BinaryBuiltin{name: "operator>=", function: builtinGreaterEq, parameters: ast.Identifiers{"x", "y"}},
-	ast.BopLess:      &BinaryBuiltin{name: "operator<,", function: builtinLess, parameters: ast.Identifiers{"x", "y"}},
-	ast.BopLessEq:    &BinaryBuiltin{name: "operator<=", function: builtinLessEq, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopGreater:   &binaryBuiltin{name: "operator>", function: builtinGreater, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopGreaterEq: &binaryBuiltin{name: "operator>=", function: builtinGreaterEq, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopLess:      &binaryBuiltin{name: "operator<,", function: builtinLess, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopLessEq:    &binaryBuiltin{name: "operator<=", function: builtinLessEq, parameters: ast.Identifiers{"x", "y"}},
 
 	// bopManifestEqual:   <desugared>,
 	// bopManifestUnequal: <desugared>,
 
-	ast.BopBitwiseAnd: &BinaryBuiltin{name: "operator&", function: builtinBitwiseAnd, parameters: ast.Identifiers{"x", "y"}},
-	ast.BopBitwiseXor: &BinaryBuiltin{name: "operator^", function: builtinBitwiseXor, parameters: ast.Identifiers{"x", "y"}},
-	ast.BopBitwiseOr:  &BinaryBuiltin{name: "operator|", function: builtinBitwiseOr, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopBitwiseAnd: &binaryBuiltin{name: "operator&", function: builtinBitwiseAnd, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopBitwiseXor: &binaryBuiltin{name: "operator^", function: builtinBitwiseXor, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopBitwiseOr:  &binaryBuiltin{name: "operator|", function: builtinBitwiseOr, parameters: ast.Identifiers{"x", "y"}},
 
-	ast.BopAnd: &BinaryBuiltin{name: "operator&&", function: builtinAnd, parameters: ast.Identifiers{"x", "y"}},
-	ast.BopOr:  &BinaryBuiltin{name: "operator||", function: builtinOr, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopAnd: &binaryBuiltin{name: "operator&&", function: builtinAnd, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopOr:  &binaryBuiltin{name: "operator||", function: builtinOr, parameters: ast.Identifiers{"x", "y"}},
 }
 
-var uopBuiltins = []*UnaryBuiltin{
-	ast.UopNot:        &UnaryBuiltin{name: "operator!", function: builtinNegation, parameters: ast.Identifiers{"x"}},
-	ast.UopBitwiseNot: &UnaryBuiltin{name: "operator~", function: builtinBitNeg, parameters: ast.Identifiers{"x"}},
-	ast.UopPlus:       &UnaryBuiltin{name: "operator+ (unary)", function: builtinIdentity, parameters: ast.Identifiers{"x"}},
-	ast.UopMinus:      &UnaryBuiltin{name: "operator- (unary)", function: builtinUnaryMinus, parameters: ast.Identifiers{"x"}},
+var uopBuiltins = []*unaryBuiltin{
+	ast.UopNot:        &unaryBuiltin{name: "operator!", function: builtinNegation, parameters: ast.Identifiers{"x"}},
+	ast.UopBitwiseNot: &unaryBuiltin{name: "operator~", function: builtinBitNeg, parameters: ast.Identifiers{"x"}},
+	ast.UopPlus:       &unaryBuiltin{name: "operator+ (unary)", function: builtinIdentity, parameters: ast.Identifiers{"x"}},
+	ast.UopMinus:      &unaryBuiltin{name: "operator- (unary)", function: builtinUnaryMinus, parameters: ast.Identifiers{"x"}},
 }
 
 type builtin interface {
@@ -868,39 +867,39 @@ func buildBuiltinMap(builtins []builtin) map[string]evalCallable {
 }
 
 var funcBuiltins = buildBuiltinMap([]builtin{
-	&UnaryBuiltin{name: "extVar", function: builtinExtVar, parameters: ast.Identifiers{"x"}},
-	&UnaryBuiltin{name: "length", function: builtinLength, parameters: ast.Identifiers{"x"}},
-	&UnaryBuiltin{name: "toString", function: builtinToString, parameters: ast.Identifiers{"a"}},
-	&BinaryBuiltin{name: "makeArray", function: builtinMakeArray, parameters: ast.Identifiers{"sz", "func"}},
-	&BinaryBuiltin{name: "flatMap", function: builtinFlatMap, parameters: ast.Identifiers{"func", "arr"}},
-	&BinaryBuiltin{name: "join", function: builtinJoin, parameters: ast.Identifiers{"sep", "arr"}},
-	&BinaryBuiltin{name: "filter", function: builtinFilter, parameters: ast.Identifiers{"func", "arr"}},
-	&BinaryBuiltin{name: "range", function: builtinRange, parameters: ast.Identifiers{"from", "to"}},
-	&BinaryBuiltin{name: "primitiveEquals", function: primitiveEquals, parameters: ast.Identifiers{"sz", "func"}},
-	&BinaryBuiltin{name: "objectFieldsEx", function: builtinObjectFieldsEx, parameters: ast.Identifiers{"obj", "hidden"}},
-	&TernaryBuiltin{name: "objectHasEx", function: builtinObjectHasEx, parameters: ast.Identifiers{"obj", "fname", "hidden"}},
-	&UnaryBuiltin{name: "type", function: builtinType, parameters: ast.Identifiers{"x"}},
-	&UnaryBuiltin{name: "char", function: builtinChar, parameters: ast.Identifiers{"x"}},
-	&UnaryBuiltin{name: "codepoint", function: builtinCodepoint, parameters: ast.Identifiers{"x"}},
-	&UnaryBuiltin{name: "ceil", function: builtinCeil, parameters: ast.Identifiers{"x"}},
-	&UnaryBuiltin{name: "floor", function: builtinFloor, parameters: ast.Identifiers{"x"}},
-	&UnaryBuiltin{name: "sqrt", function: builtinSqrt, parameters: ast.Identifiers{"x"}},
-	&UnaryBuiltin{name: "sin", function: builtinSin, parameters: ast.Identifiers{"x"}},
-	&UnaryBuiltin{name: "cos", function: builtinCos, parameters: ast.Identifiers{"x"}},
-	&UnaryBuiltin{name: "tan", function: builtinTan, parameters: ast.Identifiers{"x"}},
-	&UnaryBuiltin{name: "asin", function: builtinAsin, parameters: ast.Identifiers{"x"}},
-	&UnaryBuiltin{name: "acos", function: builtinAcos, parameters: ast.Identifiers{"x"}},
-	&UnaryBuiltin{name: "atan", function: builtinAtan, parameters: ast.Identifiers{"x"}},
-	&UnaryBuiltin{name: "log", function: builtinLog, parameters: ast.Identifiers{"x"}},
-	&UnaryBuiltin{name: "exp", function: builtinExp, parameters: ast.Identifiers{"x"}},
-	&UnaryBuiltin{name: "mantissa", function: builtinMantissa, parameters: ast.Identifiers{"x"}},
-	&UnaryBuiltin{name: "exponent", function: builtinExponent, parameters: ast.Identifiers{"x"}},
-	&BinaryBuiltin{name: "pow", function: builtinPow, parameters: ast.Identifiers{"base", "exp"}},
-	&BinaryBuiltin{name: "modulo", function: builtinModulo, parameters: ast.Identifiers{"x", "y"}},
-	&UnaryBuiltin{name: "md5", function: builtinMd5, parameters: ast.Identifiers{"x"}},
-	&TernaryBuiltin{name: "strReplace", function: builtinStrReplace, parameters: ast.Identifiers{"str", "from", "to"}},
-	&UnaryBuiltin{name: "native", function: builtinNative, parameters: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "extVar", function: builtinExtVar, parameters: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "length", function: builtinLength, parameters: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "toString", function: builtinToString, parameters: ast.Identifiers{"a"}},
+	&binaryBuiltin{name: "makeArray", function: builtinMakeArray, parameters: ast.Identifiers{"sz", "func"}},
+	&binaryBuiltin{name: "flatMap", function: builtinFlatMap, parameters: ast.Identifiers{"func", "arr"}},
+	&binaryBuiltin{name: "join", function: builtinJoin, parameters: ast.Identifiers{"sep", "arr"}},
+	&binaryBuiltin{name: "filter", function: builtinFilter, parameters: ast.Identifiers{"func", "arr"}},
+	&binaryBuiltin{name: "range", function: builtinRange, parameters: ast.Identifiers{"from", "to"}},
+	&binaryBuiltin{name: "primitiveEquals", function: primitiveEquals, parameters: ast.Identifiers{"sz", "func"}},
+	&binaryBuiltin{name: "objectFieldsEx", function: builtinObjectFieldsEx, parameters: ast.Identifiers{"obj", "hidden"}},
+	&ternaryBuiltin{name: "objectHasEx", function: builtinObjectHasEx, parameters: ast.Identifiers{"obj", "fname", "hidden"}},
+	&unaryBuiltin{name: "type", function: builtinType, parameters: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "char", function: builtinChar, parameters: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "codepoint", function: builtinCodepoint, parameters: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "ceil", function: builtinCeil, parameters: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "floor", function: builtinFloor, parameters: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "sqrt", function: builtinSqrt, parameters: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "sin", function: builtinSin, parameters: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "cos", function: builtinCos, parameters: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "tan", function: builtinTan, parameters: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "asin", function: builtinAsin, parameters: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "acos", function: builtinAcos, parameters: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "atan", function: builtinAtan, parameters: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "log", function: builtinLog, parameters: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "exp", function: builtinExp, parameters: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "mantissa", function: builtinMantissa, parameters: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "exponent", function: builtinExponent, parameters: ast.Identifiers{"x"}},
+	&binaryBuiltin{name: "pow", function: builtinPow, parameters: ast.Identifiers{"base", "exp"}},
+	&binaryBuiltin{name: "modulo", function: builtinModulo, parameters: ast.Identifiers{"x", "y"}},
+	&unaryBuiltin{name: "md5", function: builtinMd5, parameters: ast.Identifiers{"x"}},
+	&ternaryBuiltin{name: "strReplace", function: builtinStrReplace, parameters: ast.Identifiers{"str", "from", "to"}},
+	&unaryBuiltin{name: "native", function: builtinNative, parameters: ast.Identifiers{"x"}},
 
 	// internal
-	&UnaryBuiltin{name: "$objectFlatMerge", function: builtinUglyObjectFlatMerge, parameters: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "$objectFlatMerge", function: builtinUglyObjectFlatMerge, parameters: ast.Identifiers{"x"}},
 })

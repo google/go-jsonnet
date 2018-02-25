@@ -23,15 +23,18 @@ import (
 	"path"
 )
 
+// ImportedData represents imported data and where it came from.
 type ImportedData struct {
 	FoundHere string
 	Content   string
 }
 
+// An Importer imports data from a path.
 type Importer interface {
 	Import(codeDir string, importedPath string) (*ImportedData, error)
 }
 
+// ImportCacheValue represents a value in an imported-data cache.
 type ImportCacheValue struct {
 	// nil if we got an error
 	data *ImportedData
@@ -50,11 +53,13 @@ type importCacheKey struct {
 
 type importCacheMap map[importCacheKey]*ImportCacheValue
 
+// ImportCache represents a cache of imported data.
 type ImportCache struct {
 	cache    importCacheMap
 	importer Importer
 }
 
+// MakeImportCache creates and ImportCache using an importer.
 func MakeImportCache(importer Importer) *ImportCache {
 	return &ImportCache{importer: importer, cache: make(importCacheMap)}
 }
@@ -72,6 +77,7 @@ func (cache *ImportCache) importData(key importCacheKey) *ImportCacheValue {
 	return cached
 }
 
+// ImportString imports a string, caches it and then returns it.
 func (cache *ImportCache) ImportString(codeDir, importedPath string, e *evaluator) (*valueString, error) {
 	cached := cache.importData(importCacheKey{codeDir, importedPath})
 	if cached.err != nil {
@@ -93,6 +99,7 @@ func codeToPV(e *evaluator, filename string, code string) potentialValue {
 	return makeThunk(makeInitialEnv(filename, e.i.baseStd), node)
 }
 
+// ImportCode imports code from a path.
 func (cache *ImportCache) ImportCode(codeDir, importedPath string, e *evaluator) (value, error) {
 	cached := cache.importData(importCacheKey{codeDir, importedPath})
 	if cached.err != nil {
@@ -108,6 +115,7 @@ func (cache *ImportCache) ImportCode(codeDir, importedPath string, e *evaluator)
 // Concrete importers
 // -------------------------------------
 
+// FileImporter imports data from files.
 type FileImporter struct {
 	JPaths []string
 }
@@ -126,6 +134,7 @@ func tryPath(dir, importedPath string) (found bool, content []byte, foundHere st
 	return true, content, absPath, err
 }
 
+// Import imports a file.
 func (importer *FileImporter) Import(dir, importedPath string) (*ImportedData, error) {
 	found, content, foundHere, err := tryPath(dir, importedPath)
 	if err != nil {
@@ -140,18 +149,20 @@ func (importer *FileImporter) Import(dir, importedPath string) (*ImportedData, e
 	}
 
 	if !found {
-		return nil, fmt.Errorf("Couldn't open import %#v: No match locally or in the Jsonnet library paths.", importedPath)
+		return nil, fmt.Errorf("couldn't open import %#v: no match locally or in the Jsonnet library paths", importedPath)
 	}
 	return &ImportedData{Content: string(content), FoundHere: foundHere}, nil
 }
 
+// MemoryImporter "imports" data from an in-memory map.
 type MemoryImporter struct {
 	Data map[string]string
 }
 
+// Import imports a map entry.
 func (importer *MemoryImporter) Import(dir, importedPath string) (*ImportedData, error) {
 	if content, ok := importer.Data[importedPath]; ok {
 		return &ImportedData{Content: content, FoundHere: importedPath}, nil
 	}
-	return nil, fmt.Errorf("Import not available %v", importedPath)
+	return nil, fmt.Errorf("import not available %v", importedPath)
 }
