@@ -181,8 +181,7 @@ func (f *bindingsUnboundField) bindToObject(sb selfBinding, origBindings binding
 	return f.inner.bindToObject(sb, upValues, fieldName)
 }
 
-// PlusSuperUnboundField represents a `field+: ...` that hasn't been bound to a
-// super object.
+// PlusSuperUnboundField represents a `field+: ...` that hasn't been bound to an object.
 type PlusSuperUnboundField struct {
 	inner unboundField
 }

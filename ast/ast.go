@@ -49,7 +49,7 @@ type Nodes []Node
 
 // ---------------------------------------------------------------------------
 
-// NodeBase holds fields common to several node types.
+// NodeBase holds fields common to all node types.
 type NodeBase struct {
 	loc           LocationRange
 	context       Context
@@ -100,7 +100,7 @@ func (n *NodeBase) SetContext(context Context) {
 
 // ---------------------------------------------------------------------------
 
-// IfSpec represents a condition expression.
+// IfSpec represents an if-specification in a comprehension.
 type IfSpec struct {
 	Expr Node
 }
@@ -339,8 +339,7 @@ type Function struct {
 	Body          Node
 }
 
-// NamedParameter represents an optional named parameter to a function
-// definition.
+// NamedParameter represents an optional named parameter of a function.
 type NamedParameter struct {
 	Name       Identifier
 	DefaultArg Node

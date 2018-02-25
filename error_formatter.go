@@ -40,7 +40,6 @@ type ErrorFormatter interface {
 // ColorFormatter represents a function that writes to the terminal using color.
 type ColorFormatter func(w io.Writer, f string, a ...interface{}) (n int, err error)
 
-// TODO: Explain why this is needed.
 var _ ErrorFormatter = &termErrorFormatter{}
 
 type termErrorFormatter struct {

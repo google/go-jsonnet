@@ -278,7 +278,7 @@ func specialChildren(node ast.Node) []ast.Node {
 	panic(fmt.Sprintf("specialChildren: Unknown node %#v", node))
 }
 
-// Children returns the direct, thunk and special children of a node.
+// Children returns all children of a node.
 func Children(node ast.Node) []ast.Node {
 	var result []ast.Node
 	result = append(result, directChildren(node)...)

@@ -188,7 +188,7 @@ func LineBeginning(loc *LocationRange) LocationRange {
 	}
 }
 
-// LineEnding returns a part of the line directly after LocationRange
+// LineEnding returns the part of a line directly after LocationRange
 // for example:
 // local x = foo() + test
 //           ^^^^^ <- LocationRange loc
