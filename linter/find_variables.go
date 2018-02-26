@@ -5,10 +5,10 @@ import (
 	"github.com/google/go-jsonnet/parser"
 )
 
-type vScope map[ast.Identifier]*Variable
+type vScope map[ast.Identifier]*variable
 
 func addVar(name ast.Identifier, node ast.Node, info *LintingInfo, scope vScope, param bool) {
-	v := Variable{
+	v := variable{
 		name:     name,
 		declNode: node,
 		uses:     nil,

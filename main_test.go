@@ -85,10 +85,10 @@ var jsonToString = &NativeFunction{
 }
 
 var nativeError = &NativeFunction{
-	Name: "nativeError",
+	Name:   "nativeError",
 	Params: ast.Identifiers{},
 	Func: func(x []interface{}) (interface{}, error) {
-		return nil, errors.New("Native function error")
+		return nil, errors.New("native function error")
 	},
 }
 
@@ -172,9 +172,8 @@ func runJsonnetCommand(i jsonnetInput) jsonnetResult {
 func runJsonnet(i jsonnetInput) jsonnetResult {
 	if jsonnetCmd != nil && *jsonnetCmd != "" {
 		return runJsonnetCommand(i)
-	} else {
-		return runInternalJsonnet(i)
 	}
+	return runInternalJsonnet(i)
 }
 
 func runTest(t *testing.T, test *mainTest) {

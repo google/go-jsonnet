@@ -55,6 +55,8 @@ func traceElementToTraceFrame(trace *TraceElement) TraceFrame {
 	return tf
 }
 
+// TraceElement represents tracing information, including a location range and a
+// surrounding context.
 // TODO(sbarzowski) better name
 type TraceElement struct {
 	loc     *ast.LocationRange

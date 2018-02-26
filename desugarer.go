@@ -28,7 +28,12 @@ import (
 )
 
 func makeStr(s string) *ast.LiteralString {
-	return &ast.LiteralString{ast.NodeBase{}, s, ast.StringDouble, ""}
+	return &ast.LiteralString{
+		NodeBase:    ast.NodeBase{},
+		Value:       s,
+		Kind:        ast.StringDouble,
+		BlockIndent: "",
+	}
 }
 
 func stringUnescape(loc *ast.LocationRange, s string) (string, error) {
@@ -130,7 +135,11 @@ func desugarFields(location ast.LocationRange, fields *ast.ObjectFields, objLeve
 			continue
 		}
 		if len(binds) > 0 {
-			field.Expr2 = &ast.Local{ast.NewNodeBaseLoc(*field.Expr2.Loc()), binds, field.Expr2}
+			field.Expr2 = &ast.Local{
+				NodeBase: ast.NewNodeBaseLoc(*field.Expr2.Loc()),
+				Binds:    binds,
+				Body:     field.Expr2,
+			}
 		}
 		newFields = append(newFields, field)
 	}
@@ -265,13 +274,22 @@ func buildDesugaredObject(nodeBase ast.NodeBase, fields ast.ObjectFields) *ast.D
 		if field.Kind == ast.ObjectAssert {
 			newAsserts = append(newAsserts, field.Expr2)
 		} else if field.Kind == ast.ObjectFieldExpr {
-			newFields = append(newFields, ast.DesugaredObjectField{field.Hide, field.Expr1, field.Expr2, field.SuperSugar})
+			newFields = append(newFields, ast.DesugaredObjectField{
+				Hide:      field.Hide,
+				Name:      field.Expr1,
+				Body:      field.Expr2,
+				PlusSuper: field.SuperSugar,
+			})
 		} else {
 			panic(fmt.Sprintf("INTERNAL ERROR: field should have been desugared: %v", field.Kind))
 		}
 	}
 
-	return &ast.DesugaredObject{nodeBase, newAsserts, newFields}
+	return &ast.DesugaredObject{
+		NodeBase: nodeBase,
+		Asserts:  newAsserts,
+		Fields:   newFields,
+	}
 }
 
 // Desugar Jsonnet expressions to reduce the number of constructs the rest of the implementation

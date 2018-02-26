@@ -165,7 +165,8 @@ type token struct {
 	loc ast.LocationRange
 }
 
-type tokens []token
+// Tokens is a slice of token structs.
+type Tokens []token
 
 func (t *token) String() string {
 	if t.data == "" {
@@ -250,7 +251,7 @@ type lexer struct {
 	pos  position // Current position in input
 	prev position // Previous position in input
 
-	tokens tokens // The tokens that we've generated so far
+	tokens Tokens // The tokens that we've generated so far
 
 	// Information about the token we are working on right now
 	fodder        fodder
@@ -682,7 +683,8 @@ func (l *lexer) lexSymbol() error {
 	return nil
 }
 
-func Lex(fn string, input string) (tokens, error) {
+// Lex returns a slice of tokens recognised in input.
+func Lex(fn string, input string) (Tokens, error) {
 	l := makeLexer(fn, input)
 
 	var err error

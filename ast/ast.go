@@ -23,6 +23,8 @@ import (
 // Identifier represents a variable / parameter / field name.
 //+gen set
 type Identifier string
+
+// Identifiers represents an Identifier slice.
 type Identifiers []Identifier
 
 // TODO(jbeda) implement interning of identifiers if necessary.  The C++
@@ -30,8 +32,10 @@ type Identifiers []Identifier
 
 // ---------------------------------------------------------------------------
 
+// Context represents the surrounding context of a node (e.g. a function it's in)
 type Context *string
 
+// Node represents a node in the AST.
 type Node interface {
 	Context() Context
 	Loc() *LocationRange
@@ -39,16 +43,21 @@ type Node interface {
 	SetFreeVariables(Identifiers)
 	SetContext(Context)
 }
+
+// Nodes represents a Node slice.
 type Nodes []Node
 
 // ---------------------------------------------------------------------------
 
+// NodeBase holds fields common to all node types.
 type NodeBase struct {
 	loc           LocationRange
 	context       Context
 	freeVariables Identifiers
 }
 
+// NewNodeBase creates a new NodeBase from initial LocationRange and
+// Identifiers.
 func NewNodeBase(loc LocationRange, freeVariables Identifiers) NodeBase {
 	return NodeBase{
 		loc:           loc,
@@ -56,6 +65,7 @@ func NewNodeBase(loc LocationRange, freeVariables Identifiers) NodeBase {
 	}
 }
 
+// NewNodeBaseLoc creates a new NodeBase from an initial LocationRange.
 func NewNodeBaseLoc(loc LocationRange) NodeBase {
 	return NodeBase{
 		loc:           loc,
@@ -63,32 +73,39 @@ func NewNodeBaseLoc(loc LocationRange) NodeBase {
 	}
 }
 
+// Loc returns a NodeBase's loc.
 func (n *NodeBase) Loc() *LocationRange {
 	return &n.loc
 }
 
+// FreeVariables returns a NodeBase's freeVariables.
 func (n *NodeBase) FreeVariables() Identifiers {
 	return n.freeVariables
 }
 
+// SetFreeVariables sets a NodeBase's freeVariables.
 func (n *NodeBase) SetFreeVariables(idents Identifiers) {
 	n.freeVariables = idents
 }
 
+// Context returns a NodeBase's context.
 func (n *NodeBase) Context() Context {
 	return n.context
 }
 
+// SetContext sets a NodeBase's context.
 func (n *NodeBase) SetContext(context Context) {
 	n.context = context
 }
 
 // ---------------------------------------------------------------------------
 
+// IfSpec represents an if-specification in a comprehension.
 type IfSpec struct {
 	Expr Node
 }
 
+// ForSpec represents a for-specification in a comprehension.
 // Example:
 // expr for x in arr1 for y in arr2 for z in arr3
 // The order is the same as in python, i.e. the leftmost is the outermost.
@@ -125,11 +142,14 @@ type Apply struct {
 	TailStrict    bool
 }
 
+// NamedArgument represents a named argument to function call x=1.
 type NamedArgument struct {
 	Name Identifier
 	Arg  Node
 }
 
+// Arguments represents positional and named arguments to a function call
+// f(x, y, z=1).
 type Arguments struct {
 	Positional Nodes
 	Named      []NamedArgument
@@ -179,8 +199,10 @@ type Assert struct {
 
 // ---------------------------------------------------------------------------
 
+// BinaryOp represents a binary operator.
 type BinaryOp int
 
+// Binary operators
 const (
 	BopMult BinaryOp = iota
 	BopDiv
@@ -237,6 +259,7 @@ var bopStrings = []string{
 	BopOr:  "||",
 }
 
+// BopMap is a map from binary operator token strings to BinaryOp values.
 var BopMap = map[string]BinaryOp{
 	"*": BopMult,
 	"/": BopDiv,
@@ -316,11 +339,14 @@ type Function struct {
 	Body          Node
 }
 
+// NamedParameter represents an optional named parameter of a function.
 type NamedParameter struct {
 	Name       Identifier
 	DefaultArg Node
 }
 
+// Parameters represents the required positional parameters and optional named
+// parameters to a function definition.
 type Parameters struct {
 	Required Identifiers
 	Optional []NamedParameter
@@ -355,6 +381,7 @@ type Index struct {
 	Id     *Identifier
 }
 
+// Slice represents an array slice a[begin:end:step].
 type Slice struct {
 	NodeBase
 	Target Node
@@ -373,6 +400,8 @@ type LocalBind struct {
 	Body     Node
 	Fun      *Function
 }
+
+// LocalBinds represents a LocalBind slice.
 type LocalBinds []LocalBind
 
 // Local represents local x = e; e.  After desugaring, functionSugar is false.
@@ -406,8 +435,10 @@ type LiteralNumber struct {
 
 // ---------------------------------------------------------------------------
 
+// LiteralStringKind represents the kind of a literal string.
 type LiteralStringKind int
 
+// Literal string kinds
 const (
 	StringSingle LiteralStringKind = iota
 	StringDouble
@@ -416,6 +447,8 @@ const (
 	VerbatimStringSingle
 )
 
+// FullyEscaped returns true iff the literal string kind may contain escape
+// sequences that require unescaping.
 func (k LiteralStringKind) FullyEscaped() bool {
 	switch k {
 	case StringSingle, StringDouble:
@@ -436,8 +469,10 @@ type LiteralString struct {
 
 // ---------------------------------------------------------------------------
 
+// ObjectFieldKind represents the kind of an object field.
 type ObjectFieldKind int
 
+// Kinds of object fields
 const (
 	ObjectAssert    ObjectFieldKind = iota // assert expr2 [: expr3]  where expr3 can be nil
 	ObjectFieldID                          // id:[:[:]] expr2
@@ -449,14 +484,17 @@ const (
 	ObjectNullStr                          // null expr1
 )
 
+// ObjectFieldHide represents the visibility of an object field.
 type ObjectFieldHide int
 
+// Object field visibilities
 const (
 	ObjectFieldHidden  ObjectFieldHide = iota // f:: e
 	ObjectFieldInherit                        // f: e
 	ObjectFieldVisible                        // f::: e
 )
 
+// ObjectField represents a field of an object or object comprehension.
 // TODO(sbarzowski) consider having separate types for various kinds
 type ObjectField struct {
 	Kind          ObjectFieldKind
@@ -471,10 +509,12 @@ type ObjectField struct {
 	Expr2, Expr3  Node        // In scope of the object (can see self).
 }
 
+// ObjectFieldLocalNoMethod creates a non-method local object field.
 func ObjectFieldLocalNoMethod(id *Identifier, body Node) ObjectField {
 	return ObjectField{ObjectLocal, ObjectFieldVisible, false, false, nil, nil, id, nil, false, body, nil}
 }
 
+// ObjectFields represents an ObjectField slice.
 type ObjectFields []ObjectField
 
 // Object represents object constructors { f: e ... }.
@@ -489,12 +529,15 @@ type Object struct {
 
 // ---------------------------------------------------------------------------
 
+// DesugaredObjectField represents a desugared object field.
 type DesugaredObjectField struct {
 	Hide      ObjectFieldHide
 	Name      Node
 	Body      Node
 	PlusSuper bool
 }
+
+// DesugaredObjectFields represents a DesugaredObjectField slice.
 type DesugaredObjectFields []DesugaredObjectField
 
 // DesugaredObject represents object constructors { f: e ... } after
@@ -524,7 +567,7 @@ type ObjectComp struct {
 //   ( e )
 type Parens struct {
 	NodeBase
-	Inner        Node
+	Inner Node
 }
 
 // ---------------------------------------------------------------------------
@@ -544,7 +587,7 @@ type SuperIndex struct {
 	Id    *Identifier
 }
 
-// Represents the e in super construct.
+// InSuper represents the e in super construct.
 type InSuper struct {
 	NodeBase
 	Index Node
@@ -552,8 +595,10 @@ type InSuper struct {
 
 // ---------------------------------------------------------------------------
 
+// UnaryOp represents a unary operator.
 type UnaryOp int
 
+// Unary operators
 const (
 	UopNot UnaryOp = iota
 	UopBitwiseNot
@@ -568,6 +613,7 @@ var uopStrings = []string{
 	UopMinus:      "-",
 }
 
+// UopMap is a map from unary operator token strings to UnaryOp values.
 var UopMap = map[string]UnaryOp{
 	"!": UopNot,
 	"~": UopBitwiseNot,

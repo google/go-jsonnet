@@ -1,4 +1,4 @@
-RUNTIME ERROR: Couldn't open import "no chance a file with this name exists": No match locally or in the Jsonnet library paths.
+RUNTIME ERROR: couldn't open import "no chance a file with this name exists": no match locally or in the Jsonnet library paths
 -------------------------------------------------
 	testdata/nonexistent_import:1:1-51	$
 

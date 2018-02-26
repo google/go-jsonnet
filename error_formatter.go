@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-jsonnet/parser"
 )
 
+// An ErrorFormatter formats errors with stacktraces and color.
 type ErrorFormatter interface {
 	// Format static, runtime, and unexpected errors prior to printing them.
 	Format(err error) string
@@ -36,6 +37,7 @@ type ErrorFormatter interface {
 	SetColorFormatter(color ColorFormatter)
 }
 
+// ColorFormatter represents a function that writes to the terminal using color.
 type ColorFormatter func(w io.Writer, f string, a ...interface{}) (n int, err error)
 
 var _ ErrorFormatter = &termErrorFormatter{}

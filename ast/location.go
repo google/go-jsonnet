@@ -21,6 +21,7 @@ import (
 	"fmt"
 )
 
+// Source represents a source file.
 type Source struct {
 	lines []string
 }
@@ -62,6 +63,7 @@ type LocationRange struct {
 	file     *Source
 }
 
+// LocationRangeBetween returns a LocationRange containing both a and b.
 func LocationRangeBetween(a, b *LocationRange) LocationRange {
 	if a.file != b.file {
 		panic("Cannot create a LocationRange between different files")
@@ -93,22 +95,30 @@ func (lr *LocationRange) String() string {
 	return fmt.Sprintf("%s(%v)-(%v)", filePrefix, lr.Begin.String(), lr.End.String())
 }
 
-func (l *LocationRange) WithCode() bool {
-	return l.Begin.Line != 0
+// WithCode returns true iff the LocationRange is linked to code.
+// TODO: This is identical to lr.IsSet(). Is it required at all?
+func (lr *LocationRange) WithCode() bool {
+	return lr.Begin.Line != 0
 }
 
-// This is useful for special locations, e.g. manifestation entry point.
+// MakeLocationRangeMessage creates a pseudo-LocationRange with a message but no
+// location information. This is useful for special locations, e.g.
+// manifestation entry point.
 func MakeLocationRangeMessage(msg string) LocationRange {
 	return LocationRange{FileName: msg}
 }
 
+// MakeLocationRange creates a LocationRange.
 func MakeLocationRange(fn string, fc *Source, begin Location, end Location) LocationRange {
 	return LocationRange{FileName: fn, file: fc, Begin: begin, End: end}
 }
 
+// SourceProvider represents a source provider.
+// TODO: Need an explanation of why this exists.
 type SourceProvider struct {
 }
 
+// GetSnippet returns a code snippet corresponding to loc.
 func (sp *SourceProvider) GetSnippet(loc LocationRange) string {
 	var result bytes.Buffer
 	if loc.Begin.Line == 0 {
@@ -126,6 +136,8 @@ func (sp *SourceProvider) GetSnippet(loc LocationRange) string {
 	return result.String()
 }
 
+// BuildSource transforms a source file string into a Source struct.
+// TODO: This seems like a job for strings.Split() with a final \n touch-up.
 func BuildSource(s string) *Source {
 	var result []string
 	var lineBuf bytes.Buffer
@@ -160,7 +172,7 @@ func trimToLine(loc LocationRange, line int) LocationRange {
 	return loc
 }
 
-// lineBeginning returns a part of the line directly before LocationRange
+// LineBeginning returns the part of a line directly before LocationRange
 // for example:
 // local x = foo()
 //           ^^^^^ <- LocationRange loc
@@ -176,7 +188,7 @@ func LineBeginning(loc *LocationRange) LocationRange {
 	}
 }
 
-// lineEnding returns a part of the line directly after LocationRange
+// LineEnding returns the part of a line directly after LocationRange
 // for example:
 // local x = foo() + test
 //           ^^^^^ <- LocationRange loc

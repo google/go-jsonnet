@@ -181,6 +181,7 @@ func (f *bindingsUnboundField) bindToObject(sb selfBinding, origBindings binding
 	return f.inner.bindToObject(sb, upValues, fieldName)
 }
 
+// PlusSuperUnboundField represents a `field+: ...` that hasn't been bound to an object.
 type PlusSuperUnboundField struct {
 	inner unboundField
 }
@@ -287,12 +288,14 @@ func makeClosure(env environment, function *ast.Function) *closure {
 	}
 }
 
+// NativeFunction represents a function implemented in Go.
 type NativeFunction struct {
 	Func   func([]interface{}) (interface{}, error)
 	Params ast.Identifiers
 	Name   string
 }
 
+// EvalCall evaluates a call to a NativeFunction and returns the result.
 func (native *NativeFunction) EvalCall(arguments callArguments, e *evaluator) (value, error) {
 	flatArgs := flattenArgs(arguments, native.Parameters())
 	nativeArgs := make([]interface{}, 0, len(flatArgs))
@@ -314,6 +317,7 @@ func (native *NativeFunction) EvalCall(arguments callArguments, e *evaluator) (v
 	return jsonToValue(e, resultJSON)
 }
 
+// Parameters returns a NativeFunction's parameters.
 func (native *NativeFunction) Parameters() Parameters {
 	return Parameters{required: native.Params}
 }
