@@ -18,16 +18,17 @@ package ast
 
 import "sort"
 
-func (i *IdentifierSet) Append(idents Identifiers) {
+// AddIdentifiers adds a slice of identifiers to an identifier set.
+func (i IdentifierSet) AddIdentifiers(idents Identifiers) {
 	for _, ident := range idents {
 		i.Add(ident)
 	}
 }
 
-// ToOrderedSlice returns the elements of the current set as a ordered slice
-func (set IdentifierSet) ToOrderedSlice() []Identifier {
+// ToOrderedSlice returns the elements of the current set as an ordered slice.
+func (i IdentifierSet) ToOrderedSlice() []Identifier {
 	var s []Identifier
-	for v := range set {
+	for v := range i {
 		s = append(s, v)
 	}
 	sort.Sort(identifierSorter(s))

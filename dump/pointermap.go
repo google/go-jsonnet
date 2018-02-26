@@ -24,8 +24,8 @@ type pointerMap struct {
 	primitivePointers []uintptr
 }
 
-// GetPointers: Given a structure, it will recursively map all pointers mentioned in the tree,
-// breaking circular references and provide list of:
+// GetPointers recursively maps all pointers mentioned in a tree, breaking
+// circular references, and provides a list of:
 // * all pointers
 // * all pointers that were referenced at least twice
 // * all pointers that point to primitive type

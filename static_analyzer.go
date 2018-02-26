@@ -33,7 +33,7 @@ func visitNext(a ast.Node, inObject bool, vars ast.IdentifierSet, state *analysi
 		return
 	}
 	state.err = analyzeVisit(a, inObject, vars)
-	state.freeVars.Append(a.FreeVariables())
+	state.freeVars.AddIdentifiers(a.FreeVariables())
 }
 
 func analyzeVisit(a ast.Node, inObject bool, vars ast.IdentifierSet) error {

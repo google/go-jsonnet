@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package dump provides functions to dump values to stdout and strings.
 package dump
 
 import (
