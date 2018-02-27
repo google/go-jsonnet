@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package dump provides functions to dump values to stdout and strings.
+// Package dump can dump a Go data structure to Go source file, so that it can
+// be statically embedded into other code.
 package dump
 
 import (
