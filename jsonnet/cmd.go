@@ -120,13 +120,13 @@ func usage(o io.Writer) {
 func safeStrToInt(str string) (i int) {
 	i, err := strconv.Atoi(str)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: Invalid integer \"%s\"\n", str)
+		fmt.Fprintf(os.Stderr, "Invalid integer \"%s\"\n", str)
 		os.Exit(1)
 	}
 	return
 }
 
-type Command int
+type command int
 
 const (
 	commandEval = iota
@@ -134,7 +134,7 @@ const (
 )
 
 type config struct {
-	cmd            Command
+	cmd            command
 	inputFiles     []string
 	outputFile     string
 	filenameIsCode bool
@@ -167,20 +167,18 @@ func getVarVal(s string) (string, string, error) {
 		if exists {
 			return name, content, nil
 		}
-		return "", "", fmt.Errorf("ERROR: Environment variable %v was undefined.", name)
-	} else {
-		return name, parts[1], nil
+		return "", "", fmt.Errorf("environment variable %v was undefined", name)
 	}
+	return name, parts[1], nil
 }
 
 func getVarFile(s string, imp string) (string, string, error) {
 	parts := strings.SplitN(s, "=", 2)
 	name := parts[0]
 	if len(parts) == 1 {
-		return "", "", fmt.Errorf("ERROR: argument not in form <var>=<file> \"%s\".", s)
-	} else {
-		return name, fmt.Sprintf("%s @'%s'", imp, strings.Replace(parts[1], "'", "''", -1)), nil
+		return "", "", fmt.Errorf(`argument not in form <var>=<file> "%s"`, s)
 	}
+	return name, fmt.Sprintf("%s @'%s'", imp, strings.Replace(parts[1], "'", "''", -1)), nil
 }
 
 type processArgsStatus int
@@ -217,7 +215,7 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 		} else if arg == "-o" || arg == "--output-file" {
 			outputFile := nextArg(&i, args)
 			if len(outputFile) == 0 {
-				return processArgsStatusFailure, fmt.Errorf("ERROR: -o argument was empty string")
+				return processArgsStatusFailure, fmt.Errorf("-o argument was empty string")
 			}
 			config.outputFile = outputFile
 		} else if arg == "--" {
@@ -231,13 +229,13 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 			if arg == "-s" || arg == "--max-stack" {
 				l := safeStrToInt(nextArg(&i, args))
 				if l < 1 {
-					return processArgsStatusFailure, fmt.Errorf("ERROR: Invalid --max-stack value: %d", l)
+					return processArgsStatusFailure, fmt.Errorf("invalid --max-stack value: %d", l)
 				}
 				vm.MaxStack = l
 			} else if arg == "-J" || arg == "--jpath" {
 				dir := nextArg(&i, args)
 				if len(dir) == 0 {
-					return processArgsStatusFailure, fmt.Errorf("ERROR: -J argument was empty string")
+					return processArgsStatusFailure, fmt.Errorf("-J argument was empty string")
 				}
 				if dir[len(dir)-1] != '/' {
 					dir += "/"
@@ -302,14 +300,14 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 			} else if arg == "-t" || arg == "--max-trace" {
 				l := safeStrToInt(nextArg(&i, args))
 				if l < 0 {
-					return processArgsStatusFailure, fmt.Errorf("ERROR: Invalid --max-trace value: %d", l)
+					return processArgsStatusFailure, fmt.Errorf("invalid --max-trace value: %d", l)
 				}
 				vm.ErrorFormatter.SetMaxStackTraceSize(l)
 			} else if arg == "-m" || arg == "--multi" {
 				config.evalMulti = true
 				outputDir := nextArg(&i, args)
 				if len(outputDir) == 0 {
-					return processArgsStatusFailure, fmt.Errorf("ERROR: -m argument was empty string")
+					return processArgsStatusFailure, fmt.Errorf("-m argument was empty string")
 				}
 				if outputDir[len(outputDir)-1] != '/' {
 					outputDir += "/"
@@ -320,13 +318,12 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 			} else if arg == "-S" || arg == "--string" {
 				vm.StringOutput = true
 			} else if len(arg) > 1 && arg[0] == '-' {
-				return processArgsStatusFailure, fmt.Errorf("ERROR: Unrecognized argument: %s", arg)
+				return processArgsStatusFailure, fmt.Errorf("unrecognized argument: %s", arg)
 			} else {
 				remainingArgs = append(remainingArgs, arg)
 			}
-
 		} else {
-			return processArgsStatusFailure, fmt.Errorf("The Go implementation currently does not support jsonnet fmt.")
+			return processArgsStatusFailure, fmt.Errorf("the Go implementation currently does not support jsonnet fmt")
 		}
 	}
 
@@ -335,7 +332,7 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 		want = "code"
 	}
 	if len(remainingArgs) == 0 {
-		return processArgsStatusFailureUsage, fmt.Errorf("ERROR: Must give %s", want)
+		return processArgsStatusFailureUsage, fmt.Errorf("must give %s", want)
 	}
 
 	// TODO(dcunnin): Formatter allows multiple files in test and in-place mode.
@@ -343,7 +340,7 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 
 	if !multipleFilesAllowed {
 		if len(remainingArgs) > 1 {
-			return processArgsStatusFailure, fmt.Errorf("ERROR: Only one %s is allowed", want)
+			return processArgsStatusFailure, fmt.Errorf("only one %s is allowed", want)
 		}
 	}
 
@@ -390,7 +387,7 @@ func writeMultiOutputFiles(output map[string]string, outputDir, outputFile strin
 
 	// Iterate through the map in order.
 	keys := make([]string, 0, len(output))
-	for k, _ := range output {
+	for k := range output {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
@@ -511,7 +508,7 @@ func main() {
 
 	status, err := processArgs(os.Args[1:], &config, vm)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
+		fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
 	}
 	switch status {
 	case processArgsStatusContinue:

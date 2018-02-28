@@ -1,3 +1,4 @@
+// Package linter analyses Jsonnet code for code "smells".
 package linter
 
 import (

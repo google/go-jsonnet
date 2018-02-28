@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package dump can dump a Go data structure to Go source file, so that it can
+// be statically embedded into other code.
 package dump
 
 import (
@@ -31,17 +33,19 @@ var packageNameStripperRegexp = regexp.MustCompile("\\b[a-zA-Z_]+[a-zA-Z_0-9]+\\
 
 // Options represents configuration option
 type Options struct {
-	StripPackageNames bool
-	HidePrivateFields bool
-	HomePackage       string
-	VariableName      string
+	StripPackageNames   bool
+	HidePrivateFields   bool
+	HomePackage         string
+	VariableName        string
+	VariableDescription string
 }
 
 // Config is the default config used when calling Dump
 var Config = Options{
-	StripPackageNames: false,
-	HidePrivateFields: true,
-	VariableName:      "Obj",
+	StripPackageNames:   false,
+	HidePrivateFields:   true,
+	VariableName:        "Obj",
+	VariableDescription: "",
 }
 
 type dumpState struct {
@@ -157,8 +161,15 @@ func (s *dumpState) dumpMap(v reflect.Value) {
 }
 
 func (s *dumpState) dump(value interface{}) {
-	if value == nil {
+	writeVar := func() {
+		if s.config.VariableDescription != "" {
+			fmt.Fprintf(s.w, "\n// %s\n", s.config.VariableDescription)
+		}
 		s.w.Write([]byte("var " + s.config.VariableName + " = "))
+	}
+
+	if value == nil {
+		writeVar()
 		printNil(s.w)
 		s.newline()
 		return
@@ -170,7 +181,7 @@ func (s *dumpState) dump(value interface{}) {
 
 	s.dumpReusedPointerVal(v)
 
-	s.w.Write([]byte("var " + s.config.VariableName + " = "))
+	writeVar()
 	if v.Kind() == reflect.Ptr && v.IsNil() {
 		printNil(s.w)
 	} else {
