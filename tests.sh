@@ -2,6 +2,8 @@
 
 set -e
 
+go test ./...
+
 export IMPLEMENTATION=go
 
 (cd jsonnet; go build)

@@ -18,7 +18,7 @@ This code is known to work on Go 1.8 and above. We recommend always using the ne
 
 ## Build instructions
 
-```
+```bash
 export GOPATH=$HOME/go-workspace
 mkdir -pv $GOPATH
 go get github.com/google/go-jsonnet
@@ -32,13 +32,19 @@ go build
 }
 ```
 
+## Running tests
+
+```bash
+./tests.sh  # Also runs `go test ./...`
+```
+
 ## Implementation Notes
 
 We are generating some helper classes on types by using
 http://clipperhouse.github.io/gen/.  Do the following to regenerate these if
 necessary:
 
-```
+```bash
 go get github.com/clipperhouse/gen
 go get github.com/clipperhouse/set
 export PATH=$PATH:$GOPATH/bin  # If you haven't already
@@ -49,6 +55,6 @@ go generate
 
 To regenerate the standard library, do:
 
-```
+```bash
 ./reset_stdast_go.sh && go run cmd/dumpstdlibast.go
 ```
