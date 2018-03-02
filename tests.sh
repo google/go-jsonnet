@@ -2,7 +2,7 @@
 
 set -e
 
-go test ./...
+[ "$1" = "--skip-go-test" ] || go test ./...
 
 export IMPLEMENTATION=go
 
