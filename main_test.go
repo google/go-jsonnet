@@ -21,9 +21,14 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"runtime"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -217,21 +222,63 @@ func runTest(t *testing.T, test *mainTest) {
 	}
 }
 
+func expandEscapedFilenames(t *testing.T) error {
+	// Escaped filenames exist because their unescaped forms are invalid on
+	// Windows. We have no choice but to skip these in testing.
+	if runtime.GOOS == "windows" {
+		return nil
+	}
+
+	match, err := filepath.Glob("testdata/*%*")
+	if err != nil {
+		return err
+	}
+
+	filenameEscapeRE := regexp.MustCompile(`%[0-9A-Fa-f]{2}`)
+
+	for _, input := range match {
+		file := filenameEscapeRE.ReplaceAllStringFunc(input, func(s string) string {
+			code, err := strconv.ParseUint(s[1:], 16, 8)
+			if err != nil {
+				panic(err)
+			}
+			return string([]byte{byte(code)})
+		})
+		if file != input {
+			if err := os.Link(input, file); err != nil {
+				if !os.IsExist(err) {
+					return fmt.Errorf("linking %s -> %s: %v", file, input, err)
+				}
+			}
+			t.Logf("Linked %s -> %s", input, file)
+		}
+	}
+
+	return nil
+}
+
 func TestMain(t *testing.T) {
 	flag.Parse()
+
+	if err := expandEscapedFilenames(t); err != nil {
+		t.Fatal(err)
+	}
+
 	var mainTests []mainTest
 	match, err := filepath.Glob("testdata/*.jsonnet")
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	jsonnetExtRE := regexp.MustCompile(`\.jsonnet$`)
+
 	for _, input := range match {
-		golden := input
-		name := input
-		if strings.HasSuffix(input, ".jsonnet") {
-			name = input[:len(input)-len(".jsonnet")]
-			golden = name + ".golden"
+		// Skip escaped filenames.
+		if strings.ContainsRune(input, '%') {
+			continue
 		}
+		name := jsonnetExtRE.ReplaceAllString(input, "")
+		golden := jsonnetExtRE.ReplaceAllString(input, ".golden")
 		var meta testMetadata
 		if val, exists := metadataForTests[name]; exists {
 			meta = val
