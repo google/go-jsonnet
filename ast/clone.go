@@ -290,7 +290,7 @@ func clone(astPtr *Node) {
 		*r = *node
 
 	default:
-		panic(fmt.Sprintf("Desugarer does not recognize ast: %s", reflect.TypeOf(node)))
+		panic(fmt.Sprintf("ast.Clone() does not recognize ast: %s", reflect.TypeOf(node)))
 	}
 
 	cloneNodeBase(*astPtr)
