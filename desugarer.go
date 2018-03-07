@@ -123,16 +123,16 @@ func desugarFields(location ast.LocationRange, fields *ast.ObjectFields, objLeve
 
 	// Remove object-level locals
 	newFields := []ast.ObjectField{}
-	var binds ast.LocalBinds
-	for _, local := range *fields {
-		if local.Kind != ast.ObjectLocal {
-			continue
-		}
-		binds = append(binds, ast.LocalBind{Variable: *local.Id, Body: local.Expr2})
-	}
 	for _, field := range *fields {
 		if field.Kind == ast.ObjectLocal {
 			continue
+		}
+		var binds ast.LocalBinds
+		for _, local := range *fields {
+			if local.Kind != ast.ObjectLocal {
+				continue
+			}
+			binds = append(binds, ast.LocalBind{Variable: *local.Id, Body: ast.Clone(local.Expr2)})
 		}
 		if len(binds) > 0 {
 			field.Expr2 = &ast.Local{
@@ -294,7 +294,10 @@ func buildDesugaredObject(nodeBase ast.NodeBase, fields ast.ObjectFields) *ast.D
 
 // Desugar Jsonnet expressions to reduce the number of constructs the rest of the implementation
 // needs to understand.
-
+//
+// Note that despite the name, desugar() is not idempotent.  String literals have their escape
+// codes translated to low-level characters during desugaring.
+//
 // Desugaring should happen immediately after parsing, i.e. before static analysis and execution.
 // Temporary variables introduced here should be prefixed with $ to ensure they do not clash with
 // variables used in user code.
@@ -443,6 +446,9 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		}
 
 	case *ast.Import:
+		// desugar() is allowed to update the pointer to point to something else, but will never do
+		// this for a LiteralString.  We cannot simply do &node.File because the type is
+		// **ast.LiteralString which is not compatible with *ast.Node.
 		var file ast.Node = node.File
 		err = desugar(&file, objLevel)
 		if err != nil {
@@ -450,6 +456,7 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		}
 
 	case *ast.ImportStr:
+		// See comment in ast.Import.
 		var file ast.Node = node.File
 		err = desugar(&file, objLevel)
 		if err != nil {
