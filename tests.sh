@@ -4,7 +4,7 @@ set -e
 
 [ "$1" = "--skip-go-test" ] || go test ./...
 
-export IMPLEMENTATION=go
+export IMPLEMENTATION=golang
 
 (cd jsonnet; go build)
 

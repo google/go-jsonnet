@@ -1,4 +1,4 @@
-RUNTIME ERROR: Function has no parameter blahblah
+RUNTIME ERROR: function has no parameter blahblah
 -------------------------------------------------
 	testdata/std.makeArrayNamed3:1:1-54	$
 

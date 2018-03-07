@@ -155,7 +155,7 @@ const (
 func (i *interpreter) newCall(trace *TraceElement, env environment, trimmable bool) error {
 	s := &i.stack
 	if s.calls >= s.limit {
-		return makeRuntimeError("Max stack frames exceeded.", i.getCurrentStackTrace(trace))
+		return makeRuntimeError("max stack frames exceeded.", i.getCurrentStackTrace(trace))
 	}
 	s.stack = append(s.stack, &callFrame{
 		isCall:    true,
@@ -571,7 +571,7 @@ func (i *interpreter) manifestJSON(trace *TraceElement, v value) (interface{}, e
 		return v.value, nil
 
 	case *valueFunction:
-		return nil, makeRuntimeError("Couldn't manifest function in JSON output.", i.getCurrentStackTrace(trace))
+		return nil, makeRuntimeError("couldn't manifest function in JSON output.", i.getCurrentStackTrace(trace))
 
 	case *valueNumber:
 		return v.value, nil
@@ -625,7 +625,7 @@ func (i *interpreter) manifestJSON(trace *TraceElement, v value) (interface{}, e
 
 	default:
 		return nil, makeRuntimeError(
-			fmt.Sprintf("Manifesting this value not implemented yet: %s", reflect.TypeOf(v)),
+			fmt.Sprintf("manifesting this value not implemented yet: %s", reflect.TypeOf(v)),
 			i.getCurrentStackTrace(trace),
 		)
 
@@ -746,7 +746,7 @@ func (i *interpreter) manifestString(buf *bytes.Buffer, trace *TraceElement, v v
 		buf.WriteString(v.getString())
 		return nil
 	default:
-		return makeRuntimeError(fmt.Sprintf("Expected string result, got: %s", v.getType().name), i.getCurrentStackTrace(trace))
+		return makeRuntimeError(fmt.Sprintf("expected string result, got: %s", v.getType().name), i.getCurrentStackTrace(trace))
 	}
 }
 
@@ -765,7 +765,7 @@ func (i *interpreter) manifestAndSerializeMulti(trace *TraceElement, v value) (r
 			r[filename] = buf.String()
 		}
 	default:
-		msg := fmt.Sprintf("Multi mode: Top-level object was a %s, "+
+		msg := fmt.Sprintf("multi mode: top-level object was a %s, "+
 			"should be an object whose keys are filenames and values hold "+
 			"the JSON for that file.", v.getType().name)
 		return r, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
@@ -788,7 +788,7 @@ func (i *interpreter) manifestAndSerializeYAMLStream(trace *TraceElement, v valu
 			r = append(r, buf.String())
 		}
 	default:
-		msg := fmt.Sprintf("Stream mode: Top-level object was a %s, "+
+		msg := fmt.Sprintf("stream mode: top-level object was a %s, "+
 			"should be an array whose elements hold "+
 			"the JSON for each document in the stream.", v.getType().name)
 		return r, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
