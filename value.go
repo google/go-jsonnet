@@ -279,7 +279,7 @@ func checkArguments(e *evaluator, args callArguments, params Parameters) error {
 	numExpected := len(params.required) + len(params.optional)
 
 	if numPassed > numExpected {
-		return e.Error(fmt.Sprintf("Function expected %v positional argument(s), but got %v", numExpected, numPassed))
+		return e.Error(fmt.Sprintf("function expected %v positional argument(s), but got %v", numExpected, numPassed))
 	}
 
 	for _, param := range params.required {
@@ -303,7 +303,7 @@ func checkArguments(e *evaluator, args callArguments, params Parameters) error {
 			return e.Error(fmt.Sprintf("Argument %v already provided", arg.name))
 		}
 		if _, present := accepted[arg.name]; !present {
-			return e.Error(fmt.Sprintf("Function has no parameter %v", arg.name))
+			return e.Error(fmt.Sprintf("function has no parameter %v", arg.name))
 		}
 		received[arg.name] = true
 	}

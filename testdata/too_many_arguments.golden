@@ -1,4 +1,4 @@
-RUNTIME ERROR: Function expected 3 positional argument(s), but got 4
+RUNTIME ERROR: function expected 3 positional argument(s), but got 4
 -------------------------------------------------
 	testdata/too_many_arguments:1:1-35	$
 

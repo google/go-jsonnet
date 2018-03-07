@@ -535,7 +535,7 @@ func main() {
 	if config.cmd == commandEval {
 		if len(config.inputFiles) != 1 {
 			// Should already have been caught by processArgs.
-			panic(fmt.Sprintf("Internal error: Expected a single input file."))
+			panic(fmt.Sprintf("Internal error: expected a single input file."))
 		}
 		filename := config.inputFiles[0]
 		input, err := readInput(config, &filename)
