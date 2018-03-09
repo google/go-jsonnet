@@ -203,6 +203,26 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 		i++
 	}
 
+	handleExtVarVal := func(handle func(key string, val string)) error {
+		next := nextArg(&i, args)
+		name, content, err := getVarVal(next)
+		if err != nil {
+			return err
+		}
+		handle(name, content)
+		return nil
+	}
+
+	handleExtVarFile := func(handle func(key string, val string), imp string) error {
+		next := nextArg(&i, args)
+		name, content, err := getVarFile(next, imp)
+		if err != nil {
+			return err
+		}
+		handle(name, content)
+		return nil
+	}
+
 	for ; i < len(args); i++ {
 		arg := args[i]
 		if arg == "-h" || arg == "--help" {
@@ -242,61 +262,37 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 				}
 				config.evalJpath = append(config.evalJpath, dir)
 			} else if arg == "-V" || arg == "--ext-str" {
-				next := nextArg(&i, args)
-				name, content, err := getVarVal(next)
-				if err != nil {
+				if err := handleExtVarVal(vm.ExtVar); err != nil {
 					return processArgsStatusFailure, err
 				}
-				vm.ExtVar(name, content)
 			} else if arg == "--ext-str-file" {
-				next := nextArg(&i, args)
-				name, content, err := getVarFile(next, "importstr")
-				if err != nil {
+				if err := handleExtVarFile(vm.ExtCode, "importstr"); err != nil {
 					return processArgsStatusFailure, err
 				}
-				vm.ExtCode(name, content)
 			} else if arg == "--ext-code" {
-				next := nextArg(&i, args)
-				name, content, err := getVarVal(next)
-				if err != nil {
+				if err := handleExtVarVal(vm.ExtCode); err != nil {
 					return processArgsStatusFailure, err
 				}
-				vm.ExtCode(name, content)
 			} else if arg == "--ext-code-file" {
-				next := nextArg(&i, args)
-				name, content, err := getVarFile(next, "import")
-				if err != nil {
+				if err := handleExtVarFile(vm.ExtCode, "import"); err != nil {
 					return processArgsStatusFailure, err
 				}
-				vm.ExtCode(name, content)
 			} else if arg == "-A" || arg == "--tla-str" {
-				next := nextArg(&i, args)
-				name, content, err := getVarVal(next)
-				if err != nil {
+				if err := handleExtVarVal(vm.TLAVar); err != nil {
 					return processArgsStatusFailure, err
 				}
-				vm.TLAVar(name, content)
 			} else if arg == "--tla-str-file" {
-				next := nextArg(&i, args)
-				name, content, err := getVarFile(next, "importstr")
-				if err != nil {
+				if err := handleExtVarFile(vm.TLACode, "importstr"); err != nil {
 					return processArgsStatusFailure, err
 				}
-				vm.TLACode(name, content)
 			} else if arg == "--tla-code" {
-				next := nextArg(&i, args)
-				name, content, err := getVarVal(next)
-				if err != nil {
+				if err := handleExtVarVal(vm.TLACode); err != nil {
 					return processArgsStatusFailure, err
 				}
-				vm.TLACode(name, content)
 			} else if arg == "--tla-code-file" {
-				next := nextArg(&i, args)
-				name, content, err := getVarFile(next, "import")
-				if err != nil {
+				if err := handleExtVarFile(vm.TLACode, "import"); err != nil {
 					return processArgsStatusFailure, err
 				}
-				vm.TLACode(name, content)
 			} else if arg == "-t" || arg == "--max-trace" {
 				l := safeStrToInt(nextArg(&i, args))
 				if l < 0 {
