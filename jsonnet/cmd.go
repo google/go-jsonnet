@@ -203,7 +203,7 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 		i++
 	}
 
-	handleExtVarVal := func(handle func(key string, val string)) error {
+	handleVarVal := func(handle func(key string, val string)) error {
 		next := nextArg(&i, args)
 		name, content, err := getVarVal(next)
 		if err != nil {
@@ -213,7 +213,7 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 		return nil
 	}
 
-	handleExtVarFile := func(handle func(key string, val string), imp string) error {
+	handleVarFile := func(handle func(key string, val string), imp string) error {
 		next := nextArg(&i, args)
 		name, content, err := getVarFile(next, imp)
 		if err != nil {
@@ -262,35 +262,35 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 				}
 				config.evalJpath = append(config.evalJpath, dir)
 			} else if arg == "-V" || arg == "--ext-str" {
-				if err := handleExtVarVal(vm.ExtVar); err != nil {
+				if err := handleVarVal(vm.ExtVar); err != nil {
 					return processArgsStatusFailure, err
 				}
 			} else if arg == "--ext-str-file" {
-				if err := handleExtVarFile(vm.ExtCode, "importstr"); err != nil {
+				if err := handleVarFile(vm.ExtCode, "importstr"); err != nil {
 					return processArgsStatusFailure, err
 				}
 			} else if arg == "--ext-code" {
-				if err := handleExtVarVal(vm.ExtCode); err != nil {
+				if err := handleVarVal(vm.ExtCode); err != nil {
 					return processArgsStatusFailure, err
 				}
 			} else if arg == "--ext-code-file" {
-				if err := handleExtVarFile(vm.ExtCode, "import"); err != nil {
+				if err := handleVarFile(vm.ExtCode, "import"); err != nil {
 					return processArgsStatusFailure, err
 				}
 			} else if arg == "-A" || arg == "--tla-str" {
-				if err := handleExtVarVal(vm.TLAVar); err != nil {
+				if err := handleVarVal(vm.TLAVar); err != nil {
 					return processArgsStatusFailure, err
 				}
 			} else if arg == "--tla-str-file" {
-				if err := handleExtVarFile(vm.TLACode, "importstr"); err != nil {
+				if err := handleVarFile(vm.TLACode, "importstr"); err != nil {
 					return processArgsStatusFailure, err
 				}
 			} else if arg == "--tla-code" {
-				if err := handleExtVarVal(vm.TLACode); err != nil {
+				if err := handleVarVal(vm.TLACode); err != nil {
 					return processArgsStatusFailure, err
 				}
 			} else if arg == "--tla-code-file" {
-				if err := handleExtVarFile(vm.TLACode, "import"); err != nil {
+				if err := handleVarFile(vm.TLACode, "import"); err != nil {
 					return processArgsStatusFailure, err
 				}
 			} else if arg == "-t" || arg == "--max-trace" {
