@@ -86,7 +86,6 @@ func (s *dumpState) dumpSlice(v reflect.Value) {
 	numEntries := v.Len()
 	if numEntries == 0 {
 		s.w.Write([]byte("{}"))
-		s.newline()
 		return
 	}
 	s.w.Write([]byte("{"))
