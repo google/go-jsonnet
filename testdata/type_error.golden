@@ -5,7 +5,7 @@ RUNTIME ERROR: xxx
 std.type(error "xxx")
 
 -------------------------------------------------
-	testdata/type_error:1:1-22	builtin function <type>
+	testdata/type_error:1:1-22	$
 
 std.type(error "xxx")
 

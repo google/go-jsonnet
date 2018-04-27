@@ -5,11 +5,6 @@ RUNTIME ERROR: Attempt to use super when there is no super class.
 { x: 5, assert super.x == 5 } 
 
 -------------------------------------------------
-	testdata/object_invariant7:1:16-28	object <anonymous>
-
-{ x: 5, assert super.x == 5 } 
-
--------------------------------------------------
 	During manifestation	
 
 

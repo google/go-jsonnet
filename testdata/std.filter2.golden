@@ -5,7 +5,7 @@ RUNTIME ERROR: x
 std.filter(error "x", [])
 
 -------------------------------------------------
-	testdata/std.filter2:1:1-26	builtin function <filter>
+	testdata/std.filter2:1:1-26	$
 
 std.filter(error "x", [])
 

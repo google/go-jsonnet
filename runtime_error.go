@@ -44,7 +44,7 @@ type TraceFrame struct {
 	Name string
 }
 
-func traceElementToTraceFrame(trace *TraceElement) TraceFrame {
+func traceElementToTraceFrame(trace TraceElement) TraceFrame {
 	tf := TraceFrame{Loc: *trace.loc}
 	if trace.context != nil {
 		// TODO(sbarzowski) maybe it should never be nil

@@ -5,7 +5,7 @@ RUNTIME ERROR: x
 std.primitiveEquals(42, error "x")
 
 -------------------------------------------------
-	testdata/std.primitiveEquals9:1:1-35	builtin function <primitiveEquals>
+	testdata/std.primitiveEquals9:1:1-35	$
 
 std.primitiveEquals(42, error "x")
 

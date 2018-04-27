@@ -15,12 +15,12 @@ RUNTIME ERROR: Not enough values to format, got 1
         std.toString(val)
 
 -------------------------------------------------
-	<std>:558:9-26	builtin function <toString>
+	<std>:558:9-26	function <format_code>
 
         std.toString(val)
 
 -------------------------------------------------
-	... (skipped 14 frames)
+	... (skipped 10 frames)
 -------------------------------------------------
 	<std>:699:11-64	function <format_codes_arr>
 

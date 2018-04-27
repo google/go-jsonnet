@@ -1,1 +1,1 @@
-std.makeArray(1e100, error "shouldn't happen")
+std.makeArray(1e100, function(i) i)
