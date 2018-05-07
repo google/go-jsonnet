@@ -106,8 +106,9 @@ type jsonnetInput struct {
 }
 
 type jsonnetResult struct {
-	output  string
-	isError bool
+	output      string
+	outputMulti map[string]string
+	isError     bool
 }
 
 func runInternalJsonnet(i jsonnetInput) jsonnetResult {
@@ -124,29 +125,31 @@ func runInternalJsonnet(i jsonnetInput) jsonnetResult {
 	vm.NativeFunction(jsonToString)
 	vm.NativeFunction(nativeError)
 
-	var output string
-
 	rawOutput, err := vm.evaluateSnippet(i.name, string(i.input), i.eKind)
-	var isError bool
-	if err != nil {
+	switch {
+	case err != nil:
 		// TODO(sbarzowski) perhaps somehow mark that we are processing
 		// an error. But for now we can treat them the same.
-		output = errFormatter.Format(err)
-		output += "\n"
-		isError = true
-	} else {
-		output = rawOutput.(string)
-		isError = false
-	}
-
-	return jsonnetResult{
-		output:  output,
-		isError: isError,
+		return jsonnetResult{
+			output:  errFormatter.Format(err) + "\n",
+			isError: true,
+		}
+	case i.eKind == evalKindMulti:
+		return jsonnetResult{
+			outputMulti: rawOutput.(map[string]string),
+		}
+	default:
+		return jsonnetResult{
+			output: rawOutput.(string),
+		}
 	}
 }
 
 func runJsonnetCommand(i jsonnetInput) jsonnetResult {
 	// TODO(sbarzowski) Special handling of errors (which may differ between versions)
+	if i.eKind != evalKindRegular {
+		panic(fmt.Sprintf("eKind must be evalKindRegular for jsonnet CLI testing; was %v", i.eKind))
+	}
 	input := bytes.NewBuffer(i.input)
 	var output bytes.Buffer
 	isError := false
@@ -193,10 +196,16 @@ func runTest(t *testing.T, test *mainTest) {
 
 	input := read(test.input)
 
+	eKind := evalKindRegular
+	// If the golden path is to a directory, this is a multi-test.
+	if info, err := os.Stat(test.golden); err == nil && info.IsDir() {
+		eKind = evalKindMulti
+	}
+
 	result := runJsonnet(jsonnetInput{
 		name:    test.name,
 		input:   input,
-		eKind:   evalKindRegular,
+		eKind:   eKind,
 		extVars: test.meta.extVars,
 		extCode: test.meta.extCode,
 	})
@@ -209,16 +218,34 @@ func runTest(t *testing.T, test *mainTest) {
 		}
 		return
 	}
-	golden := read(test.golden)
-	if bytes.Compare(golden, []byte(result.output)) != 0 {
-		// TODO(sbarzowski) better reporting of differences in whitespace
-		// missing newline issues can be very subtle now
-		t.Fail()
-		t.Errorf("Mismatch when running %s.jsonnet. Golden: %s\n", test.name, test.golden)
-		data := diff(result.output, string(golden))
-		t.Errorf("diff %s jsonnet %s.jsonnet\n", test.golden, test.name)
-		t.Errorf(string(data))
+	compareGolden := func(inputPath, goldenPath, result string, golden []byte) {
+		if bytes.Compare(golden, []byte(result)) != 0 {
+			// TODO(sbarzowski) better reporting of differences in whitespace
+			// missing newline issues can be very subtle now
+			t.Fail()
+			t.Errorf("Mismatch when running %s. Golden: %s\n", inputPath, goldenPath)
+			data := diff(result, string(golden))
+			t.Errorf("diff %s jsonnet %s\n", goldenPath, inputPath)
+			t.Errorf(string(data))
+		}
+	}
 
+	switch eKind {
+	default:
+		golden := read(test.golden)
+		compareGolden(test.input, test.golden, result.output, golden)
+	case evalKindMulti:
+		expectFiles, err := ioutil.ReadDir(test.golden)
+		if err != nil {
+			t.Fatalf("ReadDir(%q): %v", test.golden, err)
+		}
+		goldenContent := map[string][]byte{}
+		for _, f := range expectFiles {
+			goldenContent[f.Name()] = read(filepath.Join(test.golden, f.Name()))
+		}
+		for fn, content := range result.outputMulti {
+			compareGolden(test.input, fn, content, goldenContent[fn])
+		}
 	}
 }
 
