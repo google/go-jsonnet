@@ -210,14 +210,6 @@ func runTest(t *testing.T, test *mainTest) {
 		extCode: test.meta.extCode,
 	})
 
-	// TODO(sbarzowski) report which files were updated
-	if *update {
-		err := ioutil.WriteFile(test.golden, []byte(result.output), 0666)
-		if err != nil {
-			t.Errorf("error updating golden files: %v", err)
-		}
-		return
-	}
 	compareGolden := func(inputPath, goldenPath, result string, golden []byte) {
 		if bytes.Compare(golden, []byte(result)) != 0 {
 			// TODO(sbarzowski) better reporting of differences in whitespace
@@ -232,6 +224,14 @@ func runTest(t *testing.T, test *mainTest) {
 
 	switch eKind {
 	default:
+		// TODO(sbarzowski) report which files were updated
+		if *update {
+			err := ioutil.WriteFile(test.golden, []byte(result.output), 0666)
+			if err != nil {
+				t.Errorf("error updating golden files: %v", err)
+			}
+			return
+		}
 		golden := read(test.golden)
 		compareGolden(test.input, test.golden, result.output, golden)
 	case evalKindMulti:
@@ -239,12 +239,40 @@ func runTest(t *testing.T, test *mainTest) {
 		if err != nil {
 			t.Fatalf("ReadDir(%q): %v", test.golden, err)
 		}
+		// TODO(sbarzowski) report which files were updated
+		if *update {
+			for fn, content := range result.outputMulti {
+				err := ioutil.WriteFile(filepath.Join(test.golden, fn), []byte(content), 0666)
+				if err != nil {
+					t.Errorf("error updating golden file %v: %v", fn, err)
+				}
+			}
+			// Delete excess files
+			for _, f := range expectFiles {
+				if _, ok := result.outputMulti[f.Name()]; ok {
+					continue
+				}
+				if err := os.Remove(filepath.Join(test.golden, f.Name())); err != nil {
+					t.Errorf("error removing golden file %v: %v", f.Name(), err)
+				}
+			}
+			return
+		}
 		goldenContent := map[string][]byte{}
 		for _, f := range expectFiles {
 			goldenContent[f.Name()] = read(filepath.Join(test.golden, f.Name()))
 		}
 		for fn, content := range result.outputMulti {
+			if _, ok := goldenContent[fn]; !ok {
+				t.Errorf("jsonnet outputted file %v which does not exist in goldens", fn)
+				continue
+			}
 			compareGolden(test.input, fn, content, goldenContent[fn])
+			delete(goldenContent, fn)
+		}
+		for fn := range goldenContent {
+			t.Errorf("jsonnet did not output expected file %v", fn)
+			continue
 		}
 	}
 }
