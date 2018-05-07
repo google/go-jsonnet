@@ -749,7 +749,7 @@ func (i *interpreter) manifestString(buf *bytes.Buffer, trace *TraceElement, v v
 	}
 }
 
-func (i *interpreter) manifestAndSerializeMulti(trace *TraceElement, v value) (r map[string]string, err error) {
+func (i *interpreter) manifestAndSerializeMulti(trace *TraceElement, v value, stringOutput bool) (r map[string]string, err error) {
 	r = make(map[string]string)
 	json, err := i.manifestJSON(trace, v)
 	if err != nil {
@@ -758,10 +758,21 @@ func (i *interpreter) manifestAndSerializeMulti(trace *TraceElement, v value) (r
 	switch json := json.(type) {
 	case map[string]interface{}:
 		for filename, fileJSON := range json {
-			var buf bytes.Buffer
-			serializeJSON(fileJSON, true, "", &buf)
-			buf.WriteString("\n")
-			r[filename] = buf.String()
+			if stringOutput {
+				switch val := fileJSON.(type) {
+				case string:
+					r[filename] = val
+				default:
+					msg := fmt.Sprintf("multi mode: top-level object's key %s has a value of type %T, "+
+						"should be a string", filename, val)
+					return r, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+				}
+			} else {
+				var buf bytes.Buffer
+				serializeJSON(fileJSON, true, "", &buf)
+				buf.WriteString("\n")
+				r[filename] = buf.String()
+			}
 		}
 	default:
 		msg := fmt.Sprintf("multi mode: top-level object was a %s, "+
@@ -1011,7 +1022,7 @@ func evaluateMulti(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[st
 		return nil, err
 	}
 
-	return i.manifestAndSerializeMulti(manifestationTrace, result)
+	return i.manifestAndSerializeMulti(manifestationTrace, result, stringOutput)
 }
 
 // TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead

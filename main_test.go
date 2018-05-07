@@ -98,11 +98,12 @@ var nativeError = &NativeFunction{
 }
 
 type jsonnetInput struct {
-	name    string
-	input   []byte
-	eKind   evalKind
-	extVars map[string]string
-	extCode map[string]string
+	name         string
+	input        []byte
+	eKind        evalKind
+	stringOutput bool
+	extVars      map[string]string
+	extCode      map[string]string
 }
 
 type jsonnetResult struct {
@@ -115,6 +116,7 @@ func runInternalJsonnet(i jsonnetInput) jsonnetResult {
 	vm := MakeVM()
 	errFormatter := termErrorFormatter{pretty: true, maxStackTraceSize: 9}
 
+	vm.StringOutput = i.stringOutput
 	for name, value := range i.extVars {
 		vm.ExtVar(name, value)
 	}
@@ -203,11 +205,12 @@ func runTest(t *testing.T, test *mainTest) {
 	}
 
 	result := runJsonnet(jsonnetInput{
-		name:    test.name,
-		input:   input,
-		eKind:   eKind,
-		extVars: test.meta.extVars,
-		extCode: test.meta.extCode,
+		name:         test.name,
+		input:        input,
+		eKind:        eKind,
+		stringOutput: strings.HasSuffix(test.golden, "_string_output.golden"),
+		extVars:      test.meta.extVars,
+		extCode:      test.meta.extCode,
 	})
 
 	compareGolden := func(inputPath, goldenPath, result string, golden []byte) {
