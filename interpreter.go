@@ -749,7 +749,7 @@ func (i *interpreter) manifestString(buf *bytes.Buffer, trace *TraceElement, v v
 	}
 }
 
-func (i *interpreter) manifestAndSerializeMulti(trace *TraceElement, v value, stringOutput bool) (r map[string]string, err error) {
+func (i *interpreter) manifestAndSerializeMulti(trace *TraceElement, v value, stringOutputMode bool) (r map[string]string, err error) {
 	r = make(map[string]string)
 	json, err := i.manifestJSON(trace, v)
 	if err != nil {
@@ -758,7 +758,7 @@ func (i *interpreter) manifestAndSerializeMulti(trace *TraceElement, v value, st
 	switch json := json.(type) {
 	case map[string]interface{}:
 		for filename, fileJSON := range json {
-			if stringOutput {
+			if stringOutputMode {
 				switch val := fileJSON.(type) {
 				case string:
 					r[filename] = val
@@ -983,7 +983,7 @@ func evaluateAux(i *interpreter, node ast.Node, tla vmExtMap) (value, *TraceElem
 
 // TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
 func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, importer Importer, stringOutput bool) (string, error) {
+	maxStack int, importer Importer, stringOutputMode bool) (string, error) {
 
 	i, err := buildInterpreter(ext, nativeFuncs, maxStack, importer)
 	if err != nil {
@@ -996,7 +996,7 @@ func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]
 	}
 
 	var buf bytes.Buffer
-	if stringOutput {
+	if stringOutputMode {
 		err = i.manifestString(&buf, manifestationTrace, result)
 	} else {
 		err = i.manifestAndSerializeJSON(&buf, manifestationTrace, result, true, "")
@@ -1010,7 +1010,7 @@ func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]
 
 // TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
 func evaluateMulti(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, importer Importer, stringOutput bool) (map[string]string, error) {
+	maxStack int, importer Importer, stringOutputMode bool) (map[string]string, error) {
 
 	i, err := buildInterpreter(ext, nativeFuncs, maxStack, importer)
 	if err != nil {
@@ -1022,7 +1022,7 @@ func evaluateMulti(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[st
 		return nil, err
 	}
 
-	return i.manifestAndSerializeMulti(manifestationTrace, result, stringOutput)
+	return i.manifestAndSerializeMulti(manifestationTrace, result, stringOutputMode)
 }
 
 // TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
