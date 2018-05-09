@@ -433,6 +433,8 @@ func builtinUnaryMinus(e *evaluator, xp potentialValue) (value, error) {
 	return makeValueNumber(-x.value), nil
 }
 
+// TODO(sbarzowski) since we have a builtin implementation of equals it's no longer really
+// needed and we should deprecate it eventually
 func primitiveEquals(e *evaluator, xp potentialValue, yp potentialValue) (value, error) {
 	x, err := e.evaluate(xp)
 	if err != nil {
@@ -473,6 +475,131 @@ func primitiveEquals(e *evaluator, xp potentialValue, yp potentialValue) (value,
 			"primitiveEquals operates on primitive types, got " + x.getType().name,
 		)
 	}
+}
+
+func rawEquals(e *evaluator, x, y value) (bool, error) {
+	if x.getType() != y.getType() {
+		return false, nil
+	}
+	switch left := x.(type) {
+	case *valueBoolean:
+		right, err := e.getBoolean(y)
+		if err != nil {
+			return false, err
+		}
+		return left.value == right.value, nil
+	case *valueNumber:
+		right, err := e.getNumber(y)
+		if err != nil {
+			return false, err
+		}
+		return left.value == right.value, nil
+	case *valueString:
+		right, err := e.getString(y)
+		if err != nil {
+			return false, err
+		}
+		return stringEqual(left, right), nil
+	case *valueNull:
+		return true, nil
+	case *valueArray:
+		right, err := e.getArray(y)
+		if err != nil {
+			return false, err
+		}
+		if left.length() != right.length() {
+			return false, nil
+		}
+		for i := range left.elements {
+			leftElem, err := e.evaluate(left.elements[i])
+			if err != nil {
+				return false, err
+			}
+			rightElem, err := e.evaluate(right.elements[i])
+			if err != nil {
+				return false, err
+			}
+			eq, err := rawEquals(e, leftElem, rightElem)
+			if err != nil {
+				return false, err
+			}
+			if !eq {
+				return false, nil
+			}
+		}
+		return true, nil
+	case valueObject:
+		right, err := e.getObject(y)
+		if err != nil {
+			return false, err
+		}
+		leftFields := objectFields(left, withoutHidden)
+		rightFields := objectFields(right, withoutHidden)
+		sort.Strings(leftFields)
+		sort.Strings(rightFields)
+		if len(leftFields) != len(rightFields) {
+			return false, nil
+		}
+		for i := range leftFields {
+			if leftFields[i] != rightFields[i] {
+				return false, nil
+			}
+		}
+		for i := range leftFields {
+			fieldName := leftFields[i]
+			leftField, err := left.index(e, fieldName)
+			if err != nil {
+				return false, err
+			}
+			rightField, err := right.index(e, fieldName)
+			if err != nil {
+				return false, err
+			}
+			eq, err := rawEquals(e, leftField, rightField)
+			if err != nil {
+				return false, err
+			}
+			if !eq {
+				return false, nil
+			}
+		}
+		return true, nil
+	case *valueFunction:
+		return false, e.Error("Cannot test equality of functions")
+	}
+	panic(fmt.Sprintf("Unhandled case in equals %#+v %#+v", x, y))
+}
+
+func builtinEquals(e *evaluator, xp potentialValue, yp potentialValue) (value, error) {
+	x, err := e.evaluate(xp)
+	if err != nil {
+		return nil, err
+	}
+	y, err := e.evaluate(yp)
+	if err != nil {
+		return nil, err
+	}
+	eq, err := rawEquals(e, x, y)
+	if err != nil {
+		return nil, err
+	}
+	return makeValueBoolean(eq), nil
+}
+
+func builtinNotEquals(e *evaluator, xp potentialValue, yp potentialValue) (value, error) {
+	x, err := e.evaluate(xp)
+	if err != nil {
+		return nil, err
+	}
+	y, err := e.evaluate(yp)
+	if err != nil {
+		return nil, err
+	}
+	eq, err := rawEquals(e, x, y)
+	if err != nil {
+		return nil, err
+	}
+	return makeValueBoolean(!eq), nil
 }
 
 func builtinType(e *evaluator, xp potentialValue) (value, error) {
@@ -813,10 +940,8 @@ func (b *ternaryBuiltin) Name() ast.Identifier {
 }
 
 var desugaredBop = map[ast.BinaryOp]ast.Identifier{
-	ast.BopPercent:         "mod",
-	ast.BopManifestEqual:   "equals",
-	ast.BopManifestUnequal: "notEquals", // Special case
-	ast.BopIn:              "objectHasAll",
+	ast.BopPercent: "mod",
+	ast.BopIn:      "objectHasAll",
 }
 
 var bopBuiltins = []*binaryBuiltin{
@@ -835,8 +960,8 @@ var bopBuiltins = []*binaryBuiltin{
 	ast.BopLess:      &binaryBuiltin{name: "operator<,", function: builtinLess, parameters: ast.Identifiers{"x", "y"}},
 	ast.BopLessEq:    &binaryBuiltin{name: "operator<=", function: builtinLessEq, parameters: ast.Identifiers{"x", "y"}},
 
-	// bopManifestEqual:   <desugared>,
-	// bopManifestUnequal: <desugared>,
+	ast.BopManifestEqual:   &binaryBuiltin{name: "operator==", function: builtinEquals, parameters: ast.Identifiers{"x", "y"}},
+	ast.BopManifestUnequal: &binaryBuiltin{name: "operator!=", function: builtinNotEquals, parameters: ast.Identifiers{"x", "y"}}, // Special case
 
 	ast.BopBitwiseAnd: &binaryBuiltin{name: "operator&", function: builtinBitwiseAnd, parameters: ast.Identifiers{"x", "y"}},
 	ast.BopBitwiseXor: &binaryBuiltin{name: "operator^", function: builtinBitwiseXor, parameters: ast.Identifiers{"x", "y"}},
@@ -875,7 +1000,8 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&binaryBuiltin{name: "join", function: builtinJoin, parameters: ast.Identifiers{"sep", "arr"}},
 	&binaryBuiltin{name: "filter", function: builtinFilter, parameters: ast.Identifiers{"func", "arr"}},
 	&binaryBuiltin{name: "range", function: builtinRange, parameters: ast.Identifiers{"from", "to"}},
-	&binaryBuiltin{name: "primitiveEquals", function: primitiveEquals, parameters: ast.Identifiers{"sz", "func"}},
+	&binaryBuiltin{name: "primitiveEquals", function: primitiveEquals, parameters: ast.Identifiers{"x", "y"}},
+	&binaryBuiltin{name: "equals", function: builtinEquals, parameters: ast.Identifiers{"x", "y"}},
 	&binaryBuiltin{name: "objectFieldsEx", function: builtinObjectFieldsEx, parameters: ast.Identifiers{"obj", "hidden"}},
 	&ternaryBuiltin{name: "objectHasEx", function: builtinObjectHasEx, parameters: ast.Identifiers{"obj", "fname", "hidden"}},
 	&unaryBuiltin{name: "type", function: builtinType, parameters: ast.Identifiers{"x"}},

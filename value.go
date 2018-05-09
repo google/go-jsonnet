@@ -654,6 +654,7 @@ func objectFieldsVisibility(obj valueObject) fieldHideMap {
 	return r
 }
 
+// Returns field names of an object. Gotcha: the order of fields is unpredictable.
 func objectFields(obj valueObject, h Hidden) []string {
 	var r []string
 	for fieldName, hide := range objectFieldsVisibility(obj) {

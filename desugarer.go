@@ -378,14 +378,7 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 	case *ast.Binary:
 		// some operators get replaced by stdlib functions
 		if funcname, replaced := desugaredBop[node.Op]; replaced {
-			if funcname == "notEquals" {
-				// TODO(sbarzowski) maybe we can handle it in more regular way
-				// but let's be consistent with the spec
-				*astPtr = &ast.Unary{
-					Op:   ast.UopNot,
-					Expr: buildStdCall(desugaredBop[ast.BopManifestEqual], node.Left, node.Right),
-				}
-			} else if node.Op == ast.BopIn {
+			if node.Op == ast.BopIn {
 				// reversed order of arguments
 				*astPtr = buildStdCall(funcname, node.Right, node.Left)
 			} else {
