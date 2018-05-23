@@ -1,6 +1,8 @@
 RUNTIME ERROR: Unexpected type string, expected function
 -------------------------------------------------
-	<builtin>	builtin function <makeArray>
+	testdata/std.makeArray_bad2:1:1-25	builtin function <makeArray>
+
+std.makeArray(42, "xxx")
 
 -------------------------------------------------
 	During evaluation	

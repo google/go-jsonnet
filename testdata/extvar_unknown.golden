@@ -1,6 +1,8 @@
 RUNTIME ERROR: Undefined external variable: UNKNOWN
 -------------------------------------------------
-	<builtin>	builtin function <extVar>
+	testdata/extvar_unknown:1:1-22	builtin function <extVar>
+
+std.extVar("UNKNOWN")
 
 -------------------------------------------------
 	During evaluation	

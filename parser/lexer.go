@@ -669,7 +669,7 @@ func (l *lexer) lexSymbol() error {
 	// no need to treat this substring as general UTF-8.
 	for r = rune(l.input[l.pos.byteNo-1]); l.pos.byteNo > l.tokenStart+1; l.pos.byteNo-- {
 		switch r {
-		case '+', '-', '~', '!':
+		case '+', '-', '~', '!', '$':
 			continue
 		}
 		break

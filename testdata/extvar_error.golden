@@ -5,7 +5,9 @@ RUNTIME ERROR: xxx
 error 'xxx'
 
 -------------------------------------------------
-	<builtin>	builtin function <extVar>
+	testdata/extvar_error:1:1-23	builtin function <extVar>
+
+std.extVar("errorVar")
 
 -------------------------------------------------
 	During evaluation	

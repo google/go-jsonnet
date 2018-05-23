@@ -1,6 +1,8 @@
 RUNTIME ERROR: Unexpected type string, expected array
 -------------------------------------------------
-	<builtin>	builtin function <filter>
+	testdata/std.filter6:1:1-21	builtin function <filter>
+
+std.filter(42, "42")
 
 -------------------------------------------------
 	During evaluation	

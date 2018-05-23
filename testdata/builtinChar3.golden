@@ -1,6 +1,8 @@
 RUNTIME ERROR: Codepoints must be >= 0, got -1
 -------------------------------------------------
-	<builtin>	builtin function <char>
+	testdata/builtinChar3:1:1-13	builtin function <char>
+
+std.char(-1)
 
 -------------------------------------------------
 	During evaluation	

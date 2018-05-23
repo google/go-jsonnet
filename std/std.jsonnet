@@ -23,6 +23,7 @@ limitations under the License.
 {
 
   local std = self,
+  local id = function(x) x,
 
   isString(v):: std.type(v) == 'string',
   isNumber(v):: std.type(v) == 'number',
@@ -61,18 +62,39 @@ limitations under the License.
   stringChars(str)::
     std.makeArray(std.length(str), function(i) str[i]),
 
-  parseInt(str)::
-    local addDigit(aggregate, digit) =
-      if digit < 0 || digit > 9 then
-        error ('parseInt got string which does not match regex [0-9]+')
+  local parse_nat(str, base) =
+    assert base > 0 && base <= 16 : 'integer base %d invalid' % base;
+    // These codepoints are in ascending order:
+    local zero_code = std.codepoint('0');
+    local upper_a_code = std.codepoint('A');
+    local lower_a_code = std.codepoint('a');
+    local addDigit(aggregate, char) =
+      local code = std.codepoint(char);
+      local digit = if code > lower_a_code then
+        code - lower_a_code + 10
+      else if code > upper_a_code then
+        code - upper_a_code + 10
       else
-        10 * aggregate + digit;
-    local toDigits(str) =
-      [std.codepoint(char) - std.codepoint('0') for char in std.stringChars(str)];
+        code - zero_code;
+      assert digit >= 0 && digit < base : '%s is not a base %d integer' % [str, base];
+      base * aggregate + digit;
+    std.foldl(addDigit, std.stringChars(str), 0),
+
+  parseInt(str)::
     if str[0] == '-' then
-      -std.foldl(addDigit, toDigits(str[1:]), 0)
+      -parse_nat(str[1:], 10)
     else
-      std.foldl(addDigit, toDigits(str), 0),
+      parse_nat(str, 10),
+
+  parseOctal(str)::
+    assert std.isString(str): 'Expected string, got ' + std.type(str);
+    assert std.length(str) > 0: 'Not an octal number: ""';
+    parse_nat(str, 8),
+
+  parseHex(str)::
+    assert std.isString(str): 'Expected string, got ' + std.type(str);
+    assert std.length(str) > 0: 'Not hexadecimal: ""';
+    parse_nat(str, 16),
 
   split(str, c)::
     if std.type(str) != 'string' then
@@ -1066,60 +1088,61 @@ limitations under the License.
     std.join('', std.map(function(b) std.char(b), bytes)),
 
   // Quicksort
-  sort(arr)::
+  sort(arr, keyF=id)::
     local l = std.length(arr);
     if std.length(arr) == 0 then
       []
     else
-      local pivot = arr[0];
+      local pivot = keyF(arr[0]);
       local rest = std.makeArray(l - 1, function(i) arr[i + 1]);
-      local left = std.filter(function(x) x <= pivot, rest);
-      local right = std.filter(function(x) x > pivot, rest);
-      std.sort(left) + [pivot] + std.sort(right),
+      local left = std.filter(function(x) keyF(x) < pivot, rest);
+      local right = std.filter(function(x) keyF(x) >= pivot, rest);
+      std.sort(left, keyF) + [arr[0]] + std.sort(right, keyF),
 
-  uniq(arr)::
+  uniq(arr, keyF=id)::
     local f(a, b) =
       if std.length(a) == 0 then
         [b]
-      else if a[std.length(a) - 1] == b then
+      else if keyF(a[std.length(a) - 1]) == keyF(b) then
         a
       else
         a + [b];
     std.foldl(f, arr, []),
 
-  set(arr)::
-    std.uniq(std.sort(arr)),
+  set(arr, keyF=id)::
+    std.uniq(std.sort(arr, keyF), keyF),
 
-  setMember(x, arr)::
+  setMember(x, arr, keyF=id)::
     // TODO(dcunnin): Binary chop for O(log n) complexity
-    std.length(std.setInter([x], arr)) > 0,
+    std.length(std.setInter([x], arr, keyF)) > 0,
 
-  setUnion(a, b)::
-    std.set(a + b),
+  setUnion(a, b, keyF=id)::
+    // NOTE: order matters, values in `a` win due to sort being stable
+    std.set(a + b, keyF),
 
-  setInter(a, b)::
+  setInter(a, b, keyF=id)::
     local aux(a, b, i, j, acc) =
       if i >= std.length(a) || j >= std.length(b) then
         acc
       else
-        if a[i] == b[j] then
+        if keyF(a[i]) == keyF(b[j]) then
           aux(a, b, i + 1, j + 1, acc + [a[i]]) tailstrict
-        else if a[i] < b[j] then
+        else if keyF(a[i]) < keyF(b[j]) then
           aux(a, b, i + 1, j, acc) tailstrict
         else
           aux(a, b, i, j + 1, acc) tailstrict;
     aux(a, b, 0, 0, []) tailstrict,
 
-  setDiff(a, b)::
+  setDiff(a, b, keyF=id)::
     local aux(a, b, i, j, acc) =
       if i >= std.length(a) then
         acc
       else if j >= std.length(b) then
         aux(a, b, i + 1, j, acc + [a[i]]) tailstrict
       else
-        if a[i] == b[j] then
+        if keyF(a[i]) == keyF(b[j]) then
           aux(a, b, i + 1, j + 1, acc) tailstrict
-        else if a[i] < b[j] then
+        else if keyF(a[i]) < keyF(b[j]) then
           aux(a, b, i + 1, j, acc + [a[i]]) tailstrict
         else
           aux(a, b, i, j + 1, acc) tailstrict;

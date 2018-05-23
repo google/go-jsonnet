@@ -5,10 +5,14 @@ RUNTIME ERROR: a
 local failWith(x) = error x;
 
 -------------------------------------------------
-	<builtin>	builtin function <flatMap>
+	testdata/std.flatmap5:2:10-48	builtin function <flatMap>
+
+std.type(std.flatMap(failWith, ["a", "b", "c"]))
 
 -------------------------------------------------
-	<builtin>	builtin function <type>
+	testdata/std.flatmap5:2:1-49	builtin function <type>
+
+std.type(std.flatMap(failWith, ["a", "b", "c"]))
 
 -------------------------------------------------
 	During evaluation	

@@ -1,6 +1,8 @@
 RUNTIME ERROR: Unexpected type array, expected string
 -------------------------------------------------
-	<builtin>	builtin function <join>
+	testdata/std.join7:1:1-27	builtin function <join>
+
+std.join("aa", [[1], [2]])
 
 -------------------------------------------------
 	During evaluation	

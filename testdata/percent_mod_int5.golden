@@ -1,6 +1,8 @@
 RUNTIME ERROR: Division by zero.
 -------------------------------------------------
-	<builtin>	builtin function <modulo>
+	<std>:223:7-23	builtin function <modulo>
+
+      std.modulo(a, b)
 
 -------------------------------------------------
 		

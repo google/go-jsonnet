@@ -1,6 +1,8 @@
 RUNTIME ERROR: primitiveEquals operates on primitive types, got array
 -------------------------------------------------
-	<builtin>	builtin function <primitiveEquals>
+	testdata/std.primitiveEquals13:1:1-28	builtin function <primitiveEquals>
+
+std.primitiveEquals([], [])
 
 -------------------------------------------------
 	During evaluation	
