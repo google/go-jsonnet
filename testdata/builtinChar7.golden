@@ -1,6 +1,8 @@
 RUNTIME ERROR: Unexpected type string, expected number
 -------------------------------------------------
-	<builtin>	builtin function <char>
+	testdata/builtinChar7:1:1-16	builtin function <char>
+
+std.char("xxx")
 
 -------------------------------------------------
 	During evaluation	

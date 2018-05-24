@@ -1,6 +1,8 @@
 RUNTIME ERROR: Overflow
 -------------------------------------------------
-	<builtin>	builtin function <exp>
+	testdata/builtin_exp5:1:1-31	builtin function <exp>
+
+std.exp(100000000000000000000)
 
 -------------------------------------------------
 	During evaluation	

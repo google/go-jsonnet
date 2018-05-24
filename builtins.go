@@ -22,6 +22,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
+	"os"
 	"sort"
 	"strings"
 
@@ -241,6 +242,22 @@ func builtinToString(e *evaluator, xp potentialValue) (value, error) {
 		return nil, err
 	}
 	return makeValueString(buf.String()), nil
+}
+
+func builtinTrace(e *evaluator, xp potentialValue, yp potentialValue) (value, error) {
+	x, err := e.evaluateString(xp)
+	if err != nil {
+		return nil, err
+	}
+	y, err := e.evaluate(yp)
+	if err != nil {
+		return nil, err
+	}
+	filename := e.trace.loc.FileName
+	line := e.trace.loc.Begin.Line
+	fmt.Fprintf(
+		os.Stderr, "TRACE: %s:%d %s\n", filename, line, x.getString())
+	return y, nil
 }
 
 func builtinMakeArray(e *evaluator, szp potentialValue, funcp potentialValue) (value, error) {
@@ -857,9 +874,8 @@ type unaryBuiltin struct {
 }
 
 func getBuiltinEvaluator(e *evaluator, name ast.Identifier) *evaluator {
-	loc := ast.MakeLocationRangeMessage("<builtin>")
 	context := "builtin function <" + string(name) + ">"
-	trace := TraceElement{loc: &loc, context: &context}
+	trace := TraceElement{loc: e.trace.loc, context: &context}
 	return &evaluator{i: e.i, trace: &trace}
 }
 
@@ -995,6 +1011,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "extVar", function: builtinExtVar, parameters: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "length", function: builtinLength, parameters: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "toString", function: builtinToString, parameters: ast.Identifiers{"a"}},
+	&binaryBuiltin{name: "trace", function: builtinTrace, parameters: ast.Identifiers{"str", "rest"}},
 	&binaryBuiltin{name: "makeArray", function: builtinMakeArray, parameters: ast.Identifiers{"sz", "func"}},
 	&binaryBuiltin{name: "flatMap", function: builtinFlatMap, parameters: ast.Identifiers{"func", "arr"}},
 	&binaryBuiltin{name: "join", function: builtinJoin, parameters: ast.Identifiers{"sep", "arr"}},

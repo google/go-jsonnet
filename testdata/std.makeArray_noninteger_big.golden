@@ -1,6 +1,8 @@
 RUNTIME ERROR: Expected an integer, but got 1e+100
 -------------------------------------------------
-	<builtin>	builtin function <makeArray>
+	testdata/std.makeArray_noninteger_big:1:1-47	builtin function <makeArray>
+
+std.makeArray(1e100, error "shouldn't happen")
 
 -------------------------------------------------
 	During evaluation	
