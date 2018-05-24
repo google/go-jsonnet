@@ -5,7 +5,9 @@ RUNTIME ERROR: x
 std.primitiveEquals(error "x", 42)
 
 -------------------------------------------------
-	<builtin>	builtin function <primitiveEquals>
+	testdata/std.primitiveEquals10:1:1-35	builtin function <primitiveEquals>
+
+std.primitiveEquals(error "x", 42)
 
 -------------------------------------------------
 	During evaluation	

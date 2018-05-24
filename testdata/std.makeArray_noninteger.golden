@@ -1,6 +1,8 @@
 RUNTIME ERROR: Expected an integer, but got 2.5
 -------------------------------------------------
-	<builtin>	builtin function <makeArray>
+	testdata/std.makeArray_noninteger:1:1-34	builtin function <makeArray>
+
+std.makeArray(2.5, function(i) i)
 
 -------------------------------------------------
 	During evaluation	

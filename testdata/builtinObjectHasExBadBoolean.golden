@@ -1,6 +1,8 @@
 RUNTIME ERROR: Unexpected type string, expected boolean
 -------------------------------------------------
-	<builtin>	builtin function <objectHasEx>
+	testdata/builtinObjectHasExBadBoolean:1:1-34	builtin function <objectHasEx>
+
+std.objectHasEx({}, "xxx", "xxx")
 
 -------------------------------------------------
 	During evaluation	

@@ -1,6 +1,8 @@
 RUNTIME ERROR: Unrecognized native function name: blah
 -------------------------------------------------
-	<builtin>	builtin function <native>
+	testdata/native_nonexistent:1:1-19	builtin function <native>
+
+std.native("blah")
 
 -------------------------------------------------
 	During evaluation	

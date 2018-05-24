@@ -5,7 +5,7 @@ RUNTIME ERROR: x
 [x for x in [1] if error "x"]
 
 -------------------------------------------------
-	<builtin>	builtin function <flatMap>
+		builtin function <flatMap>
 
 -------------------------------------------------
 	During evaluation	

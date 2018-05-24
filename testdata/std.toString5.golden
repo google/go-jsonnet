@@ -5,7 +5,9 @@ RUNTIME ERROR: x
 std.toString(error "x")
 
 -------------------------------------------------
-	<builtin>	builtin function <toString>
+	testdata/std.toString5:1:1-24	builtin function <toString>
+
+std.toString(error "x")
 
 -------------------------------------------------
 	During evaluation	
