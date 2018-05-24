@@ -5,32 +5,9 @@ RUNTIME ERROR: Attempt to use super when there is no super class.
 { x: 5, assert super.x == 5 } 
 
 -------------------------------------------------
-	<std>:1188:25-26	thunk from <thunk <ta> from <function <anonymous>>>
+	testdata/object_invariant7:1:16-28	object <anonymous>
 
-    local ta = std.type(a);
-
--------------------------------------------------
-	<std>:1188:16-27	builtin function <type>
-
-    local ta = std.type(a);
-
--------------------------------------------------
-	<std>:1190:29-31	thunk from <function <anonymous>>
-
-    if !std.primitiveEquals(ta, tb) then
-
--------------------------------------------------
-	<std>:1190:9-36	builtin function <primitiveEquals>
-
-    if !std.primitiveEquals(ta, tb) then
-
--------------------------------------------------
-	<std>:1190:8-36	function <anonymous>
-
-    if !std.primitiveEquals(ta, tb) then
-
--------------------------------------------------
-		
+{ x: 5, assert super.x == 5 } 
 
 -------------------------------------------------
 	During manifestation	
