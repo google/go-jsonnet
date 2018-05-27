@@ -62,6 +62,10 @@ type cachedThunk struct {
 	err error
 }
 
+func readyThunk(content value) *cachedThunk {
+	return &cachedThunk{content: content}
+}
+
 func (t *cachedThunk) getValue(i *interpreter, trace TraceElement) (value, error) {
 	if t.content != nil {
 		return t.content, nil

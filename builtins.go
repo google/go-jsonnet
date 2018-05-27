@@ -381,7 +381,7 @@ func builtinRange(i *interpreter, trace TraceElement, fromv, tov value) (value, 
 	}
 	elems := make([]*cachedThunk, to-from+1)
 	for i := from; i <= to; i++ {
-		elems[i-from] = &cachedThunk{content: intToValue(i)}
+		elems[i-from] = readyThunk(intToValue(i))
 	}
 	return makeValueArray(elems), nil
 }
@@ -682,7 +682,7 @@ func builtinObjectFieldsEx(i *interpreter, trace TraceElement, objv, includeHidd
 	sort.Strings(fields)
 	elems := []*cachedThunk{}
 	for _, fieldname := range fields {
-		elems = append(elems, &cachedThunk{content: makeValueString(fieldname)})
+		elems = append(elems, readyThunk(makeValueString(fieldname)))
 	}
 	return makeValueArray(elems), nil
 }

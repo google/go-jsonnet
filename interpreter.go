@@ -62,7 +62,7 @@ func (i *interpreter) getCurrentStackTrace(additional TraceElement) []TraceFrame
 
 type callFrame struct {
 	// True if it switches to a clean environment (function call or array element)
-	// False otherwise, i.g. for local
+	// False otherwise, e.g. for local
 	// This makes callFrame a misnomer as it is technically not always a call...
 	isCall bool
 
@@ -327,8 +327,8 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 			if err != nil {
 				return nil, err
 			}
+			// TODO(dcunnin): The double dereference here is probably not necessary.
 			builtin := bopBuiltins[node.Op]
-
 			return builtin.function(i, trace, left, right)
 		}
 
@@ -866,7 +866,7 @@ func jsonToValue(i *interpreter, trace TraceElement, v interface{}) (value, erro
 			if err != nil {
 				return nil, err
 			}
-			elems[counter] = &cachedThunk{content: val}
+			elems[counter] = readyThunk(val)
 		}
 		return makeValueArray(elems), nil
 
@@ -1117,7 +1117,7 @@ func prepareExtVars(i *interpreter, ext vmExtMap, kind string) map[string]*cache
 		if content.isCode {
 			result[name] = codeToPV(i, "<"+kind+":"+name+">", content.value)
 		} else {
-			result[name] = &cachedThunk{content: makeValueString(content.value)}
+			result[name] = readyThunk(makeValueString(content.value))
 		}
 	}
 	return result
@@ -1156,9 +1156,9 @@ func makeInitialEnv(filename string, baseStd valueObject) environment {
 	})
 	return makeEnvironment(
 		bindingFrame{
-			"std": &cachedThunk{content: makeValueExtendedObject(baseStd, fileSpecific)},
+			"std": readyThunk(makeValueExtendedObject(baseStd, fileSpecific)),
 		},
-		makeUnboundSelfBinding(),
+		makeUnboundSelfBinding(),330G
 	)
 }
 
