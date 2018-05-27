@@ -1158,7 +1158,7 @@ func makeInitialEnv(filename string, baseStd valueObject) environment {
 		bindingFrame{
 			"std": readyThunk(makeValueExtendedObject(baseStd, fileSpecific)),
 		},
-		makeUnboundSelfBinding(),330G
+		makeUnboundSelfBinding(),
 	)
 }
 
