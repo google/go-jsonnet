@@ -263,7 +263,7 @@ func specialChildren(node ast.Node) []ast.Node {
 	case *ast.ArrayComp:
 		return []ast.Node{node.Body}
 	case *ast.ObjectComp:
-
+		return inObjectFieldsChildren(node.Fields)
 	case *ast.Self:
 		return nil
 	case *ast.SuperIndex:
@@ -273,6 +273,8 @@ func specialChildren(node ast.Node) []ast.Node {
 	case *ast.Unary:
 		return nil
 	case *ast.Var:
+		return nil
+	case *ast.Parens:
 		return nil
 	}
 	panic(fmt.Sprintf("specialChildren: Unknown node %#v", node))
