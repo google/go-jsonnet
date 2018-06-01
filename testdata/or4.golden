@@ -5,11 +5,6 @@ RUNTIME ERROR: xxx
 false || error "xxx"
 
 -------------------------------------------------
-	testdata/or4:1:1-21	$
-
-false || error "xxx"
-
--------------------------------------------------
 	During evaluation	
 
 

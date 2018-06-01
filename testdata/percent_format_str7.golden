@@ -21,7 +21,7 @@ RUNTIME ERROR: Format required number at 0, got string
       padding(w - std.length(str), s) + str;
 
 -------------------------------------------------
-	... (skipped 11 frames)
+	... (skipped 7 frames)
 -------------------------------------------------
 	<std>:699:11-64	function <format_codes_arr>
 

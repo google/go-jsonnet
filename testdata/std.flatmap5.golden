@@ -10,7 +10,7 @@ local failWith(x) = error x;
 std.type(std.flatMap(failWith, ["a", "b", "c"]))
 
 -------------------------------------------------
-	testdata/std.flatmap5:2:1-49	builtin function <type>
+	testdata/std.flatmap5:2:1-49	$
 
 std.type(std.flatMap(failWith, ["a", "b", "c"]))
 

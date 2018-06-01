@@ -29,20 +29,12 @@ import (
 	"github.com/google/go-jsonnet/ast"
 )
 
-func builtinPlus(e *evaluator, xp, yp potentialValue) (value, error) {
+func builtinPlus(i *interpreter, trace TraceElement, x, y value) (value, error) {
 	// TODO(sbarzowski) more types, mixing types
 	// TODO(sbarzowski) perhaps a more elegant way to dispatch
-	x, err := e.evaluate(xp)
-	if err != nil {
-		return nil, err
-	}
-	y, err := e.evaluate(yp)
-	if err != nil {
-		return nil, err
-	}
 	switch right := y.(type) {
 	case *valueString:
-		left, err := builtinToString(e, xp)
+		left, err := builtinToString(i, trace, x)
 		if err != nil {
 			return nil, err
 		}
@@ -51,166 +43,130 @@ func builtinPlus(e *evaluator, xp, yp potentialValue) (value, error) {
 	}
 	switch left := x.(type) {
 	case *valueNumber:
-		right, err := e.getNumber(y)
+		right, err := i.getNumber(y, trace)
 		if err != nil {
 			return nil, err
 		}
 		return makeValueNumber(left.value + right.value), nil
 	case *valueString:
-		right, err := builtinToString(e, yp)
+		right, err := builtinToString(i, trace, y)
 		if err != nil {
 			return nil, err
 		}
 		return concatStrings(left, right.(*valueString)), nil
 	case valueObject:
-		right, err := e.getObject(y)
-		if err != nil {
-			return nil, err
+		switch right := y.(type) {
+		case valueObject:
+			return makeValueExtendedObject(left, right), nil
+		default:
+			return nil, i.typeErrorSpecific(y, &valueSimpleObject{}, trace)
 		}
-		return makeValueExtendedObject(left, right), nil
+
 	case *valueArray:
-		right, err := e.getArray(y)
+		right, err := i.getArray(y, trace)
 		if err != nil {
 			return nil, err
 		}
 		return concatArrays(left, right), nil
 	default:
-		return nil, e.typeErrorGeneral(x)
+		return nil, i.typeErrorGeneral(x, trace)
 	}
 }
 
-func builtinMinus(e *evaluator, xp, yp potentialValue) (value, error) {
-	x, err := e.evaluateNumber(xp)
+func builtinMinus(i *interpreter, trace TraceElement, xv, yv value) (value, error) {
+	x, err := i.getNumber(xv, trace)
 	if err != nil {
 		return nil, err
 	}
-	y, err := e.evaluateNumber(yp)
+	y, err := i.getNumber(yv, trace)
 	if err != nil {
 		return nil, err
 	}
 	return makeValueNumber(x.value - y.value), nil
 }
 
-func builtinMult(e *evaluator, xp, yp potentialValue) (value, error) {
-	x, err := e.evaluateNumber(xp)
+func builtinMult(i *interpreter, trace TraceElement, xv, yv value) (value, error) {
+	x, err := i.getNumber(xv, trace)
 	if err != nil {
 		return nil, err
 	}
-	y, err := e.evaluateNumber(yp)
+	y, err := i.getNumber(yv, trace)
 	if err != nil {
 		return nil, err
 	}
 	return makeValueNumber(x.value * y.value), nil
 }
 
-func builtinDiv(e *evaluator, xp, yp potentialValue) (value, error) {
-	x, err := e.evaluateNumber(xp)
+func builtinDiv(i *interpreter, trace TraceElement, xv, yv value) (value, error) {
+	x, err := i.getNumber(xv, trace)
 	if err != nil {
 		return nil, err
 	}
-	y, err := e.evaluateNumber(yp)
-	if err != nil {
-		return nil, err
-	}
-	if y.value == 0 {
-		return nil, e.Error("Division by zero.")
-	}
-	return makeDoubleCheck(e, x.value/y.value)
-}
-
-func builtinModulo(e *evaluator, xp, yp potentialValue) (value, error) {
-	x, err := e.evaluateNumber(xp)
-	if err != nil {
-		return nil, err
-	}
-	y, err := e.evaluateNumber(yp)
+	y, err := i.getNumber(yv, trace)
 	if err != nil {
 		return nil, err
 	}
 	if y.value == 0 {
-		return nil, e.Error("Division by zero.")
+		return nil, i.Error("Division by zero.", trace)
 	}
-	return makeDoubleCheck(e, math.Mod(x.value, y.value))
+	return makeDoubleCheck(i, trace, x.value/y.value)
 }
 
-func builtinLess(e *evaluator, xp, yp potentialValue) (value, error) {
-	x, err := e.evaluate(xp)
+func builtinModulo(i *interpreter, trace TraceElement, xv, yv value) (value, error) {
+	x, err := i.getNumber(xv, trace)
 	if err != nil {
 		return nil, err
 	}
+	y, err := i.getNumber(yv, trace)
+	if err != nil {
+		return nil, err
+	}
+	if y.value == 0 {
+		return nil, i.Error("Division by zero.", trace)
+	}
+	return makeDoubleCheck(i, trace, math.Mod(x.value, y.value))
+}
+
+func builtinLess(i *interpreter, trace TraceElement, x, yv value) (value, error) {
 	switch left := x.(type) {
 	case *valueNumber:
-		right, err := e.evaluateNumber(yp)
+		right, err := i.getNumber(yv, trace)
 		if err != nil {
 			return nil, err
 		}
 		return makeValueBoolean(left.value < right.value), nil
 	case *valueString:
-		right, err := e.evaluateString(yp)
+		right, err := i.getString(yv, trace)
 		if err != nil {
 			return nil, err
 		}
 		return makeValueBoolean(stringLessThan(left, right)), nil
 	default:
-		return nil, e.typeErrorGeneral(x)
+		return nil, i.typeErrorGeneral(x, trace)
 	}
 }
 
-func builtinGreater(e *evaluator, xp, yp potentialValue) (value, error) {
-	return builtinLess(e, yp, xp)
+func builtinGreater(i *interpreter, trace TraceElement, x, y value) (value, error) {
+	return builtinLess(i, trace, y, x)
 }
 
-func builtinGreaterEq(e *evaluator, xp, yp potentialValue) (value, error) {
-	res, err := builtinLess(e, xp, yp)
+func builtinGreaterEq(i *interpreter, trace TraceElement, x, y value) (value, error) {
+	res, err := builtinLess(i, trace, x, y)
 	if err != nil {
 		return nil, err
 	}
 	return res.(*valueBoolean).not(), nil
 }
 
-func builtinLessEq(e *evaluator, xp, yp potentialValue) (value, error) {
-	res, err := builtinGreater(e, xp, yp)
+func builtinLessEq(i *interpreter, trace TraceElement, x, y value) (value, error) {
+	res, err := builtinGreater(i, trace, x, y)
 	if err != nil {
 		return nil, err
 	}
 	return res.(*valueBoolean).not(), nil
 }
 
-func builtinAnd(e *evaluator, xp, yp potentialValue) (value, error) {
-	x, err := e.evaluateBoolean(xp)
-	if err != nil {
-		return nil, err
-	}
-	if !x.value {
-		return x, nil
-	}
-	y, err := e.evaluateBoolean(yp)
-	if err != nil {
-		return nil, err
-	}
-	return y, nil
-}
-
-func builtinOr(e *evaluator, xp, yp potentialValue) (value, error) {
-	x, err := e.evaluateBoolean(xp)
-	if err != nil {
-		return nil, err
-	}
-	if x.value {
-		return x, nil
-	}
-	y, err := e.evaluateBoolean(yp)
-	if err != nil {
-		return nil, err
-	}
-	return y, nil
-}
-
-func builtinLength(e *evaluator, xp potentialValue) (value, error) {
-	x, err := e.evaluate(xp)
-	if err != nil {
-		return nil, err
-	}
+func builtinLength(i *interpreter, trace TraceElement, x value) (value, error) {
 	var num int
 	switch x := x.(type) {
 	case valueObject:
@@ -222,67 +178,76 @@ func builtinLength(e *evaluator, xp potentialValue) (value, error) {
 	case *valueFunction:
 		num = len(x.parameters().required)
 	default:
-		return nil, e.typeErrorGeneral(x)
+		return nil, i.typeErrorGeneral(x, trace)
 	}
 	return makeValueNumber(float64(num)), nil
 }
 
-func builtinToString(e *evaluator, xp potentialValue) (value, error) {
-	x, err := e.evaluate(xp)
-	if err != nil {
-		return nil, err
-	}
+func builtinToString(i *interpreter, trace TraceElement, x value) (value, error) {
 	switch x := x.(type) {
 	case *valueString:
 		return x, nil
 	}
 	var buf bytes.Buffer
-	err = e.i.manifestAndSerializeJSON(&buf, e.trace, x, false, "")
+	err := i.manifestAndSerializeJSON(&buf, trace, x, false, "")
 	if err != nil {
 		return nil, err
 	}
 	return makeValueString(buf.String()), nil
 }
 
-func builtinTrace(e *evaluator, xp potentialValue, yp potentialValue) (value, error) {
-	x, err := e.evaluateString(xp)
+func builtinTrace(i *interpreter, trace TraceElement, x value, y value) (value, error) {
+	xStr, err := i.getString(x, trace)
 	if err != nil {
 		return nil, err
 	}
-	y, err := e.evaluate(yp)
-	if err != nil {
-		return nil, err
-	}
-	filename := e.trace.loc.FileName
-	line := e.trace.loc.Begin.Line
+	filename := trace.loc.FileName
+	line := trace.loc.Begin.Line
 	fmt.Fprintf(
-		os.Stderr, "TRACE: %s:%d %s\n", filename, line, x.getString())
+		os.Stderr, "TRACE: %s:%d %s\n", filename, line, xStr.getString())
 	return y, nil
 }
 
-func builtinMakeArray(e *evaluator, szp potentialValue, funcp potentialValue) (value, error) {
-	sz, err := e.evaluateInt(szp)
+// astMakeArrayElement wraps the function argument of std.makeArray so that
+// it can be embedded in cachedThunk without needing to execute it ahead of
+// time.  It is equivalent to `local i = 42; func(i)`.  It therefore has no
+// free variables and needs only an empty environment to execute.
+type astMakeArrayElement struct {
+	ast.NodeBase
+	function *valueFunction
+	index    int
+}
+
+func builtinMakeArray(i *interpreter, trace TraceElement, szv, funcv value) (value, error) {
+	sz, err := i.getInt(szv, trace)
 	if err != nil {
 		return nil, err
 	}
-	fun, err := e.evaluateFunction(funcp)
+	fun, err := i.getFunction(funcv, trace)
 	if err != nil {
 		return nil, err
 	}
-	var elems []potentialValue
+	var elems []*cachedThunk
 	for i := 0; i < sz; i++ {
-		elem := fun.call(args(&readyValue{intToValue(i)}))
+		elem := &cachedThunk{
+			env: &environment{},
+			body: &astMakeArrayElement{
+				NodeBase: ast.NodeBase{},
+				function: fun,
+				index:    i,
+			},
+		}
 		elems = append(elems, elem)
 	}
 	return makeValueArray(elems), nil
 }
 
-func builtinFlatMap(e *evaluator, funcp potentialValue, arrp potentialValue) (value, error) {
-	arr, err := e.evaluateArray(arrp)
+func builtinFlatMap(i *interpreter, trace TraceElement, funcv, arrv value) (value, error) {
+	arr, err := i.getArray(arrv, trace)
 	if err != nil {
 		return nil, err
 	}
-	fun, err := e.evaluateFunction(funcp)
+	fun, err := i.getFunction(funcv, trace)
 	if err != nil {
 		return nil, err
 	}
@@ -290,9 +255,13 @@ func builtinFlatMap(e *evaluator, funcp potentialValue, arrp potentialValue) (va
 	// Start with capacity of the original array.
 	// This may spare us a few reallocations.
 	// TODO(sbarzowski) verify that it actually helps
-	elems := make([]potentialValue, 0, num)
-	for i := 0; i < num; i++ {
-		returned, err := e.evaluateArray(fun.call(args(arr.elements[i])))
+	elems := make([]*cachedThunk, 0, num)
+	for counter := 0; counter < num; counter++ {
+		returnedValue, err := fun.call(i, trace, args(arr.elements[counter]))
+		if err != nil {
+			return nil, err
+		}
+		returned, err := i.getArray(returnedValue, trace)
 		if err != nil {
 			return nil, err
 		}
@@ -303,11 +272,11 @@ func builtinFlatMap(e *evaluator, funcp potentialValue, arrp potentialValue) (va
 	return makeValueArray(elems), nil
 }
 
-func joinArrays(e *evaluator, sep *valueArray, arr *valueArray) (value, error) {
-	result := make([]potentialValue, 0, arr.length())
+func joinArrays(i *interpreter, trace TraceElement, sep *valueArray, arr *valueArray) (value, error) {
+	result := make([]*cachedThunk, 0, arr.length())
 	first := true
 	for _, elem := range arr.elements {
-		elemValue, err := e.evaluate(elem)
+		elemValue, err := i.evaluatePV(elem, trace)
 		if err != nil {
 			return nil, err
 		}
@@ -324,7 +293,7 @@ func joinArrays(e *evaluator, sep *valueArray, arr *valueArray) (value, error) {
 				result = append(result, subElem)
 			}
 		default:
-			return nil, e.typeErrorSpecific(elemValue, &valueArray{})
+			return nil, i.typeErrorSpecific(elemValue, &valueArray{}, trace)
 		}
 		first = false
 
@@ -332,11 +301,11 @@ func joinArrays(e *evaluator, sep *valueArray, arr *valueArray) (value, error) {
 	return makeValueArray(result), nil
 }
 
-func joinStrings(e *evaluator, sep *valueString, arr *valueArray) (value, error) {
+func joinStrings(i *interpreter, trace TraceElement, sep *valueString, arr *valueArray) (value, error) {
 	result := make([]rune, 0, arr.length())
 	first := true
 	for _, elem := range arr.elements {
-		elemValue, err := e.evaluate(elem)
+		elemValue, err := i.evaluatePV(elem, trace)
 		if err != nil {
 			return nil, err
 		}
@@ -349,38 +318,34 @@ func joinStrings(e *evaluator, sep *valueString, arr *valueArray) (value, error)
 			}
 			result = append(result, v.value...)
 		default:
-			return nil, e.typeErrorSpecific(elemValue, &valueString{})
+			return nil, i.typeErrorSpecific(elemValue, &valueString{}, trace)
 		}
 		first = false
 	}
 	return &valueString{value: result}, nil
 }
 
-func builtinJoin(e *evaluator, sepp potentialValue, arrp potentialValue) (value, error) {
-	arr, err := e.evaluateArray(arrp)
-	if err != nil {
-		return nil, err
-	}
-	sep, err := e.evaluate(sepp)
+func builtinJoin(i *interpreter, trace TraceElement, sep, arrv value) (value, error) {
+	arr, err := i.getArray(arrv, trace)
 	if err != nil {
 		return nil, err
 	}
 	switch sep := sep.(type) {
 	case *valueString:
-		return joinStrings(e, sep, arr)
+		return joinStrings(i, trace, sep, arr)
 	case *valueArray:
-		return joinArrays(e, sep, arr)
+		return joinArrays(i, trace, sep, arr)
 	default:
-		return nil, e.Error("join first parameter should be string or array, got " + sep.getType().name)
+		return nil, i.Error("join first parameter should be string or array, got "+sep.getType().name, trace)
 	}
 }
 
-func builtinFilter(e *evaluator, funcp potentialValue, arrp potentialValue) (value, error) {
-	arr, err := e.evaluateArray(arrp)
+func builtinFilter(i *interpreter, trace TraceElement, funcv, arrv value) (value, error) {
+	arr, err := i.getArray(arrv, trace)
 	if err != nil {
 		return nil, err
 	}
-	fun, err := e.evaluateFunction(funcp)
+	fun, err := i.getFunction(funcv, trace)
 	if err != nil {
 		return nil, err
 	}
@@ -388,97 +353,89 @@ func builtinFilter(e *evaluator, funcp potentialValue, arrp potentialValue) (val
 	// Start with capacity of the original array.
 	// This may spare us a few reallocations.
 	// TODO(sbarzowski) verify that it actually helps
-	elems := make([]potentialValue, 0, num)
-	for i := 0; i < num; i++ {
-		included, err := e.evaluateBoolean(fun.call(args(arr.elements[i])))
+	elems := make([]*cachedThunk, 0, num)
+	for counter := 0; counter < num; counter++ {
+		includedValue, err := fun.call(i, trace, args(arr.elements[counter]))
+		if err != nil {
+			return nil, err
+		}
+		included, err := i.getBoolean(includedValue, trace)
 		if err != nil {
 			return nil, err
 		}
 		if included.value {
-			elems = append(elems, arr.elements[i])
+			elems = append(elems, arr.elements[counter])
 		}
 	}
 	return makeValueArray(elems), nil
 }
 
-func builtinRange(e *evaluator, fromp potentialValue, top potentialValue) (value, error) {
-	from, err := e.evaluateInt(fromp)
+func builtinRange(i *interpreter, trace TraceElement, fromv, tov value) (value, error) {
+	from, err := i.getInt(fromv, trace)
 	if err != nil {
 		return nil, err
 	}
-	to, err := e.evaluateInt(top)
+	to, err := i.getInt(tov, trace)
 	if err != nil {
 		return nil, err
 	}
-	elems := make([]potentialValue, to-from+1)
+	elems := make([]*cachedThunk, to-from+1)
 	for i := from; i <= to; i++ {
-		elems[i-from] = &readyValue{intToValue(i)}
+		elems[i-from] = readyThunk(intToValue(i))
 	}
 	return makeValueArray(elems), nil
 }
 
-func builtinNegation(e *evaluator, xp potentialValue) (value, error) {
-	x, err := e.evaluateBoolean(xp)
+func builtinNegation(i *interpreter, trace TraceElement, x value) (value, error) {
+	b, err := i.getBoolean(x, trace)
 	if err != nil {
 		return nil, err
 	}
-	return makeValueBoolean(!x.value), nil
+	return makeValueBoolean(!b.value), nil
 }
 
-func builtinBitNeg(e *evaluator, xp potentialValue) (value, error) {
-	x, err := e.evaluateNumber(xp)
+func builtinBitNeg(i *interpreter, trace TraceElement, x value) (value, error) {
+	n, err := i.getNumber(x, trace)
 	if err != nil {
 		return nil, err
 	}
-	i := int64(x.value)
-	return int64ToValue(^i), nil
+	intValue := int64(n.value)
+	return int64ToValue(^intValue), nil
 }
 
-func builtinIdentity(e *evaluator, xp potentialValue) (value, error) {
-	x, err := e.evaluate(xp)
-	if err != nil {
-		return nil, err
-	}
+func builtinIdentity(i *interpreter, trace TraceElement, x value) (value, error) {
 	return x, nil
 }
 
-func builtinUnaryMinus(e *evaluator, xp potentialValue) (value, error) {
-	x, err := e.evaluateNumber(xp)
+func builtinUnaryMinus(i *interpreter, trace TraceElement, x value) (value, error) {
+	n, err := i.getNumber(x, trace)
 	if err != nil {
 		return nil, err
 	}
-	return makeValueNumber(-x.value), nil
+	return makeValueNumber(-n.value), nil
 }
 
 // TODO(sbarzowski) since we have a builtin implementation of equals it's no longer really
 // needed and we should deprecate it eventually
-func primitiveEquals(e *evaluator, xp potentialValue, yp potentialValue) (value, error) {
-	x, err := e.evaluate(xp)
-	if err != nil {
-		return nil, err
-	}
-	y, err := e.evaluate(yp)
-	if err != nil {
-		return nil, err
-	}
+func primitiveEquals(i *interpreter, trace TraceElement, x, y value) (value, error) {
 	if x.getType() != y.getType() {
 		return makeValueBoolean(false), nil
 	}
 	switch left := x.(type) {
 	case *valueBoolean:
-		right, err := e.getBoolean(y)
+		right, err := i.getBoolean(y, trace)
 		if err != nil {
 			return nil, err
 		}
 		return makeValueBoolean(left.value == right.value), nil
 	case *valueNumber:
-		right, err := e.getNumber(y)
+		right, err := i.getNumber(y, trace)
 		if err != nil {
 			return nil, err
 		}
 		return makeValueBoolean(left.value == right.value), nil
 	case *valueString:
-		right, err := e.getString(y)
+		right, err := i.getString(y, trace)
 		if err != nil {
 			return nil, err
 		}
@@ -486,33 +443,34 @@ func primitiveEquals(e *evaluator, xp potentialValue, yp potentialValue) (value,
 	case *valueNull:
 		return makeValueBoolean(true), nil
 	case *valueFunction:
-		return nil, e.Error("Cannot test equality of functions")
+		return nil, i.Error("Cannot test equality of functions", trace)
 	default:
-		return nil, e.Error(
-			"primitiveEquals operates on primitive types, got " + x.getType().name,
+		return nil, i.Error(
+			"primitiveEquals operates on primitive types, got "+x.getType().name,
+			trace,
 		)
 	}
 }
 
-func rawEquals(e *evaluator, x, y value) (bool, error) {
+func rawEquals(i *interpreter, trace TraceElement, x, y value) (bool, error) {
 	if x.getType() != y.getType() {
 		return false, nil
 	}
 	switch left := x.(type) {
 	case *valueBoolean:
-		right, err := e.getBoolean(y)
+		right, err := i.getBoolean(y, trace)
 		if err != nil {
 			return false, err
 		}
 		return left.value == right.value, nil
 	case *valueNumber:
-		right, err := e.getNumber(y)
+		right, err := i.getNumber(y, trace)
 		if err != nil {
 			return false, err
 		}
 		return left.value == right.value, nil
 	case *valueString:
-		right, err := e.getString(y)
+		right, err := i.getString(y, trace)
 		if err != nil {
 			return false, err
 		}
@@ -520,23 +478,23 @@ func rawEquals(e *evaluator, x, y value) (bool, error) {
 	case *valueNull:
 		return true, nil
 	case *valueArray:
-		right, err := e.getArray(y)
+		right, err := i.getArray(y, trace)
 		if err != nil {
 			return false, err
 		}
 		if left.length() != right.length() {
 			return false, nil
 		}
-		for i := range left.elements {
-			leftElem, err := e.evaluate(left.elements[i])
+		for j := range left.elements {
+			leftElem, err := i.evaluatePV(left.elements[j], trace)
 			if err != nil {
 				return false, err
 			}
-			rightElem, err := e.evaluate(right.elements[i])
+			rightElem, err := i.evaluatePV(right.elements[j], trace)
 			if err != nil {
 				return false, err
 			}
-			eq, err := rawEquals(e, leftElem, rightElem)
+			eq, err := rawEquals(i, trace, leftElem, rightElem)
 			if err != nil {
 				return false, err
 			}
@@ -546,7 +504,7 @@ func rawEquals(e *evaluator, x, y value) (bool, error) {
 		}
 		return true, nil
 	case valueObject:
-		right, err := e.getObject(y)
+		right, err := i.getObject(y, trace)
 		if err != nil {
 			return false, err
 		}
@@ -562,17 +520,17 @@ func rawEquals(e *evaluator, x, y value) (bool, error) {
 				return false, nil
 			}
 		}
-		for i := range leftFields {
-			fieldName := leftFields[i]
-			leftField, err := left.index(e, fieldName)
+		for j := range leftFields {
+			fieldName := leftFields[j]
+			leftField, err := left.index(i, trace, fieldName)
 			if err != nil {
 				return false, err
 			}
-			rightField, err := right.index(e, fieldName)
+			rightField, err := right.index(i, trace, fieldName)
 			if err != nil {
 				return false, err
 			}
-			eq, err := rawEquals(e, leftField, rightField)
+			eq, err := rawEquals(i, trace, leftField, rightField)
 			if err != nil {
 				return false, err
 			}
@@ -582,57 +540,37 @@ func rawEquals(e *evaluator, x, y value) (bool, error) {
 		}
 		return true, nil
 	case *valueFunction:
-		return false, e.Error("Cannot test equality of functions")
+		return false, i.Error("Cannot test equality of functions", trace)
 	}
 	panic(fmt.Sprintf("Unhandled case in equals %#+v %#+v", x, y))
 }
 
-func builtinEquals(e *evaluator, xp potentialValue, yp potentialValue) (value, error) {
-	x, err := e.evaluate(xp)
-	if err != nil {
-		return nil, err
-	}
-	y, err := e.evaluate(yp)
-	if err != nil {
-		return nil, err
-	}
-	eq, err := rawEquals(e, x, y)
+func builtinEquals(i *interpreter, trace TraceElement, x, y value) (value, error) {
+	eq, err := rawEquals(i, trace, x, y)
 	if err != nil {
 		return nil, err
 	}
 	return makeValueBoolean(eq), nil
 }
 
-func builtinNotEquals(e *evaluator, xp potentialValue, yp potentialValue) (value, error) {
-	x, err := e.evaluate(xp)
-	if err != nil {
-		return nil, err
-	}
-	y, err := e.evaluate(yp)
-	if err != nil {
-		return nil, err
-	}
-	eq, err := rawEquals(e, x, y)
+func builtinNotEquals(i *interpreter, trace TraceElement, x, y value) (value, error) {
+	eq, err := rawEquals(i, trace, x, y)
 	if err != nil {
 		return nil, err
 	}
 	return makeValueBoolean(!eq), nil
 }
 
-func builtinType(e *evaluator, xp potentialValue) (value, error) {
-	x, err := e.evaluate(xp)
-	if err != nil {
-		return nil, err
-	}
+func builtinType(i *interpreter, trace TraceElement, x value) (value, error) {
 	return makeValueString(x.getType().name), nil
 }
 
-func builtinMd5(e *evaluator, xp potentialValue) (value, error) {
-	x, err := e.evaluateString(xp)
+func builtinMd5(i *interpreter, trace TraceElement, x value) (value, error) {
+	str, err := i.getString(x, trace)
 	if err != nil {
 		return nil, err
 	}
-	hash := md5.Sum([]byte(string(x.value)))
+	hash := md5.Sum([]byte(string(str.value)))
 	return makeValueString(hex.EncodeToString(hash[:])), nil
 }
 
@@ -640,47 +578,47 @@ func builtinMd5(e *evaluator, xp potentialValue) (value, error) {
 // https://en.wikipedia.org/wiki/Unicode#Architecture_and_terminology
 const codepointMax = 0x10FFFF
 
-func builtinChar(e *evaluator, xp potentialValue) (value, error) {
-	x, err := e.evaluateNumber(xp)
+func builtinChar(i *interpreter, trace TraceElement, x value) (value, error) {
+	n, err := i.getNumber(x, trace)
 	if err != nil {
 		return nil, err
 	}
-	if x.value > codepointMax {
-		return nil, e.Error(fmt.Sprintf("Invalid unicode codepoint, got %v", x.value))
-	} else if x.value < 0 {
-		return nil, e.Error(fmt.Sprintf("Codepoints must be >= 0, got %v", x.value))
+	if n.value > codepointMax {
+		return nil, i.Error(fmt.Sprintf("Invalid unicode codepoint, got %v", n.value), trace)
+	} else if n.value < 0 {
+		return nil, i.Error(fmt.Sprintf("Codepoints must be >= 0, got %v", n.value), trace)
 	}
-	return makeValueString(string(rune(x.value))), nil
+	return makeValueString(string(rune(n.value))), nil
 }
 
-func builtinCodepoint(e *evaluator, xp potentialValue) (value, error) {
-	x, err := e.evaluateString(xp)
+func builtinCodepoint(i *interpreter, trace TraceElement, x value) (value, error) {
+	str, err := i.getString(x, trace)
 	if err != nil {
 		return nil, err
 	}
-	if x.length() != 1 {
-		return nil, e.Error(fmt.Sprintf("codepoint takes a string of length 1, got length %v", x.length()))
+	if str.length() != 1 {
+		return nil, i.Error(fmt.Sprintf("codepoint takes a string of length 1, got length %v", str.length()), trace)
 	}
-	return makeValueNumber(float64(x.value[0])), nil
+	return makeValueNumber(float64(str.value[0])), nil
 }
 
-func makeDoubleCheck(e *evaluator, x float64) (value, error) {
+func makeDoubleCheck(i *interpreter, trace TraceElement, x float64) (value, error) {
 	if math.IsNaN(x) {
-		return nil, e.Error("Not a number")
+		return nil, i.Error("Not a number", trace)
 	}
 	if math.IsInf(x, 0) {
-		return nil, e.Error("Overflow")
+		return nil, i.Error("Overflow", trace)
 	}
 	return makeValueNumber(x), nil
 }
 
-func liftNumeric(f func(float64) float64) func(*evaluator, potentialValue) (value, error) {
-	return func(e *evaluator, xp potentialValue) (value, error) {
-		x, err := e.evaluateNumber(xp)
+func liftNumeric(f func(float64) float64) func(*interpreter, TraceElement, value) (value, error) {
+	return func(i *interpreter, trace TraceElement, x value) (value, error) {
+		n, err := i.getNumber(x, trace)
 		if err != nil {
 			return nil, err
 		}
-		return makeDoubleCheck(e, f(x.value))
+		return makeDoubleCheck(i, trace, f(n.value))
 	}
 }
 
@@ -710,17 +648,17 @@ var builtinExponent = liftNumeric(func(f float64) float64 {
 	return float64(exponent)
 })
 
-func liftBitwise(f func(int64, int64) int64) func(*evaluator, potentialValue, potentialValue) (value, error) {
-	return func(e *evaluator, xp, yp potentialValue) (value, error) {
-		x, err := e.evaluateNumber(xp)
+func liftBitwise(f func(int64, int64) int64) func(*interpreter, TraceElement, value, value) (value, error) {
+	return func(i *interpreter, trace TraceElement, xv, yv value) (value, error) {
+		x, err := i.getNumber(xv, trace)
 		if err != nil {
 			return nil, err
 		}
-		y, err := e.evaluateNumber(yp)
+		y, err := i.getNumber(yv, trace)
 		if err != nil {
 			return nil, err
 		}
-		return makeDoubleCheck(e, float64(f(int64(x.value), int64(y.value))))
+		return makeDoubleCheck(i, trace, float64(f(int64(x.value), int64(y.value))))
 	}
 }
 
@@ -731,64 +669,64 @@ var builtinBitwiseAnd = liftBitwise(func(x, y int64) int64 { return x & y })
 var builtinBitwiseOr = liftBitwise(func(x, y int64) int64 { return x | y })
 var builtinBitwiseXor = liftBitwise(func(x, y int64) int64 { return x ^ y })
 
-func builtinObjectFieldsEx(e *evaluator, objp potentialValue, includeHiddenP potentialValue) (value, error) {
-	obj, err := e.evaluateObject(objp)
+func builtinObjectFieldsEx(i *interpreter, trace TraceElement, objv, includeHiddenV value) (value, error) {
+	obj, err := i.getObject(objv, trace)
 	if err != nil {
 		return nil, err
 	}
-	includeHidden, err := e.evaluateBoolean(includeHiddenP)
+	includeHidden, err := i.getBoolean(includeHiddenV, trace)
 	if err != nil {
 		return nil, err
 	}
 	fields := objectFields(obj, withHiddenFromBool(includeHidden.value))
 	sort.Strings(fields)
-	elems := []potentialValue{}
+	elems := []*cachedThunk{}
 	for _, fieldname := range fields {
-		elems = append(elems, &readyValue{makeValueString(fieldname)})
+		elems = append(elems, readyThunk(makeValueString(fieldname)))
 	}
 	return makeValueArray(elems), nil
 }
 
-func builtinObjectHasEx(e *evaluator, objp potentialValue, fnamep potentialValue, includeHiddenP potentialValue) (value, error) {
-	obj, err := e.evaluateObject(objp)
+func builtinObjectHasEx(i *interpreter, trace TraceElement, objv value, fnamev value, includeHiddenV value) (value, error) {
+	obj, err := i.getObject(objv, trace)
 	if err != nil {
 		return nil, err
 	}
-	fname, err := e.evaluateString(fnamep)
+	fname, err := i.getString(fnamev, trace)
 	if err != nil {
 		return nil, err
 	}
-	includeHidden, err := e.evaluateBoolean(includeHiddenP)
+	includeHidden, err := i.getBoolean(includeHiddenV, trace)
 	if err != nil {
 		return nil, err
 	}
 	h := withHiddenFromBool(includeHidden.value)
-	fieldp := tryObjectIndex(objectBinding(obj), string(fname.value), h)
-	return makeValueBoolean(fieldp != nil), nil
+	hasField := objectHasField(objectBinding(obj), string(fname.value), h)
+	return makeValueBoolean(hasField), nil
 }
 
-func builtinPow(e *evaluator, basep potentialValue, expp potentialValue) (value, error) {
-	base, err := e.evaluateNumber(basep)
+func builtinPow(i *interpreter, trace TraceElement, basev value, expv value) (value, error) {
+	base, err := i.getNumber(basev, trace)
 	if err != nil {
 		return nil, err
 	}
-	exp, err := e.evaluateNumber(expp)
+	exp, err := i.getNumber(expv, trace)
 	if err != nil {
 		return nil, err
 	}
-	return makeDoubleCheck(e, math.Pow(base.value, exp.value))
+	return makeDoubleCheck(i, trace, math.Pow(base.value, exp.value))
 }
 
-func builtinStrReplace(e *evaluator, strp, fromp, top potentialValue) (value, error) {
-	str, err := e.evaluateString(strp)
+func builtinStrReplace(i *interpreter, trace TraceElement, strv, fromv, tov value) (value, error) {
+	str, err := i.getString(strv, trace)
 	if err != nil {
 		return nil, err
 	}
-	from, err := e.evaluateString(fromp)
+	from, err := i.getString(fromv, trace)
 	if err != nil {
 		return nil, err
 	}
-	to, err := e.evaluateString(top)
+	to, err := i.getString(tov, trace)
 	if err != nil {
 		return nil, err
 	}
@@ -796,13 +734,13 @@ func builtinStrReplace(e *evaluator, strp, fromp, top potentialValue) (value, er
 	sFrom := from.getString()
 	sTo := to.getString()
 	if len(sFrom) == 0 {
-		return nil, e.Error("'from' string must not be zero length.")
+		return nil, i.Error("'from' string must not be zero length.", trace)
 	}
 	return makeValueString(strings.Replace(sStr, sFrom, sTo, -1)), nil
 }
 
-func builtinUglyObjectFlatMerge(e *evaluator, objarrp potentialValue) (value, error) {
-	objarr, err := e.evaluateArray(objarrp)
+func builtinUglyObjectFlatMerge(i *interpreter, trace TraceElement, x value) (value, error) {
+	objarr, err := i.getArray(x, trace)
 	if err != nil {
 		return nil, err
 	}
@@ -811,7 +749,7 @@ func builtinUglyObjectFlatMerge(e *evaluator, objarrp potentialValue) (value, er
 	}
 	newFields := make(simpleObjectFieldMap)
 	for _, elem := range objarr.elements {
-		obj, err := e.evaluateObject(elem)
+		obj, err := i.evaluateObject(elem, trace)
 		if err != nil {
 			return nil, err
 		}
@@ -819,7 +757,7 @@ func builtinUglyObjectFlatMerge(e *evaluator, objarrp potentialValue) (value, er
 		simpleObj := obj.(*valueSimpleObject)
 		for fieldName, fieldVal := range simpleObj.fields {
 			if _, alreadyExists := newFields[fieldName]; alreadyExists {
-				return nil, e.Error(duplicateFieldNameErrMsg(fieldName))
+				return nil, i.Error(duplicateFieldNameErrMsg(fieldName), trace)
 			}
 			newFields[fieldName] = simpleObjectField{
 				hide: fieldVal.hide,
@@ -837,35 +775,35 @@ func builtinUglyObjectFlatMerge(e *evaluator, objarrp potentialValue) (value, er
 	), nil
 }
 
-func builtinExtVar(e *evaluator, namep potentialValue) (value, error) {
-	name, err := e.evaluateString(namep)
+func builtinExtVar(i *interpreter, trace TraceElement, name value) (value, error) {
+	str, err := i.getString(name, trace)
 	if err != nil {
 		return nil, err
 	}
-	index := name.getString()
-	if pv, ok := e.i.extVars[index]; ok {
-		return e.evaluate(pv)
+	index := str.getString()
+	if pv, ok := i.extVars[index]; ok {
+		return i.evaluatePV(pv, trace)
 	}
-	return nil, e.Error("Undefined external variable: " + string(index))
+	return nil, i.Error("Undefined external variable: "+string(index), trace)
 }
 
-func builtinNative(e *evaluator, namep potentialValue) (value, error) {
-	name, err := e.evaluateString(namep)
+func builtinNative(i *interpreter, trace TraceElement, name value) (value, error) {
+	str, err := i.getString(name, trace)
 	if err != nil {
 		return nil, err
 	}
-	index := name.getString()
-	if f, exists := e.i.nativeFuncs[index]; exists {
+	index := str.getString()
+	if f, exists := i.nativeFuncs[index]; exists {
 		return &valueFunction{ec: f}, nil
 
 	}
-	return nil, e.Error(fmt.Sprintf("Unrecognized native function name: %v", index))
+	return nil, i.Error(fmt.Sprintf("Unrecognized native function name: %v", index), trace)
 
 }
 
-type unaryBuiltinFunc func(*evaluator, potentialValue) (value, error)
-type binaryBuiltinFunc func(*evaluator, potentialValue, potentialValue) (value, error)
-type ternaryBuiltinFunc func(*evaluator, potentialValue, potentialValue, potentialValue) (value, error)
+type unaryBuiltinFunc func(*interpreter, TraceElement, value) (value, error)
+type binaryBuiltinFunc func(*interpreter, TraceElement, value, value) (value, error)
+type ternaryBuiltinFunc func(*interpreter, TraceElement, value, value, value) (value, error)
 
 type unaryBuiltin struct {
 	name       ast.Identifier
@@ -873,15 +811,19 @@ type unaryBuiltin struct {
 	parameters ast.Identifiers
 }
 
-func getBuiltinEvaluator(e *evaluator, name ast.Identifier) *evaluator {
+func getBuiltinTrace(trace TraceElement, name ast.Identifier) TraceElement {
 	context := "builtin function <" + string(name) + ">"
-	trace := TraceElement{loc: e.trace.loc, context: &context}
-	return &evaluator{i: e.i, trace: &trace}
+	return TraceElement{loc: trace.loc, context: &context}
 }
 
-func (b *unaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
+func (b *unaryBuiltin) EvalCall(args callArguments, i *interpreter, trace TraceElement) (value, error) {
 	flatArgs := flattenArgs(args, b.Parameters())
-	return b.function(getBuiltinEvaluator(e, b.name), flatArgs[0])
+	builtinTrace := getBuiltinTrace(trace, b.name)
+	x, err := flatArgs[0].getValue(i, trace)
+	if err != nil {
+		return nil, err
+	}
+	return b.function(i, builtinTrace, x)
 }
 
 func (b *unaryBuiltin) Parameters() Parameters {
@@ -902,7 +844,7 @@ type binaryBuiltin struct {
 // It's needed, because it's possible to use named arguments for required parameters.
 // For example both `toString("x")` and `toString(a="x")` are allowed.
 // It assumes that we have already checked for duplicates.
-func flattenArgs(args callArguments, params Parameters) []potentialValue {
+func flattenArgs(args callArguments, params Parameters) []*cachedThunk {
 	if len(args.named) == 0 {
 		return args.positional
 	}
@@ -915,7 +857,7 @@ func flattenArgs(args callArguments, params Parameters) []potentialValue {
 		needed[params.required[i]] = i
 	}
 
-	flatArgs := make([]potentialValue, len(params.required))
+	flatArgs := make([]*cachedThunk, len(params.required))
 	copy(flatArgs, args.positional)
 	for _, arg := range args.named {
 		flatArgs[needed[arg.name]] = arg.pv
@@ -923,9 +865,18 @@ func flattenArgs(args callArguments, params Parameters) []potentialValue {
 	return flatArgs
 }
 
-func (b *binaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
+func (b *binaryBuiltin) EvalCall(args callArguments, i *interpreter, trace TraceElement) (value, error) {
 	flatArgs := flattenArgs(args, b.Parameters())
-	return b.function(getBuiltinEvaluator(e, b.name), flatArgs[0], flatArgs[1])
+	builtinTrace := getBuiltinTrace(trace, b.name)
+	x, err := flatArgs[0].getValue(i, trace)
+	if err != nil {
+		return nil, err
+	}
+	y, err := flatArgs[1].getValue(i, trace)
+	if err != nil {
+		return nil, err
+	}
+	return b.function(i, builtinTrace, x, y)
 }
 
 func (b *binaryBuiltin) Parameters() Parameters {
@@ -942,9 +893,22 @@ type ternaryBuiltin struct {
 	parameters ast.Identifiers
 }
 
-func (b *ternaryBuiltin) EvalCall(args callArguments, e *evaluator) (value, error) {
+func (b *ternaryBuiltin) EvalCall(args callArguments, i *interpreter, trace TraceElement) (value, error) {
 	flatArgs := flattenArgs(args, b.Parameters())
-	return b.function(getBuiltinEvaluator(e, b.name), flatArgs[0], flatArgs[1], flatArgs[2])
+	builtinTrace := getBuiltinTrace(trace, b.name)
+	x, err := flatArgs[0].getValue(i, trace)
+	if err != nil {
+		return nil, err
+	}
+	y, err := flatArgs[1].getValue(i, trace)
+	if err != nil {
+		return nil, err
+	}
+	z, err := flatArgs[2].getValue(i, trace)
+	if err != nil {
+		return nil, err
+	}
+	return b.function(i, builtinTrace, x, y, z)
 }
 
 func (b *ternaryBuiltin) Parameters() Parameters {
@@ -982,9 +946,6 @@ var bopBuiltins = []*binaryBuiltin{
 	ast.BopBitwiseAnd: &binaryBuiltin{name: "operator&", function: builtinBitwiseAnd, parameters: ast.Identifiers{"x", "y"}},
 	ast.BopBitwiseXor: &binaryBuiltin{name: "operator^", function: builtinBitwiseXor, parameters: ast.Identifiers{"x", "y"}},
 	ast.BopBitwiseOr:  &binaryBuiltin{name: "operator|", function: builtinBitwiseOr, parameters: ast.Identifiers{"x", "y"}},
-
-	ast.BopAnd: &binaryBuiltin{name: "operator&&", function: builtinAnd, parameters: ast.Identifiers{"x", "y"}},
-	ast.BopOr:  &binaryBuiltin{name: "operator||", function: builtinOr, parameters: ast.Identifiers{"x", "y"}},
 }
 
 var uopBuiltins = []*unaryBuiltin{

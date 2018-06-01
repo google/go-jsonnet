@@ -98,15 +98,15 @@ func (cache *ImportCache) importData(importedFrom, importedPath string) (content
 }
 
 // ImportString imports a string, caches it and then returns it.
-func (cache *ImportCache) ImportString(importedFrom, importedPath string, e *evaluator) (*valueString, error) {
+func (cache *ImportCache) ImportString(importedFrom, importedPath string, i *interpreter, trace TraceElement) (*valueString, error) {
 	data, _, err := cache.importData(importedFrom, importedPath)
 	if err != nil {
-		return nil, e.Error(err.Error())
+		return nil, i.Error(err.Error(), trace)
 	}
 	return makeValueString(data.String()), nil
 }
 
-func codeToPV(e *evaluator, filename string, code string) potentialValue {
+func codeToPV(i *interpreter, filename string, code string) *cachedThunk {
 	node, err := snippetToAST(filename, code)
 	if err != nil {
 		// TODO(sbarzowski) we should wrap (static) error here
@@ -114,26 +114,31 @@ func codeToPV(e *evaluator, filename string, code string) potentialValue {
 		// actually depends on what happens in Runtime (whether import gets
 		// evaluated).
 		// The same thinking applies to external variables.
-		return makeErrorThunk(err)
+		return &cachedThunk{err: err}
 	}
-	return makeThunk(makeInitialEnv(filename, e.i.baseStd), node)
+	env := makeInitialEnv(filename, i.baseStd)
+	return &cachedThunk{
+		env:     &env,
+		body:    node,
+		content: nil,
+	}
 }
 
 // ImportCode imports code from a path.
-func (cache *ImportCache) ImportCode(importedFrom, importedPath string, e *evaluator) (value, error) {
+func (cache *ImportCache) ImportCode(importedFrom, importedPath string, i *interpreter, trace TraceElement) (value, error) {
 	contents, foundAt, err := cache.importData(importedFrom, importedPath)
 	if err != nil {
-		return nil, e.Error(err.Error())
+		return nil, i.Error(err.Error(), trace)
 	}
 	var pv potentialValue
 	if cachedPV, isCached := cache.codeCache[foundAt]; !isCached {
 		// File hasn't been parsed and analyzed before, update the cache record.
-		pv = codeToPV(e, foundAt, contents.String())
+		pv = codeToPV(i, foundAt, contents.String())
 		cache.codeCache[foundAt] = pv
 	} else {
 		pv = cachedPV
 	}
-	return e.evaluate(pv)
+	return i.evaluatePV(pv, trace)
 }
 
 // Concrete importers
