@@ -33,6 +33,7 @@ import (
 	"testing"
 
 	"github.com/google/go-jsonnet/ast"
+	"github.com/google/go-jsonnet/parser"
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
@@ -115,6 +116,14 @@ type jsonnetResult struct {
 	isError bool
 }
 
+func testChildren(node ast.Node) {
+	// Test that Children works on every node in the tree
+	for _, child := range parser.Children(node) {
+		testChildren(child)
+	}
+	// TODO(sbarzowski) it would be great to check somehow that all nodes were reached
+}
+
 func runInternalJsonnet(i jsonnetInput) jsonnetResult {
 	vm := MakeVM()
 	errFormatter := termErrorFormatter{pretty: true, maxStackTraceSize: 9}
@@ -129,6 +138,24 @@ func runInternalJsonnet(i jsonnetInput) jsonnetResult {
 
 	vm.NativeFunction(jsonToString)
 	vm.NativeFunction(nativeError)
+
+	rawAST, err := snippetToRawAST(i.name, string(i.input))
+	if err != nil {
+		return jsonnetResult{
+			output:  errFormatter.Format(err) + "\n",
+			isError: true,
+		}
+	}
+	testChildren(rawAST)
+
+	desugaredAST, err := snippetToAST(i.name, string(i.input))
+	if err != nil {
+		return jsonnetResult{
+			output:  errFormatter.Format(err) + "\n",
+			isError: true,
+		}
+	}
+	testChildren(desugaredAST)
 
 	rawOutput, err := vm.evaluateSnippet(i.name, string(i.input), i.eKind)
 	switch {

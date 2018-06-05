@@ -191,12 +191,16 @@ func (vm *VM) EvaluateSnippetMulti(filename string, snippet string) (files map[s
 	return
 }
 
-func snippetToAST(filename string, snippet string) (ast.Node, error) {
+func snippetToRawAST(filename string, snippet string) (ast.Node, error) {
 	tokens, err := parser.Lex(filename, snippet)
 	if err != nil {
 		return nil, err
 	}
-	node, err := parser.Parse(tokens)
+	return parser.Parse(tokens)
+}
+
+func snippetToAST(filename string, snippet string) (ast.Node, error) {
+	node, err := snippetToRawAST(filename, snippet)
 	if err != nil {
 		return nil, err
 	}
