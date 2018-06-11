@@ -249,7 +249,14 @@ func specialChildren(node ast.Node) []ast.Node {
 	case *ast.Slice:
 		return nil
 	case *ast.Local:
-		return nil
+		if len(node.Binds) == 0 {
+			return nil
+		}
+		children := make([]ast.Node, 0, len(node.Binds))
+		for _, bind := range node.Binds {
+			children = append(children, bind.Body)
+		}
+		return children
 	case *ast.LiteralBoolean:
 		return nil
 	case *ast.LiteralNull:
