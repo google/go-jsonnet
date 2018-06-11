@@ -620,6 +620,33 @@ func TestCComment(t *testing.T) {
 	})
 }
 
+func TestCCommentTooShort(t *testing.T) {
+	SingleTest(t, "/*/", "snippet:1:1 Multi-line comment has no terminating */", Tokens{})
+}
+
+func TestCCommentMinimal(t *testing.T) {
+	SingleTest(t, "/**/", "", Tokens{
+		{kind: tokenEndOfFile, fodder: ast.Fodder{{Kind: ast.FodderInterstitial, Comment: []string{"/**/"}}}},
+	})
+}
+
+func TestCCommentJustSlash(t *testing.T) {
+	SingleTest(t, "/*/*/", "", Tokens{
+		{kind: tokenEndOfFile, fodder: ast.Fodder{{Kind: ast.FodderInterstitial, Comment: []string{"/*/*/"}}}},
+	})
+}
+func TestCCommentSpaceSlash(t *testing.T) {
+	SingleTest(t, "/* /*/", "", Tokens{
+		{kind: tokenEndOfFile, fodder: ast.Fodder{{Kind: ast.FodderInterstitial, Comment: []string{"/* /*/"}}}},
+	})
+}
+
+func TestCCommentManyLines(t *testing.T) {
+	SingleTest(t, "/*\n\n*/", "", Tokens{
+		{kind: tokenEndOfFile, fodder: ast.Fodder{{Kind: ast.FodderParagraph, Comment: []string{"/*", "", "*/"}}}},
+	})
+}
+
 func TestCCommentNoTerm(t *testing.T) {
 	SingleTest(t, "/* hi", "snippet:1:1 Multi-line comment has no terminating */", Tokens{})
 }

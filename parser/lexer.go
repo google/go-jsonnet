@@ -211,7 +211,7 @@ func stripWs(s string, margin int) string {
 	for j > i && isHorzWs(runes[j-1]) {
 		j--
 	}
-	return string(runes[i : j+1])
+	return string(runes[i:j])
 }
 
 // Split a string by \n and also strip left (up to margin) & right whitespace from each line. */
@@ -643,7 +643,7 @@ func (l *lexer) lexSymbol() error {
 		commentStartLoc := l.tokenStartLoc
 
 		r := l.next() // consume the initial '*'
-		for r = l.next(); r != '*' && l.peek() != '/'; r = l.next() {
+		for r = l.next(); r != '*' || l.peek() != '/'; r = l.next() {
 			if r == lexEOF {
 				return l.makeStaticErrorPoint(
 					"Multi-line comment has no terminating */",
@@ -670,13 +670,13 @@ func (l *lexer) lexSymbol() error {
 			// Add a space to lines that start with a '*'
 			allStar := true
 			for _, l := range lines {
-				if l[0] != '*' {
+				if len(l) == 0 || l[0] != '*' {
 					allStar = false
 				}
 			}
 			if allStar {
 				for _, l := range lines {
-					if l[0] != '*' {
+					if l[0] == '*' {
 						l = " " + l
 					}
 				}
