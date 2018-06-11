@@ -188,27 +188,27 @@ func isSymbol(r rune) bool {
 	return false
 }
 
-func isHorzWs(r rune) bool {
+func isHorizontalWhitespace(r rune) bool {
 	return r == ' ' || r == '\t' || r == '\r'
 }
 
-func isWs(r rune) bool {
-	return r == '\n' || isHorzWs(r)
+func isWhitespace(r rune) bool {
+	return r == '\n' || isHorizontalWhitespace(r)
 }
 
-// stripWs strips whitespace from both ends of a string, but only up to margin
-// on the left hand side.  E.g., stripWs("  foo ", 1) == " foo".
-func stripWs(s string, margin int) string {
+// stripWhitespace strips whitespace from both ends of a string, but only up to
+// margin on the left hand side.  E.g., stripWhitespace("  foo ", 1) == " foo".
+func stripWhitespace(s string, margin int) string {
 	runes := []rune(s)
 	if len(s) == 0 {
 		return s // Avoid underflow below.
 	}
 	i := 0
-	for i < len(runes) && isHorzWs(runes[i]) && i < margin {
+	for i < len(runes) && isHorizontalWhitespace(runes[i]) && i < margin {
 		i++
 	}
 	j := len(runes)
-	for j > i && isHorzWs(runes[j-1]) {
+	for j > i && isHorizontalWhitespace(runes[j-1]) {
 		j--
 	}
 	return string(runes[i:j])
@@ -220,13 +220,13 @@ func lineSplit(s string, margin int) []string {
 	var buf bytes.Buffer
 	for _, r := range s {
 		if r == '\n' {
-			ret = append(ret, stripWs(buf.String(), margin))
+			ret = append(ret, stripWhitespace(buf.String(), margin))
 			buf.Reset()
 		} else {
 			buf.WriteRune(r)
 		}
 	}
-	return append(ret, stripWs(buf.String(), margin))
+	return append(ret, stripWhitespace(buf.String(), margin))
 }
 
 // Check that b has at least the same whitespace prefix as a and returns the
@@ -310,7 +310,7 @@ func (l *lexer) next() rune {
 		l.pos.lineNo++
 		l.freshLine = true
 	} else if l.freshLine {
-		if !isWs(r) {
+		if !isWhitespace(r) {
 			l.freshLine = false
 		}
 	}
@@ -389,14 +389,14 @@ func (l *lexer) makeStaticErrorPoint(msg string, loc ast.Location) StaticError {
 	return StaticError{Msg: msg, Loc: ast.MakeLocationRange(l.fileName, l.source, loc, loc)}
 }
 
-// lexWs consumes all whitespace and returns the number of \n and number of
+// lexWhitespace consumes all whitespace and returns the number of \n and number of
 // spaces after last \n.  It also converts \t to spaces.
 // The parameter 'r' is the rune that begins the whitespace.
-func (l *lexer) lexWs() (int, int) {
+func (l *lexer) lexWhitespace() (int, int) {
 	r := l.next()
 	indent := 0
 	newLines := 0
-	for ; isWs(r); r = l.next() {
+	for ; isWhitespace(r); r = l.next() {
 		switch r {
 		case '\r':
 			// Ignore.
@@ -432,7 +432,7 @@ func (l *lexer) lexUntilNewline() (string, int, int) {
 	lastNonSpace := 0
 	for r := l.next(); r != lexEOF && r != '\n'; r = l.next() {
 		buf.WriteRune(r)
-		if !isHorzWs(r) {
+		if !isHorizontalWhitespace(r) {
 			lastNonSpace = buf.Len()
 		}
 	}
@@ -443,7 +443,7 @@ func (l *lexer) lexUntilNewline() (string, int, int) {
 
 	// Consume the '\n' and following indent.
 	var newLines int
-	newLines, indent := l.lexWs()
+	newLines, indent := l.lexWhitespace()
 	blanks := 0
 	if newLines > 0 {
 		blanks = newLines - 1
@@ -655,7 +655,7 @@ func (l *lexer) lexSymbol() error {
 		// Includes the "/*" and "*/".
 		comment := l.input[l.tokenStart:l.pos.byteNo]
 
-		newLinesAfter, indentAfter := l.lexWs()
+		newLinesAfter, indentAfter := l.lexWhitespace()
 		if !strings.ContainsRune(comment, '\n') {
 			l.addFodder(ast.FodderInterstitial, 0, 0, []string{comment})
 			if newLinesAfter > 0 {
@@ -802,7 +802,7 @@ func Lex(fn string, input string) (Tokens, error) {
 
 	var err error
 	for true {
-		newLines, indent := l.lexWs()
+		newLines, indent := l.lexWhitespace()
 		// If it's the end of the file, discard final whitespace.
 		if l.peek() == lexEOF {
 			l.next()

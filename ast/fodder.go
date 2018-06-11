@@ -53,7 +53,7 @@ const (
 
 	// FodderParagraph represents a comment consisting of at least one line.
 	//
-	// // and # style commes have exactly one line.  C-style comments can have
+	// // and # style comments have exactly one line.  C-style comments can have
 	// more than one line.
 	//
 	// All lines of the comment are indented according to the indentation level
