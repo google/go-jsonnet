@@ -66,7 +66,7 @@ func directChildren(node ast.Node) []ast.Node {
 	case *ast.Slice:
 		return []ast.Node{node.Target, node.BeginIndex, node.EndIndex, node.Step}
 	case *ast.Local:
-		return []ast.Node{node.Body}
+		return nil
 	case *ast.LiteralBoolean:
 		return nil
 	case *ast.LiteralNull:
@@ -249,10 +249,8 @@ func specialChildren(node ast.Node) []ast.Node {
 	case *ast.Slice:
 		return nil
 	case *ast.Local:
-		if len(node.Binds) == 0 {
-			return nil
-		}
-		children := make([]ast.Node, 0, len(node.Binds))
+		children := make([]ast.Node, 1, len(node.Binds)+1)
+		children[0] = node.Body
 		for _, bind := range node.Binds {
 			children = append(children, bind.Body)
 		}
