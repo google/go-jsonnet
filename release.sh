@@ -27,6 +27,8 @@ if [ -z "$GCS_BUCKET_PATH" ]; then
   GCS_BUCKET_PATH="gs://jsonnet"
 fi
 
+pushd jsonnet
+
 for elem in darwin,amd64 linux,amd64; do
   IFS="," read os arch <<< "${elem}"
   echo "Building for $os $arch"
@@ -41,3 +43,5 @@ done
 
 echo $VERSION > latest
 gsutil cp latest ${GCS_BUCKET_PATH}/
+
+popd
