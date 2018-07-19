@@ -795,10 +795,8 @@ func builtinNative(i *interpreter, trace TraceElement, name value) (value, error
 	index := str.getString()
 	if f, exists := i.nativeFuncs[index]; exists {
 		return &valueFunction{ec: f}, nil
-
 	}
-	return nil, i.Error(fmt.Sprintf("Unrecognized native function name: %v", index), trace)
-
+	return &valueNull{}, nil
 }
 
 type unaryBuiltinFunc func(*interpreter, TraceElement, value) (value, error)
