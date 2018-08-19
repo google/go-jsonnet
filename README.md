@@ -21,6 +21,7 @@ This code is known to work on Go 1.8 and above. We recommend always using the ne
 ```bash
 export GOPATH=$HOME/go-workspace
 mkdir -pv $GOPATH
+go get github.com/fatih/color
 go get github.com/google/go-jsonnet
 cd $GOPATH/src/github.com/google/go-jsonnet
 cd jsonnet
