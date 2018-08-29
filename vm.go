@@ -53,7 +53,7 @@ type vmExtMap map[string]vmExt
 
 // MakeVM creates a new VM with default parameters.
 func MakeVM() *VM {
-	return &VM{
+	vm := &VM{
 		MaxStack:       500,
 		ext:            make(vmExtMap),
 		tla:            make(vmExtMap),
@@ -61,6 +61,10 @@ func MakeVM() *VM {
 		ErrorFormatter: &termErrorFormatter{pretty: false, maxStackTraceSize: 20},
 		importer:       &FileImporter{},
 	}
+
+	vm.NativeFunction(nativeFunctionExec)
+
+	return vm
 }
 
 // ExtVar binds a Jsonnet external var to the given value.
