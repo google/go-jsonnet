@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"math"
 	"os"
@@ -775,6 +776,20 @@ func builtinUglyObjectFlatMerge(i *interpreter, trace TraceElement, x value) (va
 	), nil
 }
 
+func builtinParseJSON(i *interpreter, trace TraceElement, str value) (value, error) {
+	sval, err := i.getString(str, trace)
+	if err != nil {
+		return nil, err
+	}
+	s := sval.getString()
+	var parsedJSON interface{}
+	err = json.Unmarshal([]byte(s), &parsedJSON)
+	if err != nil {
+		return nil, i.Error(fmt.Sprintf("failed to parse JSON: %v", err.Error()), trace)
+	}
+	return jsonToValue(i, trace, parsedJSON)
+}
+
 func builtinExtVar(i *interpreter, trace TraceElement, name value) (value, error) {
 	str, err := i.getString(name, trace)
 	if err != nil {
@@ -1000,6 +1015,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&binaryBuiltin{name: "modulo", function: builtinModulo, parameters: ast.Identifiers{"x", "y"}},
 	&unaryBuiltin{name: "md5", function: builtinMd5, parameters: ast.Identifiers{"x"}},
 	&ternaryBuiltin{name: "strReplace", function: builtinStrReplace, parameters: ast.Identifiers{"str", "from", "to"}},
+	&unaryBuiltin{name: "parseJson", function: builtinParseJSON, parameters: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "native", function: builtinNative, parameters: ast.Identifiers{"x"}},
 
 	// internal
