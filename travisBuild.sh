@@ -1,14 +1,25 @@
 #!/usr/bin/env bash
 
-
-if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
-  echo -e "Build Pull Request #$TRAVIS_PULL_REQUEST => Branch [$TRAVIS_BRANCH]"
+run_tests() {
   $HOME/gopath/bin/goveralls -service=travis-ci
   ./tests.sh --skip-go-test
-elif [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$TRAVIS_TAG" != "" ]; then
-  echo -e 'Build Branch for Release => Branch ['$TRAVIS_BRANCH']  Tag ['$TRAVIS_TAG']'
+}
+
+release() {
   env VERSION=$TRAVIS_TAG ./release.sh
+}
+
+if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
+  # Pull Requests.
+  echo -e "Build Pull Request #$TRAVIS_PULL_REQUEST => Branch [$TRAVIS_BRANCH]"
+  run_tests
+elif [ "$TRAVIS_TAG" == "" ]; then
+  # Pushed branches.
+  echo -e "Build Branch $TRAVIS_BRANCH"
+  run_tests
 else
-  echo -e 'Unknown build command for PR? ('$TRAVIS_PULL') Branch ['$TRAVIS_BRANCH']  Tag ['$TRAVIS_TAG']'
+  # $TRAVIS_PULL_REQUEST == "false" and $TRAVIS_TAG != "" -> Releases.
+  echo -e 'Build Branch for Release => Branch ['$TRAVIS_BRANCH']  Tag ['$TRAVIS_TAG']'
+  release
 fi
 
