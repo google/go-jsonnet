@@ -575,6 +575,38 @@ func builtinMd5(i *interpreter, trace TraceElement, x value) (value, error) {
 	return makeValueString(hex.EncodeToString(hash[:])), nil
 }
 
+func builtinEncodeUTF8(i *interpreter, trace TraceElement, x value) (value, error) {
+	str, err := i.getString(x, trace)
+	if err != nil {
+		return nil, err
+	}
+	s := str.getString()
+	elems := make([]*cachedThunk, 0, len(s)) // it will be longer if characters fall outside of ASCII
+	for _, c := range []byte(s) {
+		elems = append(elems, readyThunk(makeValueNumber(float64(c))))
+	}
+	return makeValueArray(elems), nil
+}
+
+func builtinDecodeUTF8(i *interpreter, trace TraceElement, x value) (value, error) {
+	arr, err := i.getArray(x, trace)
+	if err != nil {
+		return nil, err
+	}
+	bs := make([]byte, len(arr.elements)) // it will be longer if characters fall outside of ASCII
+	for pos := range arr.elements {
+		v, err := i.evaluateInt(arr.elements[pos], trace)
+		if err != nil {
+			return nil, err
+		}
+		if v < 0 || v > 255 {
+			return nil, i.Error(fmt.Sprintf("Bytes must be integers in range [0, 255], got %d", v), trace)
+		}
+		bs[pos] = byte(v)
+	}
+	return makeValueString(string(bs)), nil
+}
+
 // Maximum allowed unicode codepoint
 // https://en.wikipedia.org/wiki/Unicode#Architecture_and_terminology
 const codepointMax = 0x10FFFF
@@ -1016,6 +1048,8 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "md5", function: builtinMd5, parameters: ast.Identifiers{"x"}},
 	&ternaryBuiltin{name: "strReplace", function: builtinStrReplace, parameters: ast.Identifiers{"str", "from", "to"}},
 	&unaryBuiltin{name: "parseJson", function: builtinParseJSON, parameters: ast.Identifiers{"str"}},
+	&unaryBuiltin{name: "encodeUTF8", function: builtinEncodeUTF8, parameters: ast.Identifiers{"str"}},
+	&unaryBuiltin{name: "decodeUTF8", function: builtinDecodeUTF8, parameters: ast.Identifiers{"arr"}},
 	&unaryBuiltin{name: "native", function: builtinNative, parameters: ast.Identifiers{"x"}},
 
 	// internal
