@@ -414,6 +414,10 @@ func writeMultiOutputFiles(output map[string]string, outputDir, outputFile strin
 			}
 		}
 
+		if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
+			return err
+		}
+
 		f, err := os.Create(filename)
 		if err != nil {
 			return err
