@@ -86,6 +86,7 @@ func usage(o io.Writer) {
 	fmt.Fprintln(o, "  -J / --jpath <dir>      Specify an additional library search dir")
 	fmt.Fprintln(o, "  -o / --output-file <file> Write to the output file rather than stdout")
 	fmt.Fprintln(o, "  -m / --multi <dir>      Write multiple files to the directory, list files on stdout")
+	fmt.Fprintln(o, "  -c / --create-output-dirs  Automatically creates all parent directories for files")
 	fmt.Fprintln(o, "  -y / --yaml-stream      Write output as a YAML stream of JSON documents")
 	fmt.Fprintln(o, "  -S / --string           Expect a string, manifest as plain text")
 	fmt.Fprintln(o, "  -s / --max-stack <n>    Number of allowed stack frames")
@@ -140,10 +141,11 @@ type config struct {
 	filenameIsCode bool
 
 	// commandEval flags
-	evalMulti          bool
-	evalStream         bool
-	evalMultiOutputDir string
-	evalJpath          []string
+	evalMulti            bool
+	evalStream           bool
+	evalMultiOutputDir   string
+	evalCreateOutputDirs bool
+	evalJpath            []string
 
 	// commandFmt flags
 	// commandFmt is currently unsupported.
@@ -309,6 +311,8 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 					outputDir += "/"
 				}
 				config.evalMultiOutputDir = outputDir
+			} else if arg == "-c" || arg == "--create-output-dirs" {
+				config.evalCreateOutputDirs = true
 			} else if arg == "-y" || arg == "--yaml-stream" {
 				config.evalStream = true
 			} else if arg == "-S" || arg == "--string" {
@@ -363,7 +367,7 @@ func readInput(config config, filename *string) (input string, err error) {
 	return
 }
 
-func writeMultiOutputFiles(output map[string]string, outputDir, outputFile string) error {
+func writeMultiOutputFiles(output map[string]string, outputDir, outputFile string, createDirs bool) error {
 	// If multiple file output is used, then iterate over each string from
 	// the sequence of strings returned by jsonnet_evaluate_snippet_multi,
 	// construct pairs of filename and content, and write each output file.
@@ -413,9 +417,10 @@ func writeMultiOutputFiles(output map[string]string, outputDir, outputFile strin
 				continue
 			}
 		}
-
-		if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
-			return err
+		if createDirs {
+			if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
+				return err
+			}
 		}
 
 		f, err := os.Create(filename)
@@ -469,10 +474,16 @@ func writeOutputStream(output []string, outputFile string) error {
 	return nil
 }
 
-func writeOutputFile(output string, outputFile string) error {
+func writeOutputFile(output string, outputFile string, createDirs bool) error {
 	if outputFile == "" {
 		fmt.Print(output)
 		return nil
+	}
+
+	if createDirs {
+		if err := os.MkdirAll(filepath.Dir(outputFile), 0755); err != nil {
+			return err
+		}
 	}
 
 	f, err := os.Create(outputFile)
@@ -586,7 +597,7 @@ func main() {
 
 		// Write output JSON.
 		if config.evalMulti {
-			err := writeMultiOutputFiles(outputDict, config.evalMultiOutputDir, config.outputFile)
+			err := writeMultiOutputFiles(outputDict, config.evalMultiOutputDir, config.outputFile, config.evalCreateOutputDirs)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err.Error())
 				os.Exit(1)
@@ -598,7 +609,7 @@ func main() {
 				os.Exit(1)
 			}
 		} else {
-			err := writeOutputFile(output, config.outputFile)
+			err := writeOutputFile(output, config.outputFile, config.evalCreateOutputDirs)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err.Error())
 				os.Exit(1)
