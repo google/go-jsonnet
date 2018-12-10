@@ -70,9 +70,9 @@ limitations under the License.
     local lower_a_code = std.codepoint('a');
     local addDigit(aggregate, char) =
       local code = std.codepoint(char);
-      local digit = if code > lower_a_code then
+      local digit = if code >= lower_a_code then
         code - lower_a_code + 10
-      else if code > upper_a_code then
+      else if code >= upper_a_code then
         code - upper_a_code + 10
       else
         code - zero_code;
@@ -81,6 +81,8 @@ limitations under the License.
     std.foldl(addDigit, std.stringChars(str), 0),
 
   parseInt(str)::
+    assert std.isString(str): 'Expected string, got ' + std.type(str);
+    assert std.length(str) > 0 && str != "-": 'Not an integer: "%s"' % [str];
     if str[0] == '-' then
       -parse_nat(str[1:], 10)
     else
@@ -147,9 +149,9 @@ limitations under the License.
         acc + str[start_index:curr_index]
       else if found_at(curr_index) then
         local new_index = curr_index + std.length(from);
-        replace_after(new_index, new_index, acc + str[start_index:curr_index] + to)
+        replace_after(new_index, new_index, acc + str[start_index:curr_index] + to) tailstrict
       else
-        replace_after(start_index, curr_index + 1, acc);
+        replace_after(start_index, curr_index + 1, acc) tailstrict;
 
     // if from_len==1, then we replace by splitting and rejoining the
     // string which is much faster than recursing on replace_after
@@ -853,7 +855,7 @@ limitations under the License.
         '\\t'
       else
         local cp = std.codepoint(ch);
-        if cp < 32 || (cp >= 126 && cp <= 159) then
+        if cp < 32 || (cp >= 127 && cp <= 159) then
           '\\u%04x' % [cp]
         else
           ch;
@@ -1245,4 +1247,23 @@ limitations under the License.
       if isContent(std.prune(a[x]))
     } else
       a,
+
+  findSubstr(pat, str)::
+    if std.type(pat) != 'string' then
+      error 'findSubstr first parameter should be a string, got ' + std.type(pat)
+    else if std.type(str) != 'string' then
+      error 'findSubstr second parameter should be a string, got ' + std.type(str)
+    else
+      local pat_len = std.length(pat);
+      local str_len = std.length(str);
+      if pat_len == 0 || str_len == 0 || pat_len > str_len then
+        []
+      else
+        std.filter(function(i) str[i:i+pat_len] == pat, std.range(0, str_len - pat_len)),
+
+  find(value, arr)::
+    if std.type(arr) != 'array' then
+      error 'find second parameter should be an array, got ' + std.type(arr)
+    else
+      std.filter(function(i) arr[i] == value, std.range(0, std.length(arr) - 1)),
 }
