@@ -312,7 +312,10 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 
 	switch node := node.(type) {
 	case *ast.Apply:
-		desugar(&node.Target, objLevel)
+		err = desugar(&node.Target, objLevel)
+		if err != nil {
+			return
+		}
 		for i := range node.Arguments.Positional {
 			err = desugar(&node.Arguments.Positional[i], objLevel)
 			if err != nil {
