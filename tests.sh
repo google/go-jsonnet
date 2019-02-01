@@ -4,6 +4,8 @@ set -e
 
 [ "$1" = "--skip-go-test" ] || go test ./...
 
+compat_test/run.sh
+
 export IMPLEMENTATION=golang
 
 (cd jsonnet; go build)

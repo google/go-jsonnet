@@ -3,18 +3,19 @@
 
 extern "C" {
     #include "libjsonnet.h"
+    #include "internal.h"
 }
 
 #include "json.h"
 
-struct JsonnetVm {
-    int id;
-};
-
-JsonnetVm *jsonnet_make(void) {
+struct JsonnetVm *jsonnet_internal_make_vm_with_id(uint32_t id) {
     JsonnetVm *vm = new JsonnetVm();
-    vm->id = 42; // TODO(sbarzowski) real ids
+    vm->id = id;
     return vm;
+}
+
+void jsonnet_internal_free(struct JsonnetVm *x) {
+    free(x);
 }
 
 inline static void not_supported() {
@@ -27,20 +28,12 @@ inline static void todo() {
     abort();
 }
 
-void jsonnet_max_stack(struct JsonnetVm *vm, unsigned v) {
-    todo();
-}
-
 void jsonnet_gc_min_objects(struct JsonnetVm *vm, unsigned v) {
-    not_supported();
+    // no-op
 }
 
 void jsonnet_gc_growth_trigger(struct JsonnetVm *vm, double v) {
-    not_supported();
-}
-
-void jsonnet_string_output(struct JsonnetVm *vm, int v) {
-    todo();
+    // no-op
 }
 
 static void memory_panic(void)
@@ -79,26 +72,6 @@ const char *jsonnet_version(void)
 
 void jsonnet_native_callback(struct JsonnetVm *vm, const char *name, JsonnetNativeCallback *cb,
     void *ctx, const char *const *params)
-{
-    todo();
-}
-
-void jsonnet_ext_var(JsonnetVm *vm, const char *key, const char *val)
-{
-    todo();
-}
-
-void jsonnet_ext_code(JsonnetVm *vm, const char *key, const char *val)
-{
-    todo();
-}
-
-void jsonnet_tla_var(JsonnetVm *vm, const char *key, const char *val)
-{
-    todo();
-}
-
-void jsonnet_tla_code(JsonnetVm *vm, const char *key, const char *val)
 {
     todo();
 }
@@ -148,16 +121,6 @@ void jsonnet_fmt_sort_imports(JsonnetVm *vm, int v)
     not_supported();
 }
 
-void jsonnet_max_trace(JsonnetVm *vm, unsigned v)
-{
-    todo();
-}
-
-void jsonnet_jpath_add(JsonnetVm *vm, const char *path_)
-{
-    todo();
-}
-
 char *jsonnet_fmt_file(JsonnetVm *vm, const char *filename, int *error)
 {
     not_supported();
@@ -170,12 +133,6 @@ char *jsonnet_fmt_snippet(JsonnetVm *vm, const char *filename, const char *snipp
     return nullptr;
 }
 
-char *jsonnet_evaluate_file(JsonnetVm *vm, const char *filename, int *error)
-{
-    todo();
-    return nullptr;
-}
-
 char *jsonnet_evaluate_file_multi(JsonnetVm *vm, const char *filename, int *error)
 {
     todo();
@@ -183,12 +140,6 @@ char *jsonnet_evaluate_file_multi(JsonnetVm *vm, const char *filename, int *erro
 }
 
 char *jsonnet_evaluate_file_stream(JsonnetVm *vm, const char *filename, int *error)
-{
-    todo();
-    return nullptr;
-}
-
-char *jsonnet_evaluate_snippet(JsonnetVm *vm, const char *filename, const char *snippet, int *error)
 {
     todo();
     return nullptr;
