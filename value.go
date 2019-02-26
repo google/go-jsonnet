@@ -73,73 +73,165 @@ func (v *valueBase) aValue() {}
 // Primitive values
 // -------------------------------------
 
-// valueString represents a string value, internally using a []rune for quick
+type valueString interface {
+	value
+	length() int
+	getRunes() []rune
+	getGoString() string
+	index(i *interpreter, trace traceElement, index int) (value, error)
+}
+
+// valueFlatString represents a string value, internally using a []rune for quick
 // indexing.
-type valueString struct {
+type valueFlatString struct {
 	valueBase
 	// We use rune slices instead of strings for quick indexing
 	value []rune
 }
 
-func (s *valueString) index(i *interpreter, trace traceElement, index int) (value, error) {
+func (s *valueFlatString) index(i *interpreter, trace traceElement, index int) (value, error) {
 	if 0 <= index && index < s.length() {
 		return makeValueString(string(s.value[index])), nil
 	}
 	return nil, i.Error(fmt.Sprintf("Index %d out of bounds, not within [0, %v)", index, s.length()), trace)
 }
 
-func concatStrings(a, b *valueString) *valueString {
-	result := make([]rune, 0, len(a.value)+len(b.value))
-	for _, r := range a.value {
-		result = append(result, r)
-	}
-	for _, r := range b.value {
-		result = append(result, r)
-	}
-	return &valueString{value: result}
+func (s *valueFlatString) getRunes() []rune {
+	return s.value
 }
 
-func stringLessThan(a, b *valueString) bool {
-	var length int
-	if len(a.value) < len(b.value) {
-		length = len(a.value)
-	} else {
-		length = len(b.value)
+func (s *valueFlatString) getGoString() string {
+	return string(s.value)
+}
+
+func (s *valueFlatString) length() int {
+	return len(s.value)
+}
+
+func (s *valueFlatString) getType() *valueType {
+	return stringType
+}
+
+// TODO(sbarzowski) this was chosen on a hunch, be more systematic about it
+const extendedStringMinLength = 30
+
+// Indirect representation of long strings.
+// It consists of two parts, left and right, concatenation of which is the whole string.
+type valueStringTree struct {
+	valueBase
+	left, right valueString
+	len         int
+}
+
+func buildFullString(s valueString, buf *[]rune) {
+	switch s := s.(type) {
+	case *valueFlatString:
+		*buf = append(*buf, s.value...)
+	case *valueStringTree:
+		buildFullString(s.left, buf)
+		buildFullString(s.right, buf)
 	}
-	for i := 0; i < length; i++ {
-		if a.value[i] != b.value[i] {
-			return a.value[i] < b.value[i]
+}
+
+func (s *valueStringTree) flattenToLeft() {
+	if s.right != nil {
+		result := make([]rune, 0, s.len)
+		buildFullString(s, &result)
+		s.left = makeStringFromRunes(result)
+		s.right = nil
+	}
+}
+
+func (s *valueStringTree) index(i *interpreter, trace traceElement, index int) (value, error) {
+	if 0 <= index && index < s.len {
+		s.flattenToLeft()
+		return s.left.index(i, trace, index)
+	}
+	return nil, i.Error(fmt.Sprintf("Index %d out of bounds, not within [0, %v)", index, s.length()), trace)
+}
+
+func (s *valueStringTree) getRunes() []rune {
+	s.flattenToLeft()
+	return s.left.getRunes()
+}
+
+func (s *valueStringTree) getGoString() string {
+	s.flattenToLeft()
+	return s.left.getGoString()
+}
+
+func (s *valueStringTree) length() int {
+	return s.len
+}
+
+func (s *valueStringTree) getType() *valueType {
+	return stringType
+}
+
+func emptyString() *valueFlatString {
+	return &valueFlatString{}
+}
+
+func makeStringFromRunes(runes []rune) *valueFlatString {
+	return &valueFlatString{value: runes}
+}
+
+func concatStrings(a, b valueString) valueString {
+	aLen := a.length()
+	bLen := b.length()
+	if aLen == 0 {
+		return b
+	} else if bLen == 0 {
+		return a
+	} else if aLen+bLen < extendedStringMinLength {
+		runesA := a.getRunes()
+		runesB := b.getRunes()
+		result := make([]rune, 0, aLen+bLen)
+		result = append(result, runesA...)
+		result = append(result, runesB...)
+		return makeStringFromRunes(result)
+	} else {
+		return &valueStringTree{
+			left:  a,
+			right: b,
+			len:   aLen + bLen,
 		}
 	}
-	return len(a.value) < len(b.value)
 }
 
-func stringEqual(a, b *valueString) bool {
-	if len(a.value) != len(b.value) {
+func stringLessThan(a, b valueString) bool {
+	runesA := a.getRunes()
+	runesB := b.getRunes()
+	var length int
+	if len(runesA) < len(runesB) {
+		length = len(runesA)
+	} else {
+		length = len(runesB)
+	}
+	for i := 0; i < length; i++ {
+		if runesA[i] != runesB[i] {
+			return runesA[i] < runesB[i]
+		}
+	}
+	return len(runesA) < len(runesB)
+}
+
+func stringEqual(a, b valueString) bool {
+	runesA := a.getRunes()
+	runesB := b.getRunes()
+	if len(runesA) != len(runesB) {
 		return false
 	}
-	for i := 0; i < len(a.value); i++ {
-		if a.value[i] != b.value[i] {
+	for i := 0; i < len(runesA); i++ {
+		if runesA[i] != runesB[i] {
 			return false
 		}
 	}
 	return true
 }
 
-func (s *valueString) length() int {
-	return len(s.value)
-}
-
-func (s *valueString) getString() string {
-	return string(s.value)
-}
-
-func makeValueString(v string) *valueString {
-	return &valueString{value: []rune(v)}
-}
-
-func (*valueString) getType() *valueType {
-	return stringType
+func makeValueString(v string) valueString {
+	return &valueFlatString{value: []rune(v)}
 }
 
 type valueBoolean struct {

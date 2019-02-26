@@ -33,12 +33,12 @@ import (
 func builtinPlus(i *interpreter, trace traceElement, x, y value) (value, error) {
 	// TODO(sbarzowski) perhaps a more elegant way to dispatch
 	switch right := y.(type) {
-	case *valueString:
+	case valueString:
 		left, err := builtinToString(i, trace, x)
 		if err != nil {
 			return nil, err
 		}
-		return concatStrings(left.(*valueString), right), nil
+		return concatStrings(left.(valueString), right), nil
 
 	}
 	switch left := x.(type) {
@@ -48,12 +48,12 @@ func builtinPlus(i *interpreter, trace traceElement, x, y value) (value, error) 
 			return nil, err
 		}
 		return makeDoubleCheck(i, trace, left.value+right.value)
-	case *valueString:
+	case valueString:
 		right, err := builtinToString(i, trace, y)
 		if err != nil {
 			return nil, err
 		}
-		return concatStrings(left, right.(*valueString)), nil
+		return concatStrings(left, right.(valueString)), nil
 	case *valueObject:
 		switch right := y.(type) {
 		case *valueObject:
@@ -135,7 +135,7 @@ func valueLess(i *interpreter, trace traceElement, x, yv value) (bool, error) {
 			return false, err
 		}
 		return left.value < right.value, nil
-	case *valueString:
+	case valueString:
 		right, err := i.getString(yv, trace)
 		if err != nil {
 			return false, err
@@ -178,7 +178,7 @@ func builtinLength(i *interpreter, trace traceElement, x value) (value, error) {
 		num = len(objectFields(x, withoutHidden))
 	case *valueArray:
 		num = len(x.elements)
-	case *valueString:
+	case valueString:
 		num = x.length()
 	case *valueFunction:
 		num = len(x.Parameters().required)
@@ -190,7 +190,7 @@ func builtinLength(i *interpreter, trace traceElement, x value) (value, error) {
 
 func builtinToString(i *interpreter, trace traceElement, x value) (value, error) {
 	switch x := x.(type) {
-	case *valueString:
+	case valueString:
 		return x, nil
 	}
 	var buf bytes.Buffer
@@ -209,7 +209,7 @@ func builtinTrace(i *interpreter, trace traceElement, x value, y value) (value, 
 	filename := trace.loc.FileName
 	line := trace.loc.Begin.Line
 	fmt.Fprintf(
-		os.Stderr, "TRACE: %s:%d %s\n", filename, line, xStr.getString())
+		os.Stderr, "TRACE: %s:%d %s\n", filename, line, xStr.getGoString())
 	return y, nil
 }
 
@@ -306,7 +306,7 @@ func joinArrays(i *interpreter, trace traceElement, sep *valueArray, arr *valueA
 	return makeValueArray(result), nil
 }
 
-func joinStrings(i *interpreter, trace traceElement, sep *valueString, arr *valueArray) (value, error) {
+func joinStrings(i *interpreter, trace traceElement, sep valueString, arr *valueArray) (value, error) {
 	result := make([]rune, 0, arr.length())
 	first := true
 	for _, elem := range arr.elements {
@@ -317,17 +317,17 @@ func joinStrings(i *interpreter, trace traceElement, sep *valueString, arr *valu
 		switch v := elemValue.(type) {
 		case *valueNull:
 			continue
-		case *valueString:
+		case valueString:
 			if !first {
-				result = append(result, sep.value...)
+				result = append(result, sep.getRunes()...)
 			}
-			result = append(result, v.value...)
+			result = append(result, v.getRunes()...)
 		default:
-			return nil, i.typeErrorSpecific(elemValue, &valueString{}, trace)
+			return nil, i.typeErrorSpecific(elemValue, emptyString(), trace)
 		}
 		first = false
 	}
-	return &valueString{value: result}, nil
+	return makeStringFromRunes(result), nil
 }
 
 func builtinJoin(i *interpreter, trace traceElement, sep, arrv value) (value, error) {
@@ -336,7 +336,7 @@ func builtinJoin(i *interpreter, trace traceElement, sep, arrv value) (value, er
 		return nil, err
 	}
 	switch sep := sep.(type) {
-	case *valueString:
+	case valueString:
 		return joinStrings(i, trace, sep, arr)
 	case *valueArray:
 		return joinArrays(i, trace, sep, arr)
@@ -524,7 +524,7 @@ func primitiveEquals(i *interpreter, trace traceElement, x, y value) (value, err
 			return nil, err
 		}
 		return makeValueBoolean(left.value == right.value), nil
-	case *valueString:
+	case valueString:
 		right, err := i.getString(y, trace)
 		if err != nil {
 			return nil, err
@@ -559,7 +559,7 @@ func rawEquals(i *interpreter, trace traceElement, x, y value) (bool, error) {
 			return false, err
 		}
 		return left.value == right.value, nil
-	case *valueString:
+	case valueString:
 		right, err := i.getString(y, trace)
 		if err != nil {
 			return false, err
@@ -660,7 +660,7 @@ func builtinMd5(i *interpreter, trace traceElement, x value) (value, error) {
 	if err != nil {
 		return nil, err
 	}
-	hash := md5.Sum([]byte(string(str.value)))
+	hash := md5.Sum([]byte(str.getGoString()))
 	return makeValueString(hex.EncodeToString(hash[:])), nil
 }
 
@@ -669,7 +669,7 @@ func builtinEncodeUTF8(i *interpreter, trace traceElement, x value) (value, erro
 	if err != nil {
 		return nil, err
 	}
-	s := str.getString()
+	s := str.getGoString()
 	elems := make([]*cachedThunk, 0, len(s)) // it will be longer if characters fall outside of ASCII
 	for _, c := range []byte(s) {
 		elems = append(elems, readyThunk(makeValueNumber(float64(c))))
@@ -721,7 +721,7 @@ func builtinCodepoint(i *interpreter, trace traceElement, x value) (value, error
 	if str.length() != 1 {
 		return nil, i.Error(fmt.Sprintf("codepoint takes a string of length 1, got length %v", str.length()), trace)
 	}
-	return makeValueNumber(float64(str.value[0])), nil
+	return makeValueNumber(float64(str.getRunes()[0])), nil
 }
 
 func makeDoubleCheck(i *interpreter, trace traceElement, x float64) (value, error) {
@@ -823,7 +823,7 @@ func builtinObjectHasEx(i *interpreter, trace traceElement, objv value, fnamev v
 		return nil, err
 	}
 	h := withHiddenFromBool(includeHidden.value)
-	hasField := objectHasField(objectBinding(obj), string(fname.value), h)
+	hasField := objectHasField(objectBinding(obj), string(fname.getRunes()), h)
 	return makeValueBoolean(hasField), nil
 }
 
@@ -855,8 +855,8 @@ func builtinSplitLimit(i *interpreter, trace traceElement, strv, cv, maxSplitsV 
 	if maxSplits < -1 {
 		return nil, i.Error(fmt.Sprintf("std.splitLimit third parameter should be -1 or non-negative, got %v", maxSplits), trace)
 	}
-	sStr := str.getString()
-	sC := c.getString()
+	sStr := str.getGoString()
+	sC := c.getGoString()
 	if len(sC) != 1 {
 		return nil, i.Error(fmt.Sprintf("std.splitLimit second parameter should have length 1, got %v", len(sC)), trace)
 	}
@@ -889,9 +889,9 @@ func builtinStrReplace(i *interpreter, trace traceElement, strv, fromv, tov valu
 	if err != nil {
 		return nil, err
 	}
-	sStr := str.getString()
-	sFrom := from.getString()
-	sTo := to.getString()
+	sStr := str.getGoString()
+	sFrom := from.getGoString()
+	sTo := to.getGoString()
 	if len(sFrom) == 0 {
 		return nil, i.Error("'from' string must not be zero length.", trace)
 	}
@@ -965,7 +965,7 @@ func builtinParseJSON(i *interpreter, trace traceElement, str value) (value, err
 	if err != nil {
 		return nil, err
 	}
-	s := sval.getString()
+	s := sval.getGoString()
 	var parsedJSON interface{}
 	err = json.Unmarshal([]byte(s), &parsedJSON)
 	if err != nil {
@@ -979,7 +979,7 @@ func builtinExtVar(i *interpreter, trace traceElement, name value) (value, error
 	if err != nil {
 		return nil, err
 	}
-	index := str.getString()
+	index := str.getGoString()
 	if pv, ok := i.extVars[index]; ok {
 		return i.evaluatePV(pv, trace)
 	}
@@ -991,7 +991,7 @@ func builtinNative(i *interpreter, trace traceElement, name value) (value, error
 	if err != nil {
 		return nil, err
 	}
-	index := str.getString()
+	index := str.getGoString()
 	if f, exists := i.nativeFuncs[index]; exists {
 		return &valueFunction{ec: f}, nil
 	}
