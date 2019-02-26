@@ -379,8 +379,8 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 			}
 			var fieldName string
 			switch fieldNameValue := fieldNameValue.(type) {
-			case *valueString:
-				fieldName = fieldNameValue.getString()
+			case valueString:
+				fieldName = fieldNameValue.getGoString()
 			case *valueNull:
 				// Omitted field.
 				continue
@@ -424,7 +424,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		if err != nil {
 			return nil, err
 		}
-		return nil, i.Error(msg.getString(), trace)
+		return nil, i.Error(msg.getGoString(), trace)
 
 	case *ast.Index:
 		targetValue, err := i.evaluate(node.Target, nonTailCall)
@@ -441,7 +441,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 			if err != nil {
 				return nil, err
 			}
-			return target.index(i, trace, indexString.getString())
+			return target.index(i, trace, indexString.getGoString())
 		case *valueArray:
 			indexInt, err := i.getNumber(index, trace)
 			if err != nil {
@@ -450,7 +450,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 			// TODO(https://github.com/google/jsonnet/issues/377): non-integer indexes should be an error
 			return target.index(i, trace, int(indexInt.value))
 
-		case *valueString:
+		case valueString:
 			indexInt, err := i.getNumber(index, trace)
 			if err != nil {
 				return nil, err
@@ -517,7 +517,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		if err != nil {
 			return nil, err
 		}
-		return objectIndex(i, trace, i.stack.getSelfBinding().super(), indexStr.getString())
+		return objectIndex(i, trace, i.stack.getSelfBinding().super(), indexStr.getGoString())
 
 	case *ast.InSuper:
 		index, err := i.evaluate(node.Index, nonTailCall)
@@ -528,7 +528,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		if err != nil {
 			return nil, err
 		}
-		hasField := objectHasField(i.stack.getSelfBinding().super(), indexStr.getString(), withHidden)
+		hasField := objectHasField(i.stack.getSelfBinding().super(), indexStr.getGoString(), withHidden)
 		return makeValueBoolean(hasField), nil
 
 	case *ast.Function:
@@ -636,8 +636,8 @@ func (i *interpreter) manifestJSON(trace traceElement, v value) (interface{}, er
 	case *valueNumber:
 		return v.value, nil
 
-	case *valueString:
-		return v.getString(), nil
+	case valueString:
+		return v.getGoString(), nil
 
 	case *valueNull:
 		return nil, nil
@@ -802,8 +802,8 @@ func (i *interpreter) manifestAndSerializeJSON(
 // manifestString expects the value to be a string and returns it.
 func (i *interpreter) manifestString(buf *bytes.Buffer, trace traceElement, v value) error {
 	switch v := v.(type) {
-	case *valueString:
-		buf.WriteString(v.getString())
+	case valueString:
+		buf.WriteString(v.getGoString())
 		return nil
 	default:
 		return makeRuntimeError(fmt.Sprintf("expected string result, got: %s", v.getType().name), i.getCurrentStackTrace(trace))
@@ -1010,16 +1010,16 @@ func (i *interpreter) evaluateInt64(pv potentialValue, trace traceElement) (int6
 	return i.getInt64(v, trace)
 }
 
-func (i *interpreter) getString(val value, trace traceElement) (*valueString, error) {
+func (i *interpreter) getString(val value, trace traceElement) (valueString, error) {
 	switch v := val.(type) {
-	case *valueString:
+	case valueString:
 		return v, nil
 	default:
-		return nil, i.typeErrorSpecific(val, &valueString{}, trace)
+		return nil, i.typeErrorSpecific(val, emptyString(), trace)
 	}
 }
 
-func (i *interpreter) evaluateString(pv potentialValue, trace traceElement) (*valueString, error) {
+func (i *interpreter) evaluateString(pv potentialValue, trace traceElement) (valueString, error) {
 	v, err := i.evaluatePV(pv, trace)
 	if err != nil {
 		return nil, err
