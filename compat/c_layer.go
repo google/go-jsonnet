@@ -28,6 +28,17 @@ type vm struct {
 var VMs = []*vm{}
 var freedIDs = []uint32{}
 
+var versionString *C.char
+
+//export jsonnet_version
+func jsonnet_version() *C.char {
+	if versionString == nil {
+		version := jsonnet.Version() + " (go-jsonnet)"
+		versionString = C.CString(version)
+	}
+	return versionString
+}
+
 //export jsonnet_make
 func jsonnet_make() *C.struct_JsonnetVm {
 	var id uint32

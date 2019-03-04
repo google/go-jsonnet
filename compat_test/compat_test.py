@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import unittest
 import ctypes
+import re
 
 
 lib = ctypes.CDLL('../compat/libgojsonnet.so')
@@ -63,6 +64,9 @@ lib.jsonnet_realloc.argtypes = [
 ]
 lib.jsonnet_realloc.restype = ctypes.POINTER(ctypes.c_char)
 
+lib.jsonnet_version.argtypes = []
+lib.jsonnet_version.restype = ctypes.POINTER(ctypes.c_char)
+
 
 def free_buffer(vm, buf):
     assert not lib.jsonnet_realloc(vm, buf, 0)
@@ -120,6 +124,11 @@ class TestJsonnetEvaluateBindings(unittest.TestCase):
         res = lib.jsonnet_evaluate_file(self.vm, b"jsonnet_import_test/foo.jsonnet", self.err_ref)
         self.assertEqual(b"42\n", to_bytes(res))
         free_buffer(self.vm, res)
+
+    def test_jsonnet_version(self):
+        res = lib.jsonnet_version()
+        match = re.match(r'^v[0-9]+[.][0-9]+[.][0-9]+ [(]go-jsonnet[)]$', to_bytes(res).decode('utf-8'))
+        self.assertIsNotNone(match)
 
     def tearDown(self):
         lib.jsonnet_destroy(self.vm)

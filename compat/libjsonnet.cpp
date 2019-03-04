@@ -65,11 +65,6 @@ char *jsonnet_realloc(JsonnetVm *vm, char *str, size_t sz)
     }
 }
 
-const char *jsonnet_version(void)
-{
-    return LIB_JSONNET_VERSION;
-}
-
 void jsonnet_native_callback(struct JsonnetVm *vm, const char *name, JsonnetNativeCallback *cb,
     void *ctx, const char *const *params)
 {
