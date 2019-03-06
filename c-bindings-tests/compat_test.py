@@ -4,7 +4,7 @@ import ctypes
 import re
 
 
-lib = ctypes.CDLL('../compat/libgojsonnet.so')
+lib = ctypes.CDLL('../c-bindings/libgojsonnet.so')
 
 lib.jsonnet_evaluate_snippet.argtypes = [
     ctypes.c_void_p,
