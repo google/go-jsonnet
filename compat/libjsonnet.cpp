@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 extern "C" {
-    #include "libjsonnet.h"
+    #include "../cpp-jsonnet/include/libjsonnet.h"
     #include "internal.h"
 }
 
@@ -14,13 +14,8 @@ struct JsonnetVm *jsonnet_internal_make_vm_with_id(uint32_t id) {
     return vm;
 }
 
-void jsonnet_internal_free(struct JsonnetVm *x) {
-    free(x);
-}
-
-inline static void not_supported() {
-    fputs("FATAL ERROR: Not supported by Go implementation.\n", stderr);
-    abort();
+void jsonnet_internal_free_vm(struct JsonnetVm *x) {
+    delete(x);
 }
 
 inline static void todo() {
@@ -69,63 +64,6 @@ void jsonnet_native_callback(struct JsonnetVm *vm, const char *name, JsonnetNati
     void *ctx, const char *const *params)
 {
     todo();
-}
-
-void jsonnet_fmt_debug_desugaring(JsonnetVm *vm, int v)
-{
-    not_supported();
-}
-
-void jsonnet_fmt_indent(JsonnetVm *vm, int v)
-{
-    not_supported();
-}
-
-void jsonnet_fmt_max_blank_lines(JsonnetVm *vm, int v)
-{
-    not_supported();
-}
-
-void jsonnet_fmt_string(JsonnetVm *vm, int v)
-{
-    not_supported();
-}
-
-void jsonnet_fmt_comment(JsonnetVm *vm, int v)
-{
-    not_supported();
-}
-
-void jsonnet_fmt_pad_arrays(JsonnetVm *vm, int v)
-{
-    not_supported();
-}
-
-void jsonnet_fmt_pad_objects(JsonnetVm *vm, int v)
-{
-    not_supported();
-}
-
-void jsonnet_fmt_pretty_field_names(JsonnetVm *vm, int v)
-{
-    not_supported();
-}
-
-void jsonnet_fmt_sort_imports(JsonnetVm *vm, int v)
-{
-    not_supported();
-}
-
-char *jsonnet_fmt_file(JsonnetVm *vm, const char *filename, int *error)
-{
-    not_supported();
-    return nullptr;
-}
-
-char *jsonnet_fmt_snippet(JsonnetVm *vm, const char *filename, const char *snippet, int *error)
-{
-    not_supported();
-    return nullptr;
 }
 
 char *jsonnet_evaluate_file_multi(JsonnetVm *vm, const char *filename, int *error)

@@ -65,7 +65,7 @@ func jsonnet_make() *C.struct_JsonnetVm {
 func jsonnet_destroy(vmRef *C.struct_JsonnetVm) {
 	VMs[vmRef.id-1] = nil
 	freedIDs = append(freedIDs, uint32(vmRef.id))
-	C.jsonnet_internal_free(vmRef)
+	C.jsonnet_internal_free_vm(vmRef)
 }
 
 func getVM(vmRef *C.struct_JsonnetVm) *vm {

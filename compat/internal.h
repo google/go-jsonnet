@@ -7,4 +7,4 @@ struct JsonnetVm {
 };
 
 struct JsonnetVm *jsonnet_internal_make_vm_with_id(uint32_t id);
-void jsonnet_internal_free(struct JsonnetVm *x);
+void jsonnet_internal_free_vm(struct JsonnetVm *x);
