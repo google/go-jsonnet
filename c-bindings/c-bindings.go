@@ -25,6 +25,7 @@ type vm struct {
 // The way it is implemented below is simple and has low overhead, but requires us to keep
 // a list of used IDs. This results in a permanent "leak". I don't expect it to ever
 // become a problem.
+// The VM IDs start with 1, so 0 is never a valid ID and the VM's index in the array is (ID - 1).
 var VMs = []*vm{}
 var freedIDs = []uint32{}
 
