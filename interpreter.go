@@ -283,7 +283,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 	case *ast.Binary:
 		if node.Op == ast.BopAnd {
 			// Special case for shortcut semantics.
-			xv, err := i.evaluate(node.Left, tc)
+			xv, err := i.evaluate(node.Left, nonTailCall)
 			if err != nil {
 				return nil, err
 			}
@@ -301,7 +301,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 			return i.getBoolean(yv, trace)
 		} else if node.Op == ast.BopOr {
 			// Special case for shortcut semantics.
-			xv, err := i.evaluate(node.Left, tc)
+			xv, err := i.evaluate(node.Left, nonTailCall)
 			if err != nil {
 				return nil, err
 			}
@@ -319,7 +319,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 			return i.getBoolean(yv, trace)
 
 		} else {
-			left, err := i.evaluate(node.Left, tc)
+			left, err := i.evaluate(node.Left, nonTailCall)
 			if err != nil {
 				return nil, err
 			}
