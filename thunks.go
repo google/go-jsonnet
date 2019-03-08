@@ -240,7 +240,7 @@ type NativeFunction struct {
 
 // evalCall evaluates a call to a NativeFunction and returns the result.
 func (native *NativeFunction) evalCall(arguments callArguments, i *interpreter, trace TraceElement) (value, error) {
-	flatArgs := flattenArgs(arguments, native.Parameters())
+	flatArgs := flattenArgs(arguments, native.Parameters(), []value{})
 	nativeArgs := make([]interface{}, 0, len(flatArgs))
 	for _, arg := range flatArgs {
 		v, err := i.evaluatePV(arg, trace)

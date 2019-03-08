@@ -1,0 +1,10 @@
+RUNTIME ERROR: foo
+-------------------------------------------------
+	testdata/std.sort4:1:15-26	thunk from <thunk from <thunk from <$>>>
+
+std.sort([1, [error "foo"]])
+
+-------------------------------------------------
+	During manifestation	
+
+
