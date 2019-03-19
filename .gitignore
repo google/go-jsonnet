@@ -5,6 +5,5 @@ coverage.out
 /linter/jsonnet-lint/jsonnet-lint
 /jsonnet
 /dumpstdlibast
-/
 *.so
 *.prof
