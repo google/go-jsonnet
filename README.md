@@ -16,6 +16,12 @@ feedback.
 
 This code is known to work on Go 1.8 and above. We recommend always using the newest stable release of Go.
 
+## Install instructions
+
+```
+go get github.com/google/go-jsonnet/cmd/jsonnet
+```
+
 ## Build instructions
 
 ```bash
