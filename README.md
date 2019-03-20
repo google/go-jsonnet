@@ -22,11 +22,20 @@ This code is known to work on Go 1.8 and above. We recommend always using the ne
 go get github.com/google/go-jsonnet/cmd/jsonnet
 ```
 
-## Build instructions
+## Build instructions (go 1.11+)
 
 ```bash
 git clone github.com/google/go-jsonnet
 cd go-jsonnet
+go build ./cmd/jsonnet
+```
+
+## Build instructions (go 1.8 - 1.10)
+
+```bash
+go get -u github.com/google/go-jsonnet
+cd $GOPATH/src/github.com/google/go-jsonnet
+go get -u .
 go build ./cmd/jsonnet
 ```
 
