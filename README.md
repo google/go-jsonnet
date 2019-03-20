@@ -63,5 +63,5 @@ go generate
 To regenerate the standard library, do:
 
 ```bash
-./reset_stdast_go.sh && go run cmd/dumpstdlibast.go
+./reset_stdast_go.sh && go run cmd/dumpstdlibast/dumpstdlibast.go
 ```
