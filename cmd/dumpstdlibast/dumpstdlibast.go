@@ -30,7 +30,7 @@ func main() {
 	}
 	defer file.Close()
 
-	buf, err := ioutil.ReadFile("std/std.jsonnet")
+	buf, err := ioutil.ReadFile("cpp-jsonnet/stdlib/std.jsonnet")
 	if err != nil {
 		panic(err)
 	}

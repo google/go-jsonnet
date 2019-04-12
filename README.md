@@ -58,10 +58,17 @@ export PATH=$PATH:$GOPATH/bin  # If you haven't already
 go generate
 ```
 
-## Generated Stdlib
+## Updating and modifying the standard library
 
-To regenerate the standard library, do:
+Standard library source code is kept in `cpp-jsonnet` submodule,
+because it is shared with [Jsonnet C++
+implementation](https://github.com/google/jsonnet).
+
+For perfomance reasons we perform preprocessing on the standard library,
+so for the changes to be visible, regeneration is necessary:
 
 ```bash
 ./reset_stdast_go.sh && go run cmd/dumpstdlibast/dumpstdlibast.go
 ```
+
+The above command recreates `ast/stdast.go` which puts the desugared standard library into the right data structures, which lets us avoid the parsing overhead during execution.
