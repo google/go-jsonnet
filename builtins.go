@@ -750,6 +750,43 @@ func builtinPow(i *interpreter, trace TraceElement, basev value, expv value) (va
 	return makeDoubleCheck(i, trace, math.Pow(base.value, exp.value))
 }
 
+func builtinSplitLimit(i *interpreter, trace TraceElement, strv, cv, maxSplitsV value) (value, error) {
+	str, err := i.getString(strv, trace)
+	if err != nil {
+		return nil, err
+	}
+	c, err := i.getString(cv, trace)
+	if err != nil {
+		return nil, err
+	}
+	maxSplits, err := i.getInt(maxSplitsV, trace)
+	if err != nil {
+		return nil, err
+	}
+	if maxSplits < -1 {
+		return nil, i.Error(fmt.Sprintf("std.splitLimit third parameter should be -1 or non-negative, got %v", maxSplits), trace)
+	}
+	sStr := str.getString()
+	sC := c.getString()
+	if len(sC) != 1 {
+		return nil, i.Error(fmt.Sprintf("std.splitLimit second parameter should have length 1, got %v", len(sC)), trace)
+	}
+
+	// the convention is slightly different from strings.splitN in Go (the meaning of non-negative values is shifted by one)
+	var strs []string
+	if maxSplits == -1 {
+		strs = strings.SplitN(sStr, sC, -1)
+	} else {
+		strs = strings.SplitN(sStr, sC, maxSplits + 1)
+	}
+	res := make([]*cachedThunk, len(strs))
+	for i := range strs {
+		res[i] = readyThunk(makeValueString(strs[i]))
+	}
+
+	return makeValueArray(res), nil
+}
+
 func builtinStrReplace(i *interpreter, trace TraceElement, strv, fromv, tov value) (value, error) {
 	str, err := i.getString(strv, trace)
 	if err != nil {
@@ -1046,6 +1083,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&binaryBuiltin{name: "pow", function: builtinPow, parameters: ast.Identifiers{"base", "exp"}},
 	&binaryBuiltin{name: "modulo", function: builtinModulo, parameters: ast.Identifiers{"x", "y"}},
 	&unaryBuiltin{name: "md5", function: builtinMd5, parameters: ast.Identifiers{"x"}},
+	&ternaryBuiltin{name: "splitLimit", function: builtinSplitLimit, parameters: ast.Identifiers{"str", "c", "maxsplits"}},
 	&ternaryBuiltin{name: "strReplace", function: builtinStrReplace, parameters: ast.Identifiers{"str", "from", "to"}},
 	&unaryBuiltin{name: "parseJson", function: builtinParseJSON, parameters: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "encodeUTF8", function: builtinEncodeUTF8, parameters: ast.Identifiers{"str"}},
