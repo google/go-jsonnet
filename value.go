@@ -459,7 +459,6 @@ func (obj *valueObjectBase) getAssertionsCheckResult() error {
 type objectLocal struct {
 	name ast.Identifier
 	// Locals may depend on self and super so they are unbound fields and not simply thunks
-	// uf unboundField
 	node ast.Node
 }
 
