@@ -1,0 +1,1 @@
+local a = 42; { local x = a, field: x }

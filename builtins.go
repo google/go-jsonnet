@@ -810,6 +810,9 @@ func builtinStrReplace(i *interpreter, trace TraceElement, strv, fromv, tov valu
 }
 
 func builtinUglyObjectFlatMerge(i *interpreter, trace TraceElement, x value) (value, error) {
+	// TODO(sbarzowski) consider keeping comprehensions in AST
+	// It will probably be way less hacky, with better error messages and better performance
+
 	objarr, err := i.getArray(x, trace)
 	if err != nil {
 		return nil, err
@@ -818,6 +821,8 @@ func builtinUglyObjectFlatMerge(i *interpreter, trace TraceElement, x value) (va
 		return &valueSimpleObject{}, nil
 	}
 	newFields := make(simpleObjectFieldMap)
+	var locals []objectLocal
+	var upValues bindingFrame
 	for _, elem := range objarr.elements {
 		obj, err := i.evaluateObject(elem, trace)
 		if err != nil {
@@ -825,10 +830,22 @@ func builtinUglyObjectFlatMerge(i *interpreter, trace TraceElement, x value) (va
 		}
 		// starts getting ugly - we mess with object internals
 		simpleObj := obj.(*valueSimpleObject)
+		// there is only one field, really
 		for fieldName, fieldVal := range simpleObj.fields {
 			if _, alreadyExists := newFields[fieldName]; alreadyExists {
 				return nil, i.Error(duplicateFieldNameErrMsg(fieldName), trace)
 			}
+
+			// Here is the tricky part. Each field in a comprehension has different
+			// upValues, because for example in {[v]: v for v in ["x", "y", "z"] },
+			// the v is different for each field.
+			// Yet, even though upValues are field-specific, they are shadowed by object locals,
+			// so we need to make holes to let them pass through
+			upValues := simpleObj.upValues
+			for _, l := range simpleObj.locals {
+				delete(upValues, l.name)
+			}
+
 			newFields[fieldName] = simpleObjectField{
 				hide: fieldVal.hide,
 				field: &bindingsUnboundField{
@@ -836,12 +853,17 @@ func builtinUglyObjectFlatMerge(i *interpreter, trace TraceElement, x value) (va
 					bindings: simpleObj.upValues,
 				},
 			}
+			// another ugliness - we just take the locals of our last object,
+			// we assume that the locals are the same for each of merged objects
+			locals = simpleObj.locals
 		}
 	}
+
 	return makeValueSimpleObject(
-		nil, // no binding frame
+		upValues,
 		newFields,
 		[]unboundField{}, // No asserts allowed
+		locals,
 	), nil
 }
 
