@@ -777,7 +777,7 @@ func builtinSplitLimit(i *interpreter, trace TraceElement, strv, cv, maxSplitsV 
 	if maxSplits == -1 {
 		strs = strings.SplitN(sStr, sC, -1)
 	} else {
-		strs = strings.SplitN(sStr, sC, maxSplits + 1)
+		strs = strings.SplitN(sStr, sC, maxSplits+1)
 	}
 	res := make([]*cachedThunk, len(strs))
 	for i := range strs {
@@ -821,8 +821,7 @@ func builtinUglyObjectFlatMerge(i *interpreter, trace TraceElement, x value) (va
 		return &valueSimpleObject{}, nil
 	}
 	newFields := make(simpleObjectFieldMap)
-	var locals []objectLocal
-	var upValues bindingFrame
+	var anyObj *valueSimpleObject
 	for _, elem := range objarr.elements {
 		obj, err := i.evaluateObject(elem, trace)
 		if err != nil {
@@ -853,14 +852,22 @@ func builtinUglyObjectFlatMerge(i *interpreter, trace TraceElement, x value) (va
 					bindings: simpleObj.upValues,
 				},
 			}
-			// another ugliness - we just take the locals of our last object,
-			// we assume that the locals are the same for each of merged objects
-			locals = simpleObj.locals
 		}
+		anyObj = simpleObj
+	}
+
+	var locals []objectLocal
+	var localUpValues bindingFrame
+	if len(objarr.elements) > 0 {
+		// another ugliness - we just take the locals of our last object,
+		// we assume that the locals are the same for each of merged objects
+		locals = anyObj.locals
+		// note that there are already holes for object locals
+		localUpValues = anyObj.upValues
 	}
 
 	return makeValueSimpleObject(
-		upValues,
+		localUpValues,
 		newFields,
 		[]unboundField{}, // No asserts allowed
 		locals,
