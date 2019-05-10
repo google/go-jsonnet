@@ -648,7 +648,7 @@ func objectIndex(i *interpreter, trace TraceElement, sb selfBinding, fieldName s
 	}
 
 	fieldSelfBinding := selfBinding{self: sb.self, superDepth: foundAt}
-	fieldUpValues := prepareFieldUpvalues(sb, upValues, locals)
+	fieldUpValues := prepareFieldUpvalues(fieldSelfBinding, upValues, locals)
 
 	return field.field.evaluate(i, trace, fieldSelfBinding, fieldUpValues, fieldName)
 }
