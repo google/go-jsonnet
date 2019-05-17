@@ -72,18 +72,12 @@ func version(o io.Writer) {
 func usage(o io.Writer) {
 	version(o)
 	fmt.Fprintln(o)
-	fmt.Fprintln(o, "General commandline:")
-	fmt.Fprintln(o, "jsonnet [<cmd>] {<option>} { <filename> }")
-	fmt.Fprintln(o, "Note: <cmd> defaults to \"eval\"")
+	fmt.Fprintln(o, "jsonnet {<option>} <filename>")
 	fmt.Fprintln(o)
-	fmt.Fprintln(o, "The eval command:")
-	fmt.Fprintln(o, "jsonnet eval {<option>} <filename>")
-	fmt.Fprintln(o, "Note: Only one filename is supported")
-	fmt.Fprintln(o)
-	fmt.Fprintln(o, "Available eval options:")
+	fmt.Fprintln(o, "Available options:")
 	fmt.Fprintln(o, "  -h / --help             This message")
 	fmt.Fprintln(o, "  -e / --exec             Treat filename as code")
-	fmt.Fprintln(o, "  -J / --jpath <dir>      Specify an additional library search dir")
+	fmt.Fprintln(o, "  -J / --jpath <dir>      Specify an additional library search dir (right-most wins)")
 	fmt.Fprintln(o, "  -o / --output-file <file> Write to the output file rather than stdout")
 	fmt.Fprintln(o, "  -m / --multi <dir>      Write multiple files to the directory, list files on stdout")
 	fmt.Fprintln(o, "  -c / --create-output-dirs  Automatically creates all parent directories for files")
@@ -106,9 +100,12 @@ func usage(o io.Writer) {
 	fmt.Fprintln(o, "Provide a value as Jsonnet code:")
 	fmt.Fprintln(o, "  --tla-code <var>[=<code>]    If <code> is omitted, get from environment var <var>")
 	fmt.Fprintln(o, "  --tla-code-file <var>=<file> Read the code from the file")
-	fmt.Fprintln(o)
-	fmt.Fprintln(o, "The fmt command:")
-	fmt.Fprintln(o, "jsonnet fmt is currently not available in the Go implementation")
+	fmt.Fprintln(o, "Environment variables:")
+	fmt.Fprintln(o, "JSONNET_PATH is a colon (semicolon on Windows) separated list of directories added")
+	fmt.Fprintln(o, "in reverse order before the paths specified by --jpath (i.e. left-most wins)")
+	fmt.Fprintln(o, "E.g. JSONNET_PATH=a:b jsonnet -J c -J d is equivalent to:")
+	fmt.Fprintln(o, "JSONNET_PATH=d:c:a:b jsonnet")
+	fmt.Fprintln(o, "jsonnet -J b -J a -J c -J d")
 	fmt.Fprintln(o)
 	fmt.Fprintln(o, "In all cases:")
 	fmt.Fprintln(o, "<filename> can be - (stdin)")
@@ -129,31 +126,20 @@ func safeStrToInt(str string) (i int) {
 
 type command int
 
-const (
-	commandEval = iota
-	commandFmt  = iota
-)
-
 type config struct {
-	cmd            command
 	inputFiles     []string
 	outputFile     string
 	filenameIsCode bool
 
-	// commandEval flags
 	evalMulti            bool
 	evalStream           bool
 	evalMultiOutputDir   string
 	evalCreateOutputDirs bool
 	evalJpath            []string
-
-	// commandFmt flags
-	// commandFmt is currently unsupported.
 }
 
 func makeConfig() config {
 	return config{
-		cmd:            commandEval,
 		filenameIsCode: false,
 		evalMulti:      false,
 		evalStream:     false,
@@ -197,13 +183,6 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 	args := simplifyArgs(givenArgs)
 	remainingArgs := make([]string, 0, 0)
 	i := 0
-	if len(args) > 0 && args[i] == "fmt" {
-		config.cmd = commandFmt
-		i++
-	} else if len(args) > 0 && args[i] == "eval" {
-		config.cmd = commandEval
-		i++
-	}
 
 	handleVarVal := func(handle func(key string, val string)) error {
 		next := nextArg(&i, args)
@@ -247,83 +226,79 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 				remainingArgs = append(remainingArgs, args[i])
 			}
 			break
-		} else if config.cmd == commandEval {
-			if arg == "-s" || arg == "--max-stack" {
-				l := safeStrToInt(nextArg(&i, args))
-				if l < 1 {
-					return processArgsStatusFailure, fmt.Errorf("invalid --max-stack value: %d", l)
-				}
-				vm.MaxStack = l
-			} else if arg == "-J" || arg == "--jpath" {
-				dir := nextArg(&i, args)
-				if len(dir) == 0 {
-					return processArgsStatusFailure, fmt.Errorf("-J argument was empty string")
-				}
-				if dir[len(dir)-1] != '/' {
-					dir += "/"
-				}
-				config.evalJpath = append(config.evalJpath, dir)
-			} else if arg == "-V" || arg == "--ext-str" {
-				if err := handleVarVal(vm.ExtVar); err != nil {
-					return processArgsStatusFailure, err
-				}
-			} else if arg == "--ext-str-file" {
-				if err := handleVarFile(vm.ExtCode, "importstr"); err != nil {
-					return processArgsStatusFailure, err
-				}
-			} else if arg == "--ext-code" {
-				if err := handleVarVal(vm.ExtCode); err != nil {
-					return processArgsStatusFailure, err
-				}
-			} else if arg == "--ext-code-file" {
-				if err := handleVarFile(vm.ExtCode, "import"); err != nil {
-					return processArgsStatusFailure, err
-				}
-			} else if arg == "-A" || arg == "--tla-str" {
-				if err := handleVarVal(vm.TLAVar); err != nil {
-					return processArgsStatusFailure, err
-				}
-			} else if arg == "--tla-str-file" {
-				if err := handleVarFile(vm.TLACode, "importstr"); err != nil {
-					return processArgsStatusFailure, err
-				}
-			} else if arg == "--tla-code" {
-				if err := handleVarVal(vm.TLACode); err != nil {
-					return processArgsStatusFailure, err
-				}
-			} else if arg == "--tla-code-file" {
-				if err := handleVarFile(vm.TLACode, "import"); err != nil {
-					return processArgsStatusFailure, err
-				}
-			} else if arg == "-t" || arg == "--max-trace" {
-				l := safeStrToInt(nextArg(&i, args))
-				if l < 0 {
-					return processArgsStatusFailure, fmt.Errorf("invalid --max-trace value: %d", l)
-				}
-				vm.ErrorFormatter.SetMaxStackTraceSize(l)
-			} else if arg == "-m" || arg == "--multi" {
-				config.evalMulti = true
-				outputDir := nextArg(&i, args)
-				if len(outputDir) == 0 {
-					return processArgsStatusFailure, fmt.Errorf("-m argument was empty string")
-				}
-				if outputDir[len(outputDir)-1] != '/' {
-					outputDir += "/"
-				}
-				config.evalMultiOutputDir = outputDir
-			} else if arg == "-c" || arg == "--create-output-dirs" {
-				config.evalCreateOutputDirs = true
-			} else if arg == "-y" || arg == "--yaml-stream" {
-				config.evalStream = true
-			} else if arg == "-S" || arg == "--string" {
-				vm.StringOutput = true
-			} else if len(arg) > 1 && arg[0] == '-' {
-				return processArgsStatusFailure, fmt.Errorf("unrecognized argument: %s", arg)
-			} else {
-				remainingArgs = append(remainingArgs, arg)
+		} else if arg == "-s" || arg == "--max-stack" {
+			l := safeStrToInt(nextArg(&i, args))
+			if l < 1 {
+				return processArgsStatusFailure, fmt.Errorf("invalid --max-stack value: %d", l)
 			}
+			vm.MaxStack = l
+		} else if arg == "-J" || arg == "--jpath" {
+			dir := nextArg(&i, args)
+			if len(dir) == 0 {
+				return processArgsStatusFailure, fmt.Errorf("-J argument was empty string")
+			}
+			if dir[len(dir)-1] != '/' {
+				dir += "/"
+			}
+			config.evalJpath = append(config.evalJpath, dir)
+		} else if arg == "-V" || arg == "--ext-str" {
+			if err := handleVarVal(vm.ExtVar); err != nil {
+				return processArgsStatusFailure, err
+			}
+		} else if arg == "--ext-str-file" {
+			if err := handleVarFile(vm.ExtCode, "importstr"); err != nil {
+				return processArgsStatusFailure, err
+			}
+		} else if arg == "--ext-code" {
+			if err := handleVarVal(vm.ExtCode); err != nil {
+				return processArgsStatusFailure, err
+			}
+		} else if arg == "--ext-code-file" {
+			if err := handleVarFile(vm.ExtCode, "import"); err != nil {
+				return processArgsStatusFailure, err
+			}
+		} else if arg == "-A" || arg == "--tla-str" {
+			if err := handleVarVal(vm.TLAVar); err != nil {
+				return processArgsStatusFailure, err
+			}
+		} else if arg == "--tla-str-file" {
+			if err := handleVarFile(vm.TLACode, "importstr"); err != nil {
+				return processArgsStatusFailure, err
+			}
+		} else if arg == "--tla-code" {
+			if err := handleVarVal(vm.TLACode); err != nil {
+				return processArgsStatusFailure, err
+			}
+		} else if arg == "--tla-code-file" {
+			if err := handleVarFile(vm.TLACode, "import"); err != nil {
+				return processArgsStatusFailure, err
+			}
+		} else if arg == "-t" || arg == "--max-trace" {
+			l := safeStrToInt(nextArg(&i, args))
+			if l < 0 {
+				return processArgsStatusFailure, fmt.Errorf("invalid --max-trace value: %d", l)
+			}
+			vm.ErrorFormatter.SetMaxStackTraceSize(l)
+		} else if arg == "-m" || arg == "--multi" {
+			config.evalMulti = true
+			outputDir := nextArg(&i, args)
+			if len(outputDir) == 0 {
+				return processArgsStatusFailure, fmt.Errorf("-m argument was empty string")
+			}
+			if outputDir[len(outputDir)-1] != '/' {
+				outputDir += "/"
+			}
+			config.evalMultiOutputDir = outputDir
+		} else if arg == "-c" || arg == "--create-output-dirs" {
+			config.evalCreateOutputDirs = true
+		} else if arg == "-y" || arg == "--yaml-stream" {
+			config.evalStream = true
+		} else if arg == "-S" || arg == "--string" {
+			vm.StringOutput = true
+		} else if len(arg) > 1 && arg[0] == '-' {
+			return processArgsStatusFailure, fmt.Errorf("unrecognized argument: %s", arg)
 		} else {
-			return processArgsStatusFailure, fmt.Errorf("the Go implementation currently does not support jsonnet fmt")
+			remainingArgs = append(remainingArgs, arg)
 		}
 	}
 
@@ -543,86 +518,76 @@ func main() {
 		JPaths: config.evalJpath,
 	})
 
-	if config.cmd == commandEval {
-		if len(config.inputFiles) != 1 {
-			// Should already have been caught by processArgs.
-			panic(fmt.Sprintf("Internal error: expected a single input file."))
+	if len(config.inputFiles) != 1 {
+		// Should already have been caught by processArgs.
+		panic(fmt.Sprintf("Internal error: expected a single input file."))
+	}
+	filename := config.inputFiles[0]
+	input, err := readInput(config, &filename)
+	if err != nil {
+		var op string
+		switch typedErr := err.(type) {
+		case *os.PathError:
+			op = typedErr.Op
+			err = typedErr.Err
 		}
-		filename := config.inputFiles[0]
-		input, err := readInput(config, &filename)
-		if err != nil {
-			var op string
-			switch typedErr := err.(type) {
-			case *os.PathError:
-				op = typedErr.Op
-				err = typedErr.Err
-			}
-			if op == "open" {
-				fmt.Fprintf(os.Stderr, "Opening input file: %s: %s\n", filename, err.Error())
-			} else if op == "read" {
-				fmt.Fprintf(os.Stderr, "Reading input file: %s: %s\n", filename, err.Error())
-			} else {
-				fmt.Fprintf(os.Stderr, err.Error())
-			}
-			os.Exit(1)
-		}
-		var output string
-		var outputArray []string
-		var outputDict map[string]string
-		if config.evalMulti {
-			outputDict, err = vm.EvaluateSnippetMulti(filename, input)
-		} else if config.evalStream {
-			outputArray, err = vm.EvaluateSnippetStream(filename, input)
+		if op == "open" {
+			fmt.Fprintf(os.Stderr, "Opening input file: %s: %s\n", filename, err.Error())
+		} else if op == "read" {
+			fmt.Fprintf(os.Stderr, "Reading input file: %s: %s\n", filename, err.Error())
 		} else {
-			output, err = vm.EvaluateSnippet(filename, input)
+			fmt.Fprintf(os.Stderr, err.Error())
 		}
+		os.Exit(1)
+	}
+	var output string
+	var outputArray []string
+	var outputDict map[string]string
+	if config.evalMulti {
+		outputDict, err = vm.EvaluateSnippetMulti(filename, input)
+	} else if config.evalStream {
+		outputArray, err = vm.EvaluateSnippetStream(filename, input)
+	} else {
+		output, err = vm.EvaluateSnippet(filename, input)
+	}
 
-		var memprofile = os.Getenv("JSONNET_MEM_PROFILE")
-		if memprofile != "" {
-			f, err := os.Create(memprofile)
-			if err != nil {
-				log.Fatal("could not create memory profile: ", err)
-			}
-			runtime.GC() // get up-to-date statistics
-			if err := pprof.WriteHeapProfile(f); err != nil {
-				log.Fatal("could not write memory profile: ", err)
-			}
-			f.Close()
+	var memprofile = os.Getenv("JSONNET_MEM_PROFILE")
+	if memprofile != "" {
+		f, err := os.Create(memprofile)
+		if err != nil {
+			log.Fatal("could not create memory profile: ", err)
 		}
+		runtime.GC() // get up-to-date statistics
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			log.Fatal("could not write memory profile: ", err)
+		}
+		f.Close()
+	}
 
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+
+	// Write output JSON.
+	if config.evalMulti {
+		err := writeMultiOutputFiles(outputDict, config.evalMultiOutputDir, config.outputFile, config.evalCreateOutputDirs)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			os.Exit(1)
 		}
-
-		// Write output JSON.
-		if config.evalMulti {
-			err := writeMultiOutputFiles(outputDict, config.evalMultiOutputDir, config.outputFile, config.evalCreateOutputDirs)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err.Error())
-				os.Exit(1)
-			}
-		} else if config.evalStream {
-			err := writeOutputStream(outputArray, config.outputFile)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err.Error())
-				os.Exit(1)
-			}
-		} else {
-			err := writeOutputFile(output, config.outputFile, config.evalCreateOutputDirs)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err.Error())
-				os.Exit(1)
-			}
+	} else if config.evalStream {
+		err := writeOutputStream(outputArray, config.outputFile)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			os.Exit(1)
 		}
-
-	} else if config.cmd == commandFmt {
-		// Should already have been caught by processArgs.
-		panic(fmt.Sprintf("Internal error: No jsonnet fmt."))
-
 	} else {
-		panic(fmt.Sprintf("Internal error (please report this): Bad cmd value: %d\n", config.cmd))
-
+		err := writeOutputFile(output, config.outputFile, config.evalCreateOutputDirs)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			os.Exit(1)
+		}
 	}
 
 }
