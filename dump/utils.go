@@ -28,9 +28,9 @@ func printBool(w io.Writer, value bool) {
 	w.Write([]byte(strconv.FormatBool(value)))
 }
 
-func printInt(w io.Writer, val reflect.Value) {
+func printInt(w io.Writer, val reflect.Value, stripPackageName bool) {
 	typeName := fmt.Sprintf("%s", val.Type())
-	if strings.HasPrefix(typeName, "ast.") {
+	if stripPackageName && strings.HasPrefix(typeName, "ast.") {
 		typeName = typeName[4:]
 	}
 	w.Write([]byte(fmt.Sprintf("%s(%s)", typeName, strconv.FormatInt(val.Int(), 10))))

@@ -212,15 +212,15 @@ func (s *dumpState) printPrimitivePointer(value reflect.Value, pointerName strin
 		printBool(s.w, v.Bool())
 
 	case reflect.Int:
-		printInt(s.w, v)
+		printInt(s.w, v, s.config.StripPackageNames)
 	case reflect.Int8:
-		printInt(s.w, v)
+		printInt(s.w, v, s.config.StripPackageNames)
 	case reflect.Int16:
-		printInt(s.w, v)
+		printInt(s.w, v, s.config.StripPackageNames)
 	case reflect.Int32:
-		printInt(s.w, v)
+		printInt(s.w, v, s.config.StripPackageNames)
 	case reflect.Int64:
-		printInt(s.w, v)
+		printInt(s.w, v, s.config.StripPackageNames)
 
 	case reflect.Uint:
 		printUint(s.w, v)
@@ -365,15 +365,15 @@ func (s *dumpState) dumpVal(value reflect.Value) {
 		printBool(s.w, v.Bool())
 
 	case reflect.Int:
-		printInt(s.w, v)
+		printInt(s.w, v, s.config.StripPackageNames)
 	case reflect.Int8:
-		printInt(s.w, v)
+		printInt(s.w, v, s.config.StripPackageNames)
 	case reflect.Int16:
-		printInt(s.w, v)
+		printInt(s.w, v, s.config.StripPackageNames)
 	case reflect.Int32:
-		printInt(s.w, v)
+		printInt(s.w, v, s.config.StripPackageNames)
 	case reflect.Int64:
-		printInt(s.w, v)
+		printInt(s.w, v, s.config.StripPackageNames)
 
 	case reflect.Uint:
 		printUint(s.w, v)
