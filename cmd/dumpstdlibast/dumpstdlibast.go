@@ -22,14 +22,6 @@ import (
 )
 
 func main() {
-	filename := "ast/stdast.go"
-
-	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
 	buf, err := ioutil.ReadFile("cpp-jsonnet/stdlib/std.jsonnet")
 	if err != nil {
 		panic(err)
@@ -41,14 +33,13 @@ func main() {
 	}
 
 	dump.Config.HidePrivateFields = false
-	dump.Config.StripPackageNames = true
 	dump.Config.VariableName = "StdAst"
 	dump.Config.VariableDescription = "StdAst is the AST for the standard library."
 	ast := dump.Sdump(node)
 
-	file.WriteString(header)
-	file.WriteString(ast)
-	file.Close()
+	dst := os.Stdout
+	dst.WriteString(header)
+	dst.WriteString(ast)
 }
 
 var header = `
@@ -59,6 +50,13 @@ var header = `
 // --------------- DO NOT EDIT BY HAND! ---------------  //
 ///////////////////////////////////////////////////////////
 
-package ast
+package astgen
 
+import (
+	"github.com/google/go-jsonnet/ast"
+)
+
+func init() {
+	ast.StdAst = StdAst
+}
 `[1:]
