@@ -52,51 +52,51 @@ type Nodes []Node
 
 // NodeBase holds fields common to all node types.
 type NodeBase struct {
-	loc           LocationRange
-	context       Context
-	freeVariables Identifiers
+	LocRange LocationRange
+	Ctx      Context
+	FreeVars Identifiers
 }
 
 // NewNodeBase creates a new NodeBase from initial LocationRange and
 // Identifiers.
 func NewNodeBase(loc LocationRange, freeVariables Identifiers) NodeBase {
 	return NodeBase{
-		loc:           loc,
-		freeVariables: freeVariables,
+		LocRange: loc,
+		FreeVars: freeVariables,
 	}
 }
 
 // NewNodeBaseLoc creates a new NodeBase from an initial LocationRange.
 func NewNodeBaseLoc(loc LocationRange) NodeBase {
 	return NodeBase{
-		loc:           loc,
-		freeVariables: []Identifier{},
+		LocRange: loc,
+		FreeVars: []Identifier{},
 	}
 }
 
 // Loc returns a NodeBase's loc.
 func (n *NodeBase) Loc() *LocationRange {
-	return &n.loc
+	return &n.LocRange
 }
 
 // FreeVariables returns a NodeBase's freeVariables.
 func (n *NodeBase) FreeVariables() Identifiers {
-	return n.freeVariables
+	return n.FreeVars
 }
 
 // SetFreeVariables sets a NodeBase's freeVariables.
 func (n *NodeBase) SetFreeVariables(idents Identifiers) {
-	n.freeVariables = idents
+	n.FreeVars = idents
 }
 
 // Context returns a NodeBase's context.
 func (n *NodeBase) Context() Context {
-	return n.context
+	return n.Ctx
 }
 
 // SetContext sets a NodeBase's context.
 func (n *NodeBase) SetContext(context Context) {
-	n.context = context
+	n.Ctx = context
 }
 
 // ---------------------------------------------------------------------------

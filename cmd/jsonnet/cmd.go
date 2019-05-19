@@ -31,6 +31,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/google/go-jsonnet"
+	_ "github.com/google/go-jsonnet/astgen"
 )
 
 func nextArg(i *int, args []string) string {
