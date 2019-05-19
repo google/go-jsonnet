@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "c-bindings.go",
+        "internal.h",
+        "json.cpp",
+        "json.h",
+        "libjsonnet.cpp",
+    ],
+    cgo = True,
+    copts = ["-std=c++11 -Wall"],
+    importpath = "github.com/google/go-jsonnet/c-bindings",
+    visibility = ["//visibility:private"],
+    deps = ["//:go_default_library"],
+)
+
+go_binary(
+    name = "c-bindings",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
