@@ -3,6 +3,7 @@
 *.so
 .*.swp
 coverage.out
+/astgen/stdast.go
 /bazel-bin
 /bazel-genfiles
 /bazel-go-jsonnet
