@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"testing"
 	"unicode/utf8"
+
+	_ "github.com/google/go-jsonnet/astgen"
 )
 
 type errorFormattingTest struct {
