@@ -327,6 +327,16 @@ func updateMultifileGolden(path string, result jsonnetResult) ([]string, error) 
 
 func runTest(t *testing.T, test *mainTest) {
 	read := func(file string) []byte {
+		fi, err := os.Lstat(file)
+		if err != nil {
+			t.Fatalf("stating file: %v", err)
+		}
+		if fi.Mode()&os.ModeType == os.ModeSymlink {
+			var err error
+			if file, err = os.Readlink(file); err != nil {
+				t.Fatalf("reading link: %s: %v", file, err)
+			}
+		}
 		bytz, err := ioutil.ReadFile(file)
 		if err != nil {
 			t.Fatalf("reading file: %s: %v", file, err)
@@ -379,7 +389,7 @@ func runTest(t *testing.T, test *mainTest) {
 	}
 }
 
-func expandEscapedFilenames(t *testing.T) error {
+func expandEscapedFilenames(t *testing.T, dstDir string, useHardLinks bool) error {
 	// Escaped filenames exist because their unescaped forms are invalid on
 	// Windows. We have no choice but to skip these in testing.
 	if runtime.GOOS == "windows" {
@@ -402,22 +412,42 @@ func expandEscapedFilenames(t *testing.T) error {
 			return string([]byte{byte(code)})
 		})
 		if file != input {
-			if err := os.Link(input, file); err != nil {
-				if !os.IsExist(err) {
-					return fmt.Errorf("linking %s -> %s: %v", file, input, err)
+			link := filepath.Join(dstDir, file[9:]) // Strip "testdata/" prefix.
+			linkf := os.Link
+			if !useHardLinks {
+				// We can't use hard links when running within "bazel test," since the target files
+				// are held in a filesystem (as links themselves) that makes them invalid link
+				// targets. Hence, we use symbolic links instead.
+				linkf = os.Symlink
+				var err error
+				if input, err = filepath.Abs(input); err != nil {
+					t.Fatalf("absolute path: %s: %v", input, err)
 				}
 			}
-			t.Logf("Linked %s -> %s", input, file)
+			if err := linkf(input, link); err != nil {
+				if !os.IsExist(err) {
+					return fmt.Errorf("linking %s -> %s: %v", link, input, err)
+				}
+				t.Logf("Linked %s -> %s", link, input)
+			}
 		}
 	}
 
 	return nil
 }
 
-func TestMain(t *testing.T) {
-	flag.Parse()
-
-	if err := expandEscapedFilenames(t); err != nil {
+func TestEval(t *testing.T) {
+	// Are we running within "bazel test"?
+	var useHardLinks bool
+	dstDir := os.Getenv("TEST_TMPDIR") // Does not end with a slash character.
+	if len(dstDir) == 0 {
+		dstDir = strings.TrimSuffix(os.TempDir(), "/") // Ends with a slash character.
+		if err := os.MkdirAll(dstDir, os.ModePerm); err != nil {
+			t.Fatal(err)
+		}
+		useHardLinks = true
+	}
+	if err := expandEscapedFilenames(t, dstDir, useHardLinks); err != nil {
 		t.Fatal(err)
 	}
 
@@ -426,6 +456,11 @@ func TestMain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	links, err := filepath.Glob(filepath.Join(dstDir, "*.jsonnet"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	match = append(match, links...)
 
 	jsonnetExtRE := regexp.MustCompile(`\.jsonnet$`)
 
@@ -434,7 +469,9 @@ func TestMain(t *testing.T) {
 		if strings.ContainsRune(input, '%') {
 			continue
 		}
-		name := jsonnetExtRE.ReplaceAllString(input, "")
+		// Since the golden files embed the relative path within the "testdata" directory, lie about
+		// the actual path to the input file here.
+		name := jsonnetExtRE.ReplaceAllString(strings.Replace(input, dstDir, "testdata", 1), "")
 		golden := jsonnetExtRE.ReplaceAllString(input, ".golden")
 		var meta testMetadata
 		if val, exists := metadataForTests[name]; exists {
