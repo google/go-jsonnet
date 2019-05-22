@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 extern "C" {
-    #include "../cpp-jsonnet/include/libjsonnet.h"
+    #include "libjsonnet.h"
     #include "internal.h"
 }
 

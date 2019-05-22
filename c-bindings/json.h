@@ -22,8 +22,6 @@ limitations under the License.
 #include <vector>
 #include <map>
 
-#include "../cpp-jsonnet/include/libjsonnet.h"
-
 struct JsonnetJsonValue {
     enum Kind {
         ARRAY,

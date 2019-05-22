@@ -9,11 +9,17 @@ go_library(
         "json.h",
         "libjsonnet.cpp",
     ],
+    cdeps = [
+        "@cpp_jsonnet//include:libjsonnet",
+    ],
     cgo = True,
-    copts = ["-std=c++11 -Wall"],
+    copts = ["-Wall -Icpp-jsonnet/include"],  # keep
+    cxxopts = ["-std=c++11"],
     importpath = "github.com/google/go-jsonnet/c-bindings",
     visibility = ["//visibility:private"],
-    deps = ["//:go_default_library"],
+    deps = [
+        "//:go_default_library",
+    ],
 )
 
 go_binary(

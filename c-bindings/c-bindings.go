@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/go-jsonnet"
 
-	// #cgo CXXFLAGS: -std=c++11 -Wall
+	// #cgo CXXFLAGS: -std=c++11 -Wall -I../cpp-jsonnet/include
 	// #include "internal.h"
 	"C"
 )
