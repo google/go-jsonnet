@@ -26,7 +26,7 @@ git clone github.com/google/go-jsonnet
 cd go-jsonnet
 git submodule init
 git submodule update
-go run cmd/dumpstdlibast/dumpstdlibast.go > astgen/stdast.go
+go run cmd/dumpstdlibast/dumpstdlibast.go cpp-jsonnet/stdlib/std.jsonnet > astgen/stdast.go
 go build ./cmd/jsonnet
 ```
 To build with [Bazel](https://bazel.build/) instead:
@@ -58,7 +58,7 @@ cd $GOPATH/src/github.com/google/go-jsonnet
 go get -u .
 git submodule init
 git submodule update
-go run cmd/dumpstdlibast/dumpstdlibast.go > astgen/stdast.go
+go run cmd/dumpstdlibast/dumpstdlibast.go cpp-jsonnet/stdlib/std.jsonnet > astgen/stdast.go
 go build ./cmd/jsonnet
 ```
 
@@ -87,7 +87,7 @@ implementation](https://github.com/google/jsonnet).
 For perfomance reasons we perform preprocessing on the standard library, so for the changes to be visible, regeneration is necessary:
 
 ```bash
-go run cmd/dumpstdlibast/dumpstdlibast.go > astgen/stdast.go
+go run cmd/dumpstdlibast/dumpstdlibast.go cpp-jsonnet/stdlib/std.jsonnet > astgen/stdast.go
 ```
 
 The above command creates the _astgen/stdast.go_ file which puts the desugared standard library into the right data structures, which lets us avoid the parsing overhead during execution. Note that this step is not necessary to perform manually when building with Bazel; the Bazel target regenerates the _astgen/stdast.go_ (writing it into Bazel's build sandbox directory tree) file when necessary.
