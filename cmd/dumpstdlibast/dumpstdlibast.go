@@ -14,15 +14,21 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/google/go-jsonnet"
 	"github.com/google/go-jsonnet/dump"
 )
 
 func main() {
-	buf, err := ioutil.ReadFile("cpp-jsonnet/stdlib/std.jsonnet")
+	if len(os.Args) != 2 {
+		fmt.Fprintf(os.Stderr, "usage: %s <file>\n", filepath.Base(os.Args[0]))
+		os.Exit(2)
+	}
+	buf, err := ioutil.ReadFile(os.Args[1])
 	if err != nil {
 		panic(err)
 	}
