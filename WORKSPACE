@@ -1,5 +1,10 @@
 workspace(name = "google_jsonnet_go")
 
+local_repository(
+    name = "cpp_jsonnet",
+    path = "./cpp-jsonnet",
+)
+
 load(
     "@bazel_tools//tools/build_defs/repo:http.bzl",
     "http_archive",

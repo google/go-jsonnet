@@ -1,5 +1,5 @@
 extern "C" {
-    #include "../cpp-jsonnet/include/libjsonnet.h"
+    #include "libjsonnet.h"
 }
 
 #include "json.h"
