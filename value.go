@@ -357,16 +357,21 @@ func args(xs ...*cachedThunk) callArguments {
 
 // Object is a value that allows indexing (taking a value of a field)
 // and combining through mixin inheritence (operator +).
-//
-// Note that every time a field is indexed it evaluates it again, there is
-// no caching of field values. See: https://github.com/google/go-jsonnet/issues/113
-type valueObject interface {
-	value
-	inheritanceSize() int
-	index(i *interpreter, trace TraceElement, field string) (value, error)
-	assertionsChecked() bool
-	setAssertionsCheckResult(err error)
-	getAssertionsCheckResult() error
+
+type valueObject struct {
+	valueBase
+	assertionError error
+	cache          map[objectCacheKey]value
+	uncached     uncachedObject
+}
+
+// Hack - we need to distinguish not-checked-yet and no error situations
+// so we have a special value for no error and nil means that we don't know yet.
+var errNoErrorInObjectInvariants = errors.New("no error - assertions passed")
+
+type objectCacheKey struct {
+	field string
+	depth int
 }
 
 type selfBinding struct {
@@ -374,7 +379,7 @@ type selfBinding struct {
 	// that this is not the same as context, because we could be inside a function,
 	// inside an object and then context would be the function, but self would still point
 	// to the object.
-	self valueObject
+	self *valueObject
 
 	// superDepth is the "super" level of self.  Sometimes, we look upwards in the
 	// inheritance tree, e.g. via an explicit use of super, or because a given field
@@ -395,7 +400,7 @@ func makeUnboundSelfBinding() selfBinding {
 	}
 }
 
-func objectBinding(obj valueObject) selfBinding {
+func objectBinding(obj *valueObject) selfBinding {
 	return selfBinding{self: obj, superDepth: 0}
 }
 
@@ -419,26 +424,21 @@ func withHiddenFromBool(with bool) Hidden {
 	return withoutHidden
 }
 
-// Hack - we need to distinguish not-checked-yet and no error situations
-// so we have a special value for no error and nil means that we don't know yet.
-var errNoErrorInObjectInvariants = errors.New("no error - assertions passed")
-
-type valueObjectBase struct {
-	valueBase
-	assertionError error
-}
-
-func (*valueObjectBase) getType() *valueType {
+func (*valueObject) getType() *valueType {
 	return objectType
 }
 
-func (obj *valueObjectBase) assertionsChecked() bool {
+func (o *valueObject) index(i *interpreter, trace TraceElement, field string) (value, error) {
+	return objectIndex(i, trace, objectBinding(o), field)
+}
+
+func (obj *valueObject) assertionsChecked() bool {
 	// nil - not checked yet
 	// errNoErrorInObjectInvariants - we checked and there is no error (or checking in progress)
 	return obj.assertionError != nil
 }
 
-func (obj *valueObjectBase) setAssertionsCheckResult(err error) {
+func (obj *valueObject) setAssertionsCheckResult(err error) {
 	if err != nil {
 		obj.assertionError = err
 	} else {
@@ -446,7 +446,7 @@ func (obj *valueObjectBase) setAssertionsCheckResult(err error) {
 	}
 }
 
-func (obj *valueObjectBase) getAssertionsCheckResult() error {
+func (obj *valueObject) getAssertionsCheckResult() error {
 	if obj.assertionError == nil {
 		panic("Assertions not checked yet")
 	}
@@ -456,13 +456,17 @@ func (obj *valueObjectBase) getAssertionsCheckResult() error {
 	return obj.assertionError
 }
 
+type uncachedObject interface {
+	inheritanceSize() int
+}
+
 type objectLocal struct {
 	name ast.Identifier
 	// Locals may depend on self and super so they are unbound fields and not simply thunks
 	node ast.Node
 }
 
-// valueSimpleObject represents a flat object (no inheritance).
+// simpleObject represents a flat object (no inheritance).
 // Note that it can be used as part of extended objects
 // in inheritance using operator +.
 //
@@ -470,17 +474,16 @@ type objectLocal struct {
 // This is important for inheritance, for example:
 // Let a = {x: 42} and b = {y: self.x}. Evaluating b.y is an error,
 // but (a+b).y evaluates to 42.
-type valueSimpleObject struct {
-	valueObjectBase
+type simpleObject struct {
 	upValues bindingFrame
 	fields   simpleObjectFieldMap
 	asserts  []unboundField
 	locals   []objectLocal
 }
 
-func checkAssertionsHelper(i *interpreter, trace TraceElement, obj valueObject, curr valueObject, superDepth int) error {
+func checkAssertionsHelper(i *interpreter, trace TraceElement, obj *valueObject, curr uncachedObject, superDepth int) error {
 	switch curr := curr.(type) {
-	case *valueExtendedObject:
+	case *extendedObject:
 		err := checkAssertionsHelper(i, trace, obj, curr.right, superDepth)
 		if err != nil {
 			return err
@@ -490,7 +493,7 @@ func checkAssertionsHelper(i *interpreter, trace TraceElement, obj valueObject, 
 			return err
 		}
 		return nil
-	case *valueSimpleObject:
+	case *simpleObject:
 		for _, assert := range curr.asserts {
 			sb := selfBinding{self: obj, superDepth: superDepth}
 			fieldUpValues := prepareFieldUpvalues(sb, curr.upValues, curr.locals)
@@ -500,36 +503,37 @@ func checkAssertionsHelper(i *interpreter, trace TraceElement, obj valueObject, 
 			}
 		}
 		return nil
+	case nil:
+		return nil
 	default:
-		panic(fmt.Sprintf("Unknown object type %#v", obj))
+		panic(fmt.Sprintf("Unknown object type %#v", curr))
 	}
 }
 
-func checkAssertions(i *interpreter, trace TraceElement, obj valueObject) error {
+func checkAssertions(i *interpreter, trace TraceElement, obj *valueObject) error {
 	if !obj.assertionsChecked() {
 		// Assertions may refer to the object that will normally
 		// trigger checking of assertions, resulting in an endless recursion.
 		// To avoid that, while we check them, we treat them as already passed.
 		obj.setAssertionsCheckResult(errNoErrorInObjectInvariants)
-		obj.setAssertionsCheckResult(checkAssertionsHelper(i, trace, obj, obj, 0))
+		obj.setAssertionsCheckResult(checkAssertionsHelper(i, trace, obj, obj.uncached, 0))
 	}
 	return obj.getAssertionsCheckResult()
 }
 
-func (o *valueSimpleObject) index(i *interpreter, trace TraceElement, field string) (value, error) {
-	return objectIndex(i, trace, objectBinding(o), field)
-}
-
-func (*valueSimpleObject) inheritanceSize() int {
+func (*simpleObject) inheritanceSize() int {
 	return 1
 }
 
-func makeValueSimpleObject(b bindingFrame, fields simpleObjectFieldMap, asserts []unboundField, locals []objectLocal) *valueSimpleObject {
-	return &valueSimpleObject{
-		upValues: b,
-		fields:   fields,
-		asserts:  asserts,
-		locals:   locals,
+func makeValueSimpleObject(b bindingFrame, fields simpleObjectFieldMap, asserts []unboundField, locals []objectLocal) *valueObject {
+	return &valueObject{
+		cache: make(map[objectCacheKey]value),
+		uncached: &simpleObject{
+			upValues: b,
+			fields:   fields,
+			asserts:  asserts,
+			locals:   locals,
+		},
 	}
 }
 
@@ -545,7 +549,7 @@ type unboundField interface {
 	evaluate(i *interpreter, trace TraceElement, sb selfBinding, origBinding bindingFrame, fieldName string) (value, error)
 }
 
-// valueExtendedObject represents an object created through inheritence (left + right).
+// extendedObject represents an object created through inheritance (left + right).
 // We represent it as the pair of objects. This results in a tree-like structure.
 // Example:
 // (A + B) + C
@@ -563,34 +567,32 @@ type unboundField interface {
 // This represenation allows us to implement "+" in O(1),
 // but requires going through the tree and trying subsequent leafs for field access.
 //
-type valueExtendedObject struct {
-	valueObjectBase
-	left, right          valueObject
+type extendedObject struct {
+	left, right          uncachedObject
 	totalInheritanceSize int
 }
 
-func (o *valueExtendedObject) index(i *interpreter, trace TraceElement, field string) (value, error) {
-	return objectIndex(i, trace, objectBinding(o), field)
-}
-
-func (o *valueExtendedObject) inheritanceSize() int {
+func (o *extendedObject) inheritanceSize() int {
 	return o.totalInheritanceSize
 }
 
-func makeValueExtendedObject(left, right valueObject) *valueExtendedObject {
-	return &valueExtendedObject{
-		left:                 left,
-		right:                right,
-		totalInheritanceSize: left.inheritanceSize() + right.inheritanceSize(),
+func makeValueExtendedObject(left, right *valueObject) *valueObject {
+	return &valueObject{
+		cache: make(map[objectCacheKey]value),
+		uncached: &extendedObject{
+			left:                 left.uncached,
+			right:                right.uncached,
+			totalInheritanceSize: left.uncached.inheritanceSize() + right.uncached.inheritanceSize(),
+		},
 	}
 }
 
 // findField returns a field in object curr, with superDepth at least minSuperDepth
 // It also returns an associated bindingFrame and actual superDepth that the field
 // was found at.
-func findField(curr value, minSuperDepth int, f string) (bool, simpleObjectField, bindingFrame, []objectLocal, int) {
+func findField(curr uncachedObject, minSuperDepth int, f string) (bool, simpleObjectField, bindingFrame, []objectLocal, int) {
 	switch curr := curr.(type) {
-	case *valueExtendedObject:
+	case *extendedObject:
 		if curr.right.inheritanceSize() > minSuperDepth {
 			found, field, frame, locals, counter := findField(curr.right, minSuperDepth, f)
 			if found {
@@ -600,7 +602,7 @@ func findField(curr value, minSuperDepth int, f string) (bool, simpleObjectField
 		found, field, frame, locals, counter := findField(curr.left, minSuperDepth-curr.right.inheritanceSize(), f)
 		return found, field, frame, locals, counter + curr.right.inheritanceSize()
 
-	case *valueSimpleObject:
+	case *simpleObject:
 		if minSuperDepth <= 0 {
 			if field, ok := curr.fields[f]; ok {
 				return true, field, curr.upValues, curr.locals, 0
@@ -638,23 +640,33 @@ func objectIndex(i *interpreter, trace TraceElement, sb selfBinding, fieldName s
 	if err != nil {
 		return nil, err
 	}
-	if sb.superDepth >= sb.self.inheritanceSize() {
+	if sb.superDepth >= sb.self.uncached.inheritanceSize() {
 		return nil, i.Error("Attempt to use super when there is no super class.", trace)
 	}
 
-	found, field, upValues, locals, foundAt := findField(sb.self, sb.superDepth, fieldName)
+	found, field, upValues, locals, foundAt := findField(sb.self.uncached, sb.superDepth, fieldName)
 	if !found {
 		return nil, i.Error(fmt.Sprintf("Field does not exist: %s", fieldName), trace)
+	}
+
+	if val, ok := sb.self.cache[objectCacheKey{field: fieldName, depth: foundAt}]; ok {
+		return val, nil
 	}
 
 	fieldSelfBinding := selfBinding{self: sb.self, superDepth: foundAt}
 	fieldUpValues := prepareFieldUpvalues(fieldSelfBinding, upValues, locals)
 
-	return field.field.evaluate(i, trace, fieldSelfBinding, fieldUpValues, fieldName)
+	val, err := field.field.evaluate(i, trace, fieldSelfBinding, fieldUpValues, fieldName)
+
+	if err == nil {
+		sb.self.cache[objectCacheKey{field: fieldName, depth: foundAt}] = val
+	}
+
+	return val, err
 }
 
 func objectHasField(sb selfBinding, fieldName string, h Hidden) bool {
-	found, field, _, _, _ := findField(sb.self, sb.superDepth, fieldName)
+	found, field, _, _, _ := findField(sb.self.uncached, sb.superDepth, fieldName)
 	if !found || (h == withoutHidden && field.hide == ast.ObjectFieldHidden) {
 		return false
 	}
@@ -663,12 +675,12 @@ func objectHasField(sb selfBinding, fieldName string, h Hidden) bool {
 
 type fieldHideMap map[string]ast.ObjectFieldHide
 
-func objectFieldsVisibility(obj valueObject) fieldHideMap {
+func uncachedObjectFieldsVisibility(obj uncachedObject) fieldHideMap {
 	r := make(fieldHideMap)
 	switch obj := obj.(type) {
-	case *valueExtendedObject:
-		r = objectFieldsVisibility(obj.left)
-		rightMap := objectFieldsVisibility(obj.right)
+	case *extendedObject:
+		r = uncachedObjectFieldsVisibility(obj.left)
+		rightMap := uncachedObjectFieldsVisibility(obj.right)
 		for k, v := range rightMap {
 			if v == ast.ObjectFieldInherit {
 				if _, alreadyExists := r[k]; !alreadyExists {
@@ -680,7 +692,7 @@ func objectFieldsVisibility(obj valueObject) fieldHideMap {
 		}
 		return r
 
-	case *valueSimpleObject:
+	case *simpleObject:
 		for fieldName, field := range obj.fields {
 			r[fieldName] = field.hide
 		}
@@ -688,8 +700,12 @@ func objectFieldsVisibility(obj valueObject) fieldHideMap {
 	return r
 }
 
+func objectFieldsVisibility(obj *valueObject) fieldHideMap {
+	return uncachedObjectFieldsVisibility(obj.uncached)
+}
+
 // Returns field names of an object. Gotcha: the order of fields is unpredictable.
-func objectFields(obj valueObject, h Hidden) []string {
+func objectFields(obj *valueObject, h Hidden) []string {
 	var r []string
 	for fieldName, hide := range objectFieldsVisibility(obj) {
 		if h == withHidden || hide != ast.ObjectFieldHidden {
