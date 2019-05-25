@@ -55,12 +55,12 @@ func builtinPlus(i *interpreter, trace TraceElement, x, y value) (value, error) 
 			return nil, err
 		}
 		return concatStrings(left, right.(*valueString)), nil
-	case valueObject:
+	case *valueObject:
 		switch right := y.(type) {
-		case valueObject:
+		case *valueObject:
 			return makeValueExtendedObject(left, right), nil
 		default:
-			return nil, i.typeErrorSpecific(y, &valueSimpleObject{}, trace)
+			return nil, i.typeErrorSpecific(y, &valueObject{}, trace)
 		}
 
 	case *valueArray:
@@ -170,7 +170,7 @@ func builtinLessEq(i *interpreter, trace TraceElement, x, y value) (value, error
 func builtinLength(i *interpreter, trace TraceElement, x value) (value, error) {
 	var num int
 	switch x := x.(type) {
-	case valueObject:
+	case *valueObject:
 		num = len(objectFields(x, withoutHidden))
 	case *valueArray:
 		num = len(x.elements)
@@ -504,7 +504,7 @@ func rawEquals(i *interpreter, trace TraceElement, x, y value) (bool, error) {
 			}
 		}
 		return true, nil
-	case valueObject:
+	case *valueObject:
 		right, err := i.getObject(y, trace)
 		if err != nil {
 			return false, err
@@ -818,17 +818,17 @@ func builtinUglyObjectFlatMerge(i *interpreter, trace TraceElement, x value) (va
 		return nil, err
 	}
 	if len(objarr.elements) == 0 {
-		return &valueSimpleObject{}, nil
+		return &valueObject{}, nil
 	}
 	newFields := make(simpleObjectFieldMap)
-	var anyObj *valueSimpleObject
+	var anyObj *simpleObject
 	for _, elem := range objarr.elements {
 		obj, err := i.evaluateObject(elem, trace)
 		if err != nil {
 			return nil, err
 		}
 		// starts getting ugly - we mess with object internals
-		simpleObj := obj.(*valueSimpleObject)
+		simpleObj := obj.uncached.(*simpleObject)
 		// there is only one field, really
 		for fieldName, fieldVal := range simpleObj.fields {
 			if _, alreadyExists := newFields[fieldName]; alreadyExists {

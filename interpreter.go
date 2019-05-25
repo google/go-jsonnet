@@ -241,7 +241,7 @@ type interpreter struct {
 	nativeFuncs map[string]*NativeFunction
 
 	// A part of std object common to all files
-	baseStd valueObject
+	baseStd *valueObject
 
 	// Keeps imports
 	importCache *ImportCache
@@ -435,7 +435,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 			return nil, err
 		}
 		switch target := targetValue.(type) {
-		case valueObject:
+		case *valueObject:
 			indexString, err := i.getString(index, trace)
 			if err != nil {
 				return nil, err
@@ -656,7 +656,7 @@ func (i *interpreter) manifestJSON(trace TraceElement, v value) (interface{}, er
 		}
 		return result, nil
 
-	case valueObject:
+	case *valueObject:
 		fieldNames := objectFields(v, withoutHidden)
 		sort.Strings(fieldNames)
 
@@ -1077,16 +1077,16 @@ func (i *interpreter) evaluateFunction(pv potentialValue, trace TraceElement) (*
 	return i.getFunction(v, trace)
 }
 
-func (i *interpreter) getObject(val value, trace TraceElement) (valueObject, error) {
+func (i *interpreter) getObject(val value, trace TraceElement) (*valueObject, error) {
 	switch v := val.(type) {
-	case valueObject:
+	case *valueObject:
 		return v, nil
 	default:
-		return nil, i.typeErrorSpecific(val, &valueSimpleObject{}, trace)
+		return nil, i.typeErrorSpecific(val, &valueObject{}, trace)
 	}
 }
 
-func (i *interpreter) evaluateObject(pv potentialValue, trace TraceElement) (valueObject, error) {
+func (i *interpreter) evaluateObject(pv potentialValue, trace TraceElement) (*valueObject, error) {
 	v, err := i.evaluatePV(pv, trace)
 	if err != nil {
 		return nil, err
@@ -1094,12 +1094,12 @@ func (i *interpreter) evaluateObject(pv potentialValue, trace TraceElement) (val
 	return i.getObject(v, trace)
 }
 
-func buildStdObject(i *interpreter) (valueObject, error) {
+func buildStdObject(i *interpreter) (*valueObject, error) {
 	objVal, err := evaluateStd(i)
 	if err != nil {
 		return nil, err
 	}
-	obj := objVal.(*valueSimpleObject)
+	obj := objVal.(*valueObject).uncached.(*simpleObject)
 	builtinFields := map[string]unboundField{}
 	for key, ec := range funcBuiltins {
 		function := valueFunction{ec: ec} // TODO(sbarzowski) better way to build function value
@@ -1109,7 +1109,7 @@ func buildStdObject(i *interpreter) (valueObject, error) {
 	for name, value := range builtinFields {
 		obj.fields[name] = simpleObjectField{ast.ObjectFieldHidden, value}
 	}
-	return obj, nil
+	return objVal.(*valueObject), nil
 }
 
 func evaluateStd(i *interpreter) (value, error) {
@@ -1135,7 +1135,7 @@ func prepareExtVars(i *interpreter, ext vmExtMap, kind string) map[string]*cache
 	return result
 }
 
-func buildObject(hide ast.ObjectFieldHide, fields map[string]value) valueObject {
+func buildObject(hide ast.ObjectFieldHide, fields map[string]value) *valueObject {
 	fieldMap := simpleObjectFieldMap{}
 	for name, v := range fields {
 		fieldMap[name] = simpleObjectField{hide, &readyValue{v}}
@@ -1162,7 +1162,7 @@ func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*NativeFunction, maxS
 	return &i, nil
 }
 
-func makeInitialEnv(filename string, baseStd valueObject) environment {
+func makeInitialEnv(filename string, baseStd *valueObject) environment {
 	fileSpecific := buildObject(ast.ObjectFieldHidden, map[string]value{
 		"thisFile": makeValueString(filename),
 	})
