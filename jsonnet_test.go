@@ -5,8 +5,13 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	_ "github.com/google/go-jsonnet/astgen"
+	"github.com/google/go-jsonnet/ast"
+	"github.com/google/go-jsonnet/astgen"
 )
+
+func init() {
+	ast.StdAst = astgen.StdAst
+}
 
 type errorFormattingTest struct {
 	name      string
