@@ -19,6 +19,8 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//:go_default_library",
+        "//ast:go_default_library",
+        "//astgen:go_default_library",
     ],
 )
 
