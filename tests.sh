@@ -2,8 +2,6 @@
 
 set -e
 
-[ -r astgen/stdast.go ] || go run cmd/dumpstdlibast/dumpstdlibast.go > astgen/stdast.go
-
 [ "$1" = "--skip-go-test" ] || go test ./...
 
 c-bindings-tests/run.sh
