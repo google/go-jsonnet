@@ -24,9 +24,6 @@ go get github.com/google/go-jsonnet/cmd/jsonnet
 ```bash
 git clone github.com/google/go-jsonnet
 cd go-jsonnet
-git submodule init
-git submodule update
-go run cmd/dumpstdlibast/dumpstdlibast.go cpp-jsonnet/stdlib/std.jsonnet > astgen/stdast.go
 go build ./cmd/jsonnet
 ```
 To build with [Bazel](https://bazel.build/) instead:
@@ -56,9 +53,6 @@ For additional target platform names, see the per-Go release definitions [here](
 go get -u github.com/google/go-jsonnet
 cd $GOPATH/src/github.com/google/go-jsonnet
 go get -u .
-git submodule init
-git submodule update
-go run cmd/dumpstdlibast/dumpstdlibast.go cpp-jsonnet/stdlib/std.jsonnet > astgen/stdast.go
 go build ./cmd/jsonnet
 ```
 
@@ -87,6 +81,8 @@ implementation](https://github.com/google/jsonnet).
 For perfomance reasons we perform preprocessing on the standard library, so for the changes to be visible, regeneration is necessary:
 
 ```bash
+git submodule init
+git submodule update
 go run cmd/dumpstdlibast/dumpstdlibast.go cpp-jsonnet/stdlib/std.jsonnet > astgen/stdast.go
 ```
 
