@@ -1,6 +1,6 @@
 [
 	import "\u0074rue.jsonnet",
 	import '\u0074rue.jsonnet',
-	import @""".jsonnet",
-	import @'''.jsonnet',
+	importstr @""".jsonnet",
+	importstr @'''.jsonnet',
 ]
