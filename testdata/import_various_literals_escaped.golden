@@ -1,5 +1,6 @@
-testdata/".jsonnet:2:1 Unexpected end of file.
-
-
-
-
+[
+   true,
+   true,
+   "// This file is there only for its filename: to test escaping in imports\n{}\n",
+   "// This file is there only for its filename: to test escaping in imports\n{}\n"
+]
