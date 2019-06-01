@@ -26,9 +26,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -327,16 +325,6 @@ func updateMultifileGolden(path string, result jsonnetResult) ([]string, error) 
 
 func runTest(t *testing.T, test *mainTest) {
 	read := func(file string) []byte {
-		fi, err := os.Lstat(file)
-		if err != nil {
-			t.Fatalf("stating file: %v", err)
-		}
-		if fi.Mode()&os.ModeType == os.ModeSymlink {
-			var err error
-			if file, err = os.Readlink(file); err != nil {
-				t.Fatalf("reading link: %s: %v", file, err)
-			}
-		}
 		bytz, err := ioutil.ReadFile(file)
 		if err != nil {
 			t.Fatalf("reading file: %s: %v", file, err)
@@ -389,99 +377,149 @@ func runTest(t *testing.T, test *mainTest) {
 	}
 }
 
-func expandEscapedFilenames(t *testing.T, dstDir string, useHardLinks bool) error {
-	// Escaped filenames exist because their unescaped forms are invalid on
-	// Windows. We have no choice but to skip these in testing.
-	if runtime.GOOS == "windows" {
-		return nil
-	}
-
-	match, err := filepath.Glob("testdata/*%*")
-	if err != nil {
-		return err
-	}
-
-	filenameEscapeRE := regexp.MustCompile(`%[0-9A-Fa-f]{2}`)
-
-	for _, input := range match {
-		file := filenameEscapeRE.ReplaceAllStringFunc(input, func(s string) string {
-			code, err := strconv.ParseUint(s[1:], 16, 8)
-			if err != nil {
-				panic(err)
-			}
-			return string([]byte{byte(code)})
-		})
-		if file != input {
-			link := filepath.Join(dstDir, file[9:]) // Strip "testdata/" prefix.
-			linkf := os.Link
-			if !useHardLinks {
-				// We can't use hard links when running within "bazel test," since the target files
-				// are held in a filesystem (as links themselves) that makes them invalid link
-				// targets. Hence, we use symbolic links instead.
-				linkf = os.Symlink
-				var err error
-				if input, err = filepath.Abs(input); err != nil {
-					t.Fatalf("absolute path: %s: %v", input, err)
-				}
-			}
-			if err := linkf(input, link); err != nil {
-				if !os.IsExist(err) {
-					return fmt.Errorf("linking %s -> %s: %v", link, input, err)
-				}
-				t.Logf("Linked %s -> %s", link, input)
-			}
-		}
-	}
-
-	return nil
-}
-
 func TestEval(t *testing.T) {
-	// Are we running within "bazel test"?
-	var useHardLinks bool
-	dstDir := os.Getenv("TEST_TMPDIR") // Does not end with a slash character.
-	if len(dstDir) == 0 {
-		dstDir = strings.TrimSuffix(os.TempDir(), "/") // Ends with a slash character.
-		if err := os.MkdirAll(dstDir, os.ModePerm); err != nil {
-			t.Fatal(err)
-		}
-		useHardLinks = true
-	}
-	if err := expandEscapedFilenames(t, dstDir, useHardLinks); err != nil {
-		t.Fatal(err)
-	}
-
-	var mainTests []mainTest
-	match, err := filepath.Glob("testdata/*.jsonnet")
+	files, err := filepath.Glob("testdata/*.jsonnet")
 	if err != nil {
 		t.Fatal(err)
 	}
-	links, err := filepath.Glob(filepath.Join(dstDir, "*.jsonnet"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	match = append(match, links...)
-
-	jsonnetExtRE := regexp.MustCompile(`\.jsonnet$`)
-
-	for _, input := range match {
-		// Skip escaped filenames.
-		if strings.ContainsRune(input, '%') {
-			continue
-		}
-		// Since the golden files embed the relative path within the "testdata" directory, lie about
-		// the actual path to the input file here.
-		name := jsonnetExtRE.ReplaceAllString(strings.Replace(input, dstDir, "testdata", 1), "")
-		golden := jsonnetExtRE.ReplaceAllString(input, ".golden")
+	tests := make([]mainTest, 0, len(files))
+	for _, input := range files {
+		name := strings.TrimSuffix(input, ".jsonnet")
 		var meta testMetadata
 		if val, exists := metadataForTests[name]; exists {
 			meta = val
 		}
-		mainTests = append(mainTests, mainTest{name: name, input: input, golden: golden, meta: &meta})
+		tests = append(tests, mainTest{name: name, input: input, golden: name + ".golden", meta: &meta})
 	}
-	for _, test := range mainTests {
+	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			runTest(t, &test)
+		})
+	}
+}
+
+func withinWorkingDirectory(t *testing.T, dir string) func() error {
+	t.Helper()
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	return func() error {
+		return os.Chdir(cwd)
+	}
+}
+
+func TestEvalUnusualFilenames(t *testing.T) {
+	// Escaped filenames exist because their unescaped forms are invalid on Windows. We have no
+	// choice but to skip these in testing.
+	if runtime.GOOS == "windows" {
+		return
+	}
+
+	// Are we running within "bazel test"?
+	dir := os.Getenv("TEST_TMPDIR")
+	if len(dir) == 0 {
+		var err error
+		if dir, err = ioutil.TempDir("", "jsonnet"); err != nil {
+			t.Fatal(err)
+		}
+		defer os.RemoveAll(dir)
+	}
+
+	copySmallFile := func(t *testing.T, dst, src string) {
+		b, err := ioutil.ReadFile(src)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := ioutil.WriteFile(dst, b, 0444); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// These files are imported by files below, but we don't need to exercise their round-trip
+	// behavior here, as they're covered by TestEval above.
+	for _, f := range []string{"true"} {
+		for _, ext := range []string{".jsonnet"} {
+			name := f + ext
+			copySmallFile(t, filepath.Join(dir, name), filepath.Join("testdata", name))
+		}
+	}
+
+	// Temporarily switch into our scratch directory.
+	defer withinWorkingDirectory(t, dir)()
+
+	emptyMetadata := &testMetadata{}
+	for _, f := range []struct {
+		name    string
+		content []byte
+		golden  []byte
+	}{
+		{
+			`"`,
+			[]byte(`// This file is there only for its filename: to test escaping in imports
+{}
+`),
+			[]byte(`{ }
+`),
+		},
+		{
+			`'`,
+			[]byte(`// This file is there only for its filename: to test escaping in imports
+{}
+`),
+			[]byte(`{ }
+`),
+		},
+		{
+			"import_various_literals_escaped",
+			[]byte(`[
+	import "\u0074rue.jsonnet",
+	import '\u0074rue.jsonnet',
+	importstr @""".jsonnet",
+	importstr @'''.jsonnet',
+]
+`),
+			[]byte(`[
+   true,
+   true,
+   "// This file is there only for its filename: to test escaping in imports\n{}\n",
+   "// This file is there only for its filename: to test escaping in imports\n{}\n"
+]
+`),
+		},
+		{
+			"importstr_various_literals_escaped",
+			[]byte(`[
+	importstr "\u0074rue.jsonnet",
+	importstr '\u0074rue.jsonnet',
+	importstr @""".jsonnet",
+	importstr @'''.jsonnet',
+]
+`),
+			[]byte(`[
+   "true\n",
+   "true\n",
+   "// This file is there only for its filename: to test escaping in imports\n{}\n",
+   "// This file is there only for its filename: to test escaping in imports\n{}\n"
+]
+`),
+		},
+	} {
+		if err := ioutil.WriteFile(f.name+".jsonnet", f.content, 0444); err != nil {
+			t.Fatal(err)
+		}
+		if err := ioutil.WriteFile(f.name+".golden", f.golden, 0444); err != nil {
+			t.Fatal(err)
+		}
+		t.Run(f.name, func(t *testing.T) {
+			runTest(t, &mainTest{
+				name:   f.name,
+				input:  f.name + ".jsonnet",
+				golden: f.name + ".golden",
+				meta:   emptyMetadata,
+			})
 		})
 	}
 }
