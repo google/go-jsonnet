@@ -216,7 +216,7 @@ func runJsonnet(i jsonnetInput) jsonnetResult {
 }
 
 func compareGolden(result string, golden []byte) (string, bool) {
-	if bytes.Compare(golden, []byte(result)) != 0 {
+	if !bytes.Equal(golden, []byte(result)) {
 		// TODO(sbarzowski) better reporting of differences in whitespace
 		// missing newline issues can be very subtle now
 		return diff(result, string(golden)), true
@@ -229,7 +229,7 @@ func writeFile(path string, content []byte, mode os.FileMode) (changed bool, err
 	if err != nil && !os.IsNotExist(err) {
 		return false, err
 	}
-	if bytes.Compare(old, content) == 0 && !os.IsNotExist(err) {
+	if bytes.Equal(old, content) && !os.IsNotExist(err) {
 		return false, nil
 	}
 	if err := ioutil.WriteFile(path, content, mode); err != nil {
