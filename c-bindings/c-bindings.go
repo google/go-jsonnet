@@ -28,6 +28,8 @@ type vm struct {
 // a list of used IDs. This results in a permanent "leak". I don't expect it to ever
 // become a problem.
 // The VM IDs start with 1, so 0 is never a valid ID and the VM's index in the array is (ID - 1).
+
+// VMs is the set of active, valid Jsonnet virtual machine handles allocated by jsonnet_make.
 var VMs = []*vm{}
 var freedIDs = []uint32{}
 
@@ -104,9 +106,8 @@ func jsonnet_evaluate_file(vmRef *C.struct_JsonnetVm, filename *C.char, e *C.int
 		*e = 1
 		// TODO(sbarzowski) make sure that it's ok allocation-wise
 		return C.CString(fmt.Sprintf("Failed to read input file: %s: %s", f, err.Error()))
-	} else {
-		return evaluateSnippet(vmRef, f, string(data), e)
 	}
+	return evaluateSnippet(vmRef, f, string(data), e)
 }
 
 //export jsonnet_max_stack

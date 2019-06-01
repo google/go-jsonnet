@@ -127,8 +127,6 @@ func safeStrToInt(str string) (i int) {
 	return
 }
 
-type command int
-
 type config struct {
 	inputFiles     []string
 	outputFile     string
@@ -184,7 +182,7 @@ const (
 
 func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArgsStatus, error) {
 	args := simplifyArgs(givenArgs)
-	remainingArgs := make([]string, 0, 0)
+	remainingArgs := make([]string, 0, len(args))
 	i := 0
 
 	handleVarVal := func(handle func(key string, val string)) error {
@@ -540,7 +538,7 @@ func main() {
 		} else if op == "read" {
 			fmt.Fprintf(os.Stderr, "Reading input file: %s: %s\n", filename, err.Error())
 		} else {
-			fmt.Fprintf(os.Stderr, err.Error())
+			fmt.Fprintln(os.Stderr, err.Error())
 		}
 		os.Exit(1)
 	}
