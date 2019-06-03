@@ -222,5 +222,5 @@ func SnippetToAST(filename string, snippet string) (ast.Node, error) {
 
 // Version returns the Jsonnet version number.
 func Version() string {
-	return "v0.12.1"
+	return "v0.13.0"
 }
