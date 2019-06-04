@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 run_tests() {
-  $HOME/gopath/bin/goveralls -service=travis-ci
+  $GOPATH/bin/goveralls -service=travis-ci
   ./tests.sh --skip-go-test
 }
 
