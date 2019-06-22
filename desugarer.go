@@ -232,7 +232,13 @@ func wrapInArray(inside ast.Node) ast.Node {
 	return &ast.Array{Elements: ast.Nodes{inside}}
 }
 
+
+
 func desugarArrayComp(comp *ast.ArrayComp, objLevel int) (ast.Node, error) {
+	err := desugar(&comp.Body, objLevel)
+	if err != nil {
+		return nil, err
+	}
 	return desugarForSpec(wrapInArray(comp.Body), &comp.Spec, objLevel)
 }
 
@@ -246,12 +252,7 @@ func desugarObjectComp(comp *ast.ObjectComp, objLevel int) (ast.Node, error) {
 		panic("Too many fields in object comprehension, it should have been caught during parsing")
 	}
 
-	arrComp := ast.ArrayComp{
-		Body: obj,
-		Spec: comp.Spec,
-	}
-
-	desugaredArrayComp, err := desugarArrayComp(&arrComp, objLevel)
+	desugaredArrayComp, err := desugarForSpec(wrapInArray(obj), &comp.Spec, objLevel)
 	if err != nil {
 		return nil, err
 	}
@@ -362,12 +363,7 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		}
 
 	case *ast.ArrayComp:
-		comp, err := desugarArrayComp(node, objLevel)
-		if err != nil {
-			return err
-		}
-		*astPtr = comp
-		err = desugar(astPtr, objLevel)
+		*astPtr, err = desugarArrayComp(node, objLevel)
 		if err != nil {
 			return err
 		}
