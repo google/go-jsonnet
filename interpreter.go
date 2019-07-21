@@ -244,7 +244,7 @@ type interpreter struct {
 	baseStd valueObject
 
 	// Keeps imports
-	importCache *ImportCache
+	importCache *importCache
 }
 
 // Map union, b takes precedence when keys collide.
@@ -462,11 +462,11 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 
 	case *ast.Import:
 		codePath := node.Loc().FileName
-		return i.importCache.ImportCode(codePath, node.File.Value, i, trace)
+		return i.importCache.importCode(codePath, node.File.Value, i, trace)
 
 	case *ast.ImportStr:
 		codePath := node.Loc().FileName
-		return i.importCache.ImportString(codePath, node.File.Value, i, trace)
+		return i.importCache.importString(codePath, node.File.Value, i, trace)
 
 	case *ast.LiteralBoolean:
 		return makeValueBoolean(node.Value), nil
@@ -1146,7 +1146,7 @@ func buildObject(hide ast.ObjectFieldHide, fields map[string]value) valueObject 
 func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*NativeFunction, maxStack int, importer Importer) (*interpreter, error) {
 	i := interpreter{
 		stack:       makeCallStack(maxStack),
-		importCache: MakeImportCache(importer),
+		importCache: makeImportCache(importer),
 		nativeFuncs: nativeFuncs,
 	}
 
