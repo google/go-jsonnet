@@ -11,7 +11,7 @@
 
 This an implementation of [Jsonnet](http://jsonnet.org/) in pure Go. It is feature complete but is not as heavily exercised as the [Jsonnet C++ implementation](https://github.com/google/jsonnet).  Please try it out and give feedback.
 
-This code is known to work on Go 1.8 and above. We recommend always using the newest stable release of Go.
+This code is known to work on Go 1.10 and above. We recommend always using the newest stable release of Go.
 
 ## Installation instructions
 
@@ -47,7 +47,7 @@ Windows         | _bazel build --platforms=@io_bazel_rules_go//go/toolchain:wind
 
 For additional target platform names, see the per-Go release definitions [here](https://github.com/bazelbuild/rules_go/blob/master/go/private/sdk_list.bzl#L21-L31) in the _rules_go_ Bazel package.
 
-## Build instructions (go 1.8 - 1.10)
+## Build instructions (go 1.10)
 
 ```bash
 go get -u github.com/google/go-jsonnet
