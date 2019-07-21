@@ -7,6 +7,7 @@ go:
 before_install:
   - go get github.com/axw/gocov/gocov
   - go get github.com/mattn/goveralls
+  - go get -u golang.org/x/lint/golint
   - if ! go get github.com/golang/tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
   - go get github.com/sergi/go-diff/diffmatchpatch
 script: ./travisBuild.sh

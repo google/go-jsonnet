@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
+set -e
+
 run_tests() {
+  golint -set_exit_status .
   $GOPATH/bin/goveralls -service=travis-ci
   ./tests.sh --skip-go-test
 }
