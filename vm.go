@@ -96,7 +96,10 @@ const (
 	evalKindStream           = iota
 )
 
-func (vm *VM) Evaluate(node ast.Node) (output interface{}, err error) {
+// Evaluate evaluates a Jsonnet program given by an Abstract Syntax Tree
+// and returns serialized JSON as string.
+// TODO(sbarzowski) perhaps is should return JSON in standard Go representation
+func (vm *VM) Evaluate(node ast.Node) (val string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
@@ -105,6 +108,8 @@ func (vm *VM) Evaluate(node ast.Node) (output interface{}, err error) {
 	return evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importer, vm.StringOutput)
 }
 
+// EvaluateStream evaluates a Jsonnet program given by an Abstract Syntax Tree
+// and returns an array of JSON strings.
 func (vm *VM) EvaluateStream(node ast.Node) (output interface{}, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -114,6 +119,9 @@ func (vm *VM) EvaluateStream(node ast.Node) (output interface{}, err error) {
 	return evaluateStream(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importer)
 }
 
+// EvaluateMulti evaluates a Jsonnet program given by an Abstract Syntax Tree
+// and returns key-value pairs.
+// The keys are strings and the values are JSON strigns (serialized JSON).
 func (vm *VM) EvaluateMulti(node ast.Node) (output interface{}, err error) {
 	defer func() {
 		if r := recover(); r != nil {

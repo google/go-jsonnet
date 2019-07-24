@@ -255,7 +255,7 @@ type valueFunction struct {
 
 // TODO(sbarzowski) better name?
 type evalCallable interface {
-	EvalCall(args callArguments, i *interpreter, trace TraceElement) (value, error)
+	evalCall(args callArguments, i *interpreter, trace TraceElement) (value, error)
 	Parameters() Parameters
 }
 
@@ -264,7 +264,7 @@ func (f *valueFunction) call(i *interpreter, trace TraceElement, args callArgume
 	if err != nil {
 		return nil, err
 	}
-	return f.ec.EvalCall(args, i, trace)
+	return f.ec.evalCall(args, i, trace)
 }
 
 func (f *valueFunction) parameters() Parameters {

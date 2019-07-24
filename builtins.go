@@ -924,7 +924,7 @@ func getBuiltinTrace(trace TraceElement, name ast.Identifier) TraceElement {
 	return TraceElement{loc: trace.loc, context: &context}
 }
 
-func (b *unaryBuiltin) EvalCall(args callArguments, i *interpreter, trace TraceElement) (value, error) {
+func (b *unaryBuiltin) evalCall(args callArguments, i *interpreter, trace TraceElement) (value, error) {
 	flatArgs := flattenArgs(args, b.Parameters())
 	builtinTrace := getBuiltinTrace(trace, b.name)
 	x, err := flatArgs[0].getValue(i, trace)
@@ -973,7 +973,7 @@ func flattenArgs(args callArguments, params Parameters) []*cachedThunk {
 	return flatArgs
 }
 
-func (b *binaryBuiltin) EvalCall(args callArguments, i *interpreter, trace TraceElement) (value, error) {
+func (b *binaryBuiltin) evalCall(args callArguments, i *interpreter, trace TraceElement) (value, error) {
 	flatArgs := flattenArgs(args, b.Parameters())
 	builtinTrace := getBuiltinTrace(trace, b.name)
 	x, err := flatArgs[0].getValue(i, trace)
@@ -1001,7 +1001,7 @@ type ternaryBuiltin struct {
 	parameters ast.Identifiers
 }
 
-func (b *ternaryBuiltin) EvalCall(args callArguments, i *interpreter, trace TraceElement) (value, error) {
+func (b *ternaryBuiltin) evalCall(args callArguments, i *interpreter, trace TraceElement) (value, error) {
 	flatArgs := flattenArgs(args, b.Parameters())
 	builtinTrace := getBuiltinTrace(trace, b.name)
 	x, err := flatArgs[0].getValue(i, trace)

@@ -60,29 +60,29 @@ func MakeContents(s string) Contents {
 	}
 }
 
-// ImportCache represents a cache of imported data.
+// importCache represents a cache of imported data.
 //
 // While the user-defined Importer implementations
 // are required to cache file content, this cache
 // is an additional layer of optimization that caches values
 // (i.e. the result of executing the file content).
 // It also verifies that the content pointer is the same for two foundAt values.
-type ImportCache struct {
+type importCache struct {
 	foundAtVerification map[string]Contents
 	codeCache           map[string]potentialValue
 	importer            Importer
 }
 
-// MakeImportCache creates an ImportCache using an Importer.
-func MakeImportCache(importer Importer) *ImportCache {
-	return &ImportCache{
+// makeImportCache creates an importCache using an Importer.
+func makeImportCache(importer Importer) *importCache {
+	return &importCache{
 		importer:            importer,
 		foundAtVerification: make(map[string]Contents),
 		codeCache:           make(map[string]potentialValue),
 	}
 }
 
-func (cache *ImportCache) importData(importedFrom, importedPath string) (contents Contents, foundAt string, err error) {
+func (cache *importCache) importData(importedFrom, importedPath string) (contents Contents, foundAt string, err error) {
 	contents, foundAt, err = cache.importer.Import(importedFrom, importedPath)
 	if err != nil {
 		return Contents{}, "", err
@@ -98,7 +98,7 @@ func (cache *ImportCache) importData(importedFrom, importedPath string) (content
 }
 
 // ImportString imports a string, caches it and then returns it.
-func (cache *ImportCache) ImportString(importedFrom, importedPath string, i *interpreter, trace TraceElement) (*valueString, error) {
+func (cache *importCache) importString(importedFrom, importedPath string, i *interpreter, trace TraceElement) (*valueString, error) {
 	data, _, err := cache.importData(importedFrom, importedPath)
 	if err != nil {
 		return nil, i.Error(err.Error(), trace)
@@ -125,7 +125,7 @@ func codeToPV(i *interpreter, filename string, code string) *cachedThunk {
 }
 
 // ImportCode imports code from a path.
-func (cache *ImportCache) ImportCode(importedFrom, importedPath string, i *interpreter, trace TraceElement) (value, error) {
+func (cache *importCache) importCode(importedFrom, importedPath string, i *interpreter, trace TraceElement) (value, error) {
 	contents, foundAt, err := cache.importData(importedFrom, importedPath)
 	if err != nil {
 		return nil, i.Error(err.Error(), trace)
