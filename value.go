@@ -362,7 +362,7 @@ type valueObject struct {
 	valueBase
 	assertionError error
 	cache          map[objectCacheKey]value
-	uncached     uncachedObject
+	uncached       uncachedObject
 }
 
 // Hack - we need to distinguish not-checked-yet and no error situations
