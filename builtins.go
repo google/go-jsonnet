@@ -817,9 +817,6 @@ func builtinUglyObjectFlatMerge(i *interpreter, trace TraceElement, x value) (va
 	if err != nil {
 		return nil, err
 	}
-	if len(objarr.elements) == 0 {
-		return &valueObject{}, nil
-	}
 	newFields := make(simpleObjectFieldMap)
 	var anyObj *simpleObject
 	for _, elem := range objarr.elements {
