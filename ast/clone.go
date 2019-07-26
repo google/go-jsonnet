@@ -298,6 +298,7 @@ func clone(astPtr *Node) {
 	cloneNodeBase(*astPtr)
 }
 
+// Clone creates an independent copy of an AST
 func Clone(astPtr Node) Node {
 	clone(&astPtr)
 	return astPtr

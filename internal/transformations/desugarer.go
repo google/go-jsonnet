@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package jsonnet
+package transformations
 
 import (
 	"bytes"
@@ -26,6 +26,11 @@ import (
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/parser"
 )
+
+var desugaredBop = map[ast.BinaryOp]ast.Identifier{
+	ast.BopPercent: "mod",
+	ast.BopIn:      "objectHasAll",
+}
 
 func makeStr(s string) *ast.LiteralString {
 	return &ast.LiteralString{
@@ -232,8 +237,6 @@ func wrapInArray(inside ast.Node) ast.Node {
 	return &ast.Array{Elements: ast.Nodes{inside}}
 }
 
-
-
 func desugarArrayComp(comp *ast.ArrayComp, objLevel int) (ast.Node, error) {
 	err := desugar(&comp.Body, objLevel)
 	if err != nil {
@@ -301,17 +304,6 @@ func desugarLocalBinds(binds ast.LocalBinds, objLevel int) (err error) {
 	return nil
 }
 
-// Desugar Jsonnet expressions to reduce the number of constructs the rest of the implementation
-// needs to understand.
-//
-// Note that despite the name, desugar() is not idempotent.  String literals have their escape
-// codes translated to low-level characters during desugaring.
-//
-// Desugaring should happen immediately after parsing, i.e. before static analysis and execution.
-// Temporary variables introduced here should be prefixed with $ to ensure they do not clash with
-// variables used in user code.
-// TODO(sbarzowski) Actually we may want to do some static analysis before desugaring, e.g.
-// warning user about dangerous use of constructs that we desugar.
 func desugar(astPtr *ast.Node, objLevel int) (err error) {
 	node := *astPtr
 
@@ -579,7 +571,18 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 	return nil
 }
 
-func desugarFile(ast *ast.Node) error {
+// Desugar Jsonnet expressions to reduce the number of constructs the rest of the implementation
+// needs to understand.
+//
+// Note that despite the name, desugar() is not idempotent.  String literals have their escape
+// codes translated to low-level characters during desugaring.
+//
+// Desugaring should happen immediately after parsing, i.e. before static analysis and execution.
+// Temporary variables introduced here should be prefixed with $ to ensure they do not clash with
+// variables used in user code.
+// TODO(sbarzowski) Actually we may want to do some static analysis before desugaring, e.g.
+// warning user about dangerous use of constructs that we desugar.
+func Desugar(ast *ast.Node) error {
 	err := desugar(ast, 0)
 	if err != nil {
 		return err

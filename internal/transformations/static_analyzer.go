@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package jsonnet
+package transformations
 
 import (
 	"fmt"
@@ -164,6 +164,9 @@ func analyzeVisit(a ast.Node, inObject bool, vars ast.IdentifierSet) error {
 	return s.err
 }
 
-func analyze(node ast.Node) error {
+// Analyze checks variable references (these could be checked statically in Jsonnet).
+// It enriches ast with additional information about free variables in every node,
+// so it is necessary to always run it before executing AST.
+func Analyze(node ast.Node) error {
 	return analyzeVisit(node, false, ast.NewIdentifierSet("std"))
 }

@@ -1027,15 +1027,10 @@ func (b *ternaryBuiltin) Name() ast.Identifier {
 	return b.name
 }
 
-var desugaredBop = map[ast.BinaryOp]ast.Identifier{
-	ast.BopPercent: "mod",
-	ast.BopIn:      "objectHasAll",
-}
-
 var bopBuiltins = []*binaryBuiltin{
+	// Note that % and `in` are desugared instead of being handled here
 	ast.BopMult: &binaryBuiltin{name: "operator*", function: builtinMult, parameters: ast.Identifiers{"x", "y"}},
 	ast.BopDiv:  &binaryBuiltin{name: "operator/", function: builtinDiv, parameters: ast.Identifiers{"x", "y"}},
-	// ast.BopPercent:  <desugared>,
 
 	ast.BopPlus:  &binaryBuiltin{name: "operator+", function: builtinPlus, parameters: ast.Identifiers{"x", "y"}},
 	ast.BopMinus: &binaryBuiltin{name: "operator-", function: builtinMinus, parameters: ast.Identifiers{"x", "y"}},

@@ -1191,3 +1191,12 @@ func Parse(t Tokens) (ast.Node, error) {
 
 	return expr, nil
 }
+
+// SnippetToRawAST converts Jsonnet code snippet to AST (without any transformations)
+func SnippetToRawAST(filename string, snippet string) (ast.Node, error) {
+	tokens, err := Lex(filename, snippet)
+	if err != nil {
+		return nil, err
+	}
+	return Parse(tokens)
+}

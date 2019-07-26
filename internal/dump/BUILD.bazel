@@ -7,7 +7,7 @@ go_library(
         "pointermap.go",
         "utils.go",
     ],
-    importpath = "github.com/google/go-jsonnet/dump",
+    importpath = "github.com/google/go-jsonnet/internal/dump",
     visibility = ["//visibility:public"],
 )
 

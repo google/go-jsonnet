@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package jsonnet
+package transformations
 
 import (
 	"testing"
@@ -28,7 +28,7 @@ import (
 
 func TestSimpleNull(t *testing.T) {
 	ast := &ast.LiteralNull{}
-	err := analyze(ast)
+	err := Analyze(ast)
 	if err != nil {
 		t.Errorf("Unexpected error: %+v", err)
 	}
@@ -60,7 +60,7 @@ func TestSimpleLocal(t *testing.T) {
 		Body: &ast.Var{Id: "x"},
 	}
 
-	err := analyze(node)
+	err := Analyze(node)
 	if err != nil {
 		t.Errorf("Unexpected error: %+v", err)
 	}
