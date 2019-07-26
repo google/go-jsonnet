@@ -137,7 +137,7 @@ func runInternalJsonnet(i jsonnetInput) jsonnetResult {
 	vm.NativeFunction(jsonToString)
 	vm.NativeFunction(nativeError)
 
-	rawAST, err := snippetToRawAST(i.name, string(i.input))
+	rawAST, err := parser.SnippetToRawAST(i.name, string(i.input))
 	if err != nil {
 		return jsonnetResult{
 			output:  errFormatter.Format(err) + "\n",
@@ -146,7 +146,7 @@ func runInternalJsonnet(i jsonnetInput) jsonnetResult {
 	}
 	testChildren(rawAST)
 
-	desugaredAST, err := snippetToAST(i.name, string(i.input))
+	desugaredAST, err := SnippetToAST(i.name, string(i.input))
 	if err != nil {
 		return jsonnetResult{
 			output:  errFormatter.Format(err) + "\n",

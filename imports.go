@@ -107,7 +107,7 @@ func (cache *importCache) importString(importedFrom, importedPath string, i *int
 }
 
 func codeToPV(i *interpreter, filename string, code string) *cachedThunk {
-	node, err := snippetToAST(filename, code)
+	node, err := SnippetToAST(filename, code)
 	if err != nil {
 		// TODO(sbarzowski) we should wrap (static) error here
 		// within a RuntimeError. Because whether we get this error or not

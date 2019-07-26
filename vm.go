@@ -22,7 +22,7 @@ import (
 	"runtime/debug"
 
 	"github.com/google/go-jsonnet/ast"
-	"github.com/google/go-jsonnet/parser"
+	"github.com/google/go-jsonnet/internal/transformations"
 )
 
 // Note: There are no garbage collection params because we're using the native
@@ -137,7 +137,7 @@ func (vm *VM) evaluateSnippet(filename string, snippet string, kind evalKind) (o
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	node, err := snippetToAST(filename, snippet)
+	node, err := SnippetToAST(filename, snippet)
 	if err != nil {
 		return "", err
 	}
@@ -199,33 +199,9 @@ func (vm *VM) EvaluateSnippetMulti(filename string, snippet string) (files map[s
 	return
 }
 
-func snippetToRawAST(filename string, snippet string) (ast.Node, error) {
-	tokens, err := parser.Lex(filename, snippet)
-	if err != nil {
-		return nil, err
-	}
-	return parser.Parse(tokens)
-}
-
-func snippetToAST(filename string, snippet string) (ast.Node, error) {
-	node, err := snippetToRawAST(filename, snippet)
-	if err != nil {
-		return nil, err
-	}
-	err = desugarFile(&node)
-	if err != nil {
-		return nil, err
-	}
-	err = analyze(node)
-	if err != nil {
-		return nil, err
-	}
-	return node, nil
-}
-
 // SnippetToAST parses a snippet and returns the resulting AST.
 func SnippetToAST(filename string, snippet string) (ast.Node, error) {
-	return snippetToAST(filename, snippet)
+	return transformations.SnippetToAST(filename, snippet)
 }
 
 // Version returns the Jsonnet version number.

@@ -428,8 +428,8 @@ func (*valueObject) getType() *valueType {
 	return objectType
 }
 
-func (o *valueObject) index(i *interpreter, trace TraceElement, field string) (value, error) {
-	return objectIndex(i, trace, objectBinding(o), field)
+func (obj *valueObject) index(i *interpreter, trace TraceElement, field string) (value, error) {
+	return objectIndex(i, trace, objectBinding(obj), field)
 }
 
 func (obj *valueObject) assertionsChecked() bool {
