@@ -16,7 +16,6 @@ go_library(
         "internal.h",
         "json.cpp",
         "json.h",
-        "libgojsonnet.h",
         "libjsonnet.cpp",
     ],
     cdeps = [

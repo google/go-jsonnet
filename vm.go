@@ -22,7 +22,7 @@ import (
 	"runtime/debug"
 
 	"github.com/google/go-jsonnet/ast"
-	"github.com/google/go-jsonnet/internal/transformations"
+	"github.com/google/go-jsonnet/internal/program"
 )
 
 // Note: There are no garbage collection params because we're using the native
@@ -201,7 +201,7 @@ func (vm *VM) EvaluateSnippetMulti(filename string, snippet string) (files map[s
 
 // SnippetToAST parses a snippet and returns the resulting AST.
 func SnippetToAST(filename string, snippet string) (ast.Node, error) {
-	return transformations.SnippetToAST(filename, snippet)
+	return program.SnippetToAST(filename, snippet)
 }
 
 // Version returns the Jsonnet version number.

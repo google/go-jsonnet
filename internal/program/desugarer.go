@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package transformations
+package program
 
 import (
 	"bytes"
@@ -571,18 +571,20 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 	return nil
 }
 
-// Desugar Jsonnet expressions to reduce the number of constructs the rest of the implementation
-// needs to understand.
+// desugarAST desugars Jsonnet expressions to reduce the number of constructs
+// the rest of the implementation needs to understand.
 //
-// Note that despite the name, desugar() is not idempotent.  String literals have their escape
-// codes translated to low-level characters during desugaring.
+// Note that despite the name, desugar() is not idempotent.  String literals
+// have their escape codes translated to low-level characters during desugaring.
 //
-// Desugaring should happen immediately after parsing, i.e. before static analysis and execution.
-// Temporary variables introduced here should be prefixed with $ to ensure they do not clash with
-// variables used in user code.
-// TODO(sbarzowski) Actually we may want to do some static analysis before desugaring, e.g.
-// warning user about dangerous use of constructs that we desugar.
-func Desugar(ast *ast.Node) error {
+// Desugaring should happen immediately after parsing, i.e. before static
+// analysis and execution. Temporary variables introduced here should be
+// prefixed with $ to ensure they do not clash with variables used in user code.
+//
+// TODO(sbarzowski) Actually we may want to do some static analysis before
+// desugaring, e.g. warning user about dangerous use of constructs that we
+// desugar.
+func desugarAST(ast *ast.Node) error {
 	err := desugar(ast, 0)
 	if err != nil {
 		return err
