@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package transformations
+package program
 
 import (
 	"testing"
@@ -22,13 +22,9 @@ import (
 	"github.com/google/go-jsonnet/ast"
 )
 
-// func dummyNodeBase() astNodeBase {
-// 	return astNode
-// }
-
 func TestSimpleNull(t *testing.T) {
 	ast := &ast.LiteralNull{}
-	err := Analyze(ast)
+	err := analyze(ast)
 	if err != nil {
 		t.Errorf("Unexpected error: %+v", err)
 	}
@@ -60,7 +56,7 @@ func TestSimpleLocal(t *testing.T) {
 		Body: &ast.Var{Id: "x"},
 	}
 
-	err := Analyze(node)
+	err := analyze(node)
 	if err != nil {
 		t.Errorf("Unexpected error: %+v", err)
 	}

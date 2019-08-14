@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 
 	"github.com/google/go-jsonnet/internal/dump"
-	"github.com/google/go-jsonnet/internal/transformations"
+	"github.com/google/go-jsonnet/internal/program"
 )
 
 func main() {
@@ -33,7 +33,7 @@ func main() {
 		panic(err)
 	}
 
-	node, err := transformations.SnippetToAST("<std>", string(buf))
+	node, err := program.SnippetToAST("<std>", string(buf))
 	if err != nil {
 		panic(err)
 	}

@@ -47,10 +47,7 @@ Windows         | _bazel build --platforms=@io_bazel_rules_go//go/toolchain:wind
 
 For additional target platform names, see the per-Go release definitions [here](https://github.com/bazelbuild/rules_go/blob/master/go/private/sdk_list.bzl#L21-L31) in the _rules_go_ Bazel package.
 
-Additionally if files were moved around, you may need to run the following command to update Bazel files:
-```
-bazel run //:gazelle
-```
+Additionally if any files were moved around, see the section [Keeping the Bazel files up to date](#keeping-the-bazel-files-up-to-date).
 
 ## Build instructions (go 1.8 - 1.10)
 

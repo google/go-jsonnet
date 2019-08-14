@@ -4,10 +4,10 @@ go_library(
     name = "go_default_library",
     srcs = [
         "desugarer.go",
+        "program.go",
         "static_analyzer.go",
-        "transformations.go",
     ],
-    importpath = "github.com/google/go-jsonnet/internal/transformations",
+    importpath = "github.com/google/go-jsonnet/internal/program",
     visibility = ["//:__subpackages__"],
     deps = [
         "//ast:go_default_library",
