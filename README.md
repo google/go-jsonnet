@@ -78,7 +78,7 @@ go generate
 Standard library source code is kept in `cpp-jsonnet` submodule, because it is shared with [Jsonnet C++
 implementation](https://github.com/google/jsonnet).
 
-For perfomance reasons we perform preprocessing on the standard library, so for the changes to be visible, regeneration is necessary:
+For performance reasons we perform preprocessing on the standard library, so for the changes to be visible, regeneration is necessary:
 
 ```bash
 git submodule init
