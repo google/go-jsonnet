@@ -6,8 +6,6 @@ import (
 	"os"
 
 	"github.com/google/go-jsonnet"
-	"github.com/google/go-jsonnet/ast"
-	"github.com/google/go-jsonnet/astgen"
 
 	// #cgo CXXFLAGS: -std=c++11 -Wall -I../cpp-jsonnet/include
 	// #include "internal.h"
@@ -159,5 +157,4 @@ func jsonnet_tla_code(vmRef *C.struct_JsonnetVm, key, value *C.char) {
 }
 
 func main() {
-	ast.StdAst = astgen.StdAst
 }

@@ -24,6 +24,7 @@ import (
 	"sort"
 
 	"github.com/google/go-jsonnet/ast"
+	"github.com/google/go-jsonnet/astgen"
 )
 
 // TODO(sbarzowski) use it as a pointer in most places b/c it can sometimes be shared
@@ -1119,7 +1120,7 @@ func evaluateStd(i *interpreter) (value, error) {
 	)
 	evalLoc := ast.MakeLocationRangeMessage("During evaluation of std")
 	evalTrace := TraceElement{loc: &evalLoc}
-	node := ast.StdAst
+	node := astgen.StdAst
 	return i.EvalInCleanEnv(evalTrace, &beforeStdEnv, node, false)
 }
 

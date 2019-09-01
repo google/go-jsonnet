@@ -32,8 +32,6 @@ import (
 	"github.com/fatih/color"
 
 	"github.com/google/go-jsonnet"
-	"github.com/google/go-jsonnet/ast"
-	"github.com/google/go-jsonnet/astgen"
 )
 
 func nextArg(i *int, args []string) string {
@@ -473,7 +471,6 @@ func writeOutputFile(output string, outputFile string, createDirs bool) error {
 }
 
 func main() {
-	ast.StdAst = astgen.StdAst
 	// https://blog.golang.org/profiling-go-programs
 	var cpuprofile = os.Getenv("JSONNET_CPU_PROFILE")
 	if cpuprofile != "" {
