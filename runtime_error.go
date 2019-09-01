@@ -20,11 +20,11 @@ import "github.com/google/go-jsonnet/ast"
 
 // RuntimeError is an error discovered during evaluation of the program
 type RuntimeError struct {
-	StackTrace []TraceFrame
+	StackTrace []traceFrame
 	Msg        string
 }
 
-func makeRuntimeError(msg string, stackTrace []TraceFrame) RuntimeError {
+func makeRuntimeError(msg string, stackTrace []traceFrame) RuntimeError {
 	return RuntimeError{
 		Msg:        msg,
 		StackTrace: stackTrace,
@@ -37,15 +37,15 @@ func (err RuntimeError) Error() string {
 
 // The stack
 
-// TraceFrame is tracing information about a single frame of the call stack.
-// TODO(sbarzowski) the difference from TraceElement. Do we even need this?
-type TraceFrame struct {
+// traceFrame is tracing information about a single frame of the call stack.
+// TODO(sbarzowski) the difference from traceElement. Do we even need this?
+type traceFrame struct {
 	Loc  ast.LocationRange
 	Name string
 }
 
-func traceElementToTraceFrame(trace TraceElement) TraceFrame {
-	tf := TraceFrame{Loc: *trace.loc}
+func traceElementToTraceFrame(trace traceElement) traceFrame {
+	tf := traceFrame{Loc: *trace.loc}
 	if trace.context != nil {
 		// TODO(sbarzowski) maybe it should never be nil
 		tf.Name = *trace.context
@@ -55,10 +55,10 @@ func traceElementToTraceFrame(trace TraceElement) TraceFrame {
 	return tf
 }
 
-// TraceElement represents tracing information, including a location range and a
+// traceElement represents tracing information, including a location range and a
 // surrounding context.
 // TODO(sbarzowski) better name
-type TraceElement struct {
+type traceElement struct {
 	loc     *ast.LocationRange
 	context ast.Context
 }

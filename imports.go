@@ -98,7 +98,7 @@ func (cache *importCache) importData(importedFrom, importedPath string) (content
 }
 
 // ImportString imports a string, caches it and then returns it.
-func (cache *importCache) importString(importedFrom, importedPath string, i *interpreter, trace TraceElement) (*valueString, error) {
+func (cache *importCache) importString(importedFrom, importedPath string, i *interpreter, trace traceElement) (*valueString, error) {
 	data, _, err := cache.importData(importedFrom, importedPath)
 	if err != nil {
 		return nil, i.Error(err.Error(), trace)
@@ -125,7 +125,7 @@ func codeToPV(i *interpreter, filename string, code string) *cachedThunk {
 }
 
 // ImportCode imports code from a path.
-func (cache *importCache) importCode(importedFrom, importedPath string, i *interpreter, trace TraceElement) (value, error) {
+func (cache *importCache) importCode(importedFrom, importedPath string, i *interpreter, trace traceElement) (value, error) {
 	contents, foundAt, err := cache.importData(importedFrom, importedPath)
 	if err != nil {
 		return nil, i.Error(err.Error(), trace)
