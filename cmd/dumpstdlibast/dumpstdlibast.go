@@ -62,7 +62,4 @@ import (
 	"github.com/google/go-jsonnet/ast"
 )
 
-func init() {
-	ast.StdAst = StdAst
-}
 `[1:]
