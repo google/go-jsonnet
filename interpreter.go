@@ -48,8 +48,8 @@ func makeEnvironment(upValues bindingFrame, sb selfBinding) environment {
 	}
 }
 
-func (i *interpreter) getCurrentStackTrace(additional TraceElement) []TraceFrame {
-	var result []TraceFrame
+func (i *interpreter) getCurrentStackTrace(additional traceElement) []traceFrame {
+	var result []traceFrame
 	for _, f := range i.stack.stack {
 		if f.isCall {
 			result = append(result, traceElementToTraceFrame(f.trace))
@@ -68,7 +68,7 @@ type callFrame struct {
 	isCall bool
 
 	// Tracing information about the place where it was called from.
-	trace TraceElement
+	trace traceElement
 
 	// Whether this frame can be removed from the stack when it doesn't affect
 	// the evaluation result, but in case of an error, it won't appear on the
@@ -148,7 +148,7 @@ const (
 	tailCall
 )
 
-func (s *callStack) newCall(trace TraceElement, env environment, trimmable bool) {
+func (s *callStack) newCall(trace traceElement, env environment, trimmable bool) {
 	s.stack = append(s.stack, &callFrame{
 		isCall:    true,
 		trace:     trace,
@@ -263,7 +263,7 @@ func addBindings(a, b bindingFrame) bindingFrame {
 	return result
 }
 
-func (i *interpreter) newCall(trace TraceElement, env environment, trimmable bool) error {
+func (i *interpreter) newCall(trace traceElement, env environment, trimmable bool) error {
 	s := &i.stack
 	if s.calls >= s.limit {
 		return makeRuntimeError("max stack frames exceeded.", i.getCurrentStackTrace(trace))
@@ -273,7 +273,7 @@ func (i *interpreter) newCall(trace TraceElement, env environment, trimmable boo
 }
 
 func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
-	trace := TraceElement{
+	trace := traceElement{
 		loc:     a.Loc(),
 		context: a.Context(),
 	}
@@ -393,7 +393,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 			}
 			var f unboundField = &codeUnboundField{field.Body}
 			if field.PlusSuper {
-				f = &PlusSuperUnboundField{f}
+				f = &plusSuperUnboundField{f}
 			}
 			fields[fieldName] = simpleObjectField{field.Hide, f}
 		}
@@ -624,7 +624,7 @@ func unparseNumber(v float64) string {
 }
 
 // manifestJSON converts to standard JSON representation as in "encoding/json" package
-func (i *interpreter) manifestJSON(trace TraceElement, v value) (interface{}, error) {
+func (i *interpreter) manifestJSON(trace traceElement, v value) (interface{}, error) {
 	switch v := v.(type) {
 
 	case *valueBoolean:
@@ -790,7 +790,7 @@ func serializeJSON(v interface{}, multiline bool, indent string, buf *bytes.Buff
 }
 
 func (i *interpreter) manifestAndSerializeJSON(
-	buf *bytes.Buffer, trace TraceElement, v value, multiline bool, indent string) error {
+	buf *bytes.Buffer, trace traceElement, v value, multiline bool, indent string) error {
 	manifested, err := i.manifestJSON(trace, v)
 	if err != nil {
 		return err
@@ -800,7 +800,7 @@ func (i *interpreter) manifestAndSerializeJSON(
 }
 
 // manifestString expects the value to be a string and returns it.
-func (i *interpreter) manifestString(buf *bytes.Buffer, trace TraceElement, v value) error {
+func (i *interpreter) manifestString(buf *bytes.Buffer, trace traceElement, v value) error {
 	switch v := v.(type) {
 	case *valueString:
 		buf.WriteString(v.getString())
@@ -810,7 +810,7 @@ func (i *interpreter) manifestString(buf *bytes.Buffer, trace TraceElement, v va
 	}
 }
 
-func (i *interpreter) manifestAndSerializeMulti(trace TraceElement, v value, stringOutputMode bool) (r map[string]string, err error) {
+func (i *interpreter) manifestAndSerializeMulti(trace traceElement, v value, stringOutputMode bool) (r map[string]string, err error) {
 	r = make(map[string]string)
 	json, err := i.manifestJSON(trace, v)
 	if err != nil {
@@ -844,7 +844,7 @@ func (i *interpreter) manifestAndSerializeMulti(trace TraceElement, v value, str
 	return
 }
 
-func (i *interpreter) manifestAndSerializeYAMLStream(trace TraceElement, v value) (r []string, err error) {
+func (i *interpreter) manifestAndSerializeYAMLStream(trace traceElement, v value) (r []string, err error) {
 	r = make([]string, 0)
 	json, err := i.manifestJSON(trace, v)
 	if err != nil {
@@ -867,7 +867,7 @@ func (i *interpreter) manifestAndSerializeYAMLStream(trace TraceElement, v value
 	return
 }
 
-func jsonToValue(i *interpreter, trace TraceElement, v interface{}) (value, error) {
+func jsonToValue(i *interpreter, trace traceElement, v interface{}) (value, error) {
 	switch v := v.(type) {
 	case nil:
 		return &nullValue, nil
@@ -907,7 +907,7 @@ func jsonToValue(i *interpreter, trace TraceElement, v interface{}) (value, erro
 	}
 }
 
-func (i *interpreter) EvalInCleanEnv(fromWhere TraceElement, env *environment, ast ast.Node, trimmable bool) (value, error) {
+func (i *interpreter) EvalInCleanEnv(fromWhere traceElement, env *environment, ast ast.Node, trimmable bool) (value, error) {
 	err := i.newCall(fromWhere, *env, trimmable)
 	if err != nil {
 		return nil, err
@@ -921,37 +921,37 @@ func (i *interpreter) EvalInCleanEnv(fromWhere TraceElement, env *environment, a
 	return val, err
 }
 
-func (i *interpreter) evaluatePV(ph potentialValue, trace TraceElement) (value, error) {
+func (i *interpreter) evaluatePV(ph potentialValue, trace traceElement) (value, error) {
 	return ph.getValue(i, trace)
 }
 
-func (i *interpreter) evaluateTailCall(function *valueFunction, args callArguments, tc tailCallStatus, trace TraceElement) (value, error) {
+func (i *interpreter) evaluateTailCall(function *valueFunction, args callArguments, tc tailCallStatus, trace traceElement) (value, error) {
 	if tc == tailCall {
 		i.stack.tailCallTrimStack()
 	}
 	return function.call(i, trace, args)
 }
 
-func (i *interpreter) Error(s string, trace TraceElement) error {
+func (i *interpreter) Error(s string, trace traceElement) error {
 	err := makeRuntimeError(s, i.getCurrentStackTrace(trace))
 	return err
 }
 
-func (i *interpreter) typeErrorSpecific(bad value, good value, trace TraceElement) error {
+func (i *interpreter) typeErrorSpecific(bad value, good value, trace traceElement) error {
 	return i.Error(
 		fmt.Sprintf("Unexpected type %v, expected %v", bad.getType().name, good.getType().name),
 		trace,
 	)
 }
 
-func (i *interpreter) typeErrorGeneral(bad value, trace TraceElement) error {
+func (i *interpreter) typeErrorGeneral(bad value, trace traceElement) error {
 	return i.Error(
 		fmt.Sprintf("Unexpected type %v", bad.getType().name),
 		trace,
 	)
 }
 
-func (i *interpreter) getNumber(val value, trace TraceElement) (*valueNumber, error) {
+func (i *interpreter) getNumber(val value, trace traceElement) (*valueNumber, error) {
 	switch v := val.(type) {
 	case *valueNumber:
 		return v, nil
@@ -960,7 +960,7 @@ func (i *interpreter) getNumber(val value, trace TraceElement) (*valueNumber, er
 	}
 }
 
-func (i *interpreter) evaluateNumber(pv potentialValue, trace TraceElement) (*valueNumber, error) {
+func (i *interpreter) evaluateNumber(pv potentialValue, trace traceElement) (*valueNumber, error) {
 	v, err := i.evaluatePV(pv, trace)
 	if err != nil {
 		return nil, err
@@ -968,7 +968,7 @@ func (i *interpreter) evaluateNumber(pv potentialValue, trace TraceElement) (*va
 	return i.getNumber(v, trace)
 }
 
-func (i *interpreter) getInt(val value, trace TraceElement) (int, error) {
+func (i *interpreter) getInt(val value, trace traceElement) (int, error) {
 	num, err := i.getNumber(val, trace)
 	if err != nil {
 		return 0, err
@@ -982,7 +982,7 @@ func (i *interpreter) getInt(val value, trace TraceElement) (int, error) {
 	return intNum, nil
 }
 
-func (i *interpreter) evaluateInt(pv potentialValue, trace TraceElement) (int, error) {
+func (i *interpreter) evaluateInt(pv potentialValue, trace traceElement) (int, error) {
 	v, err := i.evaluatePV(pv, trace)
 	if err != nil {
 		return 0, err
@@ -990,7 +990,7 @@ func (i *interpreter) evaluateInt(pv potentialValue, trace TraceElement) (int, e
 	return i.getInt(v, trace)
 }
 
-func (i *interpreter) getInt64(val value, trace TraceElement) (int64, error) {
+func (i *interpreter) getInt64(val value, trace traceElement) (int64, error) {
 	num, err := i.getNumber(val, trace)
 	if err != nil {
 		return 0, err
@@ -1002,7 +1002,7 @@ func (i *interpreter) getInt64(val value, trace TraceElement) (int64, error) {
 	return intNum, nil
 }
 
-func (i *interpreter) evaluateInt64(pv potentialValue, trace TraceElement) (int64, error) {
+func (i *interpreter) evaluateInt64(pv potentialValue, trace traceElement) (int64, error) {
 	v, err := i.evaluatePV(pv, trace)
 	if err != nil {
 		return 0, err
@@ -1010,7 +1010,7 @@ func (i *interpreter) evaluateInt64(pv potentialValue, trace TraceElement) (int6
 	return i.getInt64(v, trace)
 }
 
-func (i *interpreter) getString(val value, trace TraceElement) (*valueString, error) {
+func (i *interpreter) getString(val value, trace traceElement) (*valueString, error) {
 	switch v := val.(type) {
 	case *valueString:
 		return v, nil
@@ -1019,7 +1019,7 @@ func (i *interpreter) getString(val value, trace TraceElement) (*valueString, er
 	}
 }
 
-func (i *interpreter) evaluateString(pv potentialValue, trace TraceElement) (*valueString, error) {
+func (i *interpreter) evaluateString(pv potentialValue, trace traceElement) (*valueString, error) {
 	v, err := i.evaluatePV(pv, trace)
 	if err != nil {
 		return nil, err
@@ -1027,7 +1027,7 @@ func (i *interpreter) evaluateString(pv potentialValue, trace TraceElement) (*va
 	return i.getString(v, trace)
 }
 
-func (i *interpreter) getBoolean(val value, trace TraceElement) (*valueBoolean, error) {
+func (i *interpreter) getBoolean(val value, trace traceElement) (*valueBoolean, error) {
 	switch v := val.(type) {
 	case *valueBoolean:
 		return v, nil
@@ -1036,7 +1036,7 @@ func (i *interpreter) getBoolean(val value, trace TraceElement) (*valueBoolean, 
 	}
 }
 
-func (i *interpreter) evaluateBoolean(pv potentialValue, trace TraceElement) (*valueBoolean, error) {
+func (i *interpreter) evaluateBoolean(pv potentialValue, trace traceElement) (*valueBoolean, error) {
 	v, err := i.evaluatePV(pv, trace)
 	if err != nil {
 		return nil, err
@@ -1044,7 +1044,7 @@ func (i *interpreter) evaluateBoolean(pv potentialValue, trace TraceElement) (*v
 	return i.getBoolean(v, trace)
 }
 
-func (i *interpreter) getArray(val value, trace TraceElement) (*valueArray, error) {
+func (i *interpreter) getArray(val value, trace traceElement) (*valueArray, error) {
 	switch v := val.(type) {
 	case *valueArray:
 		return v, nil
@@ -1053,7 +1053,7 @@ func (i *interpreter) getArray(val value, trace TraceElement) (*valueArray, erro
 	}
 }
 
-func (i *interpreter) evaluateArray(pv potentialValue, trace TraceElement) (*valueArray, error) {
+func (i *interpreter) evaluateArray(pv potentialValue, trace traceElement) (*valueArray, error) {
 	v, err := i.evaluatePV(pv, trace)
 	if err != nil {
 		return nil, err
@@ -1061,7 +1061,7 @@ func (i *interpreter) evaluateArray(pv potentialValue, trace TraceElement) (*val
 	return i.getArray(v, trace)
 }
 
-func (i *interpreter) getFunction(val value, trace TraceElement) (*valueFunction, error) {
+func (i *interpreter) getFunction(val value, trace traceElement) (*valueFunction, error) {
 	switch v := val.(type) {
 	case *valueFunction:
 		return v, nil
@@ -1070,7 +1070,7 @@ func (i *interpreter) getFunction(val value, trace TraceElement) (*valueFunction
 	}
 }
 
-func (i *interpreter) evaluateFunction(pv potentialValue, trace TraceElement) (*valueFunction, error) {
+func (i *interpreter) evaluateFunction(pv potentialValue, trace traceElement) (*valueFunction, error) {
 	v, err := i.evaluatePV(pv, trace)
 	if err != nil {
 		return nil, err
@@ -1078,7 +1078,7 @@ func (i *interpreter) evaluateFunction(pv potentialValue, trace TraceElement) (*
 	return i.getFunction(v, trace)
 }
 
-func (i *interpreter) getObject(val value, trace TraceElement) (*valueObject, error) {
+func (i *interpreter) getObject(val value, trace traceElement) (*valueObject, error) {
 	switch v := val.(type) {
 	case *valueObject:
 		return v, nil
@@ -1087,7 +1087,7 @@ func (i *interpreter) getObject(val value, trace TraceElement) (*valueObject, er
 	}
 }
 
-func (i *interpreter) evaluateObject(pv potentialValue, trace TraceElement) (*valueObject, error) {
+func (i *interpreter) evaluateObject(pv potentialValue, trace traceElement) (*valueObject, error) {
 	v, err := i.evaluatePV(pv, trace)
 	if err != nil {
 		return nil, err
@@ -1119,7 +1119,7 @@ func evaluateStd(i *interpreter) (value, error) {
 		makeUnboundSelfBinding(),
 	)
 	evalLoc := ast.MakeLocationRangeMessage("During evaluation of std")
-	evalTrace := TraceElement{loc: &evalLoc}
+	evalTrace := traceElement{loc: &evalLoc}
 	node := astgen.StdAst
 	return i.EvalInCleanEnv(evalTrace, &beforeStdEnv, node, false)
 }
@@ -1175,15 +1175,15 @@ func makeInitialEnv(filename string, baseStd *valueObject) environment {
 	)
 }
 
-func evaluateAux(i *interpreter, node ast.Node, tla vmExtMap) (value, TraceElement, error) {
+func evaluateAux(i *interpreter, node ast.Node, tla vmExtMap) (value, traceElement, error) {
 	evalLoc := ast.MakeLocationRangeMessage("During evaluation")
-	evalTrace := TraceElement{
+	evalTrace := traceElement{
 		loc: &evalLoc,
 	}
 	env := makeInitialEnv(node.Loc().FileName, i.baseStd)
 	result, err := i.EvalInCleanEnv(evalTrace, &env, node, false)
 	if err != nil {
-		return nil, TraceElement{}, err
+		return nil, traceElement{}, err
 	}
 	// If it's not a function, ignore TLA
 	if f, ok := result.(*valueFunction); ok {
@@ -1193,16 +1193,16 @@ func evaluateAux(i *interpreter, node ast.Node, tla vmExtMap) (value, TraceEleme
 			args.named = append(args.named, namedCallArgument{name: ast.Identifier(argName), pv: pv})
 		}
 		funcLoc := ast.MakeLocationRangeMessage("Top-level function")
-		funcTrace := TraceElement{
+		funcTrace := traceElement{
 			loc: &funcLoc,
 		}
 		result, err = f.call(i, funcTrace, args)
 		if err != nil {
-			return nil, TraceElement{}, err
+			return nil, traceElement{}, err
 		}
 	}
 	manifestationLoc := ast.MakeLocationRangeMessage("During manifestation")
-	manifestationTrace := TraceElement{
+	manifestationTrace := traceElement{
 		loc: &manifestationLoc,
 	}
 	return result, manifestationTrace, nil

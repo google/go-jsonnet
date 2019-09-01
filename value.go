@@ -58,7 +58,7 @@ var arrayType = &valueType{"array"}
 // TODO(sbarzowski) perhaps call it just "Thunk"?
 type potentialValue interface {
 	// fromWhere keeps the information from where the evaluation was requested.
-	getValue(i *interpreter, fromWhere TraceElement) (value, error)
+	getValue(i *interpreter, fromWhere traceElement) (value, error)
 
 	aPotentialValue()
 }
@@ -81,7 +81,7 @@ type valueString struct {
 	value []rune
 }
 
-func (s *valueString) index(i *interpreter, trace TraceElement, index int) (value, error) {
+func (s *valueString) index(i *interpreter, trace traceElement, index int) (value, error) {
 	if 0 <= index && index < s.length() {
 		return makeValueString(string(s.value[index])), nil
 	}
@@ -202,7 +202,7 @@ type valueArray struct {
 	elements []*cachedThunk
 }
 
-func (arr *valueArray) index(i *interpreter, trace TraceElement, index int) (value, error) {
+func (arr *valueArray) index(i *interpreter, trace traceElement, index int) (value, error) {
 	if 0 <= index && index < arr.length() {
 		return i.evaluatePV(arr.elements[index], trace)
 	}
@@ -255,23 +255,23 @@ type valueFunction struct {
 
 // TODO(sbarzowski) better name?
 type evalCallable interface {
-	evalCall(args callArguments, i *interpreter, trace TraceElement) (value, error)
-	Parameters() Parameters
+	evalCall(args callArguments, i *interpreter, trace traceElement) (value, error)
+	Parameters() parameters
 }
 
-func (f *valueFunction) call(i *interpreter, trace TraceElement, args callArguments) (value, error) {
-	err := checkArguments(i, trace, args, f.parameters())
+func (f *valueFunction) call(i *interpreter, trace traceElement, args callArguments) (value, error) {
+	err := checkArguments(i, trace, args, f.Parameters())
 	if err != nil {
 		return nil, err
 	}
 	return f.ec.evalCall(args, i, trace)
 }
 
-func (f *valueFunction) parameters() Parameters {
+func (f *valueFunction) Parameters() parameters {
 	return f.ec.Parameters()
 }
 
-func checkArguments(i *interpreter, trace TraceElement, args callArguments, params Parameters) error {
+func checkArguments(i *interpreter, trace traceElement, args callArguments, params parameters) error {
 	received := make(map[ast.Identifier]bool)
 	accepted := make(map[ast.Identifier]bool)
 
@@ -321,9 +321,9 @@ func (f *valueFunction) getType() *valueType {
 	return functionType
 }
 
-// Parameters represents required position and optional named parameters for a
+// parameters represents required position and optional named parameters for a
 // function definition.
-type Parameters struct {
+type parameters struct {
 	required ast.Identifiers
 	optional []namedParameter
 }
@@ -408,16 +408,16 @@ func (sb selfBinding) super() selfBinding {
 	return selfBinding{self: sb.self, superDepth: sb.superDepth + 1}
 }
 
-// Hidden represents wether to include hidden fields in a lookup.
-type Hidden int
+// hidden represents wether to include hidden fields in a lookup.
+type hidden int
 
 // With/without hidden fields
 const (
-	withHidden Hidden = iota
+	withHidden hidden = iota
 	withoutHidden
 )
 
-func withHiddenFromBool(with bool) Hidden {
+func withHiddenFromBool(with bool) hidden {
 	if with {
 		return withHidden
 	}
@@ -428,7 +428,7 @@ func (*valueObject) getType() *valueType {
 	return objectType
 }
 
-func (obj *valueObject) index(i *interpreter, trace TraceElement, field string) (value, error) {
+func (obj *valueObject) index(i *interpreter, trace traceElement, field string) (value, error) {
 	return objectIndex(i, trace, objectBinding(obj), field)
 }
 
@@ -481,7 +481,7 @@ type simpleObject struct {
 	locals   []objectLocal
 }
 
-func checkAssertionsHelper(i *interpreter, trace TraceElement, obj *valueObject, curr uncachedObject, superDepth int) error {
+func checkAssertionsHelper(i *interpreter, trace traceElement, obj *valueObject, curr uncachedObject, superDepth int) error {
 	switch curr := curr.(type) {
 	case *extendedObject:
 		err := checkAssertionsHelper(i, trace, obj, curr.right, superDepth)
@@ -510,7 +510,7 @@ func checkAssertionsHelper(i *interpreter, trace TraceElement, obj *valueObject,
 	}
 }
 
-func checkAssertions(i *interpreter, trace TraceElement, obj *valueObject) error {
+func checkAssertions(i *interpreter, trace traceElement, obj *valueObject) error {
 	if !obj.assertionsChecked() {
 		// Assertions may refer to the object that will normally
 		// trigger checking of assertions, resulting in an endless recursion.
@@ -546,7 +546,7 @@ type simpleObjectField struct {
 
 // unboundField is a field that doesn't know yet in which object it is.
 type unboundField interface {
-	evaluate(i *interpreter, trace TraceElement, sb selfBinding, origBinding bindingFrame, fieldName string) (value, error)
+	evaluate(i *interpreter, trace traceElement, sb selfBinding, origBinding bindingFrame, fieldName string) (value, error)
 }
 
 // extendedObject represents an object created through inheritance (left + right).
@@ -635,7 +635,7 @@ func prepareFieldUpvalues(sb selfBinding, upValues bindingFrame, locals []object
 	return newUpValues
 }
 
-func objectIndex(i *interpreter, trace TraceElement, sb selfBinding, fieldName string) (value, error) {
+func objectIndex(i *interpreter, trace traceElement, sb selfBinding, fieldName string) (value, error) {
 	err := checkAssertions(i, trace, sb.self)
 	if err != nil {
 		return nil, err
@@ -665,7 +665,7 @@ func objectIndex(i *interpreter, trace TraceElement, sb selfBinding, fieldName s
 	return val, err
 }
 
-func objectHasField(sb selfBinding, fieldName string, h Hidden) bool {
+func objectHasField(sb selfBinding, fieldName string, h hidden) bool {
 	found, field, _, _, _ := findField(sb.self.uncached, sb.superDepth, fieldName)
 	if !found || (h == withoutHidden && field.hide == ast.ObjectFieldHidden) {
 		return false
@@ -705,7 +705,7 @@ func objectFieldsVisibility(obj *valueObject) fieldHideMap {
 }
 
 // Returns field names of an object. Gotcha: the order of fields is unpredictable.
-func objectFields(obj *valueObject, h Hidden) []string {
+func objectFields(obj *valueObject, h hidden) []string {
 	var r []string
 	for fieldName, hide := range objectFieldsVisibility(obj) {
 		if h == withHidden || hide != ast.ObjectFieldHidden {
