@@ -22,7 +22,7 @@ import (
 	"io"
 
 	"github.com/google/go-jsonnet/ast"
-	"github.com/google/go-jsonnet/parser"
+	"github.com/google/go-jsonnet/internal/errors"
 )
 
 // An ErrorFormatter formats errors with stacktraces and color.
@@ -68,7 +68,7 @@ func (ef *termErrorFormatter) Format(err error) string {
 	switch err := err.(type) {
 	case RuntimeError:
 		return ef.formatRuntime(&err)
-	case parser.StaticError:
+	case errors.StaticError:
 		return ef.formatStatic(&err)
 	default:
 		return ef.formatInternal(err)
@@ -79,7 +79,7 @@ func (ef *termErrorFormatter) formatRuntime(err *RuntimeError) string {
 	return err.Error() + "\n" + ef.buildStackTrace(err.StackTrace)
 }
 
-func (ef *termErrorFormatter) formatStatic(err *parser.StaticError) string {
+func (ef *termErrorFormatter) formatStatic(err *errors.StaticError) string {
 	var buf bytes.Buffer
 	buf.WriteString(err.Error() + "\n")
 	ef.showCode(&buf, err.Loc)

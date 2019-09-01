@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/google/go-jsonnet/ast"
-	"github.com/google/go-jsonnet/parser"
+	"github.com/google/go-jsonnet/internal/errors"
 )
 
 type analysisState struct {
@@ -99,12 +99,12 @@ func analyzeVisit(a ast.Node, inObject bool, vars ast.IdentifierSet) error {
 		//nothing to do here
 	case *ast.InSuper:
 		if !inObject {
-			return parser.MakeStaticError("Can't use super outside of an object.", *a.Loc())
+			return errors.MakeStaticError("Can't use super outside of an object.", *a.Loc())
 		}
 		visitNext(a.Index, inObject, vars, s)
 	case *ast.SuperIndex:
 		if !inObject {
-			return parser.MakeStaticError("Can't use super outside of an object.", *a.Loc())
+			return errors.MakeStaticError("Can't use super outside of an object.", *a.Loc())
 		}
 		visitNext(a.Index, inObject, vars, s)
 	case *ast.Index:
@@ -148,13 +148,13 @@ func analyzeVisit(a ast.Node, inObject bool, vars ast.IdentifierSet) error {
 
 	case *ast.Self:
 		if !inObject {
-			return parser.MakeStaticError("Can't use self outside of an object.", *a.Loc())
+			return errors.MakeStaticError("Can't use self outside of an object.", *a.Loc())
 		}
 	case *ast.Unary:
 		visitNext(a.Expr, inObject, vars, s)
 	case *ast.Var:
 		if !vars.Contains(a.Id) {
-			return parser.MakeStaticError(fmt.Sprintf("Unknown variable: %v", a.Id), *a.Loc())
+			return errors.MakeStaticError(fmt.Sprintf("Unknown variable: %v", a.Id), *a.Loc())
 		}
 		s.freeVars.Add(a.Id)
 	default:

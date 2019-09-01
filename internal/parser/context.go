@@ -26,8 +26,9 @@ var topLevelContext = "$"
 
 const anonymous = "anonymous"
 
-// TODO(sbarzowski) polish children functions and consider moving to AST
-// and exporting
+// TODO(sbarzowski) The children functions should definitely be moved to ast
+// package or a separate internal astutils package. The only reason I'm not doing it
+// right now is that it's a pretty invasive change that deserves a separate PR.
 
 // directChildren are children of AST node that are executed in the same context
 // and environment as their parent. It supports ASTs before and after desugaring.

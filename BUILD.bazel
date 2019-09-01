@@ -26,8 +26,8 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//ast:go_default_library",
+        "//internal/errors:go_default_library",
         "//internal/program:go_default_library",
-        "//parser:go_default_library",
     ],
 )
 
@@ -43,7 +43,7 @@ go_test(
     deps = [
         "//ast:go_default_library",
         "//astgen:go_default_library",
-        "//parser:go_default_library",
+        "//internal/parser:go_default_library",
         "@com_github_sergi_go_diff//diffmatchpatch:go_default_library",
     ],
 )

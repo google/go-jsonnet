@@ -24,6 +24,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/go-jsonnet/ast"
+	"github.com/google/go-jsonnet/internal/errors"
 )
 
 // ---------------------------------------------------------------------------
@@ -370,7 +371,7 @@ func (l *lexer) emitFullToken(kind tokenKind, data, stringBlockIndent, stringBlo
 		data:                  data,
 		stringBlockIndent:     stringBlockIndent,
 		stringBlockTermIndent: stringBlockTermIndent,
-		loc: ast.MakeLocationRange(l.fileName, l.source, l.tokenStartLoc, l.location()),
+		loc:                   ast.MakeLocationRange(l.fileName, l.source, l.tokenStartLoc, l.location()),
 	})
 	l.fodder = ast.Fodder{}
 }
@@ -385,8 +386,8 @@ func (l *lexer) addFodder(kind ast.FodderKind, blanks int, indent int, comment [
 	l.fodder = append(l.fodder, elem)
 }
 
-func (l *lexer) makeStaticErrorPoint(msg string, loc ast.Location) StaticError {
-	return StaticError{Msg: msg, Loc: ast.MakeLocationRange(l.fileName, l.source, loc, loc)}
+func (l *lexer) makeStaticErrorPoint(msg string, loc ast.Location) errors.StaticError {
+	return errors.StaticError{Msg: msg, Loc: ast.MakeLocationRange(l.fileName, l.source, loc, loc)}
 }
 
 // lexWhitespace consumes all whitespace and returns the number of \n and number of
