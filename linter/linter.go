@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/google/go-jsonnet/ast"
-	"github.com/google/go-jsonnet/parser"
+	"github.com/google/go-jsonnet/internal/errors"
 )
 
 // ErrorWriter encapsulates a writer and an error state indicating when at least
@@ -15,7 +15,7 @@ type ErrorWriter struct {
 	Writer      io.Writer
 }
 
-func (e *ErrorWriter) writeError(err parser.StaticError) {
+func (e *ErrorWriter) writeError(err errors.StaticError) {
 	e.ErrorsFound = true
 	e.Writer.Write([]byte(err.Error() + "\n"))
 }
@@ -49,7 +49,7 @@ func Lint(node ast.Node, e *ErrorWriter) {
 	findVariables(node, &lintingInfo, vScope{"std": &std})
 	for _, v := range lintingInfo.variables {
 		if len(v.uses) == 0 && !v.param {
-			e.writeError(parser.MakeStaticError("Unused variable: "+string(v.name), *v.declNode.Loc()))
+			e.writeError(errors.MakeStaticError("Unused variable: "+string(v.name), *v.declNode.Loc()))
 		}
 	}
 }

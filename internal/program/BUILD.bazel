@@ -11,7 +11,8 @@ go_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//ast:go_default_library",
-        "//parser:go_default_library",
+        "//internal/errors:go_default_library",
+        "//internal/parser:go_default_library",
     ],
 )
 
