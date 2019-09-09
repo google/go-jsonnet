@@ -21,6 +21,9 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+
+	"github.com/google/go-jsonnet/ast"
+	"github.com/google/go-jsonnet/internal/program"
 )
 
 // An Importer imports data from a path.
@@ -40,6 +43,10 @@ type Importer interface {
 	// then all results of all attempts will be cached separately,
 	// both nonexistence and contents of existing ones.
 	// FileImporter may serve as an example.
+	//
+	// Importing the same file multiple times must be a cheap operation
+	// and shouldn't involve copying the whole file - the same buffer
+	// should be returned.
 	Import(importedFrom, importedPath string) (contents Contents, foundAt string, err error)
 }
 
@@ -69,6 +76,7 @@ func MakeContents(s string) Contents {
 // It also verifies that the content pointer is the same for two foundAt values.
 type importCache struct {
 	foundAtVerification map[string]Contents
+	astCache            map[string]ast.Node
 	codeCache           map[string]potentialValue
 	importer            Importer
 }
@@ -78,8 +86,13 @@ func makeImportCache(importer Importer) *importCache {
 	return &importCache{
 		importer:            importer,
 		foundAtVerification: make(map[string]Contents),
+		astCache:            make(map[string]ast.Node),
 		codeCache:           make(map[string]potentialValue),
 	}
+}
+
+func (cache *importCache) flushValueCache() {
+	cache.codeCache = make(map[string]potentialValue)
 }
 
 func (cache *importCache) importData(importedFrom, importedPath string) (contents Contents, foundAt string, err error) {
@@ -97,6 +110,19 @@ func (cache *importCache) importData(importedFrom, importedPath string) (content
 	return
 }
 
+func (cache *importCache) importAST(importedFrom, importedPath string) (ast.Node, string, error) {
+	contents, foundAt, err := cache.importData(importedFrom, importedPath)
+	if err != nil {
+		return nil, "", err
+	}
+	if cachedNode, isCached := cache.astCache[foundAt]; isCached {
+		return cachedNode, foundAt, nil
+	}
+	node, err := program.SnippetToAST(foundAt, contents.String())
+	cache.astCache[foundAt] = node
+	return node, foundAt, err
+}
+
 // ImportString imports a string, caches it and then returns it.
 func (cache *importCache) importString(importedFrom, importedPath string, i *interpreter, trace traceElement) (*valueString, error) {
 	data, _, err := cache.importData(importedFrom, importedPath)
@@ -107,7 +133,7 @@ func (cache *importCache) importString(importedFrom, importedPath string, i *int
 }
 
 func codeToPV(i *interpreter, filename string, code string) *cachedThunk {
-	node, err := SnippetToAST(filename, code)
+	node, err := program.SnippetToAST(filename, code)
 	if err != nil {
 		// TODO(sbarzowski) we should wrap (static) error here
 		// within a RuntimeError. Because whether we get this error or not
@@ -126,14 +152,19 @@ func codeToPV(i *interpreter, filename string, code string) *cachedThunk {
 
 // ImportCode imports code from a path.
 func (cache *importCache) importCode(importedFrom, importedPath string, i *interpreter, trace traceElement) (value, error) {
-	contents, foundAt, err := cache.importData(importedFrom, importedPath)
+	node, foundAt, err := cache.importAST(importedFrom, importedPath)
 	if err != nil {
 		return nil, i.Error(err.Error(), trace)
 	}
 	var pv potentialValue
 	if cachedPV, isCached := cache.codeCache[foundAt]; !isCached {
 		// File hasn't been parsed and analyzed before, update the cache record.
-		pv = codeToPV(i, foundAt, contents.String())
+		env := makeInitialEnv(foundAt, i.baseStd)
+		pv = &cachedThunk{
+			env:     &env,
+			body:    node,
+			content: nil,
+		}
 		cache.codeCache[foundAt] = pv
 	} else {
 		pv = cachedPV
