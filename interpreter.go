@@ -1144,10 +1144,10 @@ func buildObject(hide ast.ObjectFieldHide, fields map[string]value) *valueObject
 	return makeValueSimpleObject(bindingFrame{}, fieldMap, nil, nil)
 }
 
-func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*NativeFunction, maxStack int, importer Importer) (*interpreter, error) {
+func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*NativeFunction, maxStack int, ic *importCache) (*interpreter, error) {
 	i := interpreter{
 		stack:       makeCallStack(maxStack),
-		importCache: makeImportCache(importer),
+		importCache: ic,
 		nativeFuncs: nativeFuncs,
 	}
 
@@ -1210,9 +1210,9 @@ func evaluateAux(i *interpreter, node ast.Node, tla vmExtMap) (value, traceEleme
 
 // TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
 func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, importer Importer, stringOutputMode bool) (string, error) {
+	maxStack int, ic *importCache, stringOutputMode bool) (string, error) {
 
-	i, err := buildInterpreter(ext, nativeFuncs, maxStack, importer)
+	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic)
 	if err != nil {
 		return "", err
 	}
@@ -1237,9 +1237,9 @@ func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]
 
 // TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
 func evaluateMulti(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, importer Importer, stringOutputMode bool) (map[string]string, error) {
+	maxStack int, ic *importCache, stringOutputMode bool) (map[string]string, error) {
 
-	i, err := buildInterpreter(ext, nativeFuncs, maxStack, importer)
+	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic)
 	if err != nil {
 		return nil, err
 	}
@@ -1254,9 +1254,9 @@ func evaluateMulti(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[st
 
 // TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
 func evaluateStream(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, importer Importer) ([]string, error) {
+	maxStack int, ic *importCache) ([]string, error) {
 
-	i, err := buildInterpreter(ext, nativeFuncs, maxStack, importer)
+	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic)
 	if err != nil {
 		return nil, err
 	}
