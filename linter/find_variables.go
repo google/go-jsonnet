@@ -28,7 +28,7 @@ func cloneScope(oldScope vScope) vScope {
 
 func findVariablesInFunc(node *ast.Function, info *LintingInfo, scope vScope) {
 	for _, param := range node.Parameters.Required {
-		addVar(param, node, info, scope, true)
+		addVar(param.Name, node, info, scope, true)
 	}
 	for _, param := range node.Parameters.Optional {
 		addVar(param.Name, node, info, scope, true)

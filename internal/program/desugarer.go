@@ -192,8 +192,10 @@ func desugarFields(nodeBase ast.NodeBase, fields *ast.ObjectFields, objLevel int
 
 func simpleLambda(body ast.Node, paramName ast.Identifier) ast.Node {
 	return &ast.Function{
-		Body:       body,
-		Parameters: ast.Parameters{Required: ast.Identifiers{paramName}},
+		Body: body,
+		Parameters: ast.Parameters{
+			Required: []ast.CommaSeparatedID{{Name: paramName}},
+		},
 	}
 }
 
@@ -234,7 +236,7 @@ func desugarForSpec(inside ast.Node, forSpec *ast.ForSpec, objLevel int) (ast.No
 }
 
 func wrapInArray(inside ast.Node) ast.Node {
-	return &ast.Array{Elements: ast.Nodes{inside}}
+	return &ast.Array{Elements: []ast.CommaSeparatedExpr{{Expr: inside}}}
 }
 
 func desugarArrayComp(comp *ast.ArrayComp, objLevel int) (ast.Node, error) {
@@ -281,9 +283,13 @@ func buildSimpleIndex(obj ast.Node, member ast.Identifier) ast.Node {
 func buildStdCall(builtinName ast.Identifier, args ...ast.Node) ast.Node {
 	std := &ast.Var{Id: "std"}
 	builtin := buildSimpleIndex(std, builtinName)
+	positional := make([]ast.CommaSeparatedExpr, len(args))
+	for i := range args {
+		positional[i].Expr = args[i]
+	}
 	return &ast.Apply{
 		Target:    builtin,
-		Arguments: ast.Arguments{Positional: args},
+		Arguments: ast.Arguments{Positional: positional},
 	}
 }
 
@@ -318,7 +324,7 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 			return
 		}
 		for i := range node.Arguments.Positional {
-			err = desugar(&node.Arguments.Positional[i], objLevel)
+			err = desugar(&node.Arguments.Positional[i].Expr, objLevel)
 			if err != nil {
 				return
 			}
@@ -348,7 +354,7 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 
 	case *ast.Array:
 		for i := range node.Elements {
-			err = desugar(&node.Elements[i], objLevel)
+			err = desugar(&node.Elements[i].Expr, objLevel)
 			if err != nil {
 				return
 			}

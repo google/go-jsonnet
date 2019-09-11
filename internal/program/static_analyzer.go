@@ -56,14 +56,14 @@ func analyzeVisit(a ast.Node, inObject bool, vars ast.IdentifierSet) error {
 	case *ast.Apply:
 		visitNext(a.Target, inObject, vars, s)
 		for _, arg := range a.Arguments.Positional {
-			visitNext(arg, inObject, vars, s)
+			visitNext(arg.Expr, inObject, vars, s)
 		}
 		for _, arg := range a.Arguments.Named {
 			visitNext(arg.Arg, inObject, vars, s)
 		}
 	case *ast.Array:
 		for _, elem := range a.Elements {
-			visitNext(elem, inObject, vars, s)
+			visitNext(elem.Expr, inObject, vars, s)
 		}
 	case *ast.Binary:
 		visitNext(a.Left, inObject, vars, s)
@@ -77,7 +77,7 @@ func analyzeVisit(a ast.Node, inObject bool, vars ast.IdentifierSet) error {
 	case *ast.Function:
 		newVars := vars.Clone()
 		for _, param := range a.Parameters.Required {
-			newVars.Add(param)
+			newVars.Add(param.Name)
 		}
 		for _, param := range a.Parameters.Optional {
 			newVars.Add(param.Name)
@@ -88,7 +88,7 @@ func analyzeVisit(a ast.Node, inObject bool, vars ast.IdentifierSet) error {
 		visitNext(a.Body, inObject, newVars, s)
 		// Parameters are free inside the body, but not visible here or outside
 		for _, param := range a.Parameters.Required {
-			s.freeVars.Remove(param)
+			s.freeVars.Remove(param.Name)
 		}
 		for _, param := range a.Parameters.Optional {
 			s.freeVars.Remove(param.Name)

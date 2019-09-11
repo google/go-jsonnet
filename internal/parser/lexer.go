@@ -371,7 +371,7 @@ func (l *lexer) emitFullToken(kind tokenKind, data, stringBlockIndent, stringBlo
 		data:                  data,
 		stringBlockIndent:     stringBlockIndent,
 		stringBlockTermIndent: stringBlockTermIndent,
-		loc:                   ast.MakeLocationRange(l.fileName, l.source, l.tokenStartLoc, l.location()),
+		loc: ast.MakeLocationRange(l.fileName, l.source, l.tokenStartLoc, l.location()),
 	})
 	l.fodder = ast.Fodder{}
 }
