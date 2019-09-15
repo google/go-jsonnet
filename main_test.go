@@ -137,7 +137,7 @@ func runInternalJsonnet(i jsonnetInput) jsonnetResult {
 	vm.NativeFunction(jsonToString)
 	vm.NativeFunction(nativeError)
 
-	rawAST, staticErr := parser.SnippetToRawAST(i.name, string(i.input))
+	rawAST, _, staticErr := parser.SnippetToRawAST(i.name, string(i.input))
 	if staticErr != nil {
 		return jsonnetResult{
 			output:  errFormatter.Format(staticErr) + "\n",

@@ -43,6 +43,9 @@ type Node interface {
 	FreeVariables() Identifiers
 	SetFreeVariables(Identifiers)
 	SetContext(Context)
+	OpenFodderPtr() *Fodder
+	OpenFodder() Fodder
+	SetOpenFodder(Fodder)
 }
 
 // Nodes represents a Node slice.
@@ -81,9 +84,19 @@ func (n *NodeBase) Loc() *LocationRange {
 	return &n.LocRange
 }
 
+// OpenFodderPtr returns a NodeBase's opening fodder.
+func (n *NodeBase) OpenFodderPtr() *Fodder {
+	return &n.Fodder
+}
+
 // OpenFodder returns a NodeBase's opening fodder.
 func (n *NodeBase) OpenFodder() Fodder {
 	return n.Fodder
+}
+
+// SetOpenFodder sets a NodeBase's opening fodder.
+func (n *NodeBase) SetOpenFodder(fodder Fodder) {
+	n.Fodder = fodder
 }
 
 // FreeVariables returns a NodeBase's freeVariables.
@@ -427,7 +440,7 @@ type Index struct {
 	LeftBracketFodder Fodder
 	Index             Node
 	// When Index is being used, this is the fodder before the ']'.
-	// When Id is being used, this is always empty.
+	// When Id is being used, this is the fodder before the id.
 	RightBracketFodder Fodder
 	//nolint: golint,stylecheck // keeping Id instead of ID for now to avoid breaking 3rd parties
 	Id *Identifier
@@ -523,9 +536,10 @@ func (k LiteralStringKind) FullyEscaped() bool {
 // LiteralString represents a JSON string
 type LiteralString struct {
 	NodeBase
-	Value       string
-	Kind        LiteralStringKind
-	BlockIndent string
+	Value           string
+	Kind            LiteralStringKind
+	BlockIndent     string
+	BlockTermIndent string
 }
 
 // ---------------------------------------------------------------------------
@@ -642,10 +656,11 @@ type DesugaredObject struct {
 //   { [e]: e for x in e for.. if... }.
 type ObjectComp struct {
 	NodeBase
-	Fields        ObjectFields
-	TrailingComma bool
-	Spec          ForSpec
-	CloseFodder   Fodder
+	Fields              ObjectFields
+	TrailingCommaFodder Fodder
+	TrailingComma       bool
+	Spec                ForSpec
+	CloseFodder         Fodder
 }
 
 // ---------------------------------------------------------------------------

@@ -131,7 +131,7 @@ func TestParser(t *testing.T) {
 				t.Errorf("Unexpected lex error\n  input: %v\n  error: %v", s, err)
 				return
 			}
-			_, err = Parse(tokens)
+			_, _, err = Parse(tokens)
 			if err != nil {
 				t.Errorf("Unexpected parse error\n  input: %v\n  error: %v", s, err)
 			}
@@ -255,7 +255,7 @@ func TestParserErrors(t *testing.T) {
 				t.Errorf("Unexpected lex error\n  input: %v\n  error: %v", s.input, err)
 				return
 			}
-			_, err = Parse(tokens)
+			_, _, err = Parse(tokens)
 			if err == nil {
 				t.Errorf("Expected parse error but got success\n  input: %v", s.input)
 				return
