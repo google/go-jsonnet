@@ -886,7 +886,7 @@ func jsonToValue(i *interpreter, trace traceElement, v interface{}) (value, erro
 	case bool:
 		return makeValueBoolean(v), nil
 	case float64:
-		return makeValueNumber(v), nil
+		return makeDoubleCheck(i, trace, v)
 
 	case map[string]interface{}:
 		fieldMap := map[string]value{}

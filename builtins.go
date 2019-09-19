@@ -47,7 +47,7 @@ func builtinPlus(i *interpreter, trace traceElement, x, y value) (value, error) 
 		if err != nil {
 			return nil, err
 		}
-		return makeValueNumber(left.value + right.value), nil
+		return makeDoubleCheck(i, trace, left.value+right.value)
 	case *valueString:
 		right, err := builtinToString(i, trace, y)
 		if err != nil {
@@ -82,7 +82,7 @@ func builtinMinus(i *interpreter, trace traceElement, xv, yv value) (value, erro
 	if err != nil {
 		return nil, err
 	}
-	return makeValueNumber(x.value - y.value), nil
+	return makeDoubleCheck(i, trace, x.value-y.value)
 }
 
 func builtinMult(i *interpreter, trace traceElement, xv, yv value) (value, error) {
@@ -94,7 +94,7 @@ func builtinMult(i *interpreter, trace traceElement, xv, yv value) (value, error
 	if err != nil {
 		return nil, err
 	}
-	return makeValueNumber(x.value * y.value), nil
+	return makeDoubleCheck(i, trace, x.value*y.value)
 }
 
 func builtinDiv(i *interpreter, trace traceElement, xv, yv value) (value, error) {
