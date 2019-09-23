@@ -4,33 +4,27 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"unsafe"
 
 	"github.com/google/go-jsonnet"
+	"github.com/google/go-jsonnet/ast"
 
 	// #cgo CXXFLAGS: -std=c++11 -Wall -I../cpp-jsonnet/include
 	// #include "internal.h"
 	"C"
 )
 
-const maxID = 1000
-
 type vm struct {
 	*jsonnet.VM
 	importer *jsonnet.FileImporter
 }
 
-// Because of Go GC, there are restrictions on keeping Go pointers in C.
-// We cannot just pass *jsonnet.VM to C. So instead we use "handle" structs in C
-// which refer to JsonnetVM by a numeric id.
-// The way it is implemented below is simple and has low overhead, but requires us to keep
-// a list of used IDs. This results in a permanent "leak". I don't expect it to ever
-// become a problem.
-// The VM IDs start with 1, so 0 is never a valid ID and the VM's index in the array is (ID - 1).
+type jsonValue struct {
+	obj      interface{}
+	children []uint32
+}
 
-// VMs is the set of active, valid Jsonnet virtual machine handles allocated by jsonnet_make.
-var VMs = []*vm{}
-var freedIDs = []uint32{}
-
+var handles = handlesTable{}
 var versionString *C.char
 
 //export jsonnet_version
@@ -44,35 +38,45 @@ func jsonnet_version() *C.char {
 
 //export jsonnet_make
 func jsonnet_make() *C.struct_JsonnetVm {
-	var id uint32
-
 	newVM := &vm{jsonnet.MakeVM(), &jsonnet.FileImporter{}}
 	newVM.Importer(newVM.importer)
 
-	if len(freedIDs) > 0 {
-		id, freedIDs = freedIDs[len(freedIDs)-1], freedIDs[:len(freedIDs)-1]
-		VMs[id-1] = newVM
-	} else {
-		id = uint32(len(VMs) + 1)
-		if id > maxID {
-			fmt.Fprintf(os.Stderr, "Maximum number of constructed Jsonnet VMs exceeded (%d)\n", maxID)
-			os.Exit(1)
-		}
-		VMs = append(VMs, newVM)
+	id, err := handles.make(newVM)
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
 	}
-	addr := C.jsonnet_internal_make_vm_with_id(C.uint32_t(id))
-	return addr
+
+	return C.jsonnet_internal_make_vm_with_id(C.uint32_t(id))
 }
 
 //export jsonnet_destroy
 func jsonnet_destroy(vmRef *C.struct_JsonnetVm) {
-	VMs[vmRef.id-1] = nil
-	freedIDs = append(freedIDs, uint32(vmRef.id))
+	if err := handles.free(uint32(vmRef.id)); err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+
 	C.jsonnet_internal_free_vm(vmRef)
 }
 
 func getVM(vmRef *C.struct_JsonnetVm) *vm {
-	return VMs[vmRef.id-1]
+	ref, err := handles.get(uint32(vmRef.id))
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+
+	v, ok := ref.(*vm)
+
+	if !ok {
+		fmt.Fprintf(os.Stderr, "provided handle has a different type")
+		os.Exit(1)
+	}
+
+	return v
 }
 
 func evaluateSnippet(vmRef *C.struct_JsonnetVm, filename string, code string, e *C.int) *C.char {
@@ -154,6 +158,240 @@ func jsonnet_tla_var(vmRef *C.struct_JsonnetVm, key, value *C.char) {
 func jsonnet_tla_code(vmRef *C.struct_JsonnetVm, key, value *C.char) {
 	vm := getVM(vmRef)
 	vm.TLACode(C.GoString(key), C.GoString(value))
+}
+
+//export jsonnet_native_callback
+func jsonnet_native_callback(vmRef *C.struct_JsonnetVm, name *C.char, cb *C.JsonnetNativeCallback, ctx unsafe.Pointer, params **C.char) {
+	vm := getVM(vmRef)
+	p := unsafe.Pointer(params)
+	sz := unsafe.Sizeof(*params)
+
+	var identifiers ast.Identifiers
+
+	for i := 0; ; i++ {
+		arg := (**C.char)(unsafe.Pointer(uintptr(p) + uintptr(i)*sz))
+
+		if *arg == nil {
+			break
+		}
+
+		identifiers = append(identifiers, ast.Identifier(C.GoString(*arg)))
+	}
+
+	f := &jsonnet.NativeFunction{
+		Name:   C.GoString(name),
+		Params: identifiers,
+		Func: func(x []interface{}) (interface{}, error) {
+			var (
+				arr     []*C.struct_JsonnetJsonValue
+				argv    **C.struct_JsonnetJsonValue
+				success = C.int(0)
+			)
+
+			if len(x) > 0 {
+				arr = make([]*C.struct_JsonnetJsonValue, 0, len(x))
+
+				for _, json := range x {
+					arr = append(arr, createJSONValue(vmRef, json))
+				}
+
+				argv = &(arr[0])
+			}
+
+			result := C.jsonnet_internal_execute_native(cb, ctx, argv, &success)
+			v := getJSONValue(result)
+
+			for _, val := range arr {
+				jsonnet_json_destroy(vmRef, val)
+			}
+
+			jsonnet_json_destroy(vmRef, result)
+
+			if success != 1 {
+				return nil, fmt.Errorf("failed to execute native callback, code: %d", success)
+			}
+
+			return v.obj, nil
+		},
+	}
+
+	vm.NativeFunction(f)
+}
+
+//export jsonnet_json_extract_string
+func jsonnet_json_extract_string(vmRef *C.struct_JsonnetVm, json *C.struct_JsonnetJsonValue) *C.char {
+	_ = getVM(vmRef) // Here we check it, is it ok?
+	v := getJSONValue(json)
+	str, ok := v.obj.(string)
+
+	if !ok {
+		return nil
+	}
+
+	return C.CString(str)
+}
+
+//export jsonnet_json_extract_number
+func jsonnet_json_extract_number(vmRef *C.struct_JsonnetVm, json *C.struct_JsonnetJsonValue, out *C.double) C.int {
+	_ = getVM(vmRef) // Here we check it, is it ok?
+	v := getJSONValue(json)
+
+	switch f := v.obj.(type) {
+	case float64:
+		*out = C.double(f)
+		return 1
+	case int:
+		*out = C.double(f)
+		return 1
+	}
+
+	return 0
+}
+
+//export jsonnet_json_extract_bool
+func jsonnet_json_extract_bool(vmRef *C.struct_JsonnetVm, json *C.struct_JsonnetJsonValue) C.int {
+	_ = getVM(vmRef) // Here we check it, is it ok?
+	v := getJSONValue(json)
+	b, ok := v.obj.(bool)
+
+	if !ok {
+		return 2
+	}
+
+	if b {
+		return 1
+	}
+
+	return 0
+}
+
+//export jsonnet_json_extract_null
+func jsonnet_json_extract_null(vmRef *C.struct_JsonnetVm, json *C.struct_JsonnetJsonValue) C.int {
+	_ = getVM(vmRef) // Here we check it, is it ok?
+	v := getJSONValue(json)
+
+	if v.obj == nil {
+		return 1
+	}
+
+	return 0
+}
+
+//export jsonnet_json_make_string
+func jsonnet_json_make_string(vmRef *C.struct_JsonnetVm, v *C.char) *C.struct_JsonnetJsonValue {
+	return createJSONValue(vmRef, C.GoString(v))
+}
+
+//export jsonnet_json_make_number
+func jsonnet_json_make_number(vmRef *C.struct_JsonnetVm, v C.double) *C.struct_JsonnetJsonValue {
+	return createJSONValue(vmRef, float64(v))
+}
+
+//export jsonnet_json_make_bool
+func jsonnet_json_make_bool(vmRef *C.struct_JsonnetVm, v C.int) *C.struct_JsonnetJsonValue {
+	return createJSONValue(vmRef, v != 0)
+}
+
+//export jsonnet_json_make_null
+func jsonnet_json_make_null(vmRef *C.struct_JsonnetVm) *C.struct_JsonnetJsonValue {
+	return createJSONValue(vmRef, nil)
+}
+
+//export jsonnet_json_make_array
+func jsonnet_json_make_array(vmRef *C.struct_JsonnetVm) *C.struct_JsonnetJsonValue {
+	return createJSONValue(vmRef, []interface{}{})
+}
+
+//export jsonnet_json_array_append
+func jsonnet_json_array_append(vmRef *C.struct_JsonnetVm, arr *C.struct_JsonnetJsonValue, v *C.struct_JsonnetJsonValue) {
+	_ = getVM(vmRef) // Here we check it, is it ok?
+	json := getJSONValue(arr)
+	slice, ok := json.obj.([]interface{})
+
+	if !ok {
+		fmt.Fprintf(os.Stderr, "array should be provided")
+		os.Exit(1)
+	}
+
+	val := getJSONValue(v)
+	json.obj = append(slice, val)
+	json.children = append(json.children, uint32(v.id))
+}
+
+//export jsonnet_json_make_object
+func jsonnet_json_make_object(vmRef *C.struct_JsonnetVm) *C.struct_JsonnetJsonValue {
+	return createJSONValue(vmRef, make(map[string]interface{}))
+}
+
+//export jsonnet_json_object_append
+func jsonnet_json_object_append(
+	vmRef *C.struct_JsonnetVm,
+	obj *C.struct_JsonnetJsonValue,
+	f *C.char,
+	v *C.struct_JsonnetJsonValue,
+) {
+	_ = getVM(vmRef) // Here we check it, is it ok?
+	d := getJSONValue(obj)
+	table, ok := d.obj.(map[string]interface{})
+
+	if !ok {
+		fmt.Fprintf(os.Stderr, "object should be provided")
+		os.Exit(1)
+	}
+
+	val := getJSONValue(v)
+	table[C.GoString(f)] = val
+	d.children = append(d.children, uint32(v.id))
+}
+
+//export jsonnet_json_destroy
+func jsonnet_json_destroy(vmRef *C.struct_JsonnetVm, v *C.struct_JsonnetJsonValue) {
+	_ = getVM(vmRef) // Here we check it, is it ok?
+
+	for _, child := range getJSONValue(v).children {
+		// TODO what if a child is already freed?
+		if err := handles.free(child); err != nil {
+			fmt.Fprintf(os.Stderr, err.Error())
+			os.Exit(1)
+		}
+	}
+
+	if err := handles.free(uint32(v.id)); err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+
+	C.jsonnet_internal_free_json(v)
+}
+
+func createJSONValue(vmRef *C.struct_JsonnetVm, obj interface{}) *C.struct_JsonnetJsonValue {
+	_ = getVM(vmRef) // Here we check it, is it ok?
+	id, err := handles.make(&jsonValue{obj: obj})
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+
+	return C.jsonnet_internal_make_json_with_id(C.uint32_t(id))
+}
+
+func getJSONValue(jsonRef *C.struct_JsonnetJsonValue) *jsonValue {
+	ref, err := handles.get(uint32(jsonRef.id))
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(1)
+	}
+
+	v, ok := ref.(*jsonValue)
+
+	if !ok {
+		fmt.Fprintf(os.Stderr, "provided handle has a different type")
+		os.Exit(1)
+	}
+
+	return v
 }
 
 func main() {

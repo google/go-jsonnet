@@ -6,8 +6,6 @@ extern "C" {
     #include "internal.h"
 }
 
-#include "json.h"
-
 struct JsonnetVm *jsonnet_internal_make_vm_with_id(uint32_t id) {
     JsonnetVm *vm = new JsonnetVm();
     vm->id = id;
@@ -16,6 +14,24 @@ struct JsonnetVm *jsonnet_internal_make_vm_with_id(uint32_t id) {
 
 void jsonnet_internal_free_vm(struct JsonnetVm *x) {
     delete(x);
+}
+
+struct JsonnetJsonValue *jsonnet_internal_make_json_with_id(uint32_t id) {
+    JsonnetJsonValue *json = new JsonnetJsonValue();
+    json->id = id;
+    return json;
+}
+
+void jsonnet_internal_free_json(struct JsonnetJsonValue *x) {
+    delete(x);
+}
+
+struct JsonnetJsonValue* jsonnet_internal_execute_native(JsonnetNativeCallback *cb,
+                                                         void *ctx,
+                                                         const struct JsonnetJsonValue *const *argv,
+                                                         int *success) 
+{
+    return (cb)(ctx, argv, success);
 }
 
 inline static void todo() {
@@ -58,12 +74,6 @@ char *jsonnet_realloc(JsonnetVm *vm, char *str, size_t sz)
             return r;
         }
     }
-}
-
-void jsonnet_native_callback(struct JsonnetVm *vm, const char *name, JsonnetNativeCallback *cb,
-    void *ctx, const char *const *params)
-{
-    todo();
 }
 
 char *jsonnet_evaluate_file_multi(JsonnetVm *vm, const char *filename, int *error)
