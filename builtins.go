@@ -488,6 +488,15 @@ func builtinIdentity(i *interpreter, trace traceElement, x value) (value, error)
 	return x, nil
 }
 
+func builtinUnaryPlus(i *interpreter, trace traceElement, x value) (value, error) {
+	n, err := i.getNumber(x, trace)
+	if err != nil {
+		return nil, err
+	}
+
+	return makeValueNumber(n.value), nil
+}
+
 func builtinUnaryMinus(i *interpreter, trace traceElement, x value) (value, error) {
 	n, err := i.getNumber(x, trace)
 	if err != nil {
@@ -1188,7 +1197,7 @@ var bopBuiltins = []*binaryBuiltin{
 var uopBuiltins = []*unaryBuiltin{
 	ast.UopNot:        &unaryBuiltin{name: "operator!", function: builtinNegation, parameters: ast.Identifiers{"x"}},
 	ast.UopBitwiseNot: &unaryBuiltin{name: "operator~", function: builtinBitNeg, parameters: ast.Identifiers{"x"}},
-	ast.UopPlus:       &unaryBuiltin{name: "operator+ (unary)", function: builtinIdentity, parameters: ast.Identifiers{"x"}},
+	ast.UopPlus:       &unaryBuiltin{name: "operator+ (unary)", function: builtinUnaryPlus, parameters: ast.Identifiers{"x"}},
 	ast.UopMinus:      &unaryBuiltin{name: "operator- (unary)", function: builtinUnaryMinus, parameters: ast.Identifiers{"x"}},
 }
 

@@ -1,0 +1,10 @@
+RUNTIME ERROR: Unexpected type object, expected number
+-------------------------------------------------
+	testdata/unary_object:1:1-5	$
+
++ {}
+
+-------------------------------------------------
+	During evaluation	
+
+
