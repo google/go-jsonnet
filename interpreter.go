@@ -283,8 +283,8 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		sb := i.stack.getSelfBinding()
 		var elements []*cachedThunk
 		for _, el := range node.Elements {
-			env := makeEnvironment(i.stack.capture(el.FreeVariables()), sb)
-			elThunk := cachedThunk{env: &env, body: el}
+			env := makeEnvironment(i.stack.capture(el.Expr.FreeVariables()), sb)
+			elThunk := cachedThunk{env: &env, body: el.Expr}
 			elements = append(elements, &elThunk)
 		}
 		return makeValueArray(elements), nil
@@ -555,7 +555,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 			tailstrict: node.TailStrict,
 		}
 		for i, arg := range node.Arguments.Positional {
-			arguments.positional[i] = &cachedThunk{env: &argEnv, body: arg}
+			arguments.positional[i] = &cachedThunk{env: &argEnv, body: arg.Expr}
 		}
 
 		for i, arg := range node.Arguments.Named {

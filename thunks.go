@@ -217,8 +217,12 @@ func prepareClosureParameters(params ast.Parameters, env environment) parameters
 			defaultArg: named.DefaultArg,
 		})
 	}
+	requiredParameters := make([]ast.Identifier, 0, len(params.Required))
+	for _, required := range params.Required {
+		requiredParameters = append(requiredParameters, required.Name)
+	}
 	return parameters{
-		required: params.Required,
+		required: requiredParameters,
 		optional: optionalParameters,
 	}
 }
@@ -260,7 +264,7 @@ func (native *NativeFunction) evalCall(arguments callArguments, i *interpreter, 
 	return jsonToValue(i, trace, resultJSON)
 }
 
-// parameters returns a NativeFunction's parameters.
+// Parameters returns a NativeFunction's parameters.
 func (native *NativeFunction) Parameters() parameters {
 	return parameters{required: native.Params}
 }

@@ -52,13 +52,6 @@ func cloneField(field *ObjectField) {
 		field.Method = Clone(field.Method).(*Function)
 	}
 
-	oldParams := field.Params
-	if oldParams != nil {
-		field.Params = new(Parameters)
-		*field.Params = *oldParams
-	}
-	cloneParameters(field.Params)
-
 	clone(&field.Expr1)
 	clone(&field.Expr2)
 	clone(&field.Expr3)
@@ -80,6 +73,14 @@ func cloneNodeBase(astPtr Node) {
 	astPtr.SetFreeVariables(append(make(Identifiers, 0), astPtr.FreeVariables()...))
 }
 
+func cloneCommaSeparatedExprs(list []CommaSeparatedExpr) []CommaSeparatedExpr {
+	r := append(make([]CommaSeparatedExpr, 0), list...)
+	for i := range list {
+		clone(&r[i].Expr)
+	}
+	return r
+}
+
 // Updates *astPtr to point to a deep clone of what it originally pointed at.
 func clone(astPtr *Node) {
 	node := *astPtr
@@ -93,10 +94,7 @@ func clone(astPtr *Node) {
 		*astPtr = r
 		*r = *node
 		clone(&r.Target)
-		r.Arguments.Positional = append(make(Nodes, 0), r.Arguments.Positional...)
-		for i := range r.Arguments.Positional {
-			clone(&r.Arguments.Positional[i])
-		}
+		r.Arguments.Positional = cloneCommaSeparatedExprs(r.Arguments.Positional)
 		r.Arguments.Named = append(make([]NamedArgument, 0), r.Arguments.Named...)
 		for i := range r.Arguments.Named {
 			clone(&r.Arguments.Named[i].Arg)
@@ -113,10 +111,7 @@ func clone(astPtr *Node) {
 		r := new(Array)
 		*astPtr = r
 		*r = *node
-		r.Elements = append(make(Nodes, 0), r.Elements...)
-		for i := range r.Elements {
-			clone(&r.Elements[i])
-		}
+		r.Elements = cloneCommaSeparatedExprs(r.Elements)
 
 	case *ArrayComp:
 		r := new(ArrayComp)
