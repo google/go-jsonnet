@@ -53,6 +53,9 @@ type Nodes []Node
 // NodeBase holds fields common to all node types.
 type NodeBase struct {
 	LocRange LocationRange
+	// This is the fodder that precedes the first token of the node.
+	// If the node is left-recursive, i.e. the first token is actually
+	// a token of a sub-expression, then Fodder is nil.
 	Fodder   Fodder
 	Ctx      Context
 	FreeVars Identifiers
