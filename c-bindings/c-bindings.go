@@ -21,7 +21,7 @@ type vm struct {
 
 type jsonValue struct {
 	obj      interface{}
-	children []uint32
+	children []*C.struct_JsonnetJsonValue
 }
 
 var handles = handlesTable{}
@@ -314,8 +314,8 @@ func jsonnet_json_array_append(vmRef *C.struct_JsonnetVm, arr *C.struct_JsonnetJ
 	}
 
 	val := getJSONValue(v)
-	json.obj = append(slice, val)
-	json.children = append(json.children, uint32(v.id))
+	json.obj = append(slice, val.obj)
+	json.children = append(json.children, v)
 }
 
 //export jsonnet_json_make_object
@@ -340,8 +340,8 @@ func jsonnet_json_object_append(
 	}
 
 	val := getJSONValue(v)
-	table[C.GoString(f)] = val
-	d.children = append(d.children, uint32(v.id))
+	table[C.GoString(f)] = val.obj
+	d.children = append(d.children, v)
 }
 
 //export jsonnet_json_destroy
@@ -350,10 +350,7 @@ func jsonnet_json_destroy(vmRef *C.struct_JsonnetVm, v *C.struct_JsonnetJsonValu
 
 	for _, child := range getJSONValue(v).children {
 		// TODO what if a child is already freed?
-		if err := handles.free(child); err != nil {
-			fmt.Fprintf(os.Stderr, err.Error())
-			os.Exit(1)
-		}
+		jsonnet_json_destroy(vmRef, child)
 	}
 
 	if err := handles.free(uint32(v.id)); err != nil {
