@@ -183,12 +183,12 @@ def square_native(ctx, argv, success):
 
 @NATIVE_CALLBACK
 def concat_native(ctx, argv, success):
-    a = lib.jsonnet_json_extract_string(ctx, argv[0]);
-    b = lib.jsonnet_json_extract_string(ctx, argv[1]);
+    a = lib.jsonnet_json_extract_string(ctx, argv[0])
+    b = lib.jsonnet_json_extract_string(ctx, argv[1])
 
     if a == None or b == None:
         success[0] = ctypes.c_int(0)
-        return lib.jsonnet_json_make_string(ctx, "Bad params.");
+        return lib.jsonnet_json_make_string(ctx, "Bad params.")
 
     res = lib.jsonnet_json_make_string(ctx, to_bytes(a) + to_bytes(b))
     success[0] = ctypes.c_int(1)
