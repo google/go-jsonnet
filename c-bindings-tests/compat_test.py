@@ -181,6 +181,31 @@ def square_native(ctx, argv, success):
     success[0] = ctypes.c_int(1)
     return lib.jsonnet_json_make_number(ctx, a.value**2)
 
+@NATIVE_CALLBACK
+def concat_native(ctx, argv, success):
+    a = lib.jsonnet_json_extract_string(ctx, argv[0]);
+    b = lib.jsonnet_json_extract_string(ctx, argv[1]);
+
+    if a == None or b == None:
+        success[0] = ctypes.c_int(0)
+        return lib.jsonnet_json_make_string(ctx, "Bad params.");
+
+    res = lib.jsonnet_json_make_string(ctx, to_bytes(a) + to_bytes(b))
+    success[0] = ctypes.c_int(1)
+    return res
+
+@NATIVE_CALLBACK
+def build_native(ctx, argv, success):
+    m = lib.jsonnet_json_make_object(ctx)
+    lib.jsonnet_json_object_append(ctx, m, b"a", lib.jsonnet_json_make_string(ctx, b"hello"))
+    lib.jsonnet_json_object_append(ctx, m, b"b", lib.jsonnet_json_make_string(ctx, b"world"))
+
+    res = lib.jsonnet_json_make_array(ctx)
+    lib.jsonnet_json_array_append(ctx, res, m)
+
+    success[0] = ctypes.c_int(1)
+    return res
+
 class TestJsonnetEvaluateBindings(unittest.TestCase):
     def setUp(self):
         self.err = ctypes.c_int()
@@ -235,7 +260,7 @@ class TestJsonnetEvaluateBindings(unittest.TestCase):
         match = re.match(r'^v[0-9]+[.][0-9]+[.][0-9]+ [(]go-jsonnet[)]$', to_bytes(res).decode('utf-8'))
         self.assertIsNotNone(match)
 
-    def test_jsonnet_native_callback(self):
+    def test_jsonnet_native_callback_square(self):
         arr = (ctypes.c_char_p * 2)()
         arr[0] = b"a"
         arr[1] = ctypes.c_char_p()
@@ -243,6 +268,27 @@ class TestJsonnetEvaluateBindings(unittest.TestCase):
         lib.jsonnet_native_callback(self.vm, b"square", square_native, self.vm, arr)
         res = lib.jsonnet_evaluate_snippet(self.vm, b"native_callback", b"std.native('square')(6+3)", self.err_ref)
         self.assertEqual(b'81\n', to_bytes(res))
+        free_buffer(self.vm, res)
+
+    def test_jsonnet_native_callback_concat(self):
+        arr = (ctypes.c_char_p * 3)()
+        arr[0] = b"a"
+        arr[1] = b"b"
+        arr[2] = ctypes.c_char_p()
+
+        lib.jsonnet_native_callback(self.vm, b"concat", concat_native, self.vm, arr)
+        res = lib.jsonnet_evaluate_snippet(self.vm, b"concat_callback", b"std.native('concat')('hello', 'ween')", self.err_ref)
+        self.assertEqual(b'"helloween"\n', to_bytes(res))
+        free_buffer(self.vm, res)
+
+    def test_jsonnet_native_callback_build(self):
+        arr = (ctypes.c_char_p * 1)()
+        arr[0] = ctypes.c_char_p()
+
+        lib.jsonnet_native_callback(self.vm, b"build", build_native, self.vm, arr)
+        res = lib.jsonnet_evaluate_snippet(self.vm, b"build_callback", b"std.native('build')()", self.err_ref)
+        self.assertEqual(b'[\n   {\n      "a": "hello",\n      "b": "world"\n   }\n]\n', to_bytes(res))
+
         free_buffer(self.vm, res)
 
     def tearDown(self):
@@ -286,9 +332,9 @@ class TestJsonnetJsonValueBindings(unittest.TestCase):
     def test_jsonnet_array(self):
         h = lib.jsonnet_json_make_array(self.vm)
         
-        lib.jsonnet_json_array_append(self.vm, h, lib.jsonnet_json_make_string(self.vm, b"Test 1.1"));
-        lib.jsonnet_json_array_append(self.vm, h, lib.jsonnet_json_make_string(self.vm, b"Test 1.2"));
-        lib.jsonnet_json_array_append(self.vm, h, lib.jsonnet_json_make_string(self.vm, b"Test 1.3"));
+        lib.jsonnet_json_array_append(self.vm, h, lib.jsonnet_json_make_string(self.vm, b"Test 1.1"))
+        lib.jsonnet_json_array_append(self.vm, h, lib.jsonnet_json_make_string(self.vm, b"Test 1.2"))
+        lib.jsonnet_json_array_append(self.vm, h, lib.jsonnet_json_make_string(self.vm, b"Test 1.3"))
         lib.jsonnet_json_array_append(self.vm, h, lib.jsonnet_json_make_bool(self.vm, 1))
         lib.jsonnet_json_array_append(self.vm, h, lib.jsonnet_json_make_number(self.vm, 42))
         lib.jsonnet_json_array_append(self.vm, h, lib.jsonnet_json_make_null(self.vm))
@@ -299,9 +345,9 @@ class TestJsonnetJsonValueBindings(unittest.TestCase):
     def test_jsonnet_object(self):
         h = lib.jsonnet_json_make_object(self.vm)
         
-        lib.jsonnet_json_object_append(self.vm, h, b"arg1", lib.jsonnet_json_make_string(self.vm, b"Test 1.1"));
-        lib.jsonnet_json_object_append(self.vm, h, b"arg2", lib.jsonnet_json_make_string(self.vm, b"Test 1.2"));
-        lib.jsonnet_json_object_append(self.vm, h, b"arg3", lib.jsonnet_json_make_string(self.vm, b"Test 1.3"));
+        lib.jsonnet_json_object_append(self.vm, h, b"arg1", lib.jsonnet_json_make_string(self.vm, b"Test 1.1"))
+        lib.jsonnet_json_object_append(self.vm, h, b"arg2", lib.jsonnet_json_make_string(self.vm, b"Test 1.2"))
+        lib.jsonnet_json_object_append(self.vm, h, b"arg3", lib.jsonnet_json_make_string(self.vm, b"Test 1.3"))
         lib.jsonnet_json_object_append(self.vm, h, b"arg4", lib.jsonnet_json_make_bool(self.vm, 1))
         lib.jsonnet_json_object_append(self.vm, h, b"arg5", lib.jsonnet_json_make_number(self.vm, 42))
         lib.jsonnet_json_object_append(self.vm, h, b"arg6", lib.jsonnet_json_make_null(self.vm))
