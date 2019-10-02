@@ -20,8 +20,9 @@ type vm struct {
 }
 
 type jsonValue struct {
-	obj      interface{}
-	children []*C.struct_JsonnetJsonValue
+	val interface{}
+	// these objects are exclusively owned by this jsonValue
+	owned []*C.struct_JsonnetJsonValue
 }
 
 var handles = handlesTable{}
@@ -166,21 +167,21 @@ func jsonnet_native_callback(vmRef *C.struct_JsonnetVm, name *C.char, cb *C.Json
 	p := unsafe.Pointer(params)
 	sz := unsafe.Sizeof(*params)
 
-	var identifiers ast.Identifiers
+	var paramNames ast.Identifiers
 
 	for i := 0; ; i++ {
-		arg := (**C.char)(unsafe.Pointer(uintptr(p) + uintptr(i)*sz))
+		param := (**C.char)(unsafe.Pointer(uintptr(p) + uintptr(i)*sz))
 
-		if *arg == nil {
+		if *param == nil {
 			break
 		}
 
-		identifiers = append(identifiers, ast.Identifier(C.GoString(*arg)))
+		paramNames = append(paramNames, ast.Identifier(C.GoString(*param)))
 	}
 
 	f := &jsonnet.NativeFunction{
 		Name:   C.GoString(name),
-		Params: identifiers,
+		Params: paramNames,
 		Func: func(x []interface{}) (interface{}, error) {
 			var (
 				arr     []*C.struct_JsonnetJsonValue
@@ -211,7 +212,7 @@ func jsonnet_native_callback(vmRef *C.struct_JsonnetVm, name *C.char, cb *C.Json
 				return nil, fmt.Errorf("failed to execute native callback, code: %d", success)
 			}
 
-			return v.obj, nil
+			return v.val, nil
 		},
 	}
 
@@ -220,9 +221,8 @@ func jsonnet_native_callback(vmRef *C.struct_JsonnetVm, name *C.char, cb *C.Json
 
 //export jsonnet_json_extract_string
 func jsonnet_json_extract_string(vmRef *C.struct_JsonnetVm, json *C.struct_JsonnetJsonValue) *C.char {
-	_ = getVM(vmRef) // Here we check it, is it ok?
 	v := getJSONValue(json)
-	str, ok := v.obj.(string)
+	str, ok := v.val.(string)
 
 	if !ok {
 		return nil
@@ -233,10 +233,9 @@ func jsonnet_json_extract_string(vmRef *C.struct_JsonnetVm, json *C.struct_Jsonn
 
 //export jsonnet_json_extract_number
 func jsonnet_json_extract_number(vmRef *C.struct_JsonnetVm, json *C.struct_JsonnetJsonValue, out *C.double) C.int {
-	_ = getVM(vmRef) // Here we check it, is it ok?
 	v := getJSONValue(json)
 
-	switch f := v.obj.(type) {
+	switch f := v.val.(type) {
 	case float64:
 		*out = C.double(f)
 		return 1
@@ -250,9 +249,8 @@ func jsonnet_json_extract_number(vmRef *C.struct_JsonnetVm, json *C.struct_Jsonn
 
 //export jsonnet_json_extract_bool
 func jsonnet_json_extract_bool(vmRef *C.struct_JsonnetVm, json *C.struct_JsonnetJsonValue) C.int {
-	_ = getVM(vmRef) // Here we check it, is it ok?
 	v := getJSONValue(json)
-	b, ok := v.obj.(bool)
+	b, ok := v.val.(bool)
 
 	if !ok {
 		return 2
@@ -267,10 +265,9 @@ func jsonnet_json_extract_bool(vmRef *C.struct_JsonnetVm, json *C.struct_Jsonnet
 
 //export jsonnet_json_extract_null
 func jsonnet_json_extract_null(vmRef *C.struct_JsonnetVm, json *C.struct_JsonnetJsonValue) C.int {
-	_ = getVM(vmRef) // Here we check it, is it ok?
 	v := getJSONValue(json)
 
-	if v.obj == nil {
+	if v.val == nil {
 		return 1
 	}
 
@@ -306,16 +303,15 @@ func jsonnet_json_make_array(vmRef *C.struct_JsonnetVm) *C.struct_JsonnetJsonVal
 func jsonnet_json_array_append(vmRef *C.struct_JsonnetVm, arr *C.struct_JsonnetJsonValue, v *C.struct_JsonnetJsonValue) {
 	_ = getVM(vmRef) // Here we check it, is it ok?
 	json := getJSONValue(arr)
-	slice, ok := json.obj.([]interface{})
+	slice, ok := json.val.([]interface{})
 
 	if !ok {
 		fmt.Fprintf(os.Stderr, "array should be provided")
 		os.Exit(1)
 	}
 
-	val := getJSONValue(v)
-	json.obj = append(slice, val.obj)
-	json.children = append(json.children, v)
+	json.val = append(slice, getJSONValue(v).val)
+	json.owned = append(json.owned, v)
 }
 
 //export jsonnet_json_make_object
@@ -332,24 +328,20 @@ func jsonnet_json_object_append(
 ) {
 	_ = getVM(vmRef) // Here we check it, is it ok?
 	d := getJSONValue(obj)
-	table, ok := d.obj.(map[string]interface{})
+	table, ok := d.val.(map[string]interface{})
 
 	if !ok {
 		fmt.Fprintf(os.Stderr, "object should be provided")
 		os.Exit(1)
 	}
 
-	val := getJSONValue(v)
-	table[C.GoString(f)] = val.obj
-	d.children = append(d.children, v)
+	table[C.GoString(f)] = getJSONValue(v).val
+	d.owned = append(d.owned, v)
 }
 
 //export jsonnet_json_destroy
 func jsonnet_json_destroy(vmRef *C.struct_JsonnetVm, v *C.struct_JsonnetJsonValue) {
-	_ = getVM(vmRef) // Here we check it, is it ok?
-
-	for _, child := range getJSONValue(v).children {
-		// TODO what if a child is already freed?
+	for _, child := range getJSONValue(v).owned {
 		jsonnet_json_destroy(vmRef, child)
 	}
 
@@ -361,9 +353,8 @@ func jsonnet_json_destroy(vmRef *C.struct_JsonnetVm, v *C.struct_JsonnetJsonValu
 	C.jsonnet_internal_free_json(v)
 }
 
-func createJSONValue(vmRef *C.struct_JsonnetVm, obj interface{}) *C.struct_JsonnetJsonValue {
-	_ = getVM(vmRef) // Here we check it, is it ok?
-	id, err := handles.make(&jsonValue{obj: obj})
+func createJSONValue(vmRef *C.struct_JsonnetVm, val interface{}) *C.struct_JsonnetJsonValue {
+	id, err := handles.make(&jsonValue{val: val})
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
