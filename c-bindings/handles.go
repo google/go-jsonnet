@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-const maxID = 1000
+const maxID = 100000
 
 // Because of Go GC, there are restrictions on keeping Go pointers in C.
 // We cannot just pass *jsonnet.VM/JsonValue to C. So instead we use "handle" structs in C
@@ -15,7 +15,7 @@ const maxID = 1000
 // become a problem.
 // The Handle IDs start with 1, so 0 is never a valid ID and the Handle's index in the array is (ID - 1).
 
-// handlesTable is the set of active, valid Jsonnet virtual machine handles allocated by jsonnet_make*.
+// handlesTable is the set of active, valid Jsonnet allocated handles
 type handlesTable struct {
 	objects  []interface{}
 	freedIDs []uint32
@@ -72,15 +72,6 @@ func (h *handlesTable) get(id uint32) (interface{}, error) {
 func (h *handlesTable) ensureValidID(id uint32) error {
 	if id == 0 || uint64(id) > uint64(len(h.objects)) {
 		return errInvalidHandle
-	}
-
-	// we should check freed ids too:
-	// * we should inform a client if there is an attempt to free already freed id
-	// O(len(freedIDs)) maybe need to use map?
-	for _, freed := range h.freedIDs {
-		if freed == id {
-			return errInvalidHandle
-		}
 	}
 
 	return nil
