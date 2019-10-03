@@ -301,7 +301,6 @@ func jsonnet_json_make_array(vmRef *C.struct_JsonnetVm) *C.struct_JsonnetJsonVal
 
 //export jsonnet_json_array_append
 func jsonnet_json_array_append(vmRef *C.struct_JsonnetVm, arr *C.struct_JsonnetJsonValue, v *C.struct_JsonnetJsonValue) {
-	_ = getVM(vmRef) // Here we check it, is it ok?
 	json := getJSONValue(arr)
 	slice, ok := json.val.([]interface{})
 
@@ -326,7 +325,6 @@ func jsonnet_json_object_append(
 	f *C.char,
 	v *C.struct_JsonnetJsonValue,
 ) {
-	_ = getVM(vmRef) // Here we check it, is it ok?
 	d := getJSONValue(obj)
 	table, ok := d.val.(map[string]interface{})
 
