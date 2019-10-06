@@ -1,4 +1,5 @@
-package parser
+// Package toolutils includes several utilities handy for use in code analysis tools
+package toolutils
 
 import (
 	"github.com/google/go-jsonnet/ast"
