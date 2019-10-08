@@ -34,6 +34,22 @@ struct JsonnetJsonValue* jsonnet_internal_execute_native(JsonnetNativeCallback *
     return (cb)(ctx, argv, success);
 }
 
+char* jsonnet_internal_execute_import(JsonnetImportCallback *cb,
+                                      void *ctx,
+                                      const char *base,
+                                      const char *rel,
+                                      char **found_here,
+                                      int *success)
+{
+    return (cb)(ctx, base, rel, found_here, success);
+}
+
+void jsonnet_internal_free_string(char *str) {
+    if (str != nullptr) {
+        ::free(str);
+    }
+}
+
 inline static void todo() {
     fputs("TODO, NOT IMPLEMENTED YET\n", stderr);
     abort();

@@ -25,6 +25,32 @@ type jsonValue struct {
 	owned []*C.struct_JsonnetJsonValue
 }
 
+type importer struct {
+	cb  *C.JsonnetImportCallback
+	ctx unsafe.Pointer
+}
+
+// Import fetches data from a given path by using c.JsonnetImportCallback
+func (i *importer) Import(importedFrom, importedPath string) (contents jsonnet.Contents, foundAt string, err error) {
+	var (
+		success   = C.int(0)
+		foundHereC *C.char
+	)
+
+	resultC := C.jsonnet_internal_execute_import(i.cb, i.ctx, C.CString(importedFrom), C.CString(importedPath), &foundHereC, &success)
+	result := C.GoString(resultC)
+	C.jsonnet_internal_free_string(resultC)
+
+	foundHere := C.GoString(foundHereC)
+	C.jsonnet_internal_free_string(foundHereC)
+
+	if success != 1 {
+		return jsonnet.Contents{}, "", fmt.Errorf("failed to execute import callback, code: %d", success)
+	}
+
+	return jsonnet.MakeContents(result), foundHere, nil
+}
+
 var handles = handlesTable{}
 var versionString *C.char
 
@@ -217,6 +243,16 @@ func jsonnet_native_callback(vmRef *C.struct_JsonnetVm, name *C.char, cb *C.Json
 	}
 
 	vm.NativeFunction(f)
+}
+
+//export jsonnet_import_callback
+func jsonnet_import_callback(vmRef *C.struct_JsonnetVm, cb *C.JsonnetImportCallback, ctx unsafe.Pointer) {
+	vm := getVM(vmRef)
+
+	vm.Importer(&importer{
+		ctx: ctx,
+		cb:  cb,
+	})
 }
 
 //export jsonnet_json_extract_string

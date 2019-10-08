@@ -2,6 +2,7 @@
 import unittest
 import ctypes
 import re
+import os
 
 
 lib = ctypes.CDLL('../c-bindings/libgojsonnet.so')
@@ -79,6 +80,23 @@ lib.jsonnet_native_callback.argtypes = [
     ctypes.POINTER(ctypes.c_char_p),
 ]
 lib.jsonnet_native_callback.restype = None
+
+IMPORT_CALLBACK = ctypes.CFUNCTYPE(
+    ctypes.c_char_p,
+    ctypes.c_void_p,
+    ctypes.POINTER(ctypes.c_char),
+    ctypes.POINTER(ctypes.c_char),
+    # we use *int instead of **char to pass the real C allocated pointer, that we have to free
+    ctypes.POINTER(ctypes.c_int),
+    ctypes.POINTER(ctypes.c_int)
+)
+
+lib.jsonnet_import_callback.argtypes = [
+    ctypes.c_void_p,
+    IMPORT_CALLBACK,
+    ctypes.c_void_p,
+]
+lib.jsonnet_import_callback.restype = None
 
 # json declaration
 
@@ -206,6 +224,38 @@ def build_native(ctx, argv, success):
     success[0] = ctypes.c_int(1)
     return res
 
+@IMPORT_CALLBACK
+def import_callback(ctx, dir, rel, found_here, success):
+    full_path, content = jsonnet_try_path(b"jsonnet_import_test/", to_bytes(rel))
+
+    bcontent = content.encode()
+    dst = lib.jsonnet_realloc(ctx, None, len(bcontent) + 1)
+    ctypes.memmove(ctypes.addressof(dst.contents), bcontent, len(bcontent) + 1)
+
+    fdst = lib.jsonnet_realloc(ctx, None, len(full_path) + 1)
+    ctypes.memmove(ctypes.addressof(fdst.contents), full_path, len(full_path) + 1)
+    found_here[0] = ctypes.addressof(fdst.contents)
+
+    success[0] = ctypes.c_int(1)
+
+    return ctypes.addressof(dst.contents)
+
+#  Returns content if worked, None if file not found, or throws an exception
+def jsonnet_try_path(dir, rel):
+    if not rel:
+        raise RuntimeError('Got invalid filename (empty string).')
+    if rel[0] == '/':
+        full_path = rel
+    else:
+        full_path = dir + rel
+    if full_path[-1] == '/':
+        raise RuntimeError('Attempted to import a directory')
+
+    if not os.path.isfile(full_path):
+        return full_path, None
+    with open(full_path) as f:
+        return full_path, f.read()
+
 class TestJsonnetEvaluateBindings(unittest.TestCase):
     def setUp(self):
         self.err = ctypes.c_int()
@@ -289,6 +339,13 @@ class TestJsonnetEvaluateBindings(unittest.TestCase):
         res = lib.jsonnet_evaluate_snippet(self.vm, b"build_callback", b"std.native('build')()", self.err_ref)
         self.assertEqual(b'[\n   {\n      "a": "hello",\n      "b": "world"\n   }\n]\n', to_bytes(res))
 
+        free_buffer(self.vm, res)
+
+    def test_jsonnet_import_callback(self):
+        lib.jsonnet_import_callback(self.vm, import_callback, self.vm)
+
+        res = lib.jsonnet_evaluate_snippet(self.vm, b"jsonnet_import_callback", b"""import 'foo.jsonnet'""", self.err_ref)
+        self.assertEqual(b'42\n', to_bytes(res))
         free_buffer(self.vm, res)
 
     def tearDown(self):
