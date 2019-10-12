@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"unsafe"
 
 	"github.com/google/go-jsonnet"
@@ -33,11 +34,12 @@ type importer struct {
 // Import fetches data from a given path by using c.JsonnetImportCallback
 func (i *importer) Import(importedFrom, importedPath string) (contents jsonnet.Contents, foundAt string, err error) {
 	var (
-		success   = C.int(0)
+		success    = C.int(0)
+		dir, _     = path.Split(importedFrom)
 		foundHereC *C.char
 	)
 
-	resultC := C.jsonnet_internal_execute_import(i.cb, i.ctx, C.CString(importedFrom), C.CString(importedPath), &foundHereC, &success)
+	resultC := C.jsonnet_internal_execute_import(i.cb, i.ctx, C.CString(dir), C.CString(importedPath), &foundHereC, &success)
 	result := C.GoString(resultC)
 	C.jsonnet_internal_free_string(resultC)
 

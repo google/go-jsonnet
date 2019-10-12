@@ -87,7 +87,7 @@ IMPORT_CALLBACK = ctypes.CFUNCTYPE(
     ctypes.POINTER(ctypes.c_char),
     ctypes.POINTER(ctypes.c_char),
     # we use *int instead of **char to pass the real C allocated pointer, that we have to free
-    ctypes.POINTER(ctypes.c_int),
+    ctypes.POINTER(ctypes.c_uint64),
     ctypes.POINTER(ctypes.c_int)
 )
 
