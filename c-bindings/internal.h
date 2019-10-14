@@ -24,3 +24,18 @@ struct JsonnetJsonValue* jsonnet_internal_execute_native(JsonnetNativeCallback *
                                                   void *ctx,
                                                   const struct JsonnetJsonValue *const *argv,
                                                   int *success);
+
+typedef char *JsonnetImportCallback(void *ctx,
+                                    const char *base,
+                                    const char *rel,
+                                    char **found_here,
+                                    int *success);
+
+char* jsonnet_internal_execute_import(JsonnetImportCallback *cb,
+                                      void *ctx,
+                                      const char *base,
+                                      const char *rel,
+                                      char **found_here,
+                                      int *success);
+
+void jsonnet_internal_free_string(char *str);
