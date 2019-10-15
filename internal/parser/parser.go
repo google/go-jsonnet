@@ -622,6 +622,8 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 		if next.kind == tokenComma {
 			gotComma = true
 			next = p.pop()
+		} else {
+			gotComma = false
 		}
 
 		first = false
