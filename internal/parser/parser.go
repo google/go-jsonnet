@@ -349,6 +349,246 @@ func (p *parser) parseObjectAssignmentOp() (opFodder ast.Fodder, plusSugar bool,
 // +gen set
 type LiteralField string
 
+func (p *parser) parseObjectRemainderComp(fields ast.ObjectFields, gotComma bool, tok *token, next *token) (ast.Node, *token, error) {
+	numFields := 0
+	numAsserts := 0
+	var field ast.ObjectField
+	for _, f := range fields {
+		if f.Kind == ast.ObjectLocal {
+			continue
+		}
+		if f.Kind == ast.ObjectAssert {
+			numAsserts++
+			continue
+		}
+		numFields++
+		field = f
+	}
+
+	if numAsserts > 0 {
+		return nil, nil, errors.MakeStaticError("Object comprehension cannot have asserts.", next.loc)
+	}
+	if numFields != 1 {
+		return nil, nil, errors.MakeStaticError("Object comprehension can only have one field.", next.loc)
+	}
+	if field.Hide != ast.ObjectFieldInherit {
+		return nil, nil, errors.MakeStaticError("Object comprehensions cannot have hidden fields.", next.loc)
+	}
+	if field.Kind != ast.ObjectFieldExpr {
+		return nil, nil, errors.MakeStaticError("Object comprehensions can only have [e] fields.", next.loc)
+	}
+	spec, last, err := p.parseComprehensionSpecs(next, tokenBraceR)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &ast.ObjectComp{
+		NodeBase:      ast.NewNodeBaseLoc(locFromTokens(tok, last), tok.fodder),
+		Fields:        fields,
+		TrailingComma: gotComma,
+		Spec:          *spec,
+		CloseFodder:   last.fodder,
+	}, last, nil
+}
+
+func (p *parser) parseObjectRemainderField(literalFields *LiteralFieldSet, tok *token, next *token) (*ast.ObjectField, error) {
+	var kind ast.ObjectFieldKind
+	var fodder1 ast.Fodder
+	var expr1 ast.Node
+	var id *ast.Identifier
+	var fodder2 ast.Fodder
+	switch next.kind {
+	case tokenIdentifier:
+		kind = ast.ObjectFieldID
+		id = (*ast.Identifier)(&next.data)
+		fodder1 = next.fodder
+	case tokenStringDouble, tokenStringSingle,
+		tokenStringBlock, tokenVerbatimStringDouble, tokenVerbatimStringSingle:
+		kind = ast.ObjectFieldStr
+		expr1 = tokenStringToAst(next)
+	default:
+		fodder1 = next.fodder
+		kind = ast.ObjectFieldExpr
+		var err error
+		expr1, err = p.parse(maxPrecedence)
+		if err != nil {
+			return nil, err
+		}
+		bracketR, err := p.popExpect(tokenBracketR)
+		if err != nil {
+			return nil, err
+		}
+		fodder2 = bracketR.fodder
+	}
+
+	isMethod := false
+	methComma := false
+	var parenL *token
+	var parenR *token
+	var params *ast.Parameters
+	if p.peek().kind == tokenParenL {
+		parenL = p.pop()
+		var err error
+		parenR, params, methComma, err = p.parseParameters("method parameter")
+		if err != nil {
+			return nil, err
+		}
+		isMethod = true
+	}
+
+	opFodder, plusSugar, hide, err := p.parseObjectAssignmentOp()
+	if err != nil {
+		return nil, err
+	}
+
+	if plusSugar && isMethod {
+		return nil, errors.MakeStaticError(
+			fmt.Sprintf("Cannot use +: syntax sugar in a method: %v", next.data), next.loc)
+	}
+
+	if kind != ast.ObjectFieldExpr {
+		if !literalFields.Add(LiteralField(next.data)) {
+			return nil, errors.MakeStaticError(
+				fmt.Sprintf("Duplicate field: %v", next.data), next.loc)
+		}
+	}
+
+	body, err := p.parse(maxPrecedence)
+	if err != nil {
+		return nil, err
+	}
+
+	var method *ast.Function
+	if isMethod {
+		method = &ast.Function{
+			ParenLeftFodder:  parenL.fodder,
+			Parameters:       *params,
+			TrailingComma:    methComma,
+			ParenRightFodder: parenR.fodder,
+			Body:             body,
+		}
+	}
+
+	var commaFodder ast.Fodder
+	if p.peek().kind == tokenComma {
+		commaFodder = p.peek().fodder
+	}
+
+	return &ast.ObjectField{
+		Kind:        kind,
+		Hide:        hide,
+		SuperSugar:  plusSugar,
+		Method:      method,
+		Fodder1:     fodder1,
+		Expr1:       expr1,
+		Id:          id,
+		Fodder2:     fodder2,
+		OpFodder:    opFodder,
+		Expr2:       body,
+		CommaFodder: commaFodder,
+	}, nil
+}
+
+func (p *parser) parseObjectRemainderLocal(binds *ast.IdentifierSet, tok *token, next *token) (*ast.ObjectField, error) {
+	varID, err := p.popExpect(tokenIdentifier)
+	if err != nil {
+		return nil, err
+	}
+
+	id := ast.Identifier(varID.data)
+
+	if binds.Contains(id) {
+		return nil, errors.MakeStaticError(fmt.Sprintf("Duplicate local var: %v", id), varID.loc)
+	}
+
+	// TODO(sbarzowski) Can we reuse regular local bind parsing here?
+
+	isMethod := false
+	funcComma := false
+	var parenL *token
+	var parenR *token
+	var params *ast.Parameters
+	if p.peek().kind == tokenParenL {
+		parenL = p.pop()
+		isMethod = true
+		parenR, params, funcComma, err = p.parseParameters("function parameter")
+		if err != nil {
+			return nil, err
+		}
+	}
+	opToken, err := p.popExpectOp("=")
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := p.parse(maxPrecedence)
+	if err != nil {
+		return nil, err
+	}
+
+	var method *ast.Function
+	if isMethod {
+		method = &ast.Function{
+			ParenLeftFodder:  parenL.fodder,
+			Parameters:       *params,
+			ParenRightFodder: parenR.fodder,
+			TrailingComma:    funcComma,
+			Body:             body,
+		}
+	}
+
+	binds.Add(id)
+
+	var commaFodder ast.Fodder
+	if p.peek().kind == tokenComma {
+		commaFodder = p.peek().fodder
+	}
+
+	return &ast.ObjectField{
+		Kind:        ast.ObjectLocal,
+		Hide:        ast.ObjectFieldVisible,
+		SuperSugar:  false,
+		Method:      method,
+		Fodder1:     next.fodder,
+		Fodder2:     varID.fodder,
+		Id:          &id,
+		OpFodder:    opToken.fodder,
+		Expr2:       body,
+		CommaFodder: commaFodder,
+	}, nil
+}
+
+func (p *parser) parseObjectRemainderAssert(tok *token, next *token) (*ast.ObjectField, error) {
+	cond, err := p.parse(maxPrecedence)
+	if err != nil {
+		return nil, err
+	}
+	var msg ast.Node
+	var colonFodder ast.Fodder
+	if p.peek().kind == tokenOperator && p.peek().data == ":" {
+		colonToken := p.pop()
+		colonFodder = colonToken.fodder
+		msg, err = p.parse(maxPrecedence)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var commaFodder ast.Fodder
+	if p.peek().kind == tokenComma {
+		commaFodder = p.peek().fodder
+	}
+
+	return &ast.ObjectField{
+		Kind:        ast.ObjectAssert,
+		Hide:        ast.ObjectFieldVisible,
+		Fodder1:     next.fodder,
+		Expr2:       cond,
+		OpFodder:    colonFodder,
+		Expr3:       msg,
+		CommaFodder: commaFodder,
+	}, nil
+}
+
 // Parse object or object comprehension without leading brace
 func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 	var fields ast.ObjectFields
@@ -373,250 +613,39 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 
 		if next.kind == tokenFor {
 			// It's a comprehension
-			numFields := 0
-			numAsserts := 0
-			var field ast.ObjectField
-			for _, f := range fields {
-				if f.Kind == ast.ObjectLocal {
-					continue
-				}
-				if f.Kind == ast.ObjectAssert {
-					numAsserts++
-					continue
-				}
-				numFields++
-				field = f
-			}
-
-			if numAsserts > 0 {
-				return nil, nil, errors.MakeStaticError("Object comprehension cannot have asserts.", next.loc)
-			}
-			if numFields != 1 {
-				return nil, nil, errors.MakeStaticError("Object comprehension can only have one field.", next.loc)
-			}
-			if field.Hide != ast.ObjectFieldInherit {
-				return nil, nil, errors.MakeStaticError("Object comprehensions cannot have hidden fields.", next.loc)
-			}
-			if field.Kind != ast.ObjectFieldExpr {
-				return nil, nil, errors.MakeStaticError("Object comprehensions can only have [e] fields.", next.loc)
-			}
-			spec, last, err := p.parseComprehensionSpecs(next, tokenBraceR)
-			if err != nil {
-				return nil, nil, err
-			}
-			return &ast.ObjectComp{
-				NodeBase:      ast.NewNodeBaseLoc(locFromTokens(tok, last), tok.fodder),
-				Fields:        fields,
-				TrailingComma: gotComma,
-				Spec:          *spec,
-				CloseFodder:   last.fodder,
-			}, last, nil
+			return p.parseObjectRemainderComp(fields, gotComma, tok, next)
 		}
 
 		if !gotComma && !first {
 			return nil, nil, errors.MakeStaticError("Expected a comma before next field.", next.loc)
 		}
 
+		var field *ast.ObjectField
+		var err error
 		switch next.kind {
 		case tokenBracketL, tokenIdentifier, tokenStringDouble, tokenStringSingle,
 			tokenStringBlock, tokenVerbatimStringDouble, tokenVerbatimStringSingle:
-			var kind ast.ObjectFieldKind
-			var fodder1 ast.Fodder
-			var expr1 ast.Node
-			var id *ast.Identifier
-			var fodder2 ast.Fodder
-			switch next.kind {
-			case tokenIdentifier:
-				kind = ast.ObjectFieldID
-				id = (*ast.Identifier)(&next.data)
-				fodder1 = next.fodder
-			case tokenStringDouble, tokenStringSingle,
-				tokenStringBlock, tokenVerbatimStringDouble, tokenVerbatimStringSingle:
-				kind = ast.ObjectFieldStr
-				expr1 = tokenStringToAst(next)
-			default:
-				fodder1 = next.fodder
-				kind = ast.ObjectFieldExpr
-				var err error
-				expr1, err = p.parse(maxPrecedence)
-				if err != nil {
-					return nil, nil, err
-				}
-				bracketR, err := p.popExpect(tokenBracketR)
-				if err != nil {
-					return nil, nil, err
-				}
-				fodder2 = bracketR.fodder
-			}
-
-			isMethod := false
-			methComma := false
-			var parenL *token
-			var parenR *token
-			var params *ast.Parameters
-			if p.peek().kind == tokenParenL {
-				parenL = p.pop()
-				var err error
-				parenR, params, methComma, err = p.parseParameters("method parameter")
-				if err != nil {
-					return nil, nil, err
-				}
-				isMethod = true
-			}
-
-			opFodder, plusSugar, hide, err := p.parseObjectAssignmentOp()
+			field, err = p.parseObjectRemainderField(&literalFields, tok, next)
 			if err != nil {
 				return nil, nil, err
 			}
-
-			if plusSugar && isMethod {
-				return nil, nil, errors.MakeStaticError(
-					fmt.Sprintf("Cannot use +: syntax sugar in a method: %v", next.data), next.loc)
-			}
-
-			if kind != ast.ObjectFieldExpr {
-				if !literalFields.Add(LiteralField(next.data)) {
-					return nil, nil, errors.MakeStaticError(
-						fmt.Sprintf("Duplicate field: %v", next.data), next.loc)
-				}
-			}
-
-			body, err := p.parse(maxPrecedence)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			var method *ast.Function
-			if isMethod {
-				method = &ast.Function{
-					ParenLeftFodder:  parenL.fodder,
-					Parameters:       *params,
-					TrailingComma:    methComma,
-					ParenRightFodder: parenR.fodder,
-					Body:             body,
-				}
-			}
-
-			var commaFodder ast.Fodder
-			if p.peek().kind == tokenComma {
-				commaFodder = p.peek().fodder
-			}
-
-			fields = append(fields, ast.ObjectField{
-				Kind:        kind,
-				Hide:        hide,
-				SuperSugar:  plusSugar,
-				Method:      method,
-				Fodder1:     fodder1,
-				Expr1:       expr1,
-				Id:          id,
-				Fodder2:     fodder2,
-				OpFodder:    opFodder,
-				Expr2:       body,
-				CommaFodder: commaFodder,
-			})
 
 		case tokenLocal:
-			varID, err := p.popExpect(tokenIdentifier)
+			field, err = p.parseObjectRemainderLocal(&binds, tok, next)
 			if err != nil {
 				return nil, nil, err
 			}
-
-			id := ast.Identifier(varID.data)
-
-			if binds.Contains(id) {
-				return nil, nil, errors.MakeStaticError(fmt.Sprintf("Duplicate local var: %v", id), varID.loc)
-			}
-
-			// TODO(sbarzowski) Can we reuse regular local bind parsing here?
-
-			isMethod := false
-			funcComma := false
-			var parenL *token
-			var parenR *token
-			var params *ast.Parameters
-			if p.peek().kind == tokenParenL {
-				parenL = p.pop()
-				isMethod = true
-				parenR, params, funcComma, err = p.parseParameters("function parameter")
-				if err != nil {
-					return nil, nil, err
-				}
-			}
-			opToken, err := p.popExpectOp("=")
-			if err != nil {
-				return nil, nil, err
-			}
-
-			body, err := p.parse(maxPrecedence)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			var method *ast.Function
-			if isMethod {
-				method = &ast.Function{
-					ParenLeftFodder:  parenL.fodder,
-					Parameters:       *params,
-					ParenRightFodder: parenR.fodder,
-					TrailingComma:    funcComma,
-					Body:             body,
-				}
-			}
-
-			binds.Add(id)
-
-			var commaFodder ast.Fodder
-			if p.peek().kind == tokenComma {
-				commaFodder = p.peek().fodder
-			}
-
-			fields = append(fields, ast.ObjectField{
-				Kind:        ast.ObjectLocal,
-				Hide:        ast.ObjectFieldVisible,
-				SuperSugar:  false,
-				Method:      method,
-				Fodder1:     next.fodder,
-				Fodder2:     varID.fodder,
-				Id:          &id,
-				OpFodder:    opToken.fodder,
-				Expr2:       body,
-				CommaFodder: commaFodder,
-			})
 
 		case tokenAssert:
-			cond, err := p.parse(maxPrecedence)
+			field, err = p.parseObjectRemainderAssert(tok, next)
 			if err != nil {
 				return nil, nil, err
 			}
-			var msg ast.Node
-			var colonFodder ast.Fodder
-			if p.peek().kind == tokenOperator && p.peek().data == ":" {
-				colonToken := p.pop()
-				colonFodder = colonToken.fodder
-				msg, err = p.parse(maxPrecedence)
-				if err != nil {
-					return nil, nil, err
-				}
-			}
 
-			var commaFodder ast.Fodder
-			if p.peek().kind == tokenComma {
-				commaFodder = p.peek().fodder
-			}
-
-			fields = append(fields, ast.ObjectField{
-				Kind:        ast.ObjectAssert,
-				Hide:        ast.ObjectFieldVisible,
-				Fodder1:     next.fodder,
-				Expr2:       cond,
-				OpFodder:    colonFodder,
-				Expr3:       msg,
-				CommaFodder: commaFodder,
-			})
 		default:
 			return nil, nil, makeUnexpectedError(next, "parsing field definition")
 		}
+		fields = append(fields, *field)
 
 		next = p.pop()
 		if next.kind == tokenComma {
