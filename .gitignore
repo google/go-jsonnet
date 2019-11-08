@@ -1,8 +1,13 @@
 *~
 *.prof
 *.so
+*.a
 .*.swp
+*.pyc
 coverage.out
+build/
+dist/
+jsonnet.egg-info/
 /bazel-bin
 /bazel-genfiles
 /bazel-go-jsonnet
