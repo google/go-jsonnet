@@ -46,7 +46,7 @@ jsonnet_ext = Extension(
     language='c++',
 )
 
-setup(name='jsonnet',
+setup(name='gojsonnet',
     url='https://jsonnet.org',
     description='Python bindings for Jsonnet - The data templating language ',
     author='David Cunningham',
