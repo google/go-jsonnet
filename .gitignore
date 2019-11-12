@@ -7,7 +7,7 @@
 coverage.out
 build/
 dist/
-jsonnet.egg-info/
+gojsonnet.egg-info/
 /bazel-bin
 /bazel-genfiles
 /bazel-go-jsonnet
