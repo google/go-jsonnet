@@ -6,6 +6,9 @@ set -e
 
 c-bindings-tests/run.sh
 
+python setup.py build
+python setup.py test
+
 export IMPLEMENTATION=golang
 
 go build ./cmd/jsonnet
