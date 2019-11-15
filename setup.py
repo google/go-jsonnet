@@ -24,7 +24,7 @@ MODULE_SOURCES = ['cpp-jsonnet/python/_jsonnet.c']
 
 def get_version():
     """
-    Parses the version out of libjsonnet.h
+    Parses the version out of vm.go
     """
     with open(os.path.join(DIR, 'vm.go')) as f:
         for line in f:
@@ -41,7 +41,7 @@ class BuildJsonnetExt(BuildExt):
         p.wait()
 
         if p.returncode != 0:
-            raise Exception('Could not build libgojsonnet.so')
+            raise Exception('Could not build libgojsonnet.a')
 
         BuildExt.run(self)
 
