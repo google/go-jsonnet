@@ -23,8 +23,17 @@ LIB_DIR = DIR + '/c-bindings'
 MODULE_SOURCES = ['cpp-jsonnet/python/_jsonnet.c']
 
 def get_version():
-    # TODO think about it (how to get the version)
-    return '0.14.0'
+    """
+    Parses the version out of libjsonnet.h
+    """
+    with open(os.path.join(DIR, 'vm.go')) as f:
+        for line in f:
+            if 'const' in line and 'version' in line:
+                v_code = line.partition('=')[2].strip('\n "')
+                if v_code[0] == 'v':
+                    return v_code[1:]
+
+    return None
 
 class BuildJsonnetExt(BuildExt):
     def run(self):
