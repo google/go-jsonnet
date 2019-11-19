@@ -15,7 +15,7 @@
 import os
 import unittest
 
-import _jsonnet
+import _gojsonnet
 
 
 #  Returns content if worked, None if file not found, or throws an exception
@@ -77,7 +77,7 @@ class JsonnetTests(unittest.TestCase):
             self.input_snippet = infile.read()
 
     def test_evaluate_file(self):
-        json_str = _jsonnet.evaluate_file(
+        json_str = _gojsonnet.evaluate_file(
             self.input_filename,
             import_callback=import_callback,
             native_callbacks=native_callbacks,
@@ -85,7 +85,7 @@ class JsonnetTests(unittest.TestCase):
         self.assertEqual(json_str, self.expected_str)
 
     def test_evaluate_snippet(self):
-        json_str = _jsonnet.evaluate_snippet(
+        json_str = _gojsonnet.evaluate_snippet(
             "snippet",
             self.input_snippet,
             import_callback=import_callback,
