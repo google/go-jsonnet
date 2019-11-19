@@ -20,7 +20,7 @@ from subprocess import Popen, PIPE
 
 DIR = os.path.abspath(os.path.dirname(__file__))
 LIB_DIR = DIR + '/c-bindings'
-MODULE_SOURCES = ['cpp-jsonnet/python/_jsonnet.c']
+MODULE_SOURCES = ['python/_jsonnet.c']
 
 def get_version():
     """
@@ -46,7 +46,7 @@ class BuildJsonnetExt(BuildExt):
         BuildExt.run(self)
 
 jsonnet_ext = Extension(
-    '_jsonnet',
+    '_gojsonnet',
     sources=MODULE_SOURCES,
     extra_objects=[
         LIB_DIR + '/libgojsonnet.a',
