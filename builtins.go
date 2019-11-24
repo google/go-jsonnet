@@ -22,12 +22,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"sort"
 	"strings"
 
 	"github.com/google/go-jsonnet/ast"
+    "k8s.io/apimachinery/pkg/util/yaml"
 )
 
 func builtinPlus(i *interpreter, trace traceElement, x, y value) (value, error) {
@@ -974,6 +976,27 @@ func builtinParseJSON(i *interpreter, trace traceElement, str value) (value, err
 	return jsonToValue(i, trace, parsedJSON)
 }
 
+func builtinParseYAML(i *interpreter, trace traceElement, str value) (value, error) {
+	sval, err := i.getString(str, trace)
+	if err != nil {
+		return nil, err
+	}
+	s := sval.getString()
+    elems := []interface{}{}
+    d := yaml.NewYAMLToJSONDecoder(strings.NewReader(s))
+    for {
+        var elem interface{}
+        if err := d.Decode(&elem); err != nil {
+            if err == io.EOF {
+                break
+            }
+            return nil, i.Error(fmt.Sprintf("failed to parse YAML: %v", err.Error()), trace)
+        }
+        elems = append(elems, elem)
+    }
+    return jsonToValue(i, trace, elems)
+}
+
 func builtinExtVar(i *interpreter, trace traceElement, name value) (value, error) {
 	str, err := i.getString(name, trace)
 	if err != nil {
@@ -1246,6 +1269,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&ternaryBuiltin{name: "splitLimit", function: builtinSplitLimit, parameters: ast.Identifiers{"str", "c", "maxsplits"}},
 	&ternaryBuiltin{name: "strReplace", function: builtinStrReplace, parameters: ast.Identifiers{"str", "from", "to"}},
 	&unaryBuiltin{name: "parseJson", function: builtinParseJSON, parameters: ast.Identifiers{"str"}},
+	&unaryBuiltin{name: "parseYaml", function: builtinParseYAML, parameters: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "encodeUTF8", function: builtinEncodeUTF8, parameters: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "decodeUTF8", function: builtinDecodeUTF8, parameters: ast.Identifiers{"arr"}},
 	&generalBuiltin{name: "sort", function: builtinSort, required: ast.Identifiers{"arr"}, optional: ast.Identifiers{"keyF"}, defaultValues: []value{functionID}},
