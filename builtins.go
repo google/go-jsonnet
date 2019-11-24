@@ -29,7 +29,7 @@ import (
 	"strings"
 
 	"github.com/google/go-jsonnet/ast"
-    "k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 func builtinPlus(i *interpreter, trace traceElement, x, y value) (value, error) {
@@ -982,19 +982,19 @@ func builtinParseYAML(i *interpreter, trace traceElement, str value) (value, err
 		return nil, err
 	}
 	s := sval.getString()
-    elems := []interface{}{}
-    d := yaml.NewYAMLToJSONDecoder(strings.NewReader(s))
-    for {
-        var elem interface{}
-        if err := d.Decode(&elem); err != nil {
-            if err == io.EOF {
-                break
-            }
-            return nil, i.Error(fmt.Sprintf("failed to parse YAML: %v", err.Error()), trace)
-        }
-        elems = append(elems, elem)
-    }
-    return jsonToValue(i, trace, elems)
+	elems := []interface{}{}
+	d := yaml.NewYAMLToJSONDecoder(strings.NewReader(s))
+	for {
+		var elem interface{}
+		if err := d.Decode(&elem); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, i.Error(fmt.Sprintf("failed to parse YAML: %v", err.Error()), trace)
+		}
+		elems = append(elems, elem)
+	}
+	return jsonToValue(i, trace, elems)
 }
 
 func builtinExtVar(i *interpreter, trace traceElement, name value) (value, error) {
