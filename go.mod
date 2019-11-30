@@ -5,7 +5,8 @@ require (
 	github.com/mattn/go-colorable v0.1.1 // indirect
 	github.com/mattn/go-isatty v0.0.7 // indirect
 	github.com/sergi/go-diff v1.0.0
-	k8s.io/apimachinery v0.0.0-20191123233150-4c4803ed55e3
+	gopkg.in/yaml.v2 v2.2.7 // indirect
+	sigs.k8s.io/yaml v1.1.0
 )
 
 go 1.13
