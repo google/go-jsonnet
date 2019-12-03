@@ -21,6 +21,7 @@ go_library(
         "thunks.go",
         "value.go",
         "vm.go",
+        "yaml.go",
     ],
     importpath = "github.com/google/go-jsonnet",
     visibility = ["//visibility:public"],
@@ -29,6 +30,7 @@ go_library(
         "//astgen:go_default_library",
         "//internal/errors:go_default_library",
         "//internal/program:go_default_library",
+        "@io_k8s_sigs_yaml//:go_default_library",
     ],
 )
 
