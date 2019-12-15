@@ -1,0 +1,1 @@
+std.reverse(["hello", "my", "name", "is", "tester"])
