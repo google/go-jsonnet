@@ -345,6 +345,23 @@ func builtinJoin(i *interpreter, trace traceElement, sep, arrv value) (value, er
 	}
 }
 
+func builtinReverse(i *interpreter, trace traceElement, arrv value) (value, error) {
+	arr, err := i.getArray(arrv, trace)
+	if err != nil {
+		return nil, err
+	}
+
+	lenArr := len(arr.elements) // lenx holds the original array length
+    reversed_array := make([]*cachedThunk, lenArr) // creates a slice that refer to a new array of length lenx
+
+    for i := 0; i < lenArr; i++ {
+        j := lenArr - (i + 1) // j initially holds (lenx - 1) and decreases to 0 while i initially holds 0 and increase to (lenx - 1)
+        reversed_array[i] = arr.elements[j]
+	}
+	
+	return makeValueArray(reversed_array), nil
+}
+
 func builtinFilter(i *interpreter, trace traceElement, funcv, arrv value) (value, error) {
 	arr, err := i.getArray(arrv, trace)
 	if err != nil {
@@ -1271,6 +1288,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&binaryBuiltin{name: "makeArray", function: builtinMakeArray, parameters: ast.Identifiers{"sz", "func"}},
 	&binaryBuiltin{name: "flatMap", function: builtinFlatMap, parameters: ast.Identifiers{"func", "arr"}},
 	&binaryBuiltin{name: "join", function: builtinJoin, parameters: ast.Identifiers{"sep", "arr"}},
+	&unaryBuiltin{name: "reverse", function: builtinReverse, parameters: ast.Identifiers{"arr"}},
 	&binaryBuiltin{name: "filter", function: builtinFilter, parameters: ast.Identifiers{"func", "arr"}},
 	&binaryBuiltin{name: "range", function: builtinRange, parameters: ast.Identifiers{"from", "to"}},
 	&binaryBuiltin{name: "primitiveEquals", function: primitiveEquals, parameters: ast.Identifiers{"x", "y"}},
