@@ -3,7 +3,7 @@ sudo: false
 matrix:
   include:
     - go: 1.x
-    - go: 1.8.x
+    - go: 1.11.x
     - go: tip
     - name: "Bazel Check"
       go: 1.x
