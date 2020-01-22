@@ -22,13 +22,13 @@ go get github.com/google/go-jsonnet/cmd/jsonnet
 ## Build instructions (go 1.11+)
 
 ```bash
-git clone github.com/google/go-jsonnet
+git clone git@github.com:google/go-jsonnet.git
 cd go-jsonnet
 go build ./cmd/jsonnet
 ```
 To build with [Bazel](https://bazel.build/) instead:
 ```bash
-git clone github.com/google/go-jsonnet
+git clone git@github.com:google/go-jsonnet.git
 cd go-jsonnet
 git submodule init
 git submodule update
