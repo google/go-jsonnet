@@ -1,0 +1,10 @@
+RUNTIME ERROR: substr first parameter should be a string, got number
+-------------------------------------------------
+	testdata/builtinSubStr_first_param_not_string:1:1-20	builtin function <substr>
+
+std.substr(1, 0, 1)
+
+-------------------------------------------------
+	During evaluation	
+
+

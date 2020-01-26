@@ -14,6 +14,16 @@ gojsonnet.egg-info/
 /bazel-out
 /bazel-testlogs
 /dumpstdlibast
+
+# built binaries
 /jsonnet
+/jsonnet.exe
+
+# "old" built binaries (for doing benchmark comparisons)
+/jsonnet-old
+/jsonnet-old.exe
+
 /linter/jsonnet-lint/jsonnet-lint
 /tests_path.source
+
+/builtin-benchmark-results

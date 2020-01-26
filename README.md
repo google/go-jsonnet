@@ -55,6 +55,33 @@ Additionally if any files were moved around, see the section [Keeping the Bazel 
 ./tests.sh  # Also runs `go test ./...`
 ```
 
+## Running Benchmarks
+
+Setup
+
+```bash
+go get golang.org/x/tools/cmd/benchcmp
+```
+
+1. Make sure you build a jsonnet binary _prior_ to making changes.
+
+```bash
+go build ./cmd/jsonnet -o jsonnet-old
+```
+
+2. Make changes (iterate as needed), and rebuild new binary
+
+```bash
+go build ./cmd/jsonnet
+```
+
+3. Run benchmark:
+
+```bash
+# e.g. ./benchmark.sh Builtin
+./benchmark.sh <TestNameFilter>
+```
+
 ## Implementation Notes
 
 We are generating some helper classes on types by using http://clipperhouse.github.io/gen/.  Do the following to regenerate these if necessary:
