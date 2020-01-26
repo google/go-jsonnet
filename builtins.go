@@ -351,14 +351,14 @@ func builtinReverse(i *interpreter, trace traceElement, arrv value) (value, erro
 		return nil, err
 	}
 
-	lenArr := len(arr.elements) // lenx holds the original array length
-    reversed_array := make([]*cachedThunk, lenArr) // creates a slice that refer to a new array of length lenx
+	lenArr := len(arr.elements)                    // lenx holds the original array length
+	reversed_array := make([]*cachedThunk, lenArr) // creates a slice that refer to a new array of length lenx
 
-    for i := 0; i < lenArr; i++ {
-        j := lenArr - (i + 1) // j initially holds (lenx - 1) and decreases to 0 while i initially holds 0 and increase to (lenx - 1)
-        reversed_array[i] = arr.elements[j]
+	for i := 0; i < lenArr; i++ {
+		j := lenArr - (i + 1) // j initially holds (lenx - 1) and decreases to 0 while i initially holds 0 and increase to (lenx - 1)
+		reversed_array[i] = arr.elements[j]
 	}
-	
+
 	return makeValueArray(reversed_array), nil
 }
 
