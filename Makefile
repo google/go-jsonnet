@@ -42,9 +42,18 @@ build:
 	go build ./cmd/jsonnet
 .PHONY: build
 
+build.old:
+	go build ./cmd/jsonnet -o jsonnet-old
+.PHONY: build.old
+
 test:
 	./tests.sh
 .PHONY: test
+
+benchmark : FILTER="Builtin"
+benchmark: build
+	./benchmark.sh ${FILTER}
+.PHONY: benchmark
 
 generate:
 	go generate

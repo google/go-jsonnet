@@ -839,6 +839,59 @@ func builtinPow(i *interpreter, trace traceElement, basev value, expv value) (va
 	return makeDoubleCheck(i, trace, math.Pow(base.value, exp.value))
 }
 
+func builtinSubstr(i *interpreter, trace traceElement, inputStr, inputFrom, inputLen value) (value, error) {
+	strV, err := i.getString(inputStr, trace)
+	if err != nil {
+		msg := fmt.Sprintf("substr first parameter should be a string, got %s", inputStr.getType().name)
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+	}
+
+	fromV, err := i.getNumber(inputFrom, trace)
+	if err != nil {
+		msg := fmt.Sprintf("substr second parameter should be a number, got %s", inputFrom.getType().name)
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+	}
+
+	if math.Mod(fromV.value, 1) != 0 {
+		msg := fmt.Sprintf("substr second parameter should be an integer, got %f", fromV.value)
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+	}
+
+	lenV, err := i.getNumber(inputLen, trace)
+	if err != nil {
+		msg := fmt.Sprintf("substr third parameter should be a number, got %s", inputLen.getType().name)
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+	}
+
+	lenInt, err := i.getInt(lenV, trace)
+
+	if err != nil {
+		msg := fmt.Sprintf("substr third parameter should be an integer, got %f", lenV.value)
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+	}
+
+	if lenInt < 0 {
+		msg := fmt.Sprintf("substr third parameter should be greater than zero, got %d", lenInt)
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+	}
+
+	fromInt := int(fromV.value)
+	strStr := strV.getGoString()
+
+	endIndex := fromInt + lenInt
+
+	if endIndex > len(strStr) {
+		endIndex = len(strStr)
+	}
+
+	if fromInt > len(strStr) {
+		return makeValueString(""), nil
+	}
+
+	runes := []rune(strStr)
+	return makeValueString(string(runes[fromInt:endIndex])), nil
+}
+
 func builtinSplitLimit(i *interpreter, trace traceElement, strv, cv, maxSplitsV value) (value, error) {
 	str, err := i.getString(strv, trace)
 	if err != nil {
@@ -1243,6 +1296,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&binaryBuiltin{name: "pow", function: builtinPow, parameters: ast.Identifiers{"base", "exp"}},
 	&binaryBuiltin{name: "modulo", function: builtinModulo, parameters: ast.Identifiers{"x", "y"}},
 	&unaryBuiltin{name: "md5", function: builtinMd5, parameters: ast.Identifiers{"x"}},
+	&ternaryBuiltin{name: "substr", function: builtinSubstr, parameters: ast.Identifiers{"str", "from", "len"}},
 	&ternaryBuiltin{name: "splitLimit", function: builtinSplitLimit, parameters: ast.Identifiers{"str", "c", "maxsplits"}},
 	&ternaryBuiltin{name: "strReplace", function: builtinStrReplace, parameters: ast.Identifiers{"str", "from", "to"}},
 	&unaryBuiltin{name: "parseJson", function: builtinParseJSON, parameters: ast.Identifiers{"str"}},

@@ -1,0 +1,1 @@
+std.substr("hello", 10, 5)

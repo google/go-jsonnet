@@ -1,0 +1,10 @@
+RUNTIME ERROR: substr second parameter should be an integer, got 1.200000
+-------------------------------------------------
+	testdata/builtinSubStr_second_parameter_not_integer:1:1-28	builtin function <substr>
+
+std.substr("hello", 1.2, 5)
+
+-------------------------------------------------
+	During evaluation	
+
+
