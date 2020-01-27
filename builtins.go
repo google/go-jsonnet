@@ -682,6 +682,69 @@ func builtinMd5(i *interpreter, trace traceElement, x value) (value, error) {
 	return makeValueString(hex.EncodeToString(hash[:])), nil
 }
 
+func builtinBase64(i *interpreter, trace traceElement, input value) (value, error) {
+	var byteArr []byte
+
+	var sanityCheck = func(v int) (string, bool) {
+		if v < 0 || 255 < v {
+			msg := fmt.Sprintf("base64 encountered invalid codepoint value in the array (must be 0 <= X <= 255), got %d", v)
+			return msg, false
+		}
+
+		return "", true
+	}
+
+	switch input.(type) {
+	case valueString:
+		vStr, err := i.getString(input, trace)
+		if err != nil {
+			return nil, err
+		}
+
+		runes := []rune(vStr.getGoString())
+		for _, r := range runes {
+			n := int(r)
+			msg, ok := sanityCheck(n)
+			if !ok {
+				return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+			}
+		}
+
+		byteArr = []byte(string(vStr.getGoString()))
+	case *valueArray:
+		vArr, err := i.getArray(input, trace)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, cThunk := range vArr.elements {
+			cTv, err := cThunk.getValue(i, trace)
+			if err != nil {
+				return nil, err
+			}
+
+			vInt, err := i.getInt(cTv, trace)
+			if err != nil {
+				msg := fmt.Sprintf("base64 encountered a non-integer value in the array, got %s", cTv.getType().name)
+				return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+			}
+
+			msg, ok := sanityCheck(vInt)
+			if !ok {
+				return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+			}
+
+			byteArr = append(byteArr, byte(vInt))
+		}
+	default:
+		msg := fmt.Sprintf("base64 can only base64 encode strings / arrays of single bytes, got %s", input.getType().name)
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+	}
+
+	sEnc := base64.StdEncoding.EncodeToString(byteArr)
+	return makeValueString(sEnc), nil
+}
+
 func builtinEncodeUTF8(i *interpreter, trace traceElement, x value) (value, error) {
 	str, err := i.getString(x, trace)
 	if err != nil {
@@ -1371,6 +1434,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "base64Decode", function: builtinBase64Decode, parameters: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "base64DecodeBytes", function: builtinBase64DecodeBytes, parameters: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseJson", function: builtinParseJSON, parameters: ast.Identifiers{"str"}},
+	&unaryBuiltin{name: "base64", function: builtinBase64, parameters: ast.Identifiers{"input"}},
 	&unaryBuiltin{name: "encodeUTF8", function: builtinEncodeUTF8, parameters: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "decodeUTF8", function: builtinDecodeUTF8, parameters: ast.Identifiers{"arr"}},
 	&generalBuiltin{name: "sort", function: builtinSort, required: ast.Identifiers{"arr"}, optional: ast.Identifiers{"keyF"}, defaultValues: []value{functionID}},
