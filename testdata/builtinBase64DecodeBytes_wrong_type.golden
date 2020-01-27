@@ -1,0 +1,10 @@
+RUNTIME ERROR: base64DecodeBytes requires a string, got number
+-------------------------------------------------
+	testdata/builtinBase64DecodeBytes_wrong_type:1:1-25	builtin function <base64DecodeBytes>
+
+std.base64DecodeBytes(1)
+
+-------------------------------------------------
+	During evaluation	
+
+

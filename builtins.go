@@ -1032,6 +1032,56 @@ func builtinStrReplace(i *interpreter, trace traceElement, strv, fromv, tov valu
 	return makeValueString(strings.Replace(sStr, sFrom, sTo, -1)), nil
 }
 
+func base64DecodeGoBytes(i *interpreter, trace traceElement, str string) ([]byte, error) {
+	strLen := len(str)
+	if strLen%4 != 0 {
+		msg := fmt.Sprintf("input string appears not to be a base64 encoded string. Wrong length found (%d)", strLen)
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+	}
+
+	decodedBytes, err := base64.StdEncoding.DecodeString(str)
+	if err != nil {
+		return nil, i.Error(fmt.Sprintf("failed to decode: %s", err), trace)
+	}
+
+	return decodedBytes, nil
+}
+
+func builtinBase64DecodeBytes(i *interpreter, trace traceElement, input value) (value, error) {
+	vStr, err := i.getString(input, trace)
+	if err != nil {
+		msg := fmt.Sprintf("base64DecodeBytes requires a string, got %s", input.getType().name)
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+	}
+
+	decodedBytes, err := base64DecodeGoBytes(i, trace, vStr.getGoString())
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]*cachedThunk, len(decodedBytes))
+	for i := range decodedBytes {
+		res[i] = readyThunk(makeValueNumber(float64(int(decodedBytes[i]))))
+	}
+
+	return makeValueArray(res), nil
+}
+
+func builtinBase64Decode(i *interpreter, trace traceElement, input value) (value, error) {
+	vStr, err := i.getString(input, trace)
+	if err != nil {
+		msg := fmt.Sprintf("base64DecodeBytes requires a string, got %s", input.getType().name)
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+	}
+
+	decodedBytes, err := base64DecodeGoBytes(i, trace, vStr.getGoString())
+	if err != nil {
+		return nil, err
+	}
+
+	return makeValueString(string(decodedBytes)), nil
+}
+
 func builtinUglyObjectFlatMerge(i *interpreter, trace traceElement, x value) (value, error) {
 	// TODO(sbarzowski) consider keeping comprehensions in AST
 	// It will probably be way less hacky, with better error messages and better performance
@@ -1381,6 +1431,8 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&ternaryBuiltin{name: "substr", function: builtinSubstr, parameters: ast.Identifiers{"str", "from", "len"}},
 	&ternaryBuiltin{name: "splitLimit", function: builtinSplitLimit, parameters: ast.Identifiers{"str", "c", "maxsplits"}},
 	&ternaryBuiltin{name: "strReplace", function: builtinStrReplace, parameters: ast.Identifiers{"str", "from", "to"}},
+	&unaryBuiltin{name: "base64Decode", function: builtinBase64Decode, parameters: ast.Identifiers{"str"}},
+	&unaryBuiltin{name: "base64DecodeBytes", function: builtinBase64DecodeBytes, parameters: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseJson", function: builtinParseJSON, parameters: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "base64", function: builtinBase64, parameters: ast.Identifiers{"input"}},
 	&unaryBuiltin{name: "encodeUTF8", function: builtinEncodeUTF8, parameters: ast.Identifiers{"str"}},
