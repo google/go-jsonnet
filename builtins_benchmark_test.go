@@ -45,6 +45,7 @@ func Benchmark_Builtin_base64Decode(b *testing.B) {
 
 func Benchmark_Builtin_base64DecodeBytes(b *testing.B) {
 	RunBenchmark(b, "base64DecodeBytes")
+}
 
 func Benchmark_Builtin_base64(b *testing.B) {
 	RunBenchmark(b, "base64")
