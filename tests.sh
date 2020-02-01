@@ -2,12 +2,18 @@
 
 set -e
 
+PYTHON_COMMAND=${PYTHON_COMMAND:=python}
+
+set -x
+
+
 [ "$1" = "--skip-go-test" ] || go test ./...
+
 
 c-bindings-tests/run.sh
 
-python setup.py build
-python setup.py test
+$PYTHON_COMMAND setup.py build
+$PYTHON_COMMAND setup.py test
 
 export IMPLEMENTATION=golang
 

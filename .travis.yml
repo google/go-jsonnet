@@ -6,6 +6,17 @@ matrix:
     - go: 1.11.x
     - go: 1.12.x
     - go: 1.13.x
+      arch: amd64
+    - name: "arch: arm64"
+      go: 1.13.x
+      arch: arm64
+      env:
+        - PYTHON_COMMAND=python3
+    - name: "arch: ppc64le"
+      go: 1.13.x
+      arch: ppc64le
+      env:
+        - PYTHON_COMMAND=python3
     - go: tip
     - name: "Bazel Check"
       go: 1.x
@@ -23,6 +34,7 @@ matrix:
       script: make all
 
 before_install:
+  - sudo apt install python3-dev
   - go get github.com/axw/gocov/gocov
   - go get github.com/mattn/goveralls
   - go get github.com/fatih/color
@@ -30,3 +42,6 @@ before_install:
   - go get github.com/sergi/go-diff/diffmatchpatch
 
 script: ./travisBuild.sh
+
+env:
+  - PYTHON_COMMAND=python
