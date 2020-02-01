@@ -6,6 +6,16 @@ matrix:
     - go: 1.11.x
     - go: 1.12.x
     - go: 1.13.x
+      arch: amd64
+    - name: "arch: s390x"
+      go: 1.13.x
+      arch: s390x
+    - name: "arch: arm64"
+      go: 1.13.x
+      arch: arm64
+    - name: "arch: ppc64le"
+      go: 1.13.x
+      arch: ppc64le
     - go: tip
     - name: "Bazel Check"
       go: 1.x
