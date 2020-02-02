@@ -861,6 +861,14 @@ func liftBitwise(f func(int64, int64) int64) func(*interpreter, traceElement, va
 		if err != nil {
 			return nil, err
 		}
+		if x.value < math.MinInt64 || x.value > math.MaxInt64 {
+			msg := fmt.Sprintf("Bitwise operator argument %v outside of range [%v, %v]", x.value, math.MinInt64, math.MaxInt64)
+			return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+		}
+		if y.value < math.MinInt64 || y.value > math.MaxInt64 {
+			msg := fmt.Sprintf("Bitwise operator argument %v outside of range [%v, %v]", y.value, math.MinInt64, math.MaxInt64)
+			return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+		}
 		return makeDoubleCheck(i, trace, float64(f(int64(x.value), int64(y.value))))
 	}
 }
