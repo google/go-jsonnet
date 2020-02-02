@@ -1,0 +1,10 @@
+RUNTIME ERROR: Bitwise operator argument -1e+20 outside of range [-9223372036854775808, 9223372036854775807]
+-------------------------------------------------
+	testdata/bitwise_and7:1:1-11	$
+
+42 & -1e20
+
+-------------------------------------------------
+	During evaluation	
+
+
