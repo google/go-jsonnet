@@ -1,0 +1,3 @@
+include vm.go
+include cpp-jsonnet/include/libjsonnet.h
+graft c-bindings
