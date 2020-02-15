@@ -14,6 +14,7 @@ import (
 	// #include "internal.h"
 	"C"
 )
+import "errors"
 
 type vm struct {
 	*jsonnet.VM
@@ -29,6 +30,25 @@ type jsonValue struct {
 type importer struct {
 	cb  *C.JsonnetImportCallback
 	ctx unsafe.Pointer
+
+	// An additional level of cache which allows
+	// using this API as a drop-in replacement for
+	// the C++ version.
+	//
+	// Importer contract requires returning the same
+	// contents every time. This enforces that the same
+	// imported file will always have the same contents.
+	// This caching is not performed on the Go side normally,
+	// because in many cases the proper caching can only
+	// be performed within the importer. In particular,
+	// when multiple paths are tried, the presence and contents
+	// of each should be cached.
+	//
+	// In this case, the API requires us to take ownership
+	// of the provided string, so we the implementation needs
+	// to provide a new one each time, so we need to fake
+	// good behavior.
+	contentCache map[string]jsonnet.Contents
 }
 
 // Import fetches data from a given path by using c.JsonnetImportCallback
@@ -39,6 +59,12 @@ func (i *importer) Import(importedFrom, importedPath string) (contents jsonnet.C
 		foundHereC *C.char
 	)
 
+	// TODO(sbarzowski) Consider supporting returning null for paths,
+	// which are already resolved. We cannot expect cross-language interface
+	// to let us easily return the same Go Contents. Instead, we can allow
+	// returning nothing (NULL), if they know that we have the contents
+	// cached anyway.
+
 	resultC := C.jsonnet_internal_execute_import(i.cb, i.ctx, C.CString(dir), C.CString(importedPath), &foundHereC, &success)
 	result := C.GoString(resultC)
 	C.jsonnet_internal_free_string(resultC)
@@ -47,10 +73,14 @@ func (i *importer) Import(importedFrom, importedPath string) (contents jsonnet.C
 	C.jsonnet_internal_free_string(foundHereC)
 
 	if success != 1 {
-		return jsonnet.Contents{}, "", fmt.Errorf("failed to execute import callback, code: %d", success)
+		return jsonnet.Contents{}, "", errors.New("importer error: " + result)
 	}
 
-	return jsonnet.MakeContents(result), foundHere, nil
+	if _, isCached := i.contentCache[foundHere]; !isCached {
+		i.contentCache[foundHere] = jsonnet.MakeContents(result)
+	}
+	fmt.Fprintf(os.Stderr, "%#+v\n", i.contentCache[foundHere])
+	return i.contentCache[foundHere], foundHere, nil
 }
 
 var handles = handlesTable{}
@@ -252,8 +282,9 @@ func jsonnet_import_callback(vmRef *C.struct_JsonnetVm, cb *C.JsonnetImportCallb
 	vm := getVM(vmRef)
 
 	vm.Importer(&importer{
-		ctx: ctx,
-		cb:  cb,
+		ctx:          ctx,
+		cb:           cb,
+		contentCache: make(map[string]jsonnet.Contents),
 	})
 }
 
