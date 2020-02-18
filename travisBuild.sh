@@ -2,7 +2,7 @@
 
 run_tests() {
   $GOPATH/bin/goveralls -service=travis-ci
-  ./tests.sh --skip-go-test
+  SKIP_GO_TESTS=1 ./tests.sh
 }
 
 run_tests

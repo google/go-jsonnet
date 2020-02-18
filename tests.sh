@@ -6,14 +6,17 @@ PYTHON_COMMAND=${PYTHON_COMMAND:=python}
 
 set -x
 
+[ "$SKIP_GO_TESTS" == 1 ] || go test ./...
 
-[ "$1" = "--skip-go-test" ] || go test ./...
+if [ "$SKIP_PYTHON_BINDINGS_TESTS" == 1 ]
+then
+    c-bindings-tests/build.sh
+else
+    c-bindings-tests/run.sh
 
-
-c-bindings-tests/run.sh
-
-$PYTHON_COMMAND setup.py build
-$PYTHON_COMMAND setup.py test
+    $PYTHON_COMMAND setup.py build
+    $PYTHON_COMMAND setup.py test
+fi
 
 export IMPLEMENTATION=golang
 
