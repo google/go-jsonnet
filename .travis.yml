@@ -43,6 +43,7 @@ matrix:
 
 before_install:
   - sudo apt install python3-dev
+  - pip install -U pytest
   - go get github.com/axw/gocov/gocov
   - go get github.com/mattn/goveralls
   - go get github.com/fatih/color

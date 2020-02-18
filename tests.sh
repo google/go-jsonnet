@@ -15,7 +15,7 @@ else
     c-bindings-tests/run.sh
 
     $PYTHON_COMMAND setup.py build
-    $PYTHON_COMMAND setup.py test
+    pytest python
 fi
 
 export IMPLEMENTATION=golang
