@@ -14,8 +14,8 @@ then
 else
     c-bindings-tests/run.sh
 
-    $PYTHON_COMMAND setup.py build
-    pytest python
+    $PYTHON_COMMAND setup.py build --build-platlib .
+    $PYTHON_COMMAND -m pytest python
 fi
 
 export IMPLEMENTATION=golang
