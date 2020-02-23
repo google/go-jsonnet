@@ -495,7 +495,6 @@ type LiteralNull struct{ NodeBase }
 // LiteralNumber represents a JSON number
 type LiteralNumber struct {
 	NodeBase
-	Value          float64
 	OriginalString string
 }
 
