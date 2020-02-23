@@ -19,7 +19,6 @@ package parser
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/internal/errors"
@@ -870,15 +869,8 @@ func (p *parser) parseTerminal() (ast.Node, error) {
 
 	// Literals
 	case tokenNumber:
-		// This shouldn't fail as the lexer should make sure we have good input but
-		// we handle the error regardless.
-		num, err := strconv.ParseFloat(tok.data, 64)
-		if err != nil {
-			return nil, errors.MakeStaticError("Could not parse floating point number.", tok.loc)
-		}
 		return &ast.LiteralNumber{
 			NodeBase:       ast.NewNodeBaseLoc(tok.loc, tok.fodder),
-			Value:          num,
 			OriginalString: tok.data,
 		}, nil
 	case tokenStringDouble, tokenStringSingle,

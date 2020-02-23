@@ -22,6 +22,7 @@ import (
 	"math"
 	"reflect"
 	"sort"
+	"strconv"
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/astgen"
@@ -476,7 +477,14 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		return makeValueNull(), nil
 
 	case *ast.LiteralNumber:
-		return makeValueNumber(node.Value), nil
+		// Since the lexer ensures that OriginalString is of
+		// the right form, this will only fail if the number is
+		// too large to fit in a double.
+		num, err := strconv.ParseFloat(node.OriginalString, 64)
+		if err != nil {
+			return nil, i.Error(fmt.Sprintf("overflow"), trace)
+		}
+		return makeValueNumber(num), nil
 
 	case *ast.LiteralString:
 		return makeValueString(node.Value), nil
