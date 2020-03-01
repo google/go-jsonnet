@@ -45,7 +45,10 @@ func (l *Location) String() string {
 	return fmt.Sprintf("%v:%v", l.Line, l.Column)
 }
 
-func locationBefore(a Location, b Location) bool {
+// LocationBefore returns whether one code location
+// refers to the location closer to the beginning
+// of the file than the other one.
+func LocationBefore(a Location, b Location) bool {
 	if a.Line != b.Line {
 		return a.Line < b.Line
 	}

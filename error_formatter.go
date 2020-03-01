@@ -105,7 +105,7 @@ func (ef *termErrorFormatter) showCode(buf *bytes.Buffer, loc ast.LocationRange)
 		beginning := ast.LineBeginning(&loc)
 		ending := ast.LineEnding(&loc)
 		fmt.Fprintf(buf, "%v", ef.sp.GetSnippet(beginning))
-		errFprintf(buf, "%v", ef.sp.GetSnippet(loc))
+		errFprintf(buf, "%v", ef.sp.GetSnippet(loc)) //nolint:errcheck
 		fmt.Fprintf(buf, "%v", ef.sp.GetSnippet(ending))
 		buf.WriteByte('\n')
 	}

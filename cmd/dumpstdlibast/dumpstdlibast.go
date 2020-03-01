@@ -44,8 +44,14 @@ func main() {
 	ast := dump.Sdump(node)
 
 	dst := os.Stdout
-	dst.WriteString(header)
-	dst.WriteString(ast)
+	_, err = dst.WriteString(header)
+	if err != nil {
+		panic(err)
+	}
+	_, err = dst.WriteString(ast)
+	if err != nil {
+		panic(err)
+	}
 }
 
 var header = `

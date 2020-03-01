@@ -103,7 +103,7 @@ func jsonnet_make() *C.struct_JsonnetVm {
 	id, err := handles.make(newVM)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
@@ -113,7 +113,7 @@ func jsonnet_make() *C.struct_JsonnetVm {
 //export jsonnet_destroy
 func jsonnet_destroy(vmRef *C.struct_JsonnetVm) {
 	if err := handles.free(uint32(vmRef.id)); err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
@@ -124,14 +124,14 @@ func getVM(vmRef *C.struct_JsonnetVm) *vm {
 	ref, err := handles.get(uint32(vmRef.id))
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
 	v, ok := ref.(*vm)
 
 	if !ok {
-		fmt.Fprintf(os.Stderr, "provided handle has a different type")
+		fmt.Fprintln(os.Stderr, "provided handle has a different type")
 		os.Exit(1)
 	}
 
@@ -413,7 +413,7 @@ func jsonnet_json_destroy(vmRef *C.struct_JsonnetVm, v *C.struct_JsonnetJsonValu
 	}
 
 	if err := handles.free(uint32(v.id)); err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
@@ -424,7 +424,7 @@ func createJSONValue(vmRef *C.struct_JsonnetVm, val interface{}) *C.struct_Jsonn
 	id, err := handles.make(&jsonValue{val: val})
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 
@@ -435,7 +435,7 @@ func getJSONValue(jsonRef *C.struct_JsonnetJsonValue) *jsonValue {
 	ref, err := handles.get(uint32(jsonRef.id))
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
+		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
 

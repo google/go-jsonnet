@@ -412,16 +412,13 @@ func (l *lexer) lexWhitespace() (int, int) {
 		switch r {
 		case '\r':
 			// Ignore.
-			break
 
 		case '\n':
 			indent = 0
 			newLines++
-			break
 
 		case ' ':
 			indent++
-			break
 
 		// This only works for \t at the beginning of lines, but we strip it everywhere else
 		// anyway.  The only case where this will cause a problem is spaces followed by \t
@@ -429,7 +426,6 @@ func (l *lexer) lexWhitespace() (int, int) {
 		// is enabled it will be fixed later.
 		case '\t':
 			indent += 8
-			break
 		}
 	}
 	l.backup()
@@ -489,7 +485,7 @@ func (l *lexer) lexNumber() error {
 	state := numBegin
 
 outerLoop:
-	for true {
+	for {
 		r := l.next()
 		switch state {
 		case numBegin:
@@ -654,6 +650,7 @@ func (l *lexer) lexSymbol() error {
 		margin := l.pos.byteNo - l.pos.lineStart
 		commentStartLoc := l.tokenStartLoc
 
+		//nolint:ineffassign,staticcheck
 		r := l.next() // consume the initial '*'
 		for r = l.next(); r != '*' || l.peek() != '/'; r = l.next() {
 			if r == lexEOF {
@@ -687,9 +684,9 @@ func (l *lexer) lexSymbol() error {
 				}
 			}
 			if allStar {
-				for _, l := range lines {
-					if l[0] == '*' {
-						l = " " + l
+				for i := range lines {
+					if lines[i][0] == '*' {
+						lines[i] = " " + lines[i]
 					}
 				}
 			}
@@ -813,7 +810,7 @@ func Lex(fn string, input string) (Tokens, error) {
 	l := makeLexer(fn, input)
 
 	var err error
-	for true {
+	for {
 		newLines, indent := l.lexWhitespace()
 		// If it's the end of the file, discard final whitespace.
 		if l.peek() == lexEOF {
@@ -855,7 +852,8 @@ func Lex(fn string, input string) (Tokens, error) {
 				return nil, err
 			}
 
-			// String literals
+		// String literals
+
 		case '"':
 			stringStartLoc := l.prevLocation()
 			for r = l.next(); ; r = l.next() {
@@ -869,6 +867,7 @@ func Lex(fn string, input string) (Tokens, error) {
 					break
 				}
 				if r == '\\' && l.peek() != lexEOF {
+					//nolint:ineffassign,staticcheck
 					r = l.next()
 				}
 			}
@@ -885,6 +884,7 @@ func Lex(fn string, input string) (Tokens, error) {
 					break
 				}
 				if r == '\\' && l.peek() != lexEOF {
+					//nolint:ineffassign,staticcheck
 					r = l.next()
 				}
 			}

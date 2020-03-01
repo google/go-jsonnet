@@ -341,7 +341,7 @@ func readInput(config config, filename *string) (input string, err error) {
 	return
 }
 
-func writeMultiOutputFiles(output map[string]string, outputDir, outputFile string, createDirs bool) error {
+func writeMultiOutputFiles(output map[string]string, outputDir, outputFile string, createDirs bool) (err error) {
 	// If multiple file output is used, then iterate over each string from
 	// the sequence of strings returned by jsonnet_evaluate_snippet_multi,
 	// construct pairs of filename and content, and write each output file.
@@ -351,12 +351,15 @@ func writeMultiOutputFiles(output map[string]string, outputDir, outputFile strin
 	if outputFile == "" {
 		manifest = os.Stdout
 	} else {
-		var err error
 		manifest, err = os.Create(outputFile)
 		if err != nil {
 			return err
 		}
-		defer manifest.Close()
+		defer func() {
+			if ferr := manifest.Close(); err != nil {
+				err = ferr
+			}
+		}()
 	}
 
 	// Iterate through the map in order.
@@ -401,7 +404,11 @@ func writeMultiOutputFiles(output map[string]string, outputDir, outputFile strin
 		if err != nil {
 			return err
 		}
-		defer f.Close()
+		defer func() {
+			if ferr := f.Close(); err != nil {
+				err = ferr
+			}
+		}()
 
 		_, err = f.WriteString(newContent)
 		if err != nil {
@@ -413,18 +420,21 @@ func writeMultiOutputFiles(output map[string]string, outputDir, outputFile strin
 }
 
 // writeOutputStream writes the output as a YAML stream.
-func writeOutputStream(output []string, outputFile string) error {
+func writeOutputStream(output []string, outputFile string) (err error) {
 	var f *os.File
 
 	if outputFile == "" {
 		f = os.Stdout
 	} else {
-		var err error
 		f, err = os.Create(outputFile)
 		if err != nil {
 			return err
 		}
-		defer f.Close()
+		defer func() {
+			if ferr := f.Close(); err != nil {
+				err = ferr
+			}
+		}()
 	}
 
 	for _, doc := range output {
@@ -448,7 +458,7 @@ func writeOutputStream(output []string, outputFile string) error {
 	return nil
 }
 
-func writeOutputFile(output string, outputFile string, createDirs bool) error {
+func writeOutputFile(output string, outputFile string, createDirs bool) (err error) {
 	if outputFile == "" {
 		fmt.Print(output)
 		return nil
@@ -460,11 +470,15 @@ func writeOutputFile(output string, outputFile string, createDirs bool) error {
 		}
 	}
 
-	f, err := os.Create(outputFile)
-	if err != nil {
+	f, createErr := os.Create(outputFile)
+	if createErr != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if ferr := f.Close(); err != nil {
+			err = ferr
+		}
+	}()
 
 	_, err = f.WriteString(output)
 	return err
@@ -478,7 +492,10 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		pprof.StartCPUProfile(f)
+		err = pprof.StartCPUProfile(f)
+		if err != nil {
+			log.Fatal(err)
+		}
 		defer pprof.StopCPUProfile()
 	}
 
@@ -519,7 +536,7 @@ func main() {
 
 	if len(config.inputFiles) != 1 {
 		// Should already have been caught by processArgs.
-		panic(fmt.Sprintf("Internal error: expected a single input file."))
+		panic("Internal error: expected a single input file.")
 	}
 	filename := config.inputFiles[0]
 	input, err := readInput(config, &filename)
@@ -560,7 +577,11 @@ func main() {
 		if err := pprof.WriteHeapProfile(f); err != nil {
 			log.Fatal("could not write memory profile: ", err)
 		}
-		f.Close()
+		defer func() {
+			if err := f.Close(); err != nil {
+				log.Fatal("Failed to close the memprofile: ", err)
+			}
+		}()
 	}
 
 	if err != nil {

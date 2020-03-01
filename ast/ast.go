@@ -429,7 +429,8 @@ type Index struct {
 	// When Index is being used, this is the fodder before the ']'.
 	// When Id is being used, this is always empty.
 	RightBracketFodder Fodder
-	Id                 *Identifier
+	//nolint: golint,stylecheck // keeping Id instead of ID for now to avoid breaking 3rd parties
+	Id *Identifier
 }
 
 // Slice represents an array slice a[begin:end:step].
@@ -576,9 +577,10 @@ type ObjectField struct {
 	// If Method is set then Expr2 == Method.Body.
 	// There is no base fodder in Method because there was no `function`
 	// keyword.
-	Method       *Function
-	Fodder1      Fodder
-	Expr1        Node // Not in scope of the object
+	Method  *Function
+	Fodder1 Fodder
+	Expr1   Node // Not in scope of the object
+	//nolint: golint,stylecheck // keeping Id instead of ID for now to avoid breaking 3rd parties
 	Id           *Identifier
 	Fodder2      Fodder
 	OpFodder     Fodder
@@ -676,7 +678,8 @@ type SuperIndex struct {
 	// If super.f, the fodder before the 'f'
 	// If super[e], the fodder before the ']'.
 	IDFodder Fodder
-	Id       *Identifier
+	//nolint: golint,stylecheck // keeping Id instead of ID for now to avoid breaking 3rd parties
+	Id *Identifier
 }
 
 // InSuper represents the e in super construct.
@@ -734,6 +737,7 @@ type Unary struct {
 // Var represents variables.
 type Var struct {
 	NodeBase
+	//nolint: golint,stylecheck // keeping Id instead of ID for now to avoid breaking 3rd parties
 	Id Identifier
 }
 
