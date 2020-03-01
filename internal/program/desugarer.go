@@ -167,7 +167,10 @@ func desugarFields(nodeBase ast.NodeBase, fields *ast.ObjectFields, objLevel int
 			return nil, err
 		}
 	}
-	desugarLocalBinds(locals, objLevel+1)
+	err := desugarLocalBinds(locals, objLevel+1)
+	if err != nil {
+		return nil, err
+	}
 	for i := range desugaredFields {
 		field := &(desugaredFields[i])
 		if field.Name != nil {

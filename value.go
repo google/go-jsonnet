@@ -313,9 +313,7 @@ func makeValueArray(elements []*cachedThunk) *valueArray {
 		arrayElems = elements
 	} else {
 		arrayElems = make([]*cachedThunk, len(elements))
-		for i := range elements {
-			arrayElems[i] = elements[i]
-		}
+		copy(arrayElems, elements)
 	}
 	return &valueArray{
 		elements: arrayElems,
@@ -324,12 +322,8 @@ func makeValueArray(elements []*cachedThunk) *valueArray {
 
 func concatArrays(a, b *valueArray) *valueArray {
 	result := make([]*cachedThunk, 0, len(a.elements)+len(b.elements))
-	for _, r := range a.elements {
-		result = append(result, r)
-	}
-	for _, r := range b.elements {
-		result = append(result, r)
-	}
+	result = append(result, a.elements...)
+	result = append(result, b.elements...)
 	return &valueArray{elements: result}
 }
 
@@ -348,19 +342,19 @@ type valueFunction struct {
 // TODO(sbarzowski) better name?
 type evalCallable interface {
 	evalCall(args callArguments, i *interpreter, trace traceElement) (value, error)
-	Parameters() []namedParameter
+	parameters() []namedParameter
 }
 
 func (f *valueFunction) call(i *interpreter, trace traceElement, args callArguments) (value, error) {
-	err := checkArguments(i, trace, args, f.Parameters())
+	err := checkArguments(i, trace, args, f.parameters())
 	if err != nil {
 		return nil, err
 	}
 	return f.ec.evalCall(args, i, trace)
 }
 
-func (f *valueFunction) Parameters() []namedParameter {
-	return f.ec.Parameters()
+func (f *valueFunction) parameters() []namedParameter {
+	return f.ec.parameters()
 }
 
 func checkArguments(i *interpreter, trace traceElement, args callArguments, params []namedParameter) error {
@@ -406,20 +400,9 @@ func (f *valueFunction) getType() *valueType {
 	return functionType
 }
 
-// parameters represents required position and optional named parameters for a
-// function definition.
-type parameters struct {
-	required ast.Identifiers
-	optional []namedParameter
-}
-
 type namedParameter struct {
 	name       ast.Identifier
 	defaultArg ast.Node
-}
-
-type potentialValueInEnv interface {
-	inEnv(env *environment) *cachedThunk
 }
 
 type callArguments struct {

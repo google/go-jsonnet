@@ -398,7 +398,7 @@ func TestEval(t *testing.T) {
 	}
 }
 
-func withinWorkingDirectory(t *testing.T, dir string) func() error {
+func withinWorkingDirectory(t *testing.T, dir string) func() {
 	t.Helper()
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -407,8 +407,11 @@ func withinWorkingDirectory(t *testing.T, dir string) func() error {
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
 	}
-	return func() error {
-		return os.Chdir(cwd)
+	return func() {
+		err := os.Chdir(cwd)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 
@@ -426,7 +429,12 @@ func TestEvalUnusualFilenames(t *testing.T) {
 		if dir, err = ioutil.TempDir("", "jsonnet"); err != nil {
 			t.Fatal(err)
 		}
-		defer os.RemoveAll(dir)
+		defer func() {
+			err := os.RemoveAll(dir)
+			if err != nil {
+				panic(err)
+			}
+		}()
 	}
 
 	copySmallFile := func(t *testing.T, dst, src string) {

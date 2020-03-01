@@ -36,18 +36,8 @@ func (rv *readyValue) evaluate(i *interpreter, trace traceElement, sb selfBindin
 	return rv.content, nil
 }
 
-func (rv *readyValue) aPotentialValue() {}
-
 // potentialValues
 // -------------------------------------
-
-// evaluable is something that can be evaluated and the result is always the same
-// It may require computation every time evaluation is requested (in contrast with
-// potentialValue which guarantees that computation happens at most once).
-type evaluable interface {
-	// fromWhere keeps the information from where the evaluation was requested.
-	getValue(i *interpreter, fromWhere traceElement) (value, error)
-}
 
 // cachedThunk is a wrapper that caches the value of a potentialValue after
 // the first evaluation.
@@ -110,8 +100,7 @@ type bindingsUnboundField struct {
 }
 
 func (f *bindingsUnboundField) evaluate(i *interpreter, trace traceElement, sb selfBinding, origBindings bindingFrame, fieldName string) (value, error) {
-	var upValues bindingFrame
-	upValues = make(bindingFrame)
+	upValues := make(bindingFrame)
 	for variable, pvalue := range origBindings {
 		upValues[variable] = pvalue
 	}
@@ -164,7 +153,7 @@ func forceThunks(i *interpreter, trace traceElement, args *bindingFrame) error {
 
 func (closure *closure) evalCall(arguments callArguments, i *interpreter, trace traceElement) (value, error) {
 	argThunks := make(bindingFrame)
-	parameters := closure.Parameters()
+	parameters := closure.parameters()
 	for i, arg := range arguments.positional {
 		argThunks[parameters[i].name] = arg
 	}
@@ -199,7 +188,7 @@ func (closure *closure) evalCall(arguments callArguments, i *interpreter, trace 
 	return i.EvalInCleanEnv(trace, &calledEnvironment, closure.function.Body, arguments.tailstrict)
 }
 
-func (closure *closure) Parameters() []namedParameter {
+func (closure *closure) parameters() []namedParameter {
 	return closure.params
 
 }
@@ -232,7 +221,7 @@ type NativeFunction struct {
 
 // evalCall evaluates a call to a NativeFunction and returns the result.
 func (native *NativeFunction) evalCall(arguments callArguments, i *interpreter, trace traceElement) (value, error) {
-	flatArgs := flattenArgs(arguments, native.Parameters(), []value{})
+	flatArgs := flattenArgs(arguments, native.parameters(), []value{})
 	nativeArgs := make([]interface{}, 0, len(flatArgs))
 	for _, arg := range flatArgs {
 		v, err := i.evaluatePV(arg, trace)
@@ -253,20 +242,10 @@ func (native *NativeFunction) evalCall(arguments callArguments, i *interpreter, 
 }
 
 // Parameters returns a NativeFunction's parameters.
-func (native *NativeFunction) Parameters() []namedParameter {
+func (native *NativeFunction) parameters() []namedParameter {
 	ret := make([]namedParameter, len(native.Params))
 	for i := range ret {
 		ret[i].name = native.Params[i]
 	}
 	return ret
-}
-
-// -------------------------------------
-
-type defaultArgument struct {
-	body ast.Node
-}
-
-func (da *defaultArgument) inEnv(env *environment) potentialValue {
-	return &cachedThunk{env: env, body: da.body}
 }

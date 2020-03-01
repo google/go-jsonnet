@@ -25,42 +25,42 @@ import (
 )
 
 func printBool(w io.Writer, value bool) {
-	w.Write([]byte(strconv.FormatBool(value)))
+	mustWrite(w, []byte(strconv.FormatBool(value)))
 }
 
 func printInt(w io.Writer, val reflect.Value, stripPackageName bool) {
-	typeName := fmt.Sprintf("%s", val.Type())
+	typeName := val.Type().String()
 	if stripPackageName && strings.HasPrefix(typeName, "ast.") {
 		typeName = typeName[4:]
 	}
-	w.Write([]byte(fmt.Sprintf("%s(%s)", typeName, strconv.FormatInt(val.Int(), 10))))
+	mustWrite(w, []byte(fmt.Sprintf("%s(%s)", typeName, strconv.FormatInt(val.Int(), 10))))
 }
 
 func printUint(w io.Writer, val reflect.Value) {
-	typeName := fmt.Sprintf("%s", val.Type())
-	w.Write([]byte(fmt.Sprintf("%s(%s)", typeName, strconv.FormatUint(val.Uint(), 10))))
+	typeName := val.Type().String()
+	mustWrite(w, []byte(fmt.Sprintf("%s(%s)", typeName, strconv.FormatUint(val.Uint(), 10))))
 }
 
 func printFloat(w io.Writer, val float64, precision int, floatType string) {
-	w.Write([]byte(fmt.Sprintf("%s(%s)", floatType, strconv.FormatFloat(val, 'g', -1, precision))))
+	mustWrite(w, []byte(fmt.Sprintf("%s(%s)", floatType, strconv.FormatFloat(val, 'g', -1, precision))))
 }
 
 func printComplex(w io.Writer, c complex128, floatPrecision int) {
-	w.Write([]byte("complex"))
-	w.Write([]byte(fmt.Sprintf("%d", floatPrecision*2)))
+	mustWrite(w, []byte("complex"))
+	mustWrite(w, []byte(fmt.Sprintf("%d", floatPrecision*2)))
 	r := real(c)
-	w.Write([]byte("("))
-	w.Write([]byte(strconv.FormatFloat(r, 'g', -1, floatPrecision)))
+	mustWrite(w, []byte("("))
+	mustWrite(w, []byte(strconv.FormatFloat(r, 'g', -1, floatPrecision)))
 	i := imag(c)
 	if i >= 0 {
-		w.Write([]byte("+"))
+		mustWrite(w, []byte("+"))
 	}
-	w.Write([]byte(strconv.FormatFloat(i, 'g', -1, floatPrecision)))
-	w.Write([]byte("i)"))
+	mustWrite(w, []byte(strconv.FormatFloat(i, 'g', -1, floatPrecision)))
+	mustWrite(w, []byte("i)"))
 }
 
 func printNil(w io.Writer) {
-	w.Write([]byte("nil"))
+	mustWrite(w, []byte("nil"))
 }
 
 // deInterface returns values inside of non-nil interfaces when possible.

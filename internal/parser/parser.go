@@ -120,16 +120,6 @@ func (p *parser) doublePeek() *token {
 	return &p.t[p.currT+1]
 }
 
-// in some cases it's convenient to parse something as an expression, and later
-// decide that it should be just an identifer
-func astVarToIdentifier(node ast.Node) (ast.Fodder, *ast.Identifier, bool) {
-	v, ok := node.(*ast.Var)
-	if ok {
-		return v.NodeBase.Fodder, &v.Id, true
-	}
-	return nil, nil, false
-}
-
 // parseArgument parses either <f1> id <f2> = expr or just expr.
 // It returns either (<f1>, id, <f2>, expr) or (nil, nil, nil, expr)
 // respectively.
