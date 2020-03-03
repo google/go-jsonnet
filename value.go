@@ -348,7 +348,7 @@ type valueFunction struct {
 // TODO(sbarzowski) better name?
 type evalCallable interface {
 	evalCall(args callArguments, i *interpreter, trace traceElement) (value, error)
-	Parameters() parameters
+	Parameters() []namedParameter
 }
 
 func (f *valueFunction) call(i *interpreter, trace traceElement, args callArguments) (value, error) {
@@ -359,37 +359,30 @@ func (f *valueFunction) call(i *interpreter, trace traceElement, args callArgume
 	return f.ec.evalCall(args, i, trace)
 }
 
-func (f *valueFunction) Parameters() parameters {
+func (f *valueFunction) Parameters() []namedParameter {
 	return f.ec.Parameters()
 }
 
-func checkArguments(i *interpreter, trace traceElement, args callArguments, params parameters) error {
-	received := make(map[ast.Identifier]bool)
-	accepted := make(map[ast.Identifier]bool)
+func checkArguments(i *interpreter, trace traceElement, args callArguments, params []namedParameter) error {
 
 	numPassed := len(args.positional)
-	numExpected := len(params.required) + len(params.optional)
+	maxExpected := len(params)
 
-	if numPassed > numExpected {
-		return i.Error(fmt.Sprintf("function expected %v positional argument(s), but got %v", numExpected, numPassed), trace)
+	if numPassed > maxExpected {
+		return i.Error(fmt.Sprintf("function expected %v positional argument(s), but got %v", maxExpected, numPassed), trace)
 	}
 
-	for _, param := range params.required {
-		accepted[param] = true
-	}
-
-	for _, param := range params.optional {
+	// Parameter names the function will accept.
+	accepted := make(map[ast.Identifier]bool)
+	for _, param := range params {
 		accepted[param.name] = true
 	}
 
+	// Parameter names the call will bind.
+	received := make(map[ast.Identifier]bool)
 	for i := range args.positional {
-		if i < len(params.required) {
-			received[params.required[i]] = true
-		} else {
-			received[params.optional[i-len(params.required)].name] = true
-		}
+		received[params[i].name] = true
 	}
-
 	for _, arg := range args.named {
 		if _, present := received[arg.name]; present {
 			return i.Error(fmt.Sprintf("Argument %v already provided", arg.name), trace)
@@ -400,9 +393,9 @@ func checkArguments(i *interpreter, trace traceElement, args callArguments, para
 		received[arg.name] = true
 	}
 
-	for _, param := range params.required {
-		if _, present := received[param]; !present {
-			return i.Error(fmt.Sprintf("Missing argument: %v", param), trace)
+	for _, param := range params {
+		if _, present := received[param.name]; !present && param.defaultArg == nil {
+			return i.Error(fmt.Sprintf("Missing argument: %v", param.name), trace)
 		}
 	}
 

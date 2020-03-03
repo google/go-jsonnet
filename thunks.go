@@ -16,7 +16,9 @@ limitations under the License.
 
 package jsonnet
 
-import "github.com/google/go-jsonnet/ast"
+import (
+	"github.com/google/go-jsonnet/ast"
+)
 
 // readyValue
 // -------------------------------------
@@ -147,7 +149,7 @@ type closure struct {
 	// arguments should be added to it, before executing it
 	env      environment
 	function *ast.Function
-	params   parameters
+	params   []namedParameter
 }
 
 func forceThunks(i *interpreter, trace traceElement, args *bindingFrame) error {
@@ -164,13 +166,7 @@ func (closure *closure) evalCall(arguments callArguments, i *interpreter, trace 
 	argThunks := make(bindingFrame)
 	parameters := closure.Parameters()
 	for i, arg := range arguments.positional {
-		var name ast.Identifier
-		if i < len(parameters.required) {
-			name = parameters.required[i]
-		} else {
-			name = parameters.optional[i-len(parameters.required)].name
-		}
-		argThunks[name] = arg
+		argThunks[parameters[i].name] = arg
 	}
 
 	for _, arg := range arguments.named {
@@ -179,8 +175,7 @@ func (closure *closure) evalCall(arguments callArguments, i *interpreter, trace 
 
 	var calledEnvironment environment
 
-	for i := range parameters.optional {
-		param := &parameters.optional[i]
+	for _, param := range parameters {
 		if _, exists := argThunks[param.name]; !exists {
 			argThunks[param.name] = &cachedThunk{
 				// Default arguments are evaluated in the same environment as function body
@@ -204,27 +199,20 @@ func (closure *closure) evalCall(arguments callArguments, i *interpreter, trace 
 	return i.EvalInCleanEnv(trace, &calledEnvironment, closure.function.Body, arguments.tailstrict)
 }
 
-func (closure *closure) Parameters() parameters {
+func (closure *closure) Parameters() []namedParameter {
 	return closure.params
 
 }
 
-func prepareClosureParameters(params ast.Parameters, env environment) parameters {
-	optionalParameters := make([]namedParameter, 0, len(params.Optional))
-	for _, named := range params.Optional {
-		optionalParameters = append(optionalParameters, namedParameter{
+func prepareClosureParameters(params []ast.Parameter, env environment) []namedParameter {
+	preparedParams := make([]namedParameter, 0, len(params))
+	for _, named := range params {
+		preparedParams = append(preparedParams, namedParameter{
 			name:       named.Name,
 			defaultArg: named.DefaultArg,
 		})
 	}
-	requiredParameters := make([]ast.Identifier, 0, len(params.Required))
-	for _, required := range params.Required {
-		requiredParameters = append(requiredParameters, required.Name)
-	}
-	return parameters{
-		required: requiredParameters,
-		optional: optionalParameters,
-	}
+	return preparedParams
 }
 
 func makeClosure(env environment, function *ast.Function) *closure {
@@ -265,8 +253,12 @@ func (native *NativeFunction) evalCall(arguments callArguments, i *interpreter, 
 }
 
 // Parameters returns a NativeFunction's parameters.
-func (native *NativeFunction) Parameters() parameters {
-	return parameters{required: native.Params}
+func (native *NativeFunction) Parameters() []namedParameter {
+	ret := make([]namedParameter, len(native.Params))
+	for i := range ret {
+		ret[i].name = native.Params[i]
+	}
+	return ret
 }
 
 // -------------------------------------

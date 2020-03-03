@@ -210,25 +210,25 @@ func (p *parser) parseArguments(elementKind string) (*token, *ast.Arguments, boo
 }
 
 // TODO(sbarzowski) - this returned bool is weird
-func (p *parser) parseParameters(elementKind string) (*token, *ast.Parameters, bool, error) {
+func (p *parser) parseParameters(elementKind string) (*token, []ast.Parameter, bool, error) {
 	parenR, args, trailingComma, err := p.parseArguments(elementKind)
 	if err != nil {
 		return nil, nil, false, err
 	}
-	var params ast.Parameters
+	var params []ast.Parameter
 	for _, arg := range args.Positional {
 		idFodder, id, ok := astVarToIdentifier(arg.Expr)
 		if !ok {
 			return nil, nil, false, errors.MakeStaticError(fmt.Sprintf("Expected simple identifier but got a complex expression."), *arg.Expr.Loc())
 		}
-		params.Required = append(params.Required, ast.CommaSeparatedID{
+		params = append(params, ast.Parameter{
 			NameFodder:  idFodder,
 			Name:        *id,
 			CommaFodder: arg.CommaFodder,
 		})
 	}
 	for _, arg := range args.Named {
-		params.Optional = append(params.Optional, ast.NamedParameter{
+		params = append(params, ast.Parameter{
 			NameFodder:  arg.NameFodder,
 			Name:        arg.Name,
 			EqFodder:    arg.EqFodder,
@@ -236,7 +236,7 @@ func (p *parser) parseParameters(elementKind string) (*token, *ast.Parameters, b
 			CommaFodder: arg.CommaFodder,
 		})
 	}
-	return parenR, &params, trailingComma, nil
+	return parenR, params, trailingComma, nil
 }
 
 // TODO(sbarzowski) add location to all individual binds
@@ -260,7 +260,7 @@ func (p *parser) parseBind(binds *ast.LocalBinds) (*token, error) {
 		}
 		fun = &ast.Function{
 			ParenLeftFodder:  parenL.fodder,
-			Parameters:       *params,
+			Parameters:       params,
 			TrailingComma:    gotComma,
 			ParenRightFodder: parenR.fodder,
 			// Body gets filled in later.
@@ -423,7 +423,7 @@ func (p *parser) parseObjectRemainderField(literalFields *LiteralFieldSet, tok *
 	methComma := false
 	var parenL *token
 	var parenR *token
-	var params *ast.Parameters
+	var params []ast.Parameter
 	if p.peek().kind == tokenParenL {
 		parenL = p.pop()
 		var err error
@@ -460,7 +460,7 @@ func (p *parser) parseObjectRemainderField(literalFields *LiteralFieldSet, tok *
 	if isMethod {
 		method = &ast.Function{
 			ParenLeftFodder:  parenL.fodder,
-			Parameters:       *params,
+			Parameters:       params,
 			TrailingComma:    methComma,
 			ParenRightFodder: parenR.fodder,
 			Body:             body,
@@ -505,7 +505,7 @@ func (p *parser) parseObjectRemainderLocal(binds *ast.IdentifierSet, tok *token,
 	funcComma := false
 	var parenL *token
 	var parenR *token
-	var params *ast.Parameters
+	var params []ast.Parameter
 	if p.peek().kind == tokenParenL {
 		parenL = p.pop()
 		isMethod = true
@@ -528,7 +528,7 @@ func (p *parser) parseObjectRemainderLocal(binds *ast.IdentifierSet, tok *token,
 	if isMethod {
 		method = &ast.Function{
 			ParenLeftFodder:  parenL.fodder,
-			Parameters:       *params,
+			Parameters:       params,
 			ParenRightFodder: parenR.fodder,
 			TrailingComma:    funcComma,
 			Body:             body,
@@ -1050,7 +1050,7 @@ func (p *parser) parse(prec precedence) (ast.Node, error) {
 		return &ast.Function{
 			NodeBase:         ast.NewNodeBaseLoc(locFromTokenAST(begin, body), begin.fodder),
 			ParenLeftFodder:  next.fodder,
-			Parameters:       *params,
+			Parameters:       params,
 			TrailingComma:    gotComma,
 			ParenRightFodder: parenR.fodder,
 			Body:             body,

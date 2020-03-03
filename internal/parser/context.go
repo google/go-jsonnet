@@ -298,8 +298,10 @@ func specialChildren(node ast.Node) []ast.Node {
 		return nil
 	case *ast.Function:
 		children := []ast.Node{node.Body}
-		for _, child := range node.Parameters.Optional {
-			children = append(children, child.DefaultArg)
+		for _, child := range node.Parameters {
+			if child.DefaultArg != nil {
+				children = append(children, child.DefaultArg)
+			}
 		}
 		return children
 	case *ast.Import:
@@ -389,9 +391,11 @@ func addContext(node ast.Node, context *string, bind string) {
 	case *ast.Function:
 		funContext := functionContext(bind)
 		addContext(node.Body, funContext, anonymous)
-		for i := range node.Parameters.Optional {
-			// Default arguments have the same context as the function body.
-			addContext(node.Parameters.Optional[i].DefaultArg, funContext, anonymous)
+		for i := range node.Parameters {
+			if node.Parameters[i].DefaultArg != nil {
+				// Default arguments have the same context as the function body.
+				addContext(node.Parameters[i].DefaultArg, funContext, anonymous)
+			}
 		}
 	case *ast.Object:
 		// TODO(sbarzowski) include fieldname, maybe even chains
