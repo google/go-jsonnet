@@ -371,15 +371,17 @@ type Error struct {
 type Function struct {
 	NodeBase
 	ParenLeftFodder Fodder
-	Parameters      Parameters
+	Parameters      []Parameter
 	// Always false if there were no parameters.
 	TrailingComma    bool
 	ParenRightFodder Fodder
 	Body             Node
 }
 
-// NamedParameter represents an optional named parameter of a function.
-type NamedParameter struct {
+// Parameter represents a parameter of function.
+// If DefaultArg is set, it's an optional named parameter.
+// Otherwise, it's a positional parameter and EqFodder is not used.
+type Parameter struct {
 	NameFodder  Fodder
 	Name        Identifier
 	EqFodder    Fodder
@@ -393,13 +395,6 @@ type CommaSeparatedID struct {
 	NameFodder  Fodder
 	Name        Identifier
 	CommaFodder Fodder
-}
-
-// Parameters represents the required positional parameters and optional named
-// parameters to a function definition.
-type Parameters struct {
-	Required []CommaSeparatedID
-	Optional []NamedParameter
 }
 
 // ---------------------------------------------------------------------------

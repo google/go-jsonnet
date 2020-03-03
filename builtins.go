@@ -182,7 +182,11 @@ func builtinLength(i *interpreter, trace traceElement, x value) (value, error) {
 	case valueString:
 		num = x.length()
 	case *valueFunction:
-		num = len(x.Parameters().required)
+		for _, param := range x.Parameters() {
+			if param.defaultArg == nil {
+				num++
+			}
+		}
 	default:
 		return nil, i.typeErrorGeneral(x, trace)
 	}
@@ -352,15 +356,15 @@ func builtinReverse(i *interpreter, trace traceElement, arrv value) (value, erro
 		return nil, err
 	}
 
-	lenArr := len(arr.elements)                    // lenx holds the original array length
-	reversed_array := make([]*cachedThunk, lenArr) // creates a slice that refer to a new array of length lenx
+	lenArr := len(arr.elements)                   // lenx holds the original array length
+	reversedArray := make([]*cachedThunk, lenArr) // creates a slice that refer to a new array of length lenx
 
 	for i := 0; i < lenArr; i++ {
 		j := lenArr - (i + 1) // j initially holds (lenx - 1) and decreases to 0 while i initially holds 0 and increase to (lenx - 1)
-		reversed_array[i] = arr.elements[j]
+		reversedArray[i] = arr.elements[j]
 	}
 
-	return makeValueArray(reversed_array), nil
+	return makeValueArray(reversedArray), nil
 }
 
 func builtinFilter(i *interpreter, trace traceElement, funcv, arrv value) (value, error) {
@@ -1197,25 +1201,24 @@ type builtin interface {
 	Name() ast.Identifier
 }
 
-func flattenArgs(args callArguments, params parameters, defaults []value) []*cachedThunk {
+func flattenArgs(args callArguments, params []namedParameter, defaults []value) []*cachedThunk {
 	positions := make(map[ast.Identifier]int)
-	for i := 0; i < len(params.required); i++ {
-		positions[params.required[i]] = i
-	}
-	for i := 0; i < len(params.optional); i++ {
-		positions[params.optional[i].name] = i + len(params.required)
+	for i, param := range params {
+		positions[param.name] = i
 	}
 
-	flatArgs := make([]*cachedThunk, len(params.required)+len(params.optional))
+	flatArgs := make([]*cachedThunk, len(params))
 
+	// Bind positional arguments
 	copy(flatArgs, args.positional)
+	// Bind named arguments
 	for _, arg := range args.named {
 		flatArgs[positions[arg.name]] = arg.pv
 	}
-	for i := 0; i < len(params.optional); i++ {
-		pos := len(params.required) + i
-		if flatArgs[pos] == nil {
-			flatArgs[pos] = readyThunk(defaults[i])
+	// Bind defaults for unsatisfied named parameters
+	for i := range params {
+		if flatArgs[i] == nil {
+			flatArgs[i] = readyThunk(defaults[i])
 		}
 	}
 	return flatArgs
@@ -1244,8 +1247,12 @@ func (b *unaryBuiltin) evalCall(args callArguments, i *interpreter, trace traceE
 	return b.function(i, builtinTrace, x)
 }
 
-func (b *unaryBuiltin) Parameters() parameters {
-	return parameters{required: b.parameters}
+func (b *unaryBuiltin) Parameters() []namedParameter {
+	ret := make([]namedParameter, len(b.parameters))
+	for i := range ret {
+		ret[i].name = b.parameters[i]
+	}
+	return ret
 }
 
 func (b *unaryBuiltin) Name() ast.Identifier {
@@ -1274,8 +1281,12 @@ func (b *binaryBuiltin) evalCall(args callArguments, i *interpreter, trace trace
 	return b.function(i, builtinTrace, x, y)
 }
 
-func (b *binaryBuiltin) Parameters() parameters {
-	return parameters{required: b.parameters}
+func (b *binaryBuiltin) Parameters() []namedParameter {
+	ret := make([]namedParameter, len(b.parameters))
+	for i := range ret {
+		ret[i].name = b.parameters[i]
+	}
+	return ret
 }
 
 func (b *binaryBuiltin) Name() ast.Identifier {
@@ -1308,8 +1319,12 @@ func (b *ternaryBuiltin) evalCall(args callArguments, i *interpreter, trace trac
 	return b.function(i, builtinTrace, x, y, z)
 }
 
-func (b *ternaryBuiltin) Parameters() parameters {
-	return parameters{required: b.parameters}
+func (b *ternaryBuiltin) Parameters() []namedParameter {
+	ret := make([]namedParameter, len(b.parameters))
+	for i := range ret {
+		ret[i].name = b.parameters[i]
+	}
+	return ret
 }
 
 func (b *ternaryBuiltin) Name() ast.Identifier {
@@ -1318,25 +1333,44 @@ func (b *ternaryBuiltin) Name() ast.Identifier {
 
 type generalBuiltinFunc func(*interpreter, traceElement, []value) (value, error)
 
-// generalBuiltin covers cases that other builtin structures do not,
-// in particular it can have any number of parameters. It can also
-// have optional parameters.
-type generalBuiltin struct {
-	name     ast.Identifier
-	required ast.Identifiers
-	optional ast.Identifiers
+type generalBuiltinParameter struct {
+	name ast.Identifier
 	// Note that the defaults are passed as values rather than AST nodes like in Parameters.
 	// This spares us unnecessary evaluation.
-	defaultValues []value
-	function      generalBuiltinFunc
+	defaultValue value
 }
 
-func (b *generalBuiltin) Parameters() parameters {
-	optional := make([]namedParameter, len(b.optional))
-	for i := range optional {
-		optional[i] = namedParameter{name: b.optional[i]}
+// generalBuiltin covers cases that other builtin structures do not,
+// in particular it can have any number of parameters. It can also
+// have optional parameters.  The optional ones have non-nil defaultValues
+// at the same index.
+type generalBuiltin struct {
+	name       ast.Identifier
+	parameters []generalBuiltinParameter
+	function   generalBuiltinFunc
+}
+
+func (b *generalBuiltin) Parameters() []namedParameter {
+	ret := make([]namedParameter, len(b.parameters))
+	for i := range ret {
+		ret[i].name = b.parameters[i].name
+		if b.parameters[i].defaultValue != nil {
+			// This is not actually used because the defaultValue is used instead.
+			// The only reason we don't leave it nil is because the checkArguments
+			// function uses the non-nil status to indicate that the parameter
+			// is optional.
+			ret[i].defaultArg = &ast.LiteralNull{}
+		}
 	}
-	return parameters{required: b.required, optional: optional}
+	return ret
+}
+
+func (b *generalBuiltin) defaultValues() []value {
+	ret := make([]value, len(b.parameters))
+	for i := range ret {
+		ret[i] = b.parameters[i].defaultValue
+	}
+	return ret
 }
 
 func (b *generalBuiltin) Name() ast.Identifier {
@@ -1344,7 +1378,7 @@ func (b *generalBuiltin) Name() ast.Identifier {
 }
 
 func (b *generalBuiltin) evalCall(args callArguments, i *interpreter, trace traceElement) (value, error) {
-	flatArgs := flattenArgs(args, b.Parameters(), b.defaultValues)
+	flatArgs := flattenArgs(args, b.Parameters(), b.defaultValues())
 	builtinTrace := getBuiltinTrace(trace, b.name)
 	values := make([]value, len(flatArgs))
 	for j := 0; j < len(values); j++ {
@@ -1445,7 +1479,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "base64", function: builtinBase64, parameters: ast.Identifiers{"input"}},
 	&unaryBuiltin{name: "encodeUTF8", function: builtinEncodeUTF8, parameters: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "decodeUTF8", function: builtinDecodeUTF8, parameters: ast.Identifiers{"arr"}},
-	&generalBuiltin{name: "sort", function: builtinSort, required: ast.Identifiers{"arr"}, optional: ast.Identifiers{"keyF"}, defaultValues: []value{functionID}},
+	&generalBuiltin{name: "sort", function: builtinSort, parameters: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}}},
 	&unaryBuiltin{name: "native", function: builtinNative, parameters: ast.Identifiers{"x"}},
 
 	// internal

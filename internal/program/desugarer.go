@@ -192,10 +192,8 @@ func desugarFields(nodeBase ast.NodeBase, fields *ast.ObjectFields, objLevel int
 
 func simpleLambda(body ast.Node, paramName ast.Identifier) ast.Node {
 	return &ast.Function{
-		Body: body,
-		Parameters: ast.Parameters{
-			Required: []ast.CommaSeparatedID{{Name: paramName}},
-		},
+		Body:       body,
+		Parameters: []ast.Parameter{{Name: paramName}},
 	}
 }
 
@@ -431,11 +429,13 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		}
 
 	case *ast.Function:
-		for i := range node.Parameters.Optional {
-			param := &node.Parameters.Optional[i]
-			err = desugar(&param.DefaultArg, objLevel)
-			if err != nil {
-				return
+		for i := range node.Parameters {
+			param := &node.Parameters[i]
+			if param.DefaultArg != nil {
+				err = desugar(&param.DefaultArg, objLevel)
+				if err != nil {
+					return
+				}
 			}
 		}
 		err = desugar(&node.Body, objLevel)
