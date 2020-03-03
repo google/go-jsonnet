@@ -153,7 +153,6 @@ func (p *parser) parseArgument() (ast.Fodder, *ast.Identifier, ast.Fodder, ast.N
 }
 
 // TODO(sbarzowski) - this returned bool is weird
-// TODO(sbarzowski) - name - it's also used for parameters
 func (p *parser) parseArguments(elementKind string) (*token, *ast.Arguments, bool, error) {
 	args := &ast.Arguments{}
 	gotComma := false
@@ -211,32 +210,67 @@ func (p *parser) parseArguments(elementKind string) (*token, *ast.Arguments, boo
 
 // TODO(sbarzowski) - this returned bool is weird
 func (p *parser) parseParameters(elementKind string) (*token, []ast.Parameter, bool, error) {
-	parenR, args, trailingComma, err := p.parseArguments(elementKind)
-	if err != nil {
-		return nil, nil, false, err
-	}
+
+	var parenR *token
 	var params []ast.Parameter
-	for _, arg := range args.Positional {
-		idFodder, id, ok := astVarToIdentifier(arg.Expr)
-		if !ok {
-			return nil, nil, false, errors.MakeStaticError(fmt.Sprintf("Expected simple identifier but got a complex expression."), *arg.Expr.Loc())
+	gotComma := false
+	commaFodder := ast.Fodder{}
+	first := true
+	for {
+		next := p.peek()
+
+		if next.kind == tokenParenR {
+			// gotComma can be true or false here.
+			parenR = p.pop()
+			break
 		}
-		params = append(params, ast.Parameter{
-			NameFodder:  idFodder,
-			Name:        *id,
-			CommaFodder: arg.CommaFodder,
-		})
+
+		if !first && !gotComma {
+			return nil, nil, false, errors.MakeStaticError(fmt.Sprintf("Expected a comma before next %s, got %s.", elementKind, next), next.loc)
+		}
+
+		idFodder, id, eqFodder, expr, err := p.parseArgument()
+		if err != nil {
+			return nil, nil, false, err
+		}
+
+		if p.peek().kind == tokenComma {
+			comma := p.pop()
+			gotComma = true
+			commaFodder = comma.fodder
+		} else {
+			gotComma = false
+		}
+
+		if id == nil {
+			// Param has no default, is just 'id2'
+			idFodder2, id2, ok := astVarToIdentifier(expr)
+			if !ok {
+				return nil, nil, false, errors.MakeStaticError(fmt.Sprintf("Expected simple identifier but got a complex expression."), *expr.Loc())
+			}
+			param := ast.Parameter{
+				NameFodder: idFodder2,
+				Name:       *id2,
+			}
+			if gotComma {
+				param.CommaFodder = commaFodder
+			}
+			params = append(params, param)
+		} else {
+			// Param has a default: id=expr
+			params = append(params, ast.Parameter{
+				NameFodder:  idFodder,
+				Name:        *id,
+				EqFodder:    eqFodder,
+				DefaultArg:  expr,
+				CommaFodder: commaFodder,
+			})
+		}
+
+		first = false
 	}
-	for _, arg := range args.Named {
-		params = append(params, ast.Parameter{
-			NameFodder:  arg.NameFodder,
-			Name:        arg.Name,
-			EqFodder:    arg.EqFodder,
-			DefaultArg:  arg.Arg,
-			CommaFodder: arg.CommaFodder,
-		})
-	}
-	return parenR, params, trailingComma, nil
+
+	return parenR, params, gotComma, nil
 }
 
 // TODO(sbarzowski) add location to all individual binds
