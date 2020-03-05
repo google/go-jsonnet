@@ -232,7 +232,7 @@ func main() {
 	if config.inPlace || config.test {
 		if len(config.inputFiles) == 0 {
 			// Should already have been caught by processArgs.
-			panic(fmt.Sprintf("Internal error: expected at least one input file."))
+			panic("Internal error: expected at least one input file.")
 		}
 		for _, inputFile := range config.inputFiles {
 			outputFile := inputFile
@@ -270,7 +270,7 @@ func main() {
 	} else {
 		if len(config.inputFiles) != 1 {
 			// Should already have been caught by processArgs.
-			panic(fmt.Sprintf("Internal error: expected a single input file."))
+			panic("Internal error: expected a single input file.")
 		}
 		inputFile := config.inputFiles[0]
 		input := cmd.SafeReadInput(config.filenameIsCode, &inputFile)
