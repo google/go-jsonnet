@@ -19,10 +19,7 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
-	"path/filepath"
-	"sort"
 
 	"github.com/fatih/color"
 
@@ -55,7 +52,6 @@ func usage(o io.Writer) {
 	fmt.Fprintln(o, "  --[no-]pad-arrays       [ 1, 2, 3 ] instead of [1, 2, 3]")
 	fmt.Fprintln(o, "  --[no-]pad-objects      { x: 1, y: 2 } instead of {x: 1, y: 2} (on by default)")
 	fmt.Fprintln(o, "  --[no-]sort-imports     Sorting of imports (on by default)")
-	fmt.Fprintln(o, "  --debug-desugaring      Unparse the desugared AST without executing it")
 	fmt.Fprintln(o, "  --version               Print version")
 	fmt.Fprintln(o)
 	fmt.Fprintln(o, "In all cases:")
@@ -67,7 +63,6 @@ func usage(o io.Writer) {
 }
 
 type config struct {
-	debugDesugaring      bool
 	evalCreateOutputDirs bool
 	filenameIsCode       bool
 	inPlace              bool
@@ -201,77 +196,6 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 
 	config.inputFiles = remainingArgs
 	return processArgsStatusContinue, nil
-}
-
-func writeMultiOutputFiles(output map[string]string, outputDir, outputFile string, createDirs bool) error {
-	// If multiple file output is used, then iterate over each string from
-	// the sequence of strings returned by jsonnet_evaluate_snippet_multi,
-	// construct pairs of filename and content, and write each output file.
-
-	var manifest *os.File
-
-	if outputFile == "" {
-		manifest = os.Stdout
-	} else {
-		var err error
-		manifest, err = os.Create(outputFile)
-		if err != nil {
-			return err
-		}
-		defer manifest.Close()
-	}
-
-	// Iterate through the map in order.
-	keys := make([]string, 0, len(output))
-	for k := range output {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, key := range keys {
-		newContent := output[key]
-		filename := outputDir + key
-
-		_, err := manifest.WriteString(filename)
-		if err != nil {
-			return err
-		}
-
-		_, err = manifest.WriteString("\n")
-		if err != nil {
-			return err
-		}
-
-		if _, err := os.Stat(filename); !os.IsNotExist(err) {
-			existingContent, err := ioutil.ReadFile(filename)
-			if err != nil {
-				return err
-			}
-			if string(existingContent) == newContent {
-				// Do not bump the timestamp on the file if its content is
-				// the same. This may trigger other tools (e.g. make) to do
-				// unnecessary work.
-				continue
-			}
-		}
-		if createDirs {
-			if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
-				return err
-			}
-		}
-
-		f, err := os.Create(filename)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-
-		_, err = f.WriteString(newContent)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func main() {

@@ -96,12 +96,10 @@ func (c *FixIndentation) fillLast(
 		case ast.FodderParagraph:
 			c.column = fod.Indent
 			crowded = false
-			break
 
 		case ast.FodderLineEnd:
 			c.column = fod.Indent
 			crowded = false
-			break
 
 		case ast.FodderInterstitial:
 			if crowded {
@@ -109,7 +107,6 @@ func (c *FixIndentation) fillLast(
 			}
 			c.column += len(fod.Comment[0])
 			crowded = true
-			break
 		}
 	}
 	if separateToken && crowded {

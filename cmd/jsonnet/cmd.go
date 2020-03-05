@@ -288,25 +288,6 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 	return processArgsStatusContinue, nil
 }
 
-// readInput gets Jsonnet code from the given place (file, commandline, stdin).
-// It also updates the given filename to <stdin> or <cmdline> if it wasn't a real filename.
-func readInput(config config, filename *string) (input string, err error) {
-	if config.filenameIsCode {
-		input, err = *filename, nil
-		*filename = "<cmdline>"
-	} else if *filename == "-" {
-		var bytes []byte
-		bytes, err = ioutil.ReadAll(os.Stdin)
-		input = string(bytes)
-		*filename = "<stdin>"
-	} else {
-		var bytes []byte
-		bytes, err = ioutil.ReadFile(*filename)
-		input = string(bytes)
-	}
-	return
-}
-
 func writeMultiOutputFiles(output map[string]string, outputDir, outputFile string, createDirs bool) (err error) {
 	// If multiple file output is used, then iterate over each string from
 	// the sequence of strings returned by jsonnet_evaluate_snippet_multi,

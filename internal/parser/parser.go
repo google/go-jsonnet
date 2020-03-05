@@ -668,7 +668,6 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, errors.Stat
 		}
 		fields = append(fields, *field)
 
-		gotComma = false
 		next = p.pop()
 		if next.kind == tokenComma {
 			gotComma = true

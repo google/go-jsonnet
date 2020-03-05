@@ -34,7 +34,6 @@ func containsNewline(fodder ast.Fodder) bool {
 // present when a list is split over several lines.
 type FixTrailingCommas struct {
 	pass.Base
-	comments ast.Fodder
 }
 
 func (c *FixTrailingCommas) fixComma(lastCommaFodder *ast.Fodder, trailingComma *bool, closeFodder *ast.Fodder) {
