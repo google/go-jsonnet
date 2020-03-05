@@ -126,6 +126,17 @@ var tokenKindStrings = []string{
 	tokenEndOfFile: "end of file",
 }
 
+var tokenHasContent = map[tokenKind]bool{
+	tokenIdentifier:           true,
+	tokenNumber:               true,
+	tokenOperator:             true,
+	tokenStringBlock:          true,
+	tokenStringDouble:         true,
+	tokenStringSingle:         true,
+	tokenVerbatimStringDouble: true,
+	tokenVerbatimStringSingle: true,
+}
+
 func (tk tokenKind) String() string {
 	if tk < 0 || int(tk) >= len(tokenKindStrings) {
 		panic(fmt.Sprintf("INTERNAL ERROR: Unknown token kind:: %d", tk))
@@ -151,10 +162,10 @@ type Tokens []token
 func (t *token) String() string {
 	if t.data == "" {
 		return t.kind.String()
-	} else if t.kind == tokenOperator {
-		return fmt.Sprintf("\"%v\"", t.data)
-	} else {
+	} else if tokenHasContent[t.kind] {
 		return fmt.Sprintf("(%v, \"%v\")", t.kind, t.data)
+	} else {
+		return fmt.Sprintf("\"%v\"", t.data)
 	}
 }
 
@@ -371,7 +382,7 @@ func (l *lexer) emitFullToken(kind tokenKind, data, stringBlockIndent, stringBlo
 		data:                  data,
 		stringBlockIndent:     stringBlockIndent,
 		stringBlockTermIndent: stringBlockTermIndent,
-		loc: ast.MakeLocationRange(l.fileName, l.source, l.tokenStartLoc, l.location()),
+		loc:                   ast.MakeLocationRange(l.fileName, l.source, l.tokenStartLoc, l.location()),
 	})
 	l.fodder = ast.Fodder{}
 }
@@ -387,7 +398,7 @@ func (l *lexer) addFodder(kind ast.FodderKind, blanks int, indent int, comment [
 }
 
 func (l *lexer) makeStaticErrorPoint(msg string, loc ast.Location) errors.StaticError {
-	return errors.StaticError{Msg: msg, Loc: ast.MakeLocationRange(l.fileName, l.source, loc, loc)}
+	return errors.MakeStaticError(msg, ast.MakeLocationRange(l.fileName, l.source, loc, loc))
 }
 
 // lexWhitespace consumes all whitespace and returns the number of \n and number of

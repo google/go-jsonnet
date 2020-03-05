@@ -56,9 +56,9 @@ var bopPrecedence = map[ast.BinaryOp]precedence{
 
 // ---------------------------------------------------------------------------
 
-func makeUnexpectedError(t *token, while string) error {
+func makeUnexpectedError(t *token, while string) errors.StaticError {
 	return errors.MakeStaticError(
-		fmt.Sprintf("Unexpected: %v while %v", t, while), t.loc)
+		fmt.Sprintf("Unexpected: %v", t), t.loc).WithContext(while)
 }
 
 func locFromTokens(begin, end *token) ast.LocationRange {
@@ -88,14 +88,14 @@ func (p *parser) pop() *token {
 	return t
 }
 
-func (p *parser) unexpectedTokenError(tk tokenKind, t *token) error {
+func (p *parser) unexpectedTokenError(tk tokenKind, t *token) errors.StaticError {
 	if tk == t.kind {
-		panic("Unexpectedly expected token kind.")
+		panic("Unexpectedly expected token kind")
 	}
 	return errors.MakeStaticError(fmt.Sprintf("Expected token %v but got %v", tk, t), t.loc)
 }
 
-func (p *parser) popExpect(tk tokenKind) (*token, error) {
+func (p *parser) popExpect(tk tokenKind) (*token, errors.StaticError) {
 	t := p.pop()
 	if t.kind != tk {
 		return nil, p.unexpectedTokenError(tk, t)
@@ -103,7 +103,7 @@ func (p *parser) popExpect(tk tokenKind) (*token, error) {
 	return t, nil
 }
 
-func (p *parser) popExpectOp(op string) (*token, error) {
+func (p *parser) popExpectOp(op string) (*token, errors.StaticError) {
 	t := p.pop()
 	if t.kind != tokenOperator || t.data != op {
 		return nil, errors.MakeStaticError(
@@ -133,7 +133,7 @@ func astVarToIdentifier(node ast.Node) (ast.Fodder, *ast.Identifier, bool) {
 // parseArgument parses either <f1> id <f2> = expr or just expr.
 // It returns either (<f1>, id, <f2>, expr) or (nil, nil, nil, expr)
 // respectively.
-func (p *parser) parseArgument() (ast.Fodder, *ast.Identifier, ast.Fodder, ast.Node, error) {
+func (p *parser) parseArgument() (ast.Fodder, *ast.Identifier, ast.Fodder, ast.Node, errors.StaticError) {
 	var idFodder ast.Fodder
 	var id *ast.Identifier
 	var eqFodder ast.Fodder
@@ -153,7 +153,7 @@ func (p *parser) parseArgument() (ast.Fodder, *ast.Identifier, ast.Fodder, ast.N
 }
 
 // TODO(sbarzowski) - this returned bool is weird
-func (p *parser) parseArguments(elementKind string) (*token, *ast.Arguments, bool, error) {
+func (p *parser) parseArguments(elementKind string) (*token, *ast.Arguments, bool, errors.StaticError) {
 	args := &ast.Arguments{}
 	gotComma := false
 	commaFodder := ast.Fodder{}
@@ -168,7 +168,7 @@ func (p *parser) parseArguments(elementKind string) (*token, *ast.Arguments, boo
 		}
 
 		if !first && !gotComma {
-			return nil, nil, false, errors.MakeStaticError(fmt.Sprintf("Expected a comma before next %s, got %s.", elementKind, next), next.loc)
+			return nil, nil, false, errors.MakeStaticError(fmt.Sprintf("Expected a comma before next %s, got %s", elementKind, next), next.loc)
 		}
 
 		idFodder, id, eqFodder, expr, err := p.parseArgument()
@@ -208,8 +208,34 @@ func (p *parser) parseArguments(elementKind string) (*token, *ast.Arguments, boo
 	}
 }
 
+// parseParameter parses either <f1> id <f2> = expr or just <f1> id.
+// It returns either (<f1>, id, <f2>, expr) or (<f1>, id, nil, nil)
+// respectively.
+func (p *parser) parseParameter() (ast.Fodder, *ast.Identifier, ast.Fodder, ast.Node, errors.StaticError) {
+	var idFodder ast.Fodder
+	var id *ast.Identifier
+	var eqFodder ast.Fodder
+	ident, err := p.popExpect(tokenIdentifier)
+	if err != nil {
+		return nil, nil, nil, nil, err.WithContext("parsing parameter")
+	}
+	var tmpID = ast.Identifier(ident.data)
+	id = &tmpID
+	idFodder = ident.fodder
+	if p.peek().kind == tokenOperator && p.peek().data == "=" {
+		eq := p.pop()
+		eqFodder = eq.fodder
+		expr, err := p.parse(maxPrecedence)
+		if err != nil {
+			return nil, nil, nil, nil, err
+		}
+		return idFodder, id, eqFodder, expr, nil
+	}
+	return idFodder, id, nil, nil, nil
+}
+
 // TODO(sbarzowski) - this returned bool is weird
-func (p *parser) parseParameters(elementKind string) (*token, []ast.Parameter, bool, error) {
+func (p *parser) parseParameters(elementKind string) (*token, []ast.Parameter, bool, errors.StaticError) {
 
 	var parenR *token
 	var params []ast.Parameter
@@ -226,10 +252,10 @@ func (p *parser) parseParameters(elementKind string) (*token, []ast.Parameter, b
 		}
 
 		if !first && !gotComma {
-			return nil, nil, false, errors.MakeStaticError(fmt.Sprintf("Expected a comma before next %s, got %s.", elementKind, next), next.loc)
+			return nil, nil, false, errors.MakeStaticError(fmt.Sprintf("Expected a comma before next %s, got %s", elementKind, next), next.loc)
 		}
 
-		idFodder, id, eqFodder, expr, err := p.parseArgument()
+		idFodder, id, eqFodder, expr, err := p.parseParameter()
 		if err != nil {
 			return nil, nil, false, err
 		}
@@ -242,15 +268,11 @@ func (p *parser) parseParameters(elementKind string) (*token, []ast.Parameter, b
 			gotComma = false
 		}
 
-		if id == nil {
-			// Param has no default, is just 'id2'
-			idFodder2, id2, ok := astVarToIdentifier(expr)
-			if !ok {
-				return nil, nil, false, errors.MakeStaticError(fmt.Sprintf("Expected simple identifier but got a complex expression."), *expr.Loc())
-			}
+		if expr == nil {
+			// Param has no default
 			param := ast.Parameter{
-				NameFodder: idFodder2,
-				Name:       *id2,
+				NameFodder: idFodder,
+				Name:       *id,
 			}
 			if gotComma {
 				param.CommaFodder = commaFodder
@@ -274,10 +296,10 @@ func (p *parser) parseParameters(elementKind string) (*token, []ast.Parameter, b
 }
 
 // TODO(sbarzowski) add location to all individual binds
-func (p *parser) parseBind(binds *ast.LocalBinds) (*token, error) {
-	varID, err := p.popExpect(tokenIdentifier)
-	if err != nil {
-		return nil, err
+func (p *parser) parseBind(binds *ast.LocalBinds) (*token, errors.StaticError) {
+	varID, popErr := p.popExpect(tokenIdentifier)
+	if popErr != nil {
+		return nil, popErr
 	}
 	for _, b := range *binds {
 		if b.Variable == ast.Identifier(varID.data) {
@@ -301,9 +323,9 @@ func (p *parser) parseBind(binds *ast.LocalBinds) (*token, error) {
 		}
 	}
 
-	eqToken, err := p.popExpectOp("=")
-	if err != nil {
-		return nil, err
+	eqToken, popErr := p.popExpectOp("=")
+	if popErr != nil {
+		return nil, popErr
 	}
 	body, err := p.parse(maxPrecedence)
 	if err != nil {
@@ -339,7 +361,7 @@ func (p *parser) parseBind(binds *ast.LocalBinds) (*token, error) {
 	return delim, nil
 }
 
-func (p *parser) parseObjectAssignmentOp() (opFodder ast.Fodder, plusSugar bool, hide ast.ObjectFieldHide, err error) {
+func (p *parser) parseObjectAssignmentOp() (opFodder ast.Fodder, plusSugar bool, hide ast.ObjectFieldHide, err errors.StaticError) {
 	op, err := p.popExpect(tokenOperator)
 	if err != nil {
 		return
@@ -382,7 +404,7 @@ func (p *parser) parseObjectAssignmentOp() (opFodder ast.Fodder, plusSugar bool,
 // +gen set
 type LiteralField string
 
-func (p *parser) parseObjectRemainderComp(fields ast.ObjectFields, gotComma bool, tok *token, next *token) (ast.Node, *token, error) {
+func (p *parser) parseObjectRemainderComp(fields ast.ObjectFields, gotComma bool, tok *token, next *token) (ast.Node, *token, errors.StaticError) {
 	numFields := 0
 	numAsserts := 0
 	var field ast.ObjectField
@@ -399,16 +421,16 @@ func (p *parser) parseObjectRemainderComp(fields ast.ObjectFields, gotComma bool
 	}
 
 	if numAsserts > 0 {
-		return nil, nil, errors.MakeStaticError("Object comprehension cannot have asserts.", next.loc)
+		return nil, nil, errors.MakeStaticError("Object comprehension cannot have asserts", next.loc)
 	}
 	if numFields != 1 {
-		return nil, nil, errors.MakeStaticError("Object comprehension can only have one field.", next.loc)
+		return nil, nil, errors.MakeStaticError("Object comprehension can only have one field", next.loc)
 	}
 	if field.Hide != ast.ObjectFieldInherit {
-		return nil, nil, errors.MakeStaticError("Object comprehensions cannot have hidden fields.", next.loc)
+		return nil, nil, errors.MakeStaticError("Object comprehensions cannot have hidden fields", next.loc)
 	}
 	if field.Kind != ast.ObjectFieldExpr {
-		return nil, nil, errors.MakeStaticError("Object comprehensions can only have [e] fields.", next.loc)
+		return nil, nil, errors.MakeStaticError("Object comprehensions can only have [e] fields", next.loc)
 	}
 	spec, last, err := p.parseComprehensionSpecs(next, tokenBraceR)
 	if err != nil {
@@ -423,7 +445,7 @@ func (p *parser) parseObjectRemainderComp(fields ast.ObjectFields, gotComma bool
 	}, last, nil
 }
 
-func (p *parser) parseObjectRemainderField(literalFields *LiteralFieldSet, tok *token, next *token) (*ast.ObjectField, error) {
+func (p *parser) parseObjectRemainderField(literalFields *LiteralFieldSet, tok *token, next *token) (*ast.ObjectField, errors.StaticError) {
 	var kind ast.ObjectFieldKind
 	var fodder1 ast.Fodder
 	var expr1 ast.Node
@@ -441,7 +463,7 @@ func (p *parser) parseObjectRemainderField(literalFields *LiteralFieldSet, tok *
 	default:
 		fodder1 = next.fodder
 		kind = ast.ObjectFieldExpr
-		var err error
+		var err errors.StaticError
 		expr1, err = p.parse(maxPrecedence)
 		if err != nil {
 			return nil, err
@@ -460,7 +482,7 @@ func (p *parser) parseObjectRemainderField(literalFields *LiteralFieldSet, tok *
 	var params []ast.Parameter
 	if p.peek().kind == tokenParenL {
 		parenL = p.pop()
-		var err error
+		var err errors.StaticError
 		parenR, params, methComma, err = p.parseParameters("method parameter")
 		if err != nil {
 			return nil, err
@@ -521,10 +543,10 @@ func (p *parser) parseObjectRemainderField(literalFields *LiteralFieldSet, tok *
 	}, nil
 }
 
-func (p *parser) parseObjectRemainderLocal(binds *ast.IdentifierSet, tok *token, next *token) (*ast.ObjectField, error) {
-	varID, err := p.popExpect(tokenIdentifier)
-	if err != nil {
-		return nil, err
+func (p *parser) parseObjectRemainderLocal(binds *ast.IdentifierSet, tok *token, next *token) (*ast.ObjectField, errors.StaticError) {
+	varID, popErr := p.popExpect(tokenIdentifier)
+	if popErr != nil {
+		return nil, popErr
 	}
 
 	id := ast.Identifier(varID.data)
@@ -543,14 +565,15 @@ func (p *parser) parseObjectRemainderLocal(binds *ast.IdentifierSet, tok *token,
 	if p.peek().kind == tokenParenL {
 		parenL = p.pop()
 		isMethod = true
+		var err errors.StaticError
 		parenR, params, funcComma, err = p.parseParameters("function parameter")
 		if err != nil {
 			return nil, err
 		}
 	}
-	opToken, err := p.popExpectOp("=")
-	if err != nil {
-		return nil, err
+	opToken, popErr := p.popExpectOp("=")
+	if popErr != nil {
+		return nil, popErr
 	}
 
 	body, err := p.parse(maxPrecedence)
@@ -590,7 +613,7 @@ func (p *parser) parseObjectRemainderLocal(binds *ast.IdentifierSet, tok *token,
 	}, nil
 }
 
-func (p *parser) parseObjectRemainderAssert(tok *token, next *token) (*ast.ObjectField, error) {
+func (p *parser) parseObjectRemainderAssert(tok *token, next *token) (*ast.ObjectField, errors.StaticError) {
 	cond, err := p.parse(maxPrecedence)
 	if err != nil {
 		return nil, err
@@ -623,7 +646,7 @@ func (p *parser) parseObjectRemainderAssert(tok *token, next *token) (*ast.Objec
 }
 
 // Parse object or object comprehension without leading brace
-func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
+func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, errors.StaticError) {
 	var fields ast.ObjectFields
 	literalFields := make(LiteralFieldSet)
 	binds := make(ast.IdentifierSet)
@@ -650,11 +673,11 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 		}
 
 		if !gotComma && !first {
-			return nil, nil, errors.MakeStaticError("Expected a comma before next field.", next.loc)
+			return nil, nil, errors.MakeStaticError("Expected a comma before next field", next.loc)
 		}
 
 		var field *ast.ObjectField
-		var err error
+		var err errors.StaticError
 		switch next.kind {
 		case tokenBracketL, tokenIdentifier, tokenStringDouble, tokenStringSingle,
 			tokenStringBlock, tokenVerbatimStringDouble, tokenVerbatimStringSingle:
@@ -693,14 +716,14 @@ func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, error) {
 }
 
 /* parses for x in expr for y in expr if expr for z in expr ... */
-func (p *parser) parseComprehensionSpecs(forToken *token, end tokenKind) (*ast.ForSpec, *token, error) {
-	var parseComprehensionSpecsHelper func(forToken *token, outer *ast.ForSpec) (*ast.ForSpec, *token, error)
-	parseComprehensionSpecsHelper = func(forToken *token, outer *ast.ForSpec) (*ast.ForSpec, *token, error) {
+func (p *parser) parseComprehensionSpecs(forToken *token, end tokenKind) (*ast.ForSpec, *token, errors.StaticError) {
+	var parseComprehensionSpecsHelper func(forToken *token, outer *ast.ForSpec) (*ast.ForSpec, *token, errors.StaticError)
+	parseComprehensionSpecsHelper = func(forToken *token, outer *ast.ForSpec) (*ast.ForSpec, *token, errors.StaticError) {
 		var ifSpecs []ast.IfSpec
 
-		varID, err := p.popExpect(tokenIdentifier)
-		if err != nil {
-			return nil, nil, err
+		varID, popErr := p.popExpect(tokenIdentifier)
+		if popErr != nil {
+			return nil, nil, popErr
 		}
 		id := ast.Identifier(varID.data)
 		inToken, err := p.popExpect(tokenIn)
@@ -748,7 +771,7 @@ func (p *parser) parseComprehensionSpecs(forToken *token, end tokenKind) (*ast.F
 
 // Assumes that the leading '[' has already been consumed and passed as tok.
 // Should read up to and consume the trailing ']'
-func (p *parser) parseArray(tok *token) (ast.Node, error) {
+func (p *parser) parseArray(tok *token) (ast.Node, errors.StaticError) {
 	if p.peek().kind == tokenBracketR {
 		bracketR := p.pop()
 		return &ast.Array{
@@ -801,7 +824,7 @@ func (p *parser) parseArray(tok *token) (ast.Node, error) {
 			break
 		}
 		if !gotComma {
-			return nil, errors.MakeStaticError("Expected a comma before next array element.", next.loc)
+			return nil, errors.MakeStaticError("Expected a comma before next array element", next.loc)
 		}
 		nextElem, err := p.parse(maxPrecedence)
 		if err != nil {
@@ -868,7 +891,7 @@ func tokenStringToAst(tok *token) *ast.LiteralString {
 	}
 }
 
-func (p *parser) parseTerminal() (ast.Node, error) {
+func (p *parser) parseTerminal() (ast.Node, errors.StaticError) {
 	tok := p.pop()
 	switch tok.kind {
 	case tokenAssert, tokenBraceR, tokenBracketR, tokenComma, tokenDot, tokenElse,
@@ -877,7 +900,7 @@ func (p *parser) parseTerminal() (ast.Node, error) {
 		return nil, makeUnexpectedError(tok, "parsing terminal")
 
 	case tokenEndOfFile:
-		return nil, errors.MakeStaticError("Unexpected end of file.", tok.loc)
+		return nil, errors.MakeStaticError("Unexpected end of file", tok.loc)
 
 	case tokenBraceL:
 		obj, _, err := p.parseObjectRemainder(tok)
@@ -953,7 +976,7 @@ func (p *parser) parseTerminal() (ast.Node, error) {
 			idFodder = fieldID.fodder
 			id = (*ast.Identifier)(&fieldID.data)
 		case tokenBracketL:
-			var err error
+			var err errors.StaticError
 			index, err = p.parse(maxPrecedence)
 			if err != nil {
 				return nil, err
@@ -964,7 +987,7 @@ func (p *parser) parseTerminal() (ast.Node, error) {
 			}
 			idFodder = bracketR.fodder
 		default:
-			return nil, errors.MakeStaticError("Expected . or [ after super.", tok.loc)
+			return nil, errors.MakeStaticError("Expected . or [ after super", tok.loc)
 		}
 		return &ast.SuperIndex{
 			NodeBase:  ast.NewNodeBaseLoc(tok.loc, tok.fodder),
@@ -978,11 +1001,11 @@ func (p *parser) parseTerminal() (ast.Node, error) {
 	return nil, errors.MakeStaticError(fmt.Sprintf("INTERNAL ERROR: Unknown tok kind: %v", tok.kind), tok.loc)
 }
 
-func (p *parser) parsingFailure(msg string, tok *token) (ast.Node, error) {
+func (p *parser) parsingFailure(msg string, tok *token) (ast.Node, errors.StaticError) {
 	return nil, errors.MakeStaticError(msg, tok.loc)
 }
 
-func (p *parser) parse(prec precedence) (ast.Node, error) {
+func (p *parser) parse(prec precedence) (ast.Node, errors.StaticError) {
 	begin := p.peek()
 
 	switch begin.kind {
@@ -1365,7 +1388,7 @@ func (p *parser) parse(prec precedence) (ast.Node, error) {
 // ---------------------------------------------------------------------------
 
 // Parse parses a slice of tokens into a parse tree.
-func Parse(t Tokens) (ast.Node, error) {
+func Parse(t Tokens) (ast.Node, errors.StaticError) {
 	p := makeParser(t)
 	expr, err := p.parse(maxPrecedence)
 	if err != nil {
