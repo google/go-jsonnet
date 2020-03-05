@@ -211,27 +211,23 @@ func (p *parser) parseArguments(elementKind string) (*token, *ast.Arguments, boo
 // parseParameter parses either <f1> id <f2> = expr or just <f1> id.
 // It returns either (<f1>, id, <f2>, expr) or (<f1>, id, nil, nil)
 // respectively.
-func (p *parser) parseParameter() (ast.Fodder, *ast.Identifier, ast.Fodder, ast.Node, errors.StaticError) {
-	var idFodder ast.Fodder
-	var id *ast.Identifier
-	var eqFodder ast.Fodder
+func (p *parser) parseParameter() (ast.Parameter, errors.StaticError) {
+	ret := ast.Parameter{}
 	ident, err := p.popExpect(tokenIdentifier)
 	if err != nil {
-		return nil, nil, nil, nil, err.WithContext("parsing parameter")
+		return ret, err.WithContext("parsing parameter")
 	}
-	var tmpID = ast.Identifier(ident.data)
-	id = &tmpID
-	idFodder = ident.fodder
+	ret.Name = ast.Identifier(ident.data)
+	ret.NameFodder = ident.fodder
 	if p.peek().kind == tokenOperator && p.peek().data == "=" {
 		eq := p.pop()
-		eqFodder = eq.fodder
-		expr, err := p.parse(maxPrecedence)
+		ret.EqFodder = eq.fodder
+		ret.DefaultArg, err = p.parse(maxPrecedence)
 		if err != nil {
-			return nil, nil, nil, nil, err
+			return ret, err
 		}
-		return idFodder, id, eqFodder, expr, nil
 	}
-	return idFodder, id, nil, nil, nil
+	return ret, nil
 }
 
 // TODO(sbarzowski) - this returned bool is weird
@@ -240,7 +236,6 @@ func (p *parser) parseParameters(elementKind string) (*token, []ast.Parameter, b
 	var parenR *token
 	var params []ast.Parameter
 	gotComma := false
-	commaFodder := ast.Fodder{}
 	first := true
 	for {
 		next := p.peek()
@@ -255,39 +250,19 @@ func (p *parser) parseParameters(elementKind string) (*token, []ast.Parameter, b
 			return nil, nil, false, errors.MakeStaticError(fmt.Sprintf("Expected a comma before next %s, got %s", elementKind, next), next.loc)
 		}
 
-		idFodder, id, eqFodder, expr, err := p.parseParameter()
+		param, err := p.parseParameter()
 		if err != nil {
 			return nil, nil, false, err
 		}
 
 		if p.peek().kind == tokenComma {
 			comma := p.pop()
+			param.CommaFodder = comma.fodder
 			gotComma = true
-			commaFodder = comma.fodder
 		} else {
 			gotComma = false
 		}
-
-		if expr == nil {
-			// Param has no default
-			param := ast.Parameter{
-				NameFodder: idFodder,
-				Name:       *id,
-			}
-			if gotComma {
-				param.CommaFodder = commaFodder
-			}
-			params = append(params, param)
-		} else {
-			// Param has a default: id=expr
-			params = append(params, ast.Parameter{
-				NameFodder:  idFodder,
-				Name:        *id,
-				EqFodder:    eqFodder,
-				DefaultArg:  expr,
-				CommaFodder: commaFodder,
-			})
-		}
+		params = append(params, param)
 
 		first = false
 	}
