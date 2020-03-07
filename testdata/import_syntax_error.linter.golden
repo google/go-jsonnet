@@ -1,0 +1,5 @@
+../testdata/import_syntax_error:1:1-30 ../testdata/syntax_error.jsonnet:2:1 Unexpected end of file
+
+import "syntax_error.jsonnet"
+
+

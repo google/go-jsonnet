@@ -1,0 +1,5 @@
+../testdata/too_many_arguments:1:33-34 Too many arguments, there can be at most 3, but 4 provided
+
+(function(x, y, z) 42)(1, 2, 3, 4)
+
+

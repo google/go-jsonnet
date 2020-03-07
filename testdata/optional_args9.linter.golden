@@ -1,0 +1,5 @@
+../testdata/optional_args9:1:23-25 Argument x already provided
+
+(function(x) x)(42, x=42)
+
+

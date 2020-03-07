@@ -1,0 +1,5 @@
+../testdata/std.makeArrayNamed3:1:24-25 function has no parameter blahblah
+
+std.makeArray(blahblah=5, blahblahblah=function(i) i)
+
+

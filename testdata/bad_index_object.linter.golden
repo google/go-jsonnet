@@ -1,0 +1,5 @@
+../testdata/bad_index_object:1:1-7 Indexed value is assumed to be an object, but index is not a string
+
+{}[42]
+
+

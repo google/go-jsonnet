@@ -1,0 +1,7 @@
+testdata/object_index_unknown:(1:1)-(3:4) Indexed object has no field "b"
+
+{
+    "a": 1
+}.b
+
+

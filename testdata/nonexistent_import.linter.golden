@@ -1,0 +1,5 @@
+../testdata/nonexistent_import:1:1-51 couldn't open import "no chance a file with this name exists": no match locally or in the Jsonnet library paths
+
+importstr 'no chance a file with this name exists'
+
+

@@ -1,0 +1,5 @@
+../testdata/call_number:1:1-5 Called value must be a function, but it is assumed to be a number
+
+42()
+
+

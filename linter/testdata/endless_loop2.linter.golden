@@ -1,0 +1,5 @@
+testdata/endless_loop2:1:11-12 Endless loop in local definition
+
+local x = y, y = x; 42
+
+

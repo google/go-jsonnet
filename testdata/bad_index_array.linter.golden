@@ -1,0 +1,5 @@
+../testdata/bad_index_array:1:1-10 Indexed value is assumed to be an array, but index is not a number
+
+[]["xxx"]
+
+
