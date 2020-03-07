@@ -1,0 +1,238 @@
+{
+   "abs": 42,
+   "acos": 1.0471975511965976,
+   "asciiLower": "blah",
+   "asciiUpper": "BLAH",
+   "asin": 0.52359877559829893,
+   "assertEqual": true,
+   "atan": 1.3734007669450157,
+   "base64": [
+      "YmxhaA==",
+      "YmxhaA=="
+   ],
+   "base64Decode": "blah\n",
+   "base64DecodeBytes": [
+      98,
+      108,
+      97,
+      104,
+      10
+   ],
+   "ceil": 5,
+   "char": "A",
+   "codepoint": 65,
+   "cos": 0.2836621854632263,
+   "count": 1,
+   "decodeUTF8": "AAA",
+   "encodeUTF8": [
+      98,
+      108,
+      97,
+      104
+   ],
+   "endsWith": true,
+   "escapeStringBash": "'test '\"'\"'test'\"'\"'test'",
+   "escapeStringDollars": "test 'test'test",
+   "escapeStringJson": "\"test 'test'test\"",
+   "escapeStringPython": "\"test 'test'test\"",
+   "exp": 148.4131591025766,
+   "exponent": 3,
+   "filter": [
+      2,
+      4
+   ],
+   "filterMap": [
+      4,
+      8
+   ],
+   "find": [
+      2,
+      4
+   ],
+   "findSubstr": [
+      0,
+      5
+   ],
+   "flattenArrays": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      [
+         6,
+         7
+      ]
+   ],
+   "floor": 5,
+   "foldl": [
+      0,
+      1,
+      2,
+      3
+   ],
+   "foldr": [
+      1,
+      2,
+      3,
+      4
+   ],
+   "format": "test blah 42",
+   "join": "a,b,c",
+   "length": 0,
+   "lines": "a\nb\nc\n",
+   "log": 1.6094379124341003,
+   "makeArray": [
+      0,
+      1,
+      2,
+      3,
+      4
+   ],
+   "manifestIni": "a = 1\nb = 2\n[s1]\nx = 1\ny = 2\n",
+   "manifestJsonEx": "{\n \"a\": {\n  \"b\": \"c\"\n }\n}",
+   "manifestPython": "{\"a\": {\"b\": \"c\"}}",
+   "manifestPythonVars": "a = {\"b\": \"c\"}\n",
+   "manifestXmlJsonml": "<blah a=\"42\"></blah>",
+   "manifestYamlDoc": "\"a\":\n  \"b\": \"c\"",
+   "manifestYamlStream": "---\n42\n---\n\"a\":\n  \"b\": \"c\"\n...\n",
+   "mantissa": 0.625,
+   "map": [
+      -1,
+      -2,
+      -3
+   ],
+   "mapWithIndex": [
+      3,
+      3,
+      3
+   ],
+   "mapWithKey": {
+      "a": 42
+   },
+   "max": 3,
+   "md5": "1bc29b36f623ba82aaf6724fd3b16718",
+   "mergePatch": { },
+   "min": 2,
+   "objectFields": [ ],
+   "objectHas": false,
+   "objectHasAll": false,
+   "parseHex": 3735928559,
+   "parseInt": 42,
+   "parseJson": {
+      "a": "b"
+   },
+   "parseOctal": 83,
+   "pow": 8,
+   "prune": {
+      "y": [
+         "42"
+      ]
+   },
+   "range": [
+      1,
+      2,
+      3,
+      4,
+      5
+   ],
+   "set": [
+      [
+         1,
+         2,
+         3
+      ],
+      [
+         3,
+         2,
+         1
+      ]
+   ],
+   "setDiff": [
+      [
+         1,
+         2
+      ],
+      [
+         1,
+         3
+      ]
+   ],
+   "setInter": [
+      [
+         3
+      ],
+      [
+         2
+      ]
+   ],
+   "setMember": [
+      false,
+      true
+   ],
+   "setUnion": [
+      [
+         1,
+         2,
+         3,
+         4,
+         5
+      ],
+      [
+         1,
+         2,
+         3,
+         4,
+         5
+      ]
+   ],
+   "sign": 1,
+   "sin": -0.95892427466313845,
+   "sort": [
+      [
+         1,
+         2,
+         3
+      ],
+      [
+         3,
+         2,
+         1
+      ]
+   ],
+   "split": [
+      "a",
+      "b",
+      "c"
+   ],
+   "splitLimit": [
+      "a",
+      "b,c"
+   ],
+   "sqrt": 2.2360679774997898,
+   "startsWith": true,
+   "strReplace": "bba",
+   "stringChars": [
+      "b",
+      "l",
+      "a",
+      "h"
+   ],
+   "substr": "s",
+   "tan": -3.3805150062465854,
+   "thisFile": "testdata/stdlib_smoke_test",
+   "toString": "42",
+   "type": "object",
+   "uniq": [
+      [
+         1,
+         2,
+         3
+      ],
+      [
+         "a",
+         "B",
+         "a"
+      ]
+   ]
+}

@@ -1,0 +1,5 @@
+testdata/argcheck_additional:2:1-5 Too many arguments: got 1, but expected at most 0
+
+f(1)
+
+

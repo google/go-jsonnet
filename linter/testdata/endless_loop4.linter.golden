@@ -1,0 +1,5 @@
+testdata/endless_loop4:1:14-15 Endless loop in local definition
+
+local x = if x then true else false; 42
+
+

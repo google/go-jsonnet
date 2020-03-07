@@ -1,0 +1,5 @@
+../testdata/import_failure_directory:3:1-11 read ../testdata: is a directory
+
+import '.'
+
+

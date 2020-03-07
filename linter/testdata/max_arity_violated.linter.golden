@@ -1,0 +1,5 @@
+testdata/max_arity_violated:2:1-8 Too many arguments: got 2, but expected at most 1
+
+f(1, 2)
+
+

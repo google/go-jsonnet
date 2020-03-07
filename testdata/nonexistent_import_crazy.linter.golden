@@ -1,0 +1,5 @@
+../testdata/nonexistent_import_crazy:1:1-46 couldn't open import "ąęółńśćźż \" ' \n\n\t\t": no match locally or in the Jsonnet library paths
+
+importstr "ąęółńśćźż \" \' \n\n\t\t"
+
+

@@ -1,0 +1,5 @@
+../testdata/optional_args4:1:7-12 Unused variable: x
+
+local x = 1;
+
+

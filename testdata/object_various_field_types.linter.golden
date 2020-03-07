@@ -1,0 +1,5 @@
+../testdata/object_various_field_types:11:8-26 Unused variable: local_field
+
+	local local_field = true,
+
+

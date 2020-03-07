@@ -1,0 +1,5 @@
+../testdata/bad_index_string:1:1-13 Indexed value is assumed to be a string, but index is not a number
+
+"xxx"["xxx"]
+
+

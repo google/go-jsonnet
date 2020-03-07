@@ -1,0 +1,5 @@
+../testdata/bad_function_call:1:1-18 Missing argument: x
+
+(function(x) x)()
+
+

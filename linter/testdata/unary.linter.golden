@@ -1,0 +1,20 @@
+testdata/unary:2:5-11 Operand is not a number, it is assumed to be a bool
+
+    ~false,
+
+
+testdata/unary:3:5-10 Operand is not a number, it is assumed to be a string
+
+    -"42",
+
+
+testdata/unary:4:5-10 Operand is not a number, it is assumed to be a string
+
+    +"42",
+
+
+testdata/unary:5:5-8 Operand is not a boolean, it is assumed to be a number
+
+    !42,
+
+
