@@ -120,6 +120,9 @@ func desugarFields(nodeBase ast.NodeBase, fields *ast.ObjectFields, objLevel int
 			}
 			onFailure := &ast.Error{Expr: msg}
 			asserts = append(asserts, &ast.Conditional{
+				NodeBase: ast.NodeBase{
+					LocRange: field.LocRange,
+				},
 				Cond:        field.Expr2,
 				BranchTrue:  &ast.LiteralBoolean{Value: true}, // ignored anyway
 				BranchFalse: onFailure,
@@ -130,6 +133,7 @@ func desugarFields(nodeBase ast.NodeBase, fields *ast.ObjectFields, objLevel int
 				Name:      makeStr(string(*field.Id)),
 				Body:      field.Expr2,
 				PlusSuper: field.SuperSugar,
+				LocRange:  field.LocRange,
 			})
 
 		case ast.ObjectFieldExpr, ast.ObjectFieldStr:
@@ -138,12 +142,14 @@ func desugarFields(nodeBase ast.NodeBase, fields *ast.ObjectFields, objLevel int
 				Name:      field.Expr1,
 				Body:      field.Expr2,
 				PlusSuper: field.SuperSugar,
+				LocRange:  field.LocRange,
 			})
 
 		case ast.ObjectLocal:
 			locals = append(locals, ast.LocalBind{
 				Variable: *field.Id,
 				Body:     ast.Clone(field.Expr2), // TODO(sbarzowski) not sure if clone is needed
+				LocRange: field.LocRange,
 			})
 		default:
 			panic(fmt.Sprintf("Unexpected object field kind %v", field.Kind))
