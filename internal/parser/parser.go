@@ -209,6 +209,7 @@ func (p *parser) parseParameter() (ast.Parameter, errors.StaticError) {
 	}
 	ret.Name = ast.Identifier(ident.data)
 	ret.NameFodder = ident.fodder
+	ret.LocRange = ident.loc
 	if p.peek().kind == tokenOperator && p.peek().data == "=" {
 		eq := p.pop()
 		ret.EqFodder = eq.fodder
@@ -216,6 +217,7 @@ func (p *parser) parseParameter() (ast.Parameter, errors.StaticError) {
 		if err != nil {
 			return ret, err
 		}
+		ret.LocRange = locFromTokenAST(ident, ret.DefaultArg)
 	}
 	return ret, nil
 }
@@ -312,6 +314,7 @@ func (p *parser) parseBind(binds *ast.LocalBinds) (*token, errors.StaticError) {
 			Body:        body,
 			Fun:         fun,
 			CloseFodder: delim.fodder,
+			LocRange:    locFromTokenAST(varID, body),
 		})
 	} else {
 		*binds = append(*binds, ast.LocalBind{
@@ -320,6 +323,7 @@ func (p *parser) parseBind(binds *ast.LocalBinds) (*token, errors.StaticError) {
 			EqFodder:    eqToken.fodder,
 			Body:        body,
 			CloseFodder: delim.fodder,
+			LocRange:    locFromTokenAST(varID, body),
 		})
 	}
 
@@ -505,6 +509,7 @@ func (p *parser) parseObjectRemainderField(literalFields *LiteralFieldSet, tok *
 		OpFodder:    opFodder,
 		Expr2:       body,
 		CommaFodder: commaFodder,
+		LocRange:    locFromTokenAST(next, body),
 	}, nil
 }
 
@@ -575,6 +580,7 @@ func (p *parser) parseObjectRemainderLocal(binds *ast.IdentifierSet, tok *token,
 		OpFodder:    opToken.fodder,
 		Expr2:       body,
 		CommaFodder: commaFodder,
+		LocRange:    locFromTokenAST(varID, body),
 	}, nil
 }
 
@@ -583,6 +589,7 @@ func (p *parser) parseObjectRemainderAssert(tok *token, next *token) (*ast.Objec
 	if err != nil {
 		return nil, err
 	}
+	lastAST := cond // for determining location
 	var msg ast.Node
 	var colonFodder ast.Fodder
 	if p.peek().kind == tokenOperator && p.peek().data == ":" {
@@ -592,6 +599,7 @@ func (p *parser) parseObjectRemainderAssert(tok *token, next *token) (*ast.Objec
 		if err != nil {
 			return nil, err
 		}
+		lastAST = msg
 	}
 
 	var commaFodder ast.Fodder
@@ -607,6 +615,7 @@ func (p *parser) parseObjectRemainderAssert(tok *token, next *token) (*ast.Objec
 		OpFodder:    colonFodder,
 		Expr3:       msg,
 		CommaFodder: commaFodder,
+		LocRange:    locFromTokenAST(next, lastAST),
 	}, nil
 }
 

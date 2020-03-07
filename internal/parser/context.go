@@ -30,14 +30,14 @@ const anonymous = "anonymous"
 // package or a separate internal astutils package. The only reason I'm not doing it
 // right now is that it's a pretty invasive change that deserves a separate PR.
 
-// directChildren are children of AST node that are executed in the same context
+// DirectChildren are children of AST node that are executed in the same context
 // and environment as their parent. It supports ASTs before and after desugaring.
 //
 // They must satisfy the following rules:
 // * (no-delayed-evaluation) They are evaluated when their parent is evaluated or never.
 // * (no-indirect-evaluation) They cannot be evaluated during evaluation of any non-direct children
 // * (same-environment) They must be evaluated in the same environment as their parent
-func directChildren(node ast.Node) []ast.Node {
+func DirectChildren(node ast.Node) []ast.Node {
 	switch node := node.(type) {
 	case *ast.Apply:
 		return []ast.Node{node.Target}
@@ -354,7 +354,7 @@ func specialChildren(node ast.Node) []ast.Node {
 // Children returns all children of a node. It supports ASTs before and after desugaring.
 func Children(node ast.Node) []ast.Node {
 	var result []ast.Node
-	result = append(result, directChildren(node)...)
+	result = append(result, DirectChildren(node)...)
 	result = append(result, thunkChildren(node)...)
 	result = append(result, specialChildren(node)...)
 	return result
@@ -400,7 +400,7 @@ func addContext(node ast.Node, context *string, bind string) {
 	case *ast.Object:
 		// TODO(sbarzowski) include fieldname, maybe even chains
 
-		outOfObject := directChildren(node)
+		outOfObject := DirectChildren(node)
 		for _, f := range outOfObject {
 			// This actually is evaluated outside of object
 			addContext(f, context, anonymous)
@@ -414,7 +414,7 @@ func addContext(node ast.Node, context *string, bind string) {
 		}
 
 	case *ast.ObjectComp:
-		outOfObject := directChildren(node)
+		outOfObject := DirectChildren(node)
 		for _, f := range outOfObject {
 			// This actually is evaluated outside of object
 			addContext(f, context, anonymous)
@@ -438,7 +438,7 @@ func addContext(node ast.Node, context *string, bind string) {
 		}
 		addContext(node.Body, context, bind)
 	default:
-		for _, child := range directChildren(node) {
+		for _, child := range DirectChildren(node) {
 			addContext(child, context, anonymous)
 		}
 

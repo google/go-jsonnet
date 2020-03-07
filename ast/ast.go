@@ -394,6 +394,7 @@ type Parameter struct {
 	EqFodder    Fodder
 	DefaultArg  Node
 	CommaFodder Fodder
+	LocRange    LocationRange
 }
 
 // CommaSeparatedID represents an expression that is an element of a
@@ -468,6 +469,8 @@ type LocalBind struct {
 	Fun *Function
 	// The fodder before the closing ',' or ';' (whichever it is)
 	CloseFodder Fodder
+
+	LocRange LocationRange
 }
 
 // LocalBinds represents a LocalBind slice.
@@ -594,15 +597,17 @@ type ObjectField struct {
 	OpFodder     Fodder
 	Expr2, Expr3 Node // In scope of the object (can see self).
 	CommaFodder  Fodder
+	LocRange     LocationRange
 }
 
 // ObjectFieldLocalNoMethod creates a non-method local object field.
-func ObjectFieldLocalNoMethod(id *Identifier, body Node) ObjectField {
+func ObjectFieldLocalNoMethod(id *Identifier, body Node, loc LocationRange) ObjectField {
 	return ObjectField{
-		Kind:  ObjectLocal,
-		Hide:  ObjectFieldVisible,
-		Id:    id,
-		Expr2: body,
+		Kind:     ObjectLocal,
+		Hide:     ObjectFieldVisible,
+		Id:       id,
+		Expr2:    body,
+		LocRange: loc,
 	}
 }
 
@@ -628,6 +633,8 @@ type DesugaredObjectField struct {
 	Name      Node
 	Body      Node
 	PlusSuper bool
+
+	LocRange LocationRange
 }
 
 // DesugaredObjectFields represents a DesugaredObjectField slice.

@@ -45,6 +45,6 @@ go_test(
     deps = [
         "//ast:go_default_library",
         "//internal/parser:go_default_library",
-        "@com_github_sergi_go_diff//diffmatchpatch:go_default_library",
+        "//internal/testutils:go_default_library",
     ],
 )
