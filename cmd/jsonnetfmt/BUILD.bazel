@@ -8,7 +8,7 @@ go_library(
     deps = [
         "//:go_default_library",
         "//cmd:go_default_library",
-        "//cmd/jsonnetfmt/lib:go_default_library",
+        "//internal/formatter:go_default_library",
         "@com_github_fatih_color//:go_default_library",
     ],
 )

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package jsonnetfmt
+package formatter
 
 import (
 	"github.com/google/go-jsonnet/ast"

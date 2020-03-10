@@ -14,25 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package jsonnetfmt
+package formatter
 
 import (
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/pass"
 )
 
-// EnforceMaxBlankLines is a formatter pass that ensures there are not
-// too many blank lines in the code.
-type EnforceMaxBlankLines struct {
+// FixParens is a formatter pass that replaces ((e)) with (e).
+type FixParens struct {
 	pass.Base
-	Options Options
 }
 
-// FodderElement implements this pass.
-func (c *EnforceMaxBlankLines) FodderElement(p pass.CompilerPass, element *ast.FodderElement, ctx pass.Context) {
-	if element.Kind != ast.FodderInterstitial {
-		if element.Blanks > c.Options.MaxBlankLines {
-			element.Blanks = c.Options.MaxBlankLines
-		}
+// Parens handles that type of node
+func (c *FixParens) Parens(p pass.CompilerPass, node *ast.Parens, ctx pass.Context) {
+	innerParens, ok := node.Inner.(*ast.Parens)
+	if ok {
+		node.Inner = innerParens.Inner
+		ast.FodderMoveFront(openFodder(node), &innerParens.Fodder)
+		ast.FodderMoveFront(&node.CloseFodder, &innerParens.CloseFodder)
 	}
+	c.Base.Parens(p, node, ctx)
 }

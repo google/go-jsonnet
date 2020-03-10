@@ -14,36 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package jsonnetfmt
+package formatter
 
 import (
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/pass"
 )
 
-// EnforceCommentStyle is a formatter pass that ensures the comments are styled
-// according to the configuration in Options.
-type EnforceCommentStyle struct {
+// EnforceMaxBlankLines is a formatter pass that ensures there are not
+// too many blank lines in the code.
+type EnforceMaxBlankLines struct {
 	pass.Base
-	Options         Options
-	seenFirstFodder bool
+	Options Options
 }
 
 // FodderElement implements this pass.
-func (c *EnforceCommentStyle) FodderElement(p pass.CompilerPass, element *ast.FodderElement, ctx pass.Context) {
+func (c *EnforceMaxBlankLines) FodderElement(p pass.CompilerPass, element *ast.FodderElement, ctx pass.Context) {
 	if element.Kind != ast.FodderInterstitial {
-		if len(element.Comment) == 1 {
-			comment := &element.Comment[0]
-			if c.Options.CommentStyle == CommentStyleHash && (*comment)[0] == '/' {
-				*comment = "#" + (*comment)[2:]
-			}
-			if c.Options.CommentStyle == CommentStyleSlash && (*comment)[0] == '#' {
-				if !c.seenFirstFodder && (*comment)[1] == '!' {
-					return
-				}
-				*comment = "//" + (*comment)[1:]
-			}
+		if element.Blanks > c.Options.MaxBlankLines {
+			element.Blanks = c.Options.MaxBlankLines
 		}
-		c.seenFirstFodder = true
 	}
 }

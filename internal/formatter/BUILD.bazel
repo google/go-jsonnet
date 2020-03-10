@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
@@ -18,13 +18,11 @@ go_library(
         "strip.go",
         "unparser.go",
     ],
-    importpath = "github.com/google/go-jsonnet/cmd/jsonnetfmt/lib",
+    importpath = "github.com/google/go-jsonnet/internal/formatter",
     visibility = ["//visibility:public"],
     deps = [
         "//ast:go_default_library",
-        "//cmd:go_default_library",
         "//internal/parser:go_default_library",
         "//pass:go_default_library",
-        "@com_github_fatih_color//:go_default_library",
     ],
 )

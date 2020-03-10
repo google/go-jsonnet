@@ -14,25 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package jsonnetfmt
+package formatter
 
 import (
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/pass"
 )
 
-// FixParens is a formatter pass that replaces ((e)) with (e).
-type FixParens struct {
+// NoRedundantSliceColon is a formatter pass that preserves fodder in the case
+// of arr[1::] being formatted as arr[1:]
+type NoRedundantSliceColon struct {
 	pass.Base
 }
 
-// Parens handles that type of node
-func (c *FixParens) Parens(p pass.CompilerPass, node *ast.Parens, ctx pass.Context) {
-	innerParens, ok := node.Inner.(*ast.Parens)
-	if ok {
-		node.Inner = innerParens.Inner
-		ast.FodderMoveFront(openFodder(node), &innerParens.Fodder)
-		ast.FodderMoveFront(&node.CloseFodder, &innerParens.CloseFodder)
+// Slice implements this pass.
+func (c *NoRedundantSliceColon) Slice(p pass.CompilerPass, slice *ast.Slice, ctx pass.Context) {
+	if slice.Step == nil {
+		if len(slice.StepColonFodder) > 0 {
+			ast.FodderMoveFront(&slice.RightBracketFodder, &slice.StepColonFodder)
+		}
 	}
-	c.Base.Parens(p, node, ctx)
+	c.Base.Slice(p, slice, ctx)
 }

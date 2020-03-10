@@ -25,7 +25,7 @@ import (
 
 	"github.com/google/go-jsonnet"
 	"github.com/google/go-jsonnet/cmd"
-	jsonnetfmt "github.com/google/go-jsonnet/cmd/jsonnetfmt/lib"
+	"github.com/google/go-jsonnet/internal/formatter"
 )
 
 func version(o io.Writer) {
@@ -67,14 +67,14 @@ type config struct {
 	filenameIsCode       bool
 	inPlace              bool
 	inputFiles           []string
-	options              jsonnetfmt.Options
+	options              formatter.Options
 	outputFile           string
 	test                 bool
 }
 
 func makeConfig() config {
 	return config{
-		options: jsonnetfmt.DefaultOptions(),
+		options: formatter.DefaultOptions(),
 	}
 }
 
@@ -135,11 +135,11 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 			str := cmd.NextArg(&i, args)
 			switch str {
 			case "d":
-				config.options.StringStyle = jsonnetfmt.StringStyleDouble
+				config.options.StringStyle = formatter.StringStyleDouble
 			case "s":
-				config.options.StringStyle = jsonnetfmt.StringStyleSingle
+				config.options.StringStyle = formatter.StringStyleSingle
 			case "l":
-				config.options.StringStyle = jsonnetfmt.StringStyleLeave
+				config.options.StringStyle = formatter.StringStyleLeave
 			default:
 				return processArgsStatusFailure, fmt.Errorf("invalid --string-style value: %s", str)
 			}
@@ -147,11 +147,11 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 			str := cmd.NextArg(&i, args)
 			switch str {
 			case "h":
-				config.options.CommentStyle = jsonnetfmt.CommentStyleHash
+				config.options.CommentStyle = formatter.CommentStyleHash
 			case "s":
-				config.options.CommentStyle = jsonnetfmt.CommentStyleSlash
+				config.options.CommentStyle = formatter.CommentStyleSlash
 			case "l":
-				config.options.CommentStyle = jsonnetfmt.CommentStyleLeave
+				config.options.CommentStyle = formatter.CommentStyleLeave
 			default:
 				return processArgsStatusFailure, fmt.Errorf("invalid --comment-style value: %s", str)
 			}
@@ -247,7 +247,7 @@ func main() {
 				}
 			}
 			input := cmd.SafeReadInput(config.filenameIsCode, &inputFile)
-			output, err := jsonnetfmt.Format(inputFile, input, config.options)
+			output, err := formatter.Format(inputFile, input, config.options)
 			cmd.HandleMemProfile()
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err.Error())
@@ -274,7 +274,7 @@ func main() {
 		}
 		inputFile := config.inputFiles[0]
 		input := cmd.SafeReadInput(config.filenameIsCode, &inputFile)
-		output, err := jsonnetfmt.Format(inputFile, input, config.options)
+		output, err := formatter.Format(inputFile, input, config.options)
 		cmd.HandleMemProfile()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
