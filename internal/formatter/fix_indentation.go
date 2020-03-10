@@ -326,7 +326,7 @@ func (c *FixIndentation) fields(fields ast.ObjectFields, currIndent indent, crow
 // Visit has logic common to all nodes.
 func (c *FixIndentation) Visit(expr ast.Node, currIndent indent, crowded bool) {
 	separateToken := leftRecursive(expr) == nil
-	c.fill(expr.OpenFodder(), crowded, separateToken, currIndent.lineUp)
+	c.fill(*expr.OpenFodder(), crowded, separateToken, currIndent.lineUp)
 	switch node := expr.(type) {
 
 	case *ast.Apply:

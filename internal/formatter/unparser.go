@@ -233,7 +233,7 @@ func (u *unparser) unparseID(id ast.Identifier) {
 func (u *unparser) unparse(expr ast.Node, crowded bool) {
 
 	if leftRecursive(expr) == nil {
-		u.fill(expr.OpenFodder(), crowded, true)
+		u.fill(*expr.OpenFodder(), crowded, true)
 	}
 
 	switch node := expr.(type) {

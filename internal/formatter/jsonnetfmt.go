@@ -119,7 +119,7 @@ func leftRecursiveDeep(expr ast.Node) ast.Node {
 }
 
 func openFodder(node ast.Node) *ast.Fodder {
-	return leftRecursiveDeep(node).OpenFodderPtr()
+	return leftRecursiveDeep(node).OpenFodder()
 }
 
 func removeInitialNewlines(node ast.Node) {

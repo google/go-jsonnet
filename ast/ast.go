@@ -43,9 +43,13 @@ type Node interface {
 	FreeVariables() Identifiers
 	SetFreeVariables(Identifiers)
 	SetContext(Context)
-	OpenFodderPtr() *Fodder
-	OpenFodder() Fodder
-	SetOpenFodder(Fodder)
+	// OpenFodder returns the fodder before the first token of an AST node.
+	// Since every AST node has opening fodder, it is defined here.
+	// If the AST node is left recursive (e.g. BinaryOp) then it is ambiguous
+	// where the fodder should be stored.  This is resolved by storing it as
+	// far inside the tree as possible.  OpenFodder returns a pointer to allow
+	// the caller to modify the fodder.
+	OpenFodder() *Fodder
 }
 
 // Nodes represents a Node slice.
@@ -85,18 +89,8 @@ func (n *NodeBase) Loc() *LocationRange {
 }
 
 // OpenFodderPtr returns a NodeBase's opening fodder.
-func (n *NodeBase) OpenFodderPtr() *Fodder {
+func (n *NodeBase) OpenFodder() *Fodder {
 	return &n.Fodder
-}
-
-// OpenFodder returns a NodeBase's opening fodder.
-func (n *NodeBase) OpenFodder() Fodder {
-	return n.Fodder
-}
-
-// SetOpenFodder sets a NodeBase's opening fodder.
-func (n *NodeBase) SetOpenFodder(fodder Fodder) {
-	n.Fodder = fodder
 }
 
 // FreeVariables returns a NodeBase's freeVariables.

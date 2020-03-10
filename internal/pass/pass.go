@@ -388,9 +388,9 @@ func (*Base) Var(p ASTPass, node *ast.Var, ctx Context) {
 // Visit traverses into an arbitrary node type
 func (*Base) Visit(p ASTPass, node *ast.Node, ctx Context) {
 
-	f := (*node).OpenFodder()
+	f := *(*node).OpenFodder()
 	p.Fodder(p, &f, ctx)
-	(*node).SetOpenFodder(f)
+	*(*node).OpenFodder() = f
 
 	switch node := (*node).(type) {
 	case *ast.Apply:
