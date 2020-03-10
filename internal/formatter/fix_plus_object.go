@@ -18,7 +18,7 @@ package formatter
 
 import (
 	"github.com/google/go-jsonnet/ast"
-	"github.com/google/go-jsonnet/pass"
+	"github.com/google/go-jsonnet/internal/pass"
 )
 
 // FixPlusObject is a formatter pass that replaces ((e)) with (e).

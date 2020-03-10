@@ -19,7 +19,7 @@ package formatter
 import (
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/internal/parser"
-	"github.com/google/go-jsonnet/pass"
+	"github.com/google/go-jsonnet/internal/pass"
 )
 
 // PrettyFieldNames forces minimal syntax with field lookups and definitions

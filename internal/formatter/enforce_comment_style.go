@@ -18,7 +18,7 @@ package formatter
 
 import (
 	"github.com/google/go-jsonnet/ast"
-	"github.com/google/go-jsonnet/pass"
+	"github.com/google/go-jsonnet/internal/pass"
 )
 
 // EnforceCommentStyle is a formatter pass that ensures the comments are styled
