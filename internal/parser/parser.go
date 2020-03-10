@@ -1354,7 +1354,8 @@ func (p *parser) parse(prec precedence) (ast.Node, errors.StaticError) {
 
 // ---------------------------------------------------------------------------
 
-// Parse parses a slice of tokens into a parse tree.
+// Parse parses a slice of tokens into a parse tree.  Any fodder after the final token is
+// returned as well.
 func Parse(t Tokens) (ast.Node, ast.Fodder, errors.StaticError) {
 	p := makeParser(t)
 	expr, err := p.parse(maxPrecedence)
@@ -1373,6 +1374,7 @@ func Parse(t Tokens) (ast.Node, ast.Fodder, errors.StaticError) {
 }
 
 // SnippetToRawAST converts a Jsonnet code snippet to an AST (without any transformations).
+// Any fodder after the final token is returned as well.
 func SnippetToRawAST(filename string, snippet string) (ast.Node, ast.Fodder, error) {
 	tokens, err := Lex(filename, snippet)
 	if err != nil {
