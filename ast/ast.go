@@ -88,7 +88,7 @@ func (n *NodeBase) Loc() *LocationRange {
 	return &n.LocRange
 }
 
-// OpenFodderPtr returns a NodeBase's opening fodder.
+// OpenFodder returns a NodeBase's opening fodder.
 func (n *NodeBase) OpenFodder() *Fodder {
 	return &n.Fodder
 }
