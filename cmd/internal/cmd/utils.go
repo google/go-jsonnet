@@ -165,9 +165,9 @@ func StopCPUProfile() {
 	}
 }
 
-// HandleMemProfile creates a memory profile if requested by environment
+// MemProfile creates a memory profile if requested by environment
 // variable.
-func HandleMemProfile() {
+func MemProfile() {
 	var memprofile = os.Getenv("JSONNET_MEM_PROFILE")
 	if memprofile != "" {
 		f, err := os.Create(memprofile)

@@ -461,7 +461,7 @@ func main() {
 		output, err = vm.EvaluateSnippet(filename, input)
 	}
 
-	cmd.HandleMemProfile()
+	cmd.MemProfile()
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())

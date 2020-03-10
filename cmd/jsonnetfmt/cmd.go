@@ -248,7 +248,7 @@ func main() {
 			}
 			input := cmd.SafeReadInput(config.filenameIsCode, &inputFile)
 			output, err := formatter.Format(inputFile, input, config.options)
-			cmd.HandleMemProfile()
+			cmd.MemProfile()
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err.Error())
 				os.Exit(1)
@@ -275,7 +275,7 @@ func main() {
 		inputFile := config.inputFiles[0]
 		input := cmd.SafeReadInput(config.filenameIsCode, &inputFile)
 		output, err := formatter.Format(inputFile, input, config.options)
-		cmd.HandleMemProfile()
+		cmd.MemProfile()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			os.Exit(1)
