@@ -24,7 +24,7 @@ import (
 	"github.com/fatih/color"
 
 	"github.com/google/go-jsonnet"
-	"github.com/google/go-jsonnet/cmd"
+	"github.com/google/go-jsonnet/cmd/internal/cmd"
 	"github.com/google/go-jsonnet/internal/formatter"
 )
 

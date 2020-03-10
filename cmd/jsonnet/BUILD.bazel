@@ -7,7 +7,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//:go_default_library",
-        "//cmd:go_default_library",
+        "//cmd/internal/cmd:go_default_library",
         "@com_github_fatih_color//:go_default_library",
     ],
 )
