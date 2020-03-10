@@ -64,7 +64,7 @@ func (c *FixTrailingCommas) removeComma(lastCommaFodder *ast.Fodder, trailingCom
 }
 
 // Array handles that type of node
-func (c *FixTrailingCommas) Array(p pass.CompilerPass, node *ast.Array, ctx pass.Context) {
+func (c *FixTrailingCommas) Array(p pass.ASTPass, node *ast.Array, ctx pass.Context) {
 	if len(node.Elements) == 0 {
 		// No comma present and none can be added.
 		return
@@ -74,13 +74,13 @@ func (c *FixTrailingCommas) Array(p pass.CompilerPass, node *ast.Array, ctx pass
 }
 
 // ArrayComp handles that type of node
-func (c *FixTrailingCommas) ArrayComp(p pass.CompilerPass, node *ast.ArrayComp, ctx pass.Context) {
+func (c *FixTrailingCommas) ArrayComp(p pass.ASTPass, node *ast.ArrayComp, ctx pass.Context) {
 	c.removeComma(&node.TrailingCommaFodder, &node.TrailingComma, &node.Spec.ForFodder)
 	c.Base.ArrayComp(p, node, ctx)
 }
 
 // Object handles that type of node
-func (c *FixTrailingCommas) Object(p pass.CompilerPass, node *ast.Object, ctx pass.Context) {
+func (c *FixTrailingCommas) Object(p pass.ASTPass, node *ast.Object, ctx pass.Context) {
 	if len(node.Fields) == 0 {
 		// No comma present and none can be added.
 		return
@@ -90,7 +90,7 @@ func (c *FixTrailingCommas) Object(p pass.CompilerPass, node *ast.Object, ctx pa
 }
 
 // ObjectComp handles that type of node
-func (c *FixTrailingCommas) ObjectComp(p pass.CompilerPass, node *ast.ObjectComp, ctx pass.Context) {
+func (c *FixTrailingCommas) ObjectComp(p pass.ASTPass, node *ast.ObjectComp, ctx pass.Context) {
 	c.removeComma(&node.Fields[len(node.Fields)-1].CommaFodder, &node.TrailingComma, &node.Spec.ForFodder)
 	c.Base.ObjectComp(p, node, ctx)
 }

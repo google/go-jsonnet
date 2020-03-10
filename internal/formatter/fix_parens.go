@@ -27,7 +27,7 @@ type FixParens struct {
 }
 
 // Parens handles that type of node
-func (c *FixParens) Parens(p pass.CompilerPass, node *ast.Parens, ctx pass.Context) {
+func (c *FixParens) Parens(p pass.ASTPass, node *ast.Parens, ctx pass.Context) {
 	innerParens, ok := node.Inner.(*ast.Parens)
 	if ok {
 		node.Inner = innerParens.Inner

@@ -41,7 +41,7 @@ type FixNewlines struct {
 }
 
 // Array handles this type of node
-func (c *FixNewlines) Array(p pass.CompilerPass, array *ast.Array, ctx pass.Context) {
+func (c *FixNewlines) Array(p pass.ASTPass, array *ast.Array, ctx pass.Context) {
 	shouldExpand := false
 	for _, element := range array.Elements {
 		if ast.FodderCountNewlines(*openFodder(element.Expr)) > 0 {
@@ -70,7 +70,7 @@ func objectFieldOpenFodder(field *ast.ObjectField) *ast.Fodder {
 }
 
 // Object handles this type of node
-func (c *FixNewlines) Object(p pass.CompilerPass, object *ast.Object, ctx pass.Context) {
+func (c *FixNewlines) Object(p pass.ASTPass, object *ast.Object, ctx pass.Context) {
 	shouldExpand := false
 	for _, field := range object.Fields {
 		if ast.FodderCountNewlines(*objectFieldOpenFodder(&field)) > 0 {
@@ -91,7 +91,7 @@ func (c *FixNewlines) Object(p pass.CompilerPass, object *ast.Object, ctx pass.C
 }
 
 // Local handles this type of node
-func (c *FixNewlines) Local(p pass.CompilerPass, local *ast.Local, ctx pass.Context) {
+func (c *FixNewlines) Local(p pass.ASTPass, local *ast.Local, ctx pass.Context) {
 	shouldExpand := false
 	for _, bind := range local.Binds {
 		if ast.FodderCountNewlines(bind.VarFodder) > 0 {
@@ -135,7 +135,7 @@ func ensureSpecExpanded(spec *ast.ForSpec) {
 }
 
 // ArrayComp handles this type of node
-func (c *FixNewlines) ArrayComp(p pass.CompilerPass, arrayComp *ast.ArrayComp, ctx pass.Context) {
+func (c *FixNewlines) ArrayComp(p pass.ASTPass, arrayComp *ast.ArrayComp, ctx pass.Context) {
 	shouldExpand := false
 	if ast.FodderCountNewlines(*openFodder(arrayComp.Body)) > 0 {
 		shouldExpand = true
@@ -155,7 +155,7 @@ func (c *FixNewlines) ArrayComp(p pass.CompilerPass, arrayComp *ast.ArrayComp, c
 }
 
 // ObjectComp handles this type of node
-func (c *FixNewlines) ObjectComp(p pass.CompilerPass, objectComp *ast.ObjectComp, ctx pass.Context) {
+func (c *FixNewlines) ObjectComp(p pass.ASTPass, objectComp *ast.ObjectComp, ctx pass.Context) {
 	shouldExpand := false
 	for _, field := range objectComp.Fields {
 		if ast.FodderCountNewlines(*objectFieldOpenFodder(&field)) > 0 {
@@ -180,7 +180,7 @@ func (c *FixNewlines) ObjectComp(p pass.CompilerPass, objectComp *ast.ObjectComp
 }
 
 // Parens handles this type of node
-func (c *FixNewlines) Parens(p pass.CompilerPass, parens *ast.Parens, ctx pass.Context) {
+func (c *FixNewlines) Parens(p pass.ASTPass, parens *ast.Parens, ctx pass.Context) {
 	shouldExpand := false
 	if ast.FodderCountNewlines(*openFodder(parens.Inner)) > 0 {
 		shouldExpand = true
@@ -210,7 +210,7 @@ func (c *FixNewlines) Parens(p pass.CompilerPass, parens *ast.Parens, ctx pass.C
 //   foo(
 //       1, 2, 3
 //   )
-func (c *FixNewlines) Parameters(p pass.CompilerPass, l *ast.Fodder, params *[]ast.Parameter, r *ast.Fodder, ctx pass.Context) {
+func (c *FixNewlines) Parameters(p pass.ASTPass, l *ast.Fodder, params *[]ast.Parameter, r *ast.Fodder, ctx pass.Context) {
 	shouldExpandBetween := false
 	shouldExpandNearParens := false
 	first := true
@@ -256,7 +256,7 @@ func (c *FixNewlines) Parameters(p pass.CompilerPass, l *ast.Fodder, params *[]a
 //   foo(
 //       1, 2, 3
 //   )
-func (c *FixNewlines) Arguments(p pass.CompilerPass, l *ast.Fodder, args *ast.Arguments, r *ast.Fodder, ctx pass.Context) {
+func (c *FixNewlines) Arguments(p pass.ASTPass, l *ast.Fodder, args *ast.Arguments, r *ast.Fodder, ctx pass.Context) {
 	shouldExpandBetween := false
 	shouldExpandNearParens := false
 	first := true

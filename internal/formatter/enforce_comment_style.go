@@ -30,7 +30,7 @@ type EnforceCommentStyle struct {
 }
 
 // FodderElement implements this pass.
-func (c *EnforceCommentStyle) FodderElement(p pass.CompilerPass, element *ast.FodderElement, ctx pass.Context) {
+func (c *EnforceCommentStyle) FodderElement(p pass.ASTPass, element *ast.FodderElement, ctx pass.Context) {
 	if element.Kind != ast.FodderInterstitial {
 		if len(element.Comment) == 1 {
 			comment := &element.Comment[0]

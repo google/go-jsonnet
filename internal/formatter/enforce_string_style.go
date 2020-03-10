@@ -29,7 +29,7 @@ type EnforceStringStyle struct {
 }
 
 // LiteralString implements this pass.
-func (c *EnforceStringStyle) LiteralString(p pass.CompilerPass, lit *ast.LiteralString, ctx pass.Context) {
+func (c *EnforceStringStyle) LiteralString(p pass.ASTPass, lit *ast.LiteralString, ctx pass.Context) {
 	if lit.Kind == ast.StringBlock {
 		return
 	}

@@ -27,7 +27,7 @@ type FixPlusObject struct {
 }
 
 // Visit replaces e + { ... } with an ApplyBrace in some situations.
-func (c *FixPlusObject) Visit(p pass.CompilerPass, node *ast.Node, ctx pass.Context) {
+func (c *FixPlusObject) Visit(p pass.ASTPass, node *ast.Node, ctx pass.Context) {
 	binary, ok := (*node).(*ast.Binary)
 	if ok {
 		// Could relax this to allow more ASTs on the LHS but this seems OK for now.

@@ -28,7 +28,7 @@ type PrettyFieldNames struct {
 }
 
 // Index prettifies the definitions.
-func (c *PrettyFieldNames) Index(p pass.CompilerPass, index *ast.Index, ctx pass.Context) {
+func (c *PrettyFieldNames) Index(p pass.ASTPass, index *ast.Index, ctx pass.Context) {
 	if index.Index != nil {
 		// Maybe we can use an id instead.
 		lit, ok := index.Index.(*ast.LiteralString)
@@ -45,7 +45,7 @@ func (c *PrettyFieldNames) Index(p pass.CompilerPass, index *ast.Index, ctx pass
 }
 
 // ObjectField prettifies the definitions.
-func (c *PrettyFieldNames) ObjectField(p pass.CompilerPass, field *ast.ObjectField, ctx pass.Context) {
+func (c *PrettyFieldNames) ObjectField(p pass.ASTPass, field *ast.ObjectField, ctx pass.Context) {
 	if field.Kind == ast.ObjectFieldExpr {
 		// First try ["foo"] -> "foo".
 		lit, ok := field.Expr1.(*ast.LiteralString)

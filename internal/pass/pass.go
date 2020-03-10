@@ -23,48 +23,48 @@ import (
 // Context can be used to provide context when visting child expressions.
 type Context interface{}
 
-// CompilerPass is an interface for a pass that transforms the AST in some way.
-type CompilerPass interface {
-	FodderElement(CompilerPass, *ast.FodderElement, Context)
-	Fodder(CompilerPass, *ast.Fodder, Context)
-	ForSpec(CompilerPass, *ast.ForSpec, Context)
-	Parameters(CompilerPass, *ast.Fodder, *[]ast.Parameter, *ast.Fodder, Context)
-	Arguments(CompilerPass, *ast.Fodder, *ast.Arguments, *ast.Fodder, Context)
-	FieldParams(CompilerPass, *ast.ObjectField, Context)
-	ObjectField(CompilerPass, *ast.ObjectField, Context)
-	ObjectFields(CompilerPass, *ast.ObjectFields, Context)
+// ASTPass is an interface for a pass that transforms the AST in some way.
+type ASTPass interface {
+	FodderElement(ASTPass, *ast.FodderElement, Context)
+	Fodder(ASTPass, *ast.Fodder, Context)
+	ForSpec(ASTPass, *ast.ForSpec, Context)
+	Parameters(ASTPass, *ast.Fodder, *[]ast.Parameter, *ast.Fodder, Context)
+	Arguments(ASTPass, *ast.Fodder, *ast.Arguments, *ast.Fodder, Context)
+	FieldParams(ASTPass, *ast.ObjectField, Context)
+	ObjectField(ASTPass, *ast.ObjectField, Context)
+	ObjectFields(ASTPass, *ast.ObjectFields, Context)
 
-	Apply(CompilerPass, *ast.Apply, Context)
-	ApplyBrace(CompilerPass, *ast.ApplyBrace, Context)
-	Array(CompilerPass, *ast.Array, Context)
-	ArrayComp(CompilerPass, *ast.ArrayComp, Context)
-	Assert(CompilerPass, *ast.Assert, Context)
-	Binary(CompilerPass, *ast.Binary, Context)
-	Conditional(CompilerPass, *ast.Conditional, Context)
-	Dollar(CompilerPass, *ast.Dollar, Context)
-	Error(CompilerPass, *ast.Error, Context)
-	Function(CompilerPass, *ast.Function, Context)
-	Import(CompilerPass, *ast.Import, Context)
-	ImportStr(CompilerPass, *ast.ImportStr, Context)
-	Index(CompilerPass, *ast.Index, Context)
-	Slice(CompilerPass, *ast.Slice, Context)
-	Local(CompilerPass, *ast.Local, Context)
-	LiteralBoolean(CompilerPass, *ast.LiteralBoolean, Context)
-	LiteralNull(CompilerPass, *ast.LiteralNull, Context)
-	LiteralNumber(CompilerPass, *ast.LiteralNumber, Context)
-	LiteralString(CompilerPass, *ast.LiteralString, Context)
-	Object(CompilerPass, *ast.Object, Context)
-	ObjectComp(CompilerPass, *ast.ObjectComp, Context)
-	Parens(CompilerPass, *ast.Parens, Context)
-	Self(CompilerPass, *ast.Self, Context)
-	SuperIndex(CompilerPass, *ast.SuperIndex, Context)
-	InSuper(CompilerPass, *ast.InSuper, Context)
-	Unary(CompilerPass, *ast.Unary, Context)
-	Var(CompilerPass, *ast.Var, Context)
+	Apply(ASTPass, *ast.Apply, Context)
+	ApplyBrace(ASTPass, *ast.ApplyBrace, Context)
+	Array(ASTPass, *ast.Array, Context)
+	ArrayComp(ASTPass, *ast.ArrayComp, Context)
+	Assert(ASTPass, *ast.Assert, Context)
+	Binary(ASTPass, *ast.Binary, Context)
+	Conditional(ASTPass, *ast.Conditional, Context)
+	Dollar(ASTPass, *ast.Dollar, Context)
+	Error(ASTPass, *ast.Error, Context)
+	Function(ASTPass, *ast.Function, Context)
+	Import(ASTPass, *ast.Import, Context)
+	ImportStr(ASTPass, *ast.ImportStr, Context)
+	Index(ASTPass, *ast.Index, Context)
+	Slice(ASTPass, *ast.Slice, Context)
+	Local(ASTPass, *ast.Local, Context)
+	LiteralBoolean(ASTPass, *ast.LiteralBoolean, Context)
+	LiteralNull(ASTPass, *ast.LiteralNull, Context)
+	LiteralNumber(ASTPass, *ast.LiteralNumber, Context)
+	LiteralString(ASTPass, *ast.LiteralString, Context)
+	Object(ASTPass, *ast.Object, Context)
+	ObjectComp(ASTPass, *ast.ObjectComp, Context)
+	Parens(ASTPass, *ast.Parens, Context)
+	Self(ASTPass, *ast.Self, Context)
+	SuperIndex(ASTPass, *ast.SuperIndex, Context)
+	InSuper(ASTPass, *ast.InSuper, Context)
+	Unary(ASTPass, *ast.Unary, Context)
+	Var(ASTPass, *ast.Var, Context)
 
-	Visit(CompilerPass, *ast.Node, Context)
-	BaseContext(CompilerPass) Context
-	File(CompilerPass, *ast.Node, *ast.Fodder)
+	Visit(ASTPass, *ast.Node, Context)
+	BaseContext(ASTPass) Context
+	File(ASTPass, *ast.Node, *ast.Fodder)
 }
 
 // Base implements basic traversal so other passes can extend it.
@@ -72,18 +72,18 @@ type Base struct {
 }
 
 // FodderElement cannot descend any further
-func (*Base) FodderElement(p CompilerPass, element *ast.FodderElement, ctx Context) {
+func (*Base) FodderElement(p ASTPass, element *ast.FodderElement, ctx Context) {
 }
 
 // Fodder traverses fodder
-func (*Base) Fodder(p CompilerPass, fodder *ast.Fodder, ctx Context) {
+func (*Base) Fodder(p ASTPass, fodder *ast.Fodder, ctx Context) {
 	for i := range *fodder {
 		p.FodderElement(p, &(*fodder)[i], ctx)
 	}
 }
 
 // ForSpec traverses a ForSpec
-func (*Base) ForSpec(p CompilerPass, forSpec *ast.ForSpec, ctx Context) {
+func (*Base) ForSpec(p ASTPass, forSpec *ast.ForSpec, ctx Context) {
 	if forSpec.Outer != nil {
 		p.ForSpec(p, forSpec.Outer, ctx)
 	}
@@ -99,7 +99,7 @@ func (*Base) ForSpec(p CompilerPass, forSpec *ast.ForSpec, ctx Context) {
 }
 
 // Parameters traverses the list of parameters
-func (*Base) Parameters(p CompilerPass, l *ast.Fodder, params *[]ast.Parameter, r *ast.Fodder, ctx Context) {
+func (*Base) Parameters(p ASTPass, l *ast.Fodder, params *[]ast.Parameter, r *ast.Fodder, ctx Context) {
 	p.Fodder(p, l, ctx)
 	for i := range *params {
 		param := &(*params)[i]
@@ -114,7 +114,7 @@ func (*Base) Parameters(p CompilerPass, l *ast.Fodder, params *[]ast.Parameter, 
 }
 
 // Arguments traverses the list of arguments
-func (*Base) Arguments(p CompilerPass, l *ast.Fodder, args *ast.Arguments, r *ast.Fodder, ctx Context) {
+func (*Base) Arguments(p ASTPass, l *ast.Fodder, args *ast.Arguments, r *ast.Fodder, ctx Context) {
 	p.Fodder(p, l, ctx)
 	for i := range args.Positional {
 		arg := &args.Positional[i]
@@ -132,7 +132,7 @@ func (*Base) Arguments(p CompilerPass, l *ast.Fodder, args *ast.Arguments, r *as
 }
 
 // FieldParams is factored out of ObjectField
-func (*Base) FieldParams(p CompilerPass, field *ast.ObjectField, ctx Context) {
+func (*Base) FieldParams(p ASTPass, field *ast.ObjectField, ctx Context) {
 	if field.Method != nil {
 		p.Parameters(
 			p,
@@ -144,7 +144,7 @@ func (*Base) FieldParams(p CompilerPass, field *ast.ObjectField, ctx Context) {
 }
 
 // ObjectField traverses a single field
-func (*Base) ObjectField(p CompilerPass, field *ast.ObjectField, ctx Context) {
+func (*Base) ObjectField(p ASTPass, field *ast.ObjectField, ctx Context) {
 	switch field.Kind {
 	case ast.ObjectLocal:
 		p.Fodder(p, &field.Fodder1, ctx)
@@ -186,14 +186,14 @@ func (*Base) ObjectField(p CompilerPass, field *ast.ObjectField, ctx Context) {
 }
 
 // ObjectFields traverses object fields
-func (*Base) ObjectFields(p CompilerPass, fields *ast.ObjectFields, ctx Context) {
+func (*Base) ObjectFields(p ASTPass, fields *ast.ObjectFields, ctx Context) {
 	for i := range *fields {
 		p.ObjectField(p, &(*fields)[i], ctx)
 	}
 }
 
 // Apply traverses that kind of node
-func (*Base) Apply(p CompilerPass, node *ast.Apply, ctx Context) {
+func (*Base) Apply(p ASTPass, node *ast.Apply, ctx Context) {
 	p.Visit(p, &node.Target, ctx)
 	p.Arguments(p, &node.FodderLeft, &node.Arguments, &node.FodderRight, ctx)
 	if node.TailStrict {
@@ -202,13 +202,13 @@ func (*Base) Apply(p CompilerPass, node *ast.Apply, ctx Context) {
 }
 
 // ApplyBrace traverses that kind of node
-func (*Base) ApplyBrace(p CompilerPass, node *ast.ApplyBrace, ctx Context) {
+func (*Base) ApplyBrace(p ASTPass, node *ast.ApplyBrace, ctx Context) {
 	p.Visit(p, &node.Left, ctx)
 	p.Visit(p, &node.Right, ctx)
 }
 
 // Array traverses that kind of node
-func (*Base) Array(p CompilerPass, node *ast.Array, ctx Context) {
+func (*Base) Array(p ASTPass, node *ast.Array, ctx Context) {
 	for i := range node.Elements {
 		p.Visit(p, &node.Elements[i].Expr, ctx)
 		p.Fodder(p, &node.Elements[i].CommaFodder, ctx)
@@ -217,7 +217,7 @@ func (*Base) Array(p CompilerPass, node *ast.Array, ctx Context) {
 }
 
 // ArrayComp traverses that kind of node
-func (*Base) ArrayComp(p CompilerPass, node *ast.ArrayComp, ctx Context) {
+func (*Base) ArrayComp(p ASTPass, node *ast.ArrayComp, ctx Context) {
 	p.Visit(p, &node.Body, ctx)
 	p.Fodder(p, &node.TrailingCommaFodder, ctx)
 	p.ForSpec(p, &node.Spec, ctx)
@@ -225,7 +225,7 @@ func (*Base) ArrayComp(p CompilerPass, node *ast.ArrayComp, ctx Context) {
 }
 
 // Assert traverses that kind of node
-func (*Base) Assert(p CompilerPass, node *ast.Assert, ctx Context) {
+func (*Base) Assert(p ASTPass, node *ast.Assert, ctx Context) {
 	p.Visit(p, &node.Cond, ctx)
 	if node.Message != nil {
 		p.Fodder(p, &node.ColonFodder, ctx)
@@ -236,14 +236,14 @@ func (*Base) Assert(p CompilerPass, node *ast.Assert, ctx Context) {
 }
 
 // Binary traverses that kind of node
-func (*Base) Binary(p CompilerPass, node *ast.Binary, ctx Context) {
+func (*Base) Binary(p ASTPass, node *ast.Binary, ctx Context) {
 	p.Visit(p, &node.Left, ctx)
 	p.Fodder(p, &node.OpFodder, ctx)
 	p.Visit(p, &node.Right, ctx)
 }
 
 // Conditional traverses that kind of node
-func (*Base) Conditional(p CompilerPass, node *ast.Conditional, ctx Context) {
+func (*Base) Conditional(p ASTPass, node *ast.Conditional, ctx Context) {
 	p.Visit(p, &node.Cond, ctx)
 	p.Fodder(p, &node.ThenFodder, ctx)
 	p.Visit(p, &node.BranchTrue, ctx)
@@ -254,34 +254,34 @@ func (*Base) Conditional(p CompilerPass, node *ast.Conditional, ctx Context) {
 }
 
 // Dollar cannot descend any further
-func (*Base) Dollar(p CompilerPass, node *ast.Dollar, ctx Context) {
+func (*Base) Dollar(p ASTPass, node *ast.Dollar, ctx Context) {
 }
 
 // Error traverses that kind of node
-func (*Base) Error(p CompilerPass, node *ast.Error, ctx Context) {
+func (*Base) Error(p ASTPass, node *ast.Error, ctx Context) {
 	p.Visit(p, &node.Expr, ctx)
 }
 
 // Function traverses that kind of node
-func (*Base) Function(p CompilerPass, node *ast.Function, ctx Context) {
+func (*Base) Function(p ASTPass, node *ast.Function, ctx Context) {
 	p.Parameters(p, &node.ParenLeftFodder, &node.Parameters, &node.ParenRightFodder, ctx)
 	p.Visit(p, &node.Body, ctx)
 }
 
 // Import traverses that kind of node
-func (*Base) Import(p CompilerPass, node *ast.Import, ctx Context) {
+func (*Base) Import(p ASTPass, node *ast.Import, ctx Context) {
 	p.Fodder(p, &node.File.Fodder, ctx)
 	p.LiteralString(p, node.File, ctx)
 }
 
 // ImportStr traverses that kind of node
-func (*Base) ImportStr(p CompilerPass, node *ast.ImportStr, ctx Context) {
+func (*Base) ImportStr(p ASTPass, node *ast.ImportStr, ctx Context) {
 	p.Fodder(p, &node.File.Fodder, ctx)
 	p.LiteralString(p, node.File, ctx)
 }
 
 // Index traverses that kind of node
-func (*Base) Index(p CompilerPass, node *ast.Index, ctx Context) {
+func (*Base) Index(p ASTPass, node *ast.Index, ctx Context) {
 	p.Visit(p, &node.Target, ctx)
 	p.Fodder(p, &node.LeftBracketFodder, ctx)
 	if node.Id == nil {
@@ -291,28 +291,28 @@ func (*Base) Index(p CompilerPass, node *ast.Index, ctx Context) {
 }
 
 // InSuper traverses that kind of node
-func (*Base) InSuper(p CompilerPass, node *ast.InSuper, ctx Context) {
+func (*Base) InSuper(p ASTPass, node *ast.InSuper, ctx Context) {
 	p.Visit(p, &node.Index, ctx)
 }
 
 // LiteralBoolean cannot descend any further
-func (*Base) LiteralBoolean(p CompilerPass, node *ast.LiteralBoolean, ctx Context) {
+func (*Base) LiteralBoolean(p ASTPass, node *ast.LiteralBoolean, ctx Context) {
 }
 
 // LiteralNull cannot descend any further
-func (*Base) LiteralNull(p CompilerPass, node *ast.LiteralNull, ctx Context) {
+func (*Base) LiteralNull(p ASTPass, node *ast.LiteralNull, ctx Context) {
 }
 
 // LiteralNumber cannot descend any further
-func (*Base) LiteralNumber(p CompilerPass, node *ast.LiteralNumber, ctx Context) {
+func (*Base) LiteralNumber(p ASTPass, node *ast.LiteralNumber, ctx Context) {
 }
 
 // LiteralString cannot descend any further
-func (*Base) LiteralString(p CompilerPass, node *ast.LiteralString, ctx Context) {
+func (*Base) LiteralString(p ASTPass, node *ast.LiteralString, ctx Context) {
 }
 
 // Local traverses that kind of node
-func (*Base) Local(p CompilerPass, node *ast.Local, ctx Context) {
+func (*Base) Local(p ASTPass, node *ast.Local, ctx Context) {
 	for i := range node.Binds {
 		bind := &node.Binds[i]
 		p.Fodder(p, &bind.VarFodder, ctx)
@@ -327,30 +327,30 @@ func (*Base) Local(p CompilerPass, node *ast.Local, ctx Context) {
 }
 
 // Object traverses that kind of node
-func (*Base) Object(p CompilerPass, node *ast.Object, ctx Context) {
+func (*Base) Object(p ASTPass, node *ast.Object, ctx Context) {
 	p.ObjectFields(p, &node.Fields, ctx)
 	p.Fodder(p, &node.CloseFodder, ctx)
 }
 
 // ObjectComp traverses that kind of node
-func (*Base) ObjectComp(p CompilerPass, node *ast.ObjectComp, ctx Context) {
+func (*Base) ObjectComp(p ASTPass, node *ast.ObjectComp, ctx Context) {
 	p.ObjectFields(p, &node.Fields, ctx)
 	p.ForSpec(p, &node.Spec, ctx)
 	p.Fodder(p, &node.CloseFodder, ctx)
 }
 
 // Parens traverses that kind of node
-func (*Base) Parens(p CompilerPass, node *ast.Parens, ctx Context) {
+func (*Base) Parens(p ASTPass, node *ast.Parens, ctx Context) {
 	p.Visit(p, &node.Inner, ctx)
 	p.Fodder(p, &node.CloseFodder, ctx)
 }
 
 // Self cannot descend any further
-func (*Base) Self(p CompilerPass, node *ast.Self, ctx Context) {
+func (*Base) Self(p ASTPass, node *ast.Self, ctx Context) {
 }
 
 // Slice traverses that kind of node
-func (*Base) Slice(p CompilerPass, node *ast.Slice, ctx Context) {
+func (*Base) Slice(p ASTPass, node *ast.Slice, ctx Context) {
 	p.Visit(p, &node.Target, ctx)
 	p.Fodder(p, &node.LeftBracketFodder, ctx)
 	if node.BeginIndex != nil {
@@ -368,7 +368,7 @@ func (*Base) Slice(p CompilerPass, node *ast.Slice, ctx Context) {
 }
 
 // SuperIndex traverses that kind of node
-func (*Base) SuperIndex(p CompilerPass, node *ast.SuperIndex, ctx Context) {
+func (*Base) SuperIndex(p ASTPass, node *ast.SuperIndex, ctx Context) {
 	p.Fodder(p, &node.DotFodder, ctx)
 	if node.Id == nil {
 		p.Visit(p, &node.Index, ctx)
@@ -377,16 +377,16 @@ func (*Base) SuperIndex(p CompilerPass, node *ast.SuperIndex, ctx Context) {
 }
 
 // Unary traverses that kind of node
-func (*Base) Unary(p CompilerPass, node *ast.Unary, ctx Context) {
+func (*Base) Unary(p ASTPass, node *ast.Unary, ctx Context) {
 	p.Visit(p, &node.Expr, ctx)
 }
 
 // Var cannot descend any further
-func (*Base) Var(p CompilerPass, node *ast.Var, ctx Context) {
+func (*Base) Var(p ASTPass, node *ast.Var, ctx Context) {
 }
 
 // Visit traverses into an arbitrary node type
-func (*Base) Visit(p CompilerPass, node *ast.Node, ctx Context) {
+func (*Base) Visit(p ASTPass, node *ast.Node, ctx Context) {
 
 	f := (*node).OpenFodder()
 	p.Fodder(p, &f, ctx)
@@ -451,12 +451,12 @@ func (*Base) Visit(p CompilerPass, node *ast.Node, ctx Context) {
 }
 
 // BaseContext just returns nil.
-func (*Base) BaseContext(CompilerPass) Context {
+func (*Base) BaseContext(ASTPass) Context {
 	return nil
 }
 
 // File processes a whole Jsonnet file
-func (*Base) File(p CompilerPass, node *ast.Node, finalFodder *ast.Fodder) {
+func (*Base) File(p ASTPass, node *ast.Node, finalFodder *ast.Fodder) {
 	ctx := p.BaseContext(p)
 	p.Visit(p, node, ctx)
 	p.Fodder(p, finalFodder, ctx)

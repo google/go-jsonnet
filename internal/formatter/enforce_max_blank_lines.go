@@ -29,7 +29,7 @@ type EnforceMaxBlankLines struct {
 }
 
 // FodderElement implements this pass.
-func (c *EnforceMaxBlankLines) FodderElement(p pass.CompilerPass, element *ast.FodderElement, ctx pass.Context) {
+func (c *EnforceMaxBlankLines) FodderElement(p pass.ASTPass, element *ast.FodderElement, ctx pass.Context) {
 	if element.Kind != ast.FodderInterstitial {
 		if element.Blanks > c.Options.MaxBlankLines {
 			element.Blanks = c.Options.MaxBlankLines

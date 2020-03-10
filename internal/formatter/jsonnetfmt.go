@@ -129,7 +129,7 @@ func removeInitialNewlines(node ast.Node) {
 	}
 }
 
-func visitFile(p pass.CompilerPass, node *ast.Node, finalFodder *ast.Fodder) {
+func visitFile(p pass.ASTPass, node *ast.Node, finalFodder *ast.Fodder) {
 	p.File(p, node, finalFodder)
 }
 

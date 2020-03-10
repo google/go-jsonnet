@@ -28,7 +28,7 @@ type NoRedundantSliceColon struct {
 }
 
 // Slice implements this pass.
-func (c *NoRedundantSliceColon) Slice(p pass.CompilerPass, slice *ast.Slice, ctx pass.Context) {
+func (c *NoRedundantSliceColon) Slice(p pass.ASTPass, slice *ast.Slice, ctx pass.Context) {
 	if slice.Step == nil {
 		if len(slice.StepColonFodder) > 0 {
 			ast.FodderMoveFront(&slice.RightBracketFodder, &slice.StepColonFodder)

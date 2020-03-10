@@ -27,7 +27,7 @@ type StripComments struct {
 }
 
 // Fodder implements this pass.
-func (c *StripComments) Fodder(p pass.CompilerPass, fodder *ast.Fodder, ctx pass.Context) {
+func (c *StripComments) Fodder(p pass.ASTPass, fodder *ast.Fodder, ctx pass.Context) {
 	newFodder := make(ast.Fodder, 0)
 	for _, el := range *fodder {
 		if el.Kind == ast.FodderLineEnd {
@@ -45,7 +45,7 @@ type StripEverything struct {
 }
 
 // Fodder implements this pass.
-func (c *StripEverything) Fodder(p pass.CompilerPass, fodder *ast.Fodder, ctx pass.Context) {
+func (c *StripEverything) Fodder(p pass.ASTPass, fodder *ast.Fodder, ctx pass.Context) {
 	*fodder = nil
 }
 
@@ -56,7 +56,7 @@ type StripAllButComments struct {
 }
 
 // Fodder remembers all the fodder in c.comments
-func (c *StripAllButComments) Fodder(p pass.CompilerPass, fodder *ast.Fodder, ctx pass.Context) {
+func (c *StripAllButComments) Fodder(p pass.ASTPass, fodder *ast.Fodder, ctx pass.Context) {
 	for _, el := range *fodder {
 		if el.Kind == ast.FodderParagraph {
 			c.comments = append(c.comments, ast.FodderElement{
@@ -74,7 +74,7 @@ func (c *StripAllButComments) Fodder(p pass.CompilerPass, fodder *ast.Fodder, ct
 }
 
 // File replaces the entire file with the remembered comments.
-func (c *StripAllButComments) File(p pass.CompilerPass, node *ast.Node, finalFodder *ast.Fodder) {
+func (c *StripAllButComments) File(p pass.ASTPass, node *ast.Node, finalFodder *ast.Fodder) {
 	c.Base.File(p, node, finalFodder)
 	*node = &ast.LiteralNull{
 		NodeBase: ast.NodeBase{
