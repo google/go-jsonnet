@@ -21,10 +21,11 @@ fi
 export IMPLEMENTATION=golang
 
 go build ./cmd/jsonnet
+go build ./cmd/jsonnetfmt
 
 export DISABLE_LIB_TESTS=true
-export DISABLE_FMT_TESTS=true
 export DISABLE_ERROR_TESTS=true
+export JSONNETFMT_BIN="$PWD/jsonnetfmt"
 export JSONNET_BIN="$PWD/jsonnet"
 
 git submodule update --recursive cpp-jsonnet

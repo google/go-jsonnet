@@ -487,13 +487,13 @@ func TestIdentifiers(t *testing.T) {
 
 func TestCppComment(t *testing.T) {
 	SingleTest(t, "// hi", "", Tokens{
-		{kind: tokenEndOfFile, fodder: ast.Fodder{{Kind: ast.FodderLineEnd, Comment: []string{"// hi"}}}},
+		{kind: tokenEndOfFile, fodder: ast.Fodder{{Kind: ast.FodderParagraph, Comment: []string{"// hi"}}}},
 	})
 }
 
 func TestHashComment(t *testing.T) {
 	SingleTest(t, "# hi", "", Tokens{
-		{kind: tokenEndOfFile, fodder: ast.Fodder{{Kind: ast.FodderLineEnd, Comment: []string{"# hi"}}}},
+		{kind: tokenEndOfFile, fodder: ast.Fodder{{Kind: ast.FodderParagraph, Comment: []string{"# hi"}}}},
 	})
 }
 
@@ -526,7 +526,9 @@ func TestCCommentSpaceSlash(t *testing.T) {
 
 func TestCCommentManyLines(t *testing.T) {
 	SingleTest(t, "/*\n\n*/", "", Tokens{
-		{kind: tokenEndOfFile, fodder: ast.Fodder{{Kind: ast.FodderParagraph, Comment: []string{"/*", "", "*/"}}}},
+		{kind: tokenEndOfFile, fodder: ast.Fodder{
+			{Kind: ast.FodderLineEnd},
+			{Kind: ast.FodderParagraph, Comment: []string{"/*", "", "*/"}}}},
 	})
 }
 

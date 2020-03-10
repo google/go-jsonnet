@@ -43,6 +43,13 @@ type Node interface {
 	FreeVariables() Identifiers
 	SetFreeVariables(Identifiers)
 	SetContext(Context)
+	// OpenFodder returns the fodder before the first token of an AST node.
+	// Since every AST node has opening fodder, it is defined here.
+	// If the AST node is left recursive (e.g. BinaryOp) then it is ambiguous
+	// where the fodder should be stored.  This is resolved by storing it as
+	// far inside the tree as possible.  OpenFodder returns a pointer to allow
+	// the caller to modify the fodder.
+	OpenFodder() *Fodder
 }
 
 // Nodes represents a Node slice.
@@ -82,8 +89,8 @@ func (n *NodeBase) Loc() *LocationRange {
 }
 
 // OpenFodder returns a NodeBase's opening fodder.
-func (n *NodeBase) OpenFodder() Fodder {
-	return n.Fodder
+func (n *NodeBase) OpenFodder() *Fodder {
+	return &n.Fodder
 }
 
 // FreeVariables returns a NodeBase's freeVariables.
@@ -427,7 +434,7 @@ type Index struct {
 	LeftBracketFodder Fodder
 	Index             Node
 	// When Index is being used, this is the fodder before the ']'.
-	// When Id is being used, this is always empty.
+	// When Id is being used, this is the fodder before the id.
 	RightBracketFodder Fodder
 	//nolint: golint,stylecheck // keeping Id instead of ID for now to avoid breaking 3rd parties
 	Id *Identifier
@@ -523,9 +530,10 @@ func (k LiteralStringKind) FullyEscaped() bool {
 // LiteralString represents a JSON string
 type LiteralString struct {
 	NodeBase
-	Value       string
-	Kind        LiteralStringKind
-	BlockIndent string
+	Value           string
+	Kind            LiteralStringKind
+	BlockIndent     string
+	BlockTermIndent string
 }
 
 // ---------------------------------------------------------------------------
@@ -642,10 +650,11 @@ type DesugaredObject struct {
 //   { [e]: e for x in e for.. if... }.
 type ObjectComp struct {
 	NodeBase
-	Fields        ObjectFields
-	TrailingComma bool
-	Spec          ForSpec
-	CloseFodder   Fodder
+	Fields              ObjectFields
+	TrailingCommaFodder Fodder
+	TrailingComma       bool
+	Spec                ForSpec
+	CloseFodder         Fodder
 }
 
 // ---------------------------------------------------------------------------

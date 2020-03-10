@@ -7,7 +7,7 @@ import (
 
 // SnippetToAST converts a Jsonnet code snippet to a desugared and analyzed AST.
 func SnippetToAST(filename string, snippet string) (ast.Node, error) {
-	node, err := parser.SnippetToRawAST(filename, snippet)
+	node, _, err := parser.SnippetToRawAST(filename, snippet)
 	if err != nil {
 		return nil, err
 	}

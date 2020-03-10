@@ -834,10 +834,11 @@ func tokenStringToAst(tok *token) *ast.LiteralString {
 		}
 	case tokenStringBlock:
 		return &ast.LiteralString{
-			NodeBase:    ast.NewNodeBaseLoc(tok.loc, tok.fodder),
-			Value:       tok.data,
-			Kind:        ast.StringBlock,
-			BlockIndent: tok.stringBlockIndent,
+			NodeBase:        ast.NewNodeBaseLoc(tok.loc, tok.fodder),
+			Value:           tok.data,
+			Kind:            ast.StringBlock,
+			BlockIndent:     tok.stringBlockIndent,
+			BlockTermIndent: tok.stringBlockTermIndent,
 		}
 	case tokenVerbatimStringDouble:
 		return &ast.LiteralString{
@@ -1286,10 +1287,11 @@ func (p *parser) parse(prec precedence) (ast.Node, errors.StaticError) {
 				}
 				id := ast.Identifier(fieldID.data)
 				lhs = &ast.Index{
-					NodeBase:          ast.NewNodeBaseLoc(locFromTokens(begin, fieldID), ast.Fodder{}),
-					Target:            lhs,
-					LeftBracketFodder: op.fodder,
-					Id:                &id,
+					NodeBase:           ast.NewNodeBaseLoc(locFromTokens(begin, fieldID), ast.Fodder{}),
+					Target:             lhs,
+					LeftBracketFodder:  op.fodder,
+					Id:                 &id,
+					RightBracketFodder: fieldID.fodder,
 				}
 			case tokenParenL:
 				end, args, gotComma, err := p.parseArguments("function argument")
@@ -1352,28 +1354,31 @@ func (p *parser) parse(prec precedence) (ast.Node, errors.StaticError) {
 
 // ---------------------------------------------------------------------------
 
-// Parse parses a slice of tokens into a parse tree.
-func Parse(t Tokens) (ast.Node, errors.StaticError) {
+// Parse parses a slice of tokens into a parse tree.  Any fodder after the final token is
+// returned as well.
+func Parse(t Tokens) (ast.Node, ast.Fodder, errors.StaticError) {
 	p := makeParser(t)
 	expr, err := p.parse(maxPrecedence)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+	eof := p.peek()
 
-	if p.peek().kind != tokenEndOfFile {
-		return nil, errors.MakeStaticError(fmt.Sprintf("Did not expect: %v", p.peek()), p.peek().loc)
+	if eof.kind != tokenEndOfFile {
+		return nil, nil, errors.MakeStaticError(fmt.Sprintf("Did not expect: %v", eof), eof.loc)
 	}
 
 	addContext(expr, &topLevelContext, anonymous)
 
-	return expr, nil
+	return expr, eof.fodder, nil
 }
 
 // SnippetToRawAST converts a Jsonnet code snippet to an AST (without any transformations).
-func SnippetToRawAST(filename string, snippet string) (ast.Node, error) {
+// Any fodder after the final token is returned as well.
+func SnippetToRawAST(filename string, snippet string) (ast.Node, ast.Fodder, error) {
 	tokens, err := Lex(filename, snippet)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	return Parse(tokens)
 }

@@ -280,8 +280,7 @@ type lexer struct {
 	input    string // The input string
 	source   *ast.Source
 
-	pos  position // Current position in input
-	prev position // Previous position in input
+	pos position // Current position in input
 
 	tokens Tokens // The tokens that we've generated so far
 
@@ -302,7 +301,6 @@ func makeLexer(fn string, input string) *lexer {
 		input:         input,
 		source:        ast.BuildSource(input),
 		pos:           position{byteNo: 0, lineNo: 1, lineStart: 0},
-		prev:          position{byteNo: lexEOF, lineNo: 0, lineStart: 0},
 		tokenStartLoc: ast.Location{Line: 1, Column: 1},
 		freshLine:     true,
 	}
@@ -311,11 +309,9 @@ func makeLexer(fn string, input string) *lexer {
 // next returns the next rune in the input.
 func (l *lexer) next() rune {
 	if int(l.pos.byteNo) >= len(l.input) {
-		l.prev = l.pos
 		return lexEOF
 	}
 	r, w := utf8.DecodeRuneInString(l.input[l.pos.byteNo:])
-	l.prev = l.pos
 	l.pos.byteNo += w
 	if r == '\n' {
 		l.pos.lineStart = l.pos.byteNo
@@ -337,19 +333,11 @@ func (l *lexer) acceptN(n int) {
 
 // peek returns but does not consume the next rune in the input.
 func (l *lexer) peek() rune {
-	r := l.next()
-	l.backup()
-	return r
-}
-
-// backup steps back one rune. Can only be called once per call of next.
-// It also does not recover the previous value of freshLine.
-func (l *lexer) backup() {
-	if l.prev.byteNo == lexEOF {
-		panic("backup called with no valid previous rune")
+	if int(l.pos.byteNo) >= len(l.input) {
+		return lexEOF
 	}
-	l.pos = l.prev
-	l.prev = position{byteNo: lexEOF}
+	r, _ := utf8.DecodeRuneInString(l.input[l.pos.byteNo:])
+	return r
 }
 
 func locationFromPosition(pos position) ast.Location {
@@ -358,13 +346,6 @@ func locationFromPosition(pos position) ast.Location {
 
 func (l *lexer) location() ast.Location {
 	return locationFromPosition(l.pos)
-}
-
-func (l *lexer) prevLocation() ast.Location {
-	if l.prev.byteNo == lexEOF {
-		panic("prevLocation called with no valid previous rune")
-	}
-	return locationFromPosition(l.prev)
 }
 
 // Reset the current working token start to the current cursor position.  This
@@ -397,6 +378,11 @@ func (l *lexer) addFodder(kind ast.FodderKind, blanks int, indent int, comment [
 	l.fodder = append(l.fodder, elem)
 }
 
+func (l *lexer) addFodderSafe(kind ast.FodderKind, blanks int, indent int, comment []string) {
+	elem := ast.MakeFodderElement(kind, blanks, indent, comment)
+	ast.FodderAppend(&l.fodder, elem)
+}
+
 func (l *lexer) makeStaticErrorPoint(msg string, loc ast.Location) errors.StaticError {
 	return errors.MakeStaticError(msg, ast.MakeLocationRange(l.fileName, l.source, loc, loc))
 }
@@ -405,10 +391,11 @@ func (l *lexer) makeStaticErrorPoint(msg string, loc ast.Location) errors.Static
 // spaces after last \n.  It also converts \t to spaces.
 // The parameter 'r' is the rune that begins the whitespace.
 func (l *lexer) lexWhitespace() (int, int) {
-	r := l.next()
+	r := l.peek()
 	indent := 0
 	newLines := 0
-	for ; isWhitespace(r); r = l.next() {
+	for ; isWhitespace(r); r = l.peek() {
+		l.next()
 		switch r {
 		case '\r':
 			// Ignore.
@@ -428,7 +415,6 @@ func (l *lexer) lexWhitespace() (int, int) {
 			indent += 8
 		}
 	}
-	l.backup()
 	return newLines, indent
 }
 
@@ -438,13 +424,13 @@ func (l *lexer) lexUntilNewline() (string, int, int) {
 	// Compute 'text'.
 	var buf bytes.Buffer
 	lastNonSpace := 0
-	for r := l.next(); r != lexEOF && r != '\n'; r = l.next() {
+	for r := l.peek(); r != lexEOF && r != '\n'; r = l.peek() {
+		l.next()
 		buf.WriteRune(r)
 		if !isHorizontalWhitespace(r) {
 			lastNonSpace = buf.Len()
 		}
 	}
-	l.backup()
 	// Trim whitespace off the end.
 	buf.Truncate(lastNonSpace)
 	text := buf.String()
@@ -486,7 +472,7 @@ func (l *lexer) lexNumber() error {
 
 outerLoop:
 	for {
-		r := l.next()
+		r := l.peek()
 		switch state {
 		case numBegin:
 			switch {
@@ -525,7 +511,7 @@ outerLoop:
 			default:
 				return l.makeStaticErrorPoint(
 					fmt.Sprintf("Couldn't lex number, junk after decimal point: %v", strconv.QuoteRuneToASCII(r)),
-					l.prevLocation())
+					l.location())
 			}
 		case numAfterDigit:
 			switch {
@@ -545,7 +531,7 @@ outerLoop:
 			default:
 				return l.makeStaticErrorPoint(
 					fmt.Sprintf("Couldn't lex number, junk after 'E': %v", strconv.QuoteRuneToASCII(r)),
-					l.prevLocation())
+					l.location())
 			}
 		case numAfterExpSign:
 			if r >= '0' && r <= '9' {
@@ -553,7 +539,7 @@ outerLoop:
 			} else {
 				return l.makeStaticErrorPoint(
 					fmt.Sprintf("Couldn't lex number, junk after exponent sign: %v", strconv.QuoteRuneToASCII(r)),
-					l.prevLocation())
+					l.location())
 			}
 
 		case numAfterExpDigit:
@@ -563,80 +549,106 @@ outerLoop:
 				break outerLoop
 			}
 		}
+		l.next()
 	}
 
-	l.backup()
 	l.emitToken(tokenNumber)
 	return nil
 }
 
-// lexIdentifier will consume a identifer and emit a token.  It is assumed
-// that the next rune to be served by the lexer will be a leading digit.  This
-// may emit a keyword or an identifier.
+// getTokenKindFromID will return a keyword if the identifier string is
+// recognised as one, otherwise it will return tokenIdentifier.
+func getTokenKindFromID(str string) tokenKind {
+	switch str {
+	case "assert":
+		return tokenAssert
+	case "else":
+		return tokenElse
+	case "error":
+		return tokenError
+	case "false":
+		return tokenFalse
+	case "for":
+		return tokenFor
+	case "function":
+		return tokenFunction
+	case "if":
+		return tokenIf
+	case "import":
+		return tokenImport
+	case "importstr":
+		return tokenImportStr
+	case "in":
+		return tokenIn
+	case "local":
+		return tokenLocal
+	case "null":
+		return tokenNullLit
+	case "self":
+		return tokenSelf
+	case "super":
+		return tokenSuper
+	case "tailstrict":
+		return tokenTailStrict
+	case "then":
+		return tokenThen
+	case "true":
+		return tokenTrue
+	default:
+		// Not a keyword, assume it is an identifier
+		return tokenIdentifier
+	}
+}
+
+// IsValidIdentifier is true if the string could be a valid identifier.
+func IsValidIdentifier(str string) bool {
+	if len(str) == 0 {
+		return false
+	}
+	for i, r := range str {
+		if i == 0 {
+			if !isIdentifierFirst(r) {
+				return false
+			}
+		} else {
+			if !isIdentifier(r) {
+				return false
+			}
+		}
+	}
+	return getTokenKindFromID(str) == tokenIdentifier
+}
+
+// lexIdentifier will consume an identifer and emit a token.  It is assumed
+// that the next rune to be served by the lexer will not be a leading digit.
+// This may emit a keyword or an identifier.
 func (l *lexer) lexIdentifier() {
-	r := l.next()
+	r := l.peek()
 	if !isIdentifierFirst(r) {
 		panic("Unexpected character in lexIdentifier")
 	}
-	for ; r != lexEOF; r = l.next() {
+	for ; r != lexEOF; r = l.peek() {
 		if !isIdentifier(r) {
 			break
 		}
+		l.next()
 	}
-	l.backup()
-
-	switch l.input[l.tokenStart:l.pos.byteNo] {
-	case "assert":
-		l.emitToken(tokenAssert)
-	case "else":
-		l.emitToken(tokenElse)
-	case "error":
-		l.emitToken(tokenError)
-	case "false":
-		l.emitToken(tokenFalse)
-	case "for":
-		l.emitToken(tokenFor)
-	case "function":
-		l.emitToken(tokenFunction)
-	case "if":
-		l.emitToken(tokenIf)
-	case "import":
-		l.emitToken(tokenImport)
-	case "importstr":
-		l.emitToken(tokenImportStr)
-	case "in":
-		l.emitToken(tokenIn)
-	case "local":
-		l.emitToken(tokenLocal)
-	case "null":
-		l.emitToken(tokenNullLit)
-	case "self":
-		l.emitToken(tokenSelf)
-	case "super":
-		l.emitToken(tokenSuper)
-	case "tailstrict":
-		l.emitToken(tokenTailStrict)
-	case "then":
-		l.emitToken(tokenThen)
-	case "true":
-		l.emitToken(tokenTrue)
-	default:
-		// Not a keyword, assume it is an identifier
-		l.emitToken(tokenIdentifier)
-	}
+	l.emitToken(getTokenKindFromID(l.input[l.tokenStart:l.pos.byteNo]))
 }
 
 // lexSymbol will lex a token that starts with a symbol.  This could be a
 // C or C++ comment, block quote or an operator.  This function assumes that the next
 // rune to be served by the lexer will be the first rune of the new token.
 func (l *lexer) lexSymbol() error {
+	// freshLine is reset by next() so cache it here.
+	freshLine := l.freshLine
 	r := l.next()
 
 	// Single line C++ style comment
 	if r == '#' || (r == '/' && l.peek() == '/') {
 		comment, blanks, indent := l.lexUntilNewline()
 		var k ast.FodderKind
-		if l.freshLine {
+		if freshLine {
 			k = ast.FodderParagraph
 		} else {
 			k = ast.FodderLineEnd
@@ -647,7 +659,7 @@ func (l *lexer) lexSymbol() error {
 
 	// C style comment (could be interstitial or paragraph comment)
 	if r == '/' && l.peek() == '*' {
-		margin := l.pos.byteNo - l.pos.lineStart
+		margin := l.pos.byteNo - l.pos.lineStart - 1
 		commentStartLoc := l.tokenStartLoc
 
 		//nolint:ineffassign,staticcheck
@@ -695,7 +707,7 @@ func (l *lexer) lexSymbol() error {
 				newLinesAfter = 1
 				indentAfter = 0
 			}
-			l.addFodder(ast.FodderParagraph, newLinesAfter-1, indentAfter, lines)
+			l.addFodderSafe(ast.FodderParagraph, newLinesAfter-1, indentAfter, lines)
 		}
 		return nil
 	}
@@ -716,10 +728,10 @@ func (l *lexer) lexSymbol() error {
 		}
 
 		// Process leading blank lines before calculating stringBlockIndent
-		for r = l.next(); r == '\n'; r = l.next() {
+		for r = l.peek(); r == '\n'; r = l.peek() {
+			l.next()
 			cb.WriteRune(r)
 		}
-		l.backup()
 		numWhiteSpace := checkWhitespace(l.input[l.pos.byteNo:], l.input[l.pos.byteNo:])
 		stringBlockIndent := l.input[l.pos.byteNo : l.pos.byteNo+numWhiteSpace]
 		if numWhiteSpace == 0 {
@@ -741,20 +753,20 @@ func (l *lexer) lexSymbol() error {
 			cb.WriteRune('\n')
 
 			// Skip any blank lines
-			for r = l.next(); r == '\n'; r = l.next() {
+			for r = l.peek(); r == '\n'; r = l.peek() {
+				l.next()
 				cb.WriteRune(r)
 			}
-			l.backup()
 
 			// Look at the next line
 			numWhiteSpace = checkWhitespace(stringBlockIndent, l.input[l.pos.byteNo:])
 			if numWhiteSpace == 0 {
 				// End of the text block
 				var stringBlockTermIndent string
-				for r = l.next(); r == ' ' || r == '\t'; r = l.next() {
+				for r = l.peek(); r == ' ' || r == '\t'; r = l.peek() {
+					l.next()
 					stringBlockTermIndent += string(r)
 				}
-				l.backup()
 				if !strings.HasPrefix(l.input[l.pos.byteNo:], "|||") {
 					return l.makeStaticErrorPoint("Text block not terminated with |||", commentStartLoc)
 				}
@@ -768,7 +780,7 @@ func (l *lexer) lexSymbol() error {
 	}
 
 	// Assume any string of symbols is a single operator.
-	for r = l.next(); isSymbol(r); r = l.next() {
+	for r = l.peek(); isSymbol(r); r = l.peek() {
 		// Not allowed // in operators
 		if r == '/' && strings.HasPrefix(l.input[l.pos.byteNo:], "/") {
 			break
@@ -781,9 +793,8 @@ func (l *lexer) lexSymbol() error {
 		if r == '|' && strings.HasPrefix(l.input[l.pos.byteNo:], "||") {
 			break
 		}
+		l.next()
 	}
-
-	l.backup()
 
 	// Operators are not allowed to end with + - ~ ! unless they are one rune long.
 	// So, wind it back if we need to, but stop at the first rune.
@@ -824,29 +835,37 @@ func Lex(fn string, input string) (Tokens, error) {
 			l.addFodder(ast.FodderLineEnd, blanks, indent, []string{})
 		}
 		l.resetTokenStart() // Don't include whitespace in actual token.
-		r := l.next()
+		r := l.peek()
 		switch r {
 		case '{':
+			l.next()
 			l.emitToken(tokenBraceL)
 		case '}':
+			l.next()
 			l.emitToken(tokenBraceR)
 		case '[':
+			l.next()
 			l.emitToken(tokenBracketL)
 		case ']':
+			l.next()
 			l.emitToken(tokenBracketR)
 		case ',':
+			l.next()
 			l.emitToken(tokenComma)
 		case '.':
+			l.next()
 			l.emitToken(tokenDot)
 		case '(':
+			l.next()
 			l.emitToken(tokenParenL)
 		case ')':
+			l.next()
 			l.emitToken(tokenParenR)
 		case ';':
+			l.next()
 			l.emitToken(tokenSemicolon)
 
 		case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-			l.backup()
 			err = l.lexNumber()
 			if err != nil {
 				return nil, err
@@ -855,7 +874,8 @@ func Lex(fn string, input string) (Tokens, error) {
 		// String literals
 
 		case '"':
-			stringStartLoc := l.prevLocation()
+			stringStartLoc := l.location()
+			l.next()
 			for r = l.next(); ; r = l.next() {
 				if r == lexEOF {
 					return nil, l.makeStaticErrorPoint("Unterminated String", stringStartLoc)
@@ -872,7 +892,8 @@ func Lex(fn string, input string) (Tokens, error) {
 				}
 			}
 		case '\'':
-			stringStartLoc := l.prevLocation()
+			stringStartLoc := l.location()
+			l.next()
 			for r = l.next(); ; r = l.next() {
 				if r == lexEOF {
 					return nil, l.makeStaticErrorPoint("Unterminated String", stringStartLoc)
@@ -889,6 +910,8 @@ func Lex(fn string, input string) (Tokens, error) {
 				}
 			}
 		case '@':
+			stringStartLoc := l.location()
+			l.next()
 			// Verbatim string literals.
 			// ' and " quoting is interpreted here, unlike non-verbatim strings
 			// where it is done later by jsonnet_string_unescape.  This is OK
@@ -896,7 +919,6 @@ func Lex(fn string, input string) (Tokens, error) {
 			// repeated quote into a single quote, so we can go back to the
 			// original form in the formatter.
 			var data []rune
-			stringStartLoc := l.prevLocation()
 			quot := l.next()
 			var kind tokenKind
 			if quot == '"' {
@@ -928,10 +950,8 @@ func Lex(fn string, input string) (Tokens, error) {
 
 		default:
 			if isIdentifierFirst(r) {
-				l.backup()
 				l.lexIdentifier()
 			} else if isSymbol(r) || r == '#' {
-				l.backup()
 				err = l.lexSymbol()
 				if err != nil {
 					return nil, err
@@ -939,7 +959,7 @@ func Lex(fn string, input string) (Tokens, error) {
 			} else {
 				return nil, l.makeStaticErrorPoint(
 					fmt.Sprintf("Could not lex the character %s", strconv.QuoteRuneToASCII(r)),
-					l.prevLocation())
+					l.location())
 			}
 
 		}
