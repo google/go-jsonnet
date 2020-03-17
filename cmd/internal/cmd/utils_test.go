@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package cmd
 
 import (
 	"testing"
@@ -40,7 +40,7 @@ func testEq(a, b []string) bool {
 
 func testSimplifyAux(t *testing.T, name string, input, expected []string) {
 	t.Run(name, func(t *testing.T) {
-		got := simplifyArgs(input)
+		got := SimplifyArgs(input)
 		if !testEq(got, expected) {
 			t.Fail()
 			t.Errorf("Got %v, expected %v\n", got, expected)

@@ -17,7 +17,10 @@ type ErrorWriter struct {
 
 func (e *ErrorWriter) writeError(err errors.StaticError) {
 	e.ErrorsFound = true
-	e.Writer.Write([]byte(err.Error() + "\n"))
+	_, writeErr := e.Writer.Write([]byte(err.Error() + "\n"))
+	if writeErr != nil {
+		panic(writeErr)
+	}
 }
 
 type variable struct {

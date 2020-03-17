@@ -39,7 +39,10 @@ func main() {
 	if err != nil {
 		die(err)
 	}
-	inputFile.Close()
+	err = inputFile.Close()
+	if err != nil {
+		die(err)
+	}
 	node, err := jsonnet.SnippetToAST(p, string(data))
 	if err != nil {
 		die(err)

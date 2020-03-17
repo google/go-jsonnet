@@ -124,7 +124,7 @@ func (cache *importCache) importAST(importedFrom, importedPath string) (ast.Node
 }
 
 // ImportString imports a string, caches it and then returns it.
-func (cache *importCache) importString(importedFrom, importedPath string, i *interpreter, trace traceElement) (*valueString, error) {
+func (cache *importCache) importString(importedFrom, importedPath string, i *interpreter, trace traceElement) (valueString, error) {
 	data, _, err := cache.importData(importedFrom, importedPath)
 	if err != nil {
 		return nil, i.Error(err.Error(), trace)

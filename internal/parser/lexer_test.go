@@ -21,126 +21,9 @@ import (
 	"github.com/google/go-jsonnet/ast"
 )
 
-type lexTest struct {
-	name      string
-	input     string
-	tokens    Tokens
-	errString string
-}
-
 var (
 	tEOF = token{kind: tokenEndOfFile}
 )
-
-var lexTests = []lexTest{
-	{
-		"block string spaces",
-		`|||
-  test
-    more
-  |||
-    foo
-|||`,
-		Tokens{
-			{
-				kind:                  tokenStringBlock,
-				data:                  "test\n  more\n|||\n  foo\n",
-				stringBlockIndent:     "  ",
-				stringBlockTermIndent: "",
-			},
-		},
-		"",
-	},
-	{
-		"block string tabs",
-		`|||
-	test
-	  more
-	|||
-	  foo
-|||`,
-		Tokens{
-			{
-				kind:                  tokenStringBlock,
-				data:                  "test\n  more\n|||\n  foo\n",
-				stringBlockIndent:     "\t",
-				stringBlockTermIndent: "",
-			},
-		},
-		"",
-	},
-	{
-		"block string mixed",
-		`|||
-	  	test
-	  	  more
-	  	|||
-	  	  foo
-|||`,
-		Tokens{
-			{
-				kind:                  tokenStringBlock,
-				data:                  "test\n  more\n|||\n  foo\n",
-				stringBlockIndent:     "\t  \t",
-				stringBlockTermIndent: "",
-			},
-		},
-		"",
-	},
-	{
-		"block string blanks",
-		`|||
-
-  test
-
-
-    more
-  |||
-    foo
-|||`,
-		Tokens{
-			{
-				kind:                  tokenStringBlock,
-				data:                  "\ntest\n\n\n  more\n|||\n  foo\n",
-				stringBlockIndent:     "  ",
-				stringBlockTermIndent: "",
-			},
-		},
-		"",
-	},
-	{
-		"block string bad indent",
-		`|||
-  test
- foo
-|||`,
-		Tokens{},
-		"block string bad indent:1:1 Text block not terminated with |||",
-	},
-	{
-		"block string eof",
-		`|||
-  test`,
-		Tokens{},
-		"block string eof:1:1 Unexpected EOF",
-	},
-	{
-		"block string not term",
-		`|||
-  test
-`,
-		Tokens{},
-		"block string not term:1:1 Text block not terminated with |||",
-	},
-	{
-		"block string no ws",
-		`|||
-test
-|||`,
-		Tokens{},
-		"block string no ws:1:1 Text block's first line must start with whitespace",
-	},
-}
 
 func fodderEqual(f1 ast.Fodder, f2 ast.Fodder) bool {
 	if len(f1) != len(f2) {
@@ -604,13 +487,13 @@ func TestIdentifiers(t *testing.T) {
 
 func TestCppComment(t *testing.T) {
 	SingleTest(t, "// hi", "", Tokens{
-		{kind: tokenEndOfFile, fodder: ast.Fodder{{Kind: ast.FodderLineEnd, Comment: []string{"// hi"}}}},
+		{kind: tokenEndOfFile, fodder: ast.Fodder{{Kind: ast.FodderParagraph, Comment: []string{"// hi"}}}},
 	})
 }
 
 func TestHashComment(t *testing.T) {
 	SingleTest(t, "# hi", "", Tokens{
-		{kind: tokenEndOfFile, fodder: ast.Fodder{{Kind: ast.FodderLineEnd, Comment: []string{"# hi"}}}},
+		{kind: tokenEndOfFile, fodder: ast.Fodder{{Kind: ast.FodderParagraph, Comment: []string{"# hi"}}}},
 	})
 }
 
@@ -643,7 +526,9 @@ func TestCCommentSpaceSlash(t *testing.T) {
 
 func TestCCommentManyLines(t *testing.T) {
 	SingleTest(t, "/*\n\n*/", "", Tokens{
-		{kind: tokenEndOfFile, fodder: ast.Fodder{{Kind: ast.FodderParagraph, Comment: []string{"/*", "", "*/"}}}},
+		{kind: tokenEndOfFile, fodder: ast.Fodder{
+			{Kind: ast.FodderLineEnd},
+			{Kind: ast.FodderParagraph, Comment: []string{"/*", "", "*/"}}}},
 	})
 }
 

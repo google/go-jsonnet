@@ -32,7 +32,7 @@ import (
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/internal/parser"
-	"github.com/sergi/go-diff/diffmatchpatch"
+	"github.com/google/go-jsonnet/internal/testutils"
 )
 
 var update = flag.Bool("update", false, "update .golden files")
@@ -137,10 +137,10 @@ func runInternalJsonnet(i jsonnetInput) jsonnetResult {
 	vm.NativeFunction(jsonToString)
 	vm.NativeFunction(nativeError)
 
-	rawAST, err := parser.SnippetToRawAST(i.name, string(i.input))
-	if err != nil {
+	rawAST, _, staticErr := parser.SnippetToRawAST(i.name, string(i.input))
+	if staticErr != nil {
 		return jsonnetResult{
-			output:  errFormatter.Format(err) + "\n",
+			output:  errFormatter.Format(staticErr) + "\n",
 			isError: true,
 		}
 	}
@@ -215,29 +215,6 @@ func runJsonnet(i jsonnetInput) jsonnetResult {
 	return runInternalJsonnet(i)
 }
 
-func compareGolden(result string, golden []byte) (string, bool) {
-	if !bytes.Equal(golden, []byte(result)) {
-		// TODO(sbarzowski) better reporting of differences in whitespace
-		// missing newline issues can be very subtle now
-		return diff(result, string(golden)), true
-	}
-	return "", false
-}
-
-func writeFile(path string, content []byte, mode os.FileMode) (changed bool, err error) {
-	old, err := ioutil.ReadFile(path)
-	if err != nil && !os.IsNotExist(err) {
-		return false, err
-	}
-	if bytes.Equal(old, content) && !os.IsNotExist(err) {
-		return false, nil
-	}
-	if err := ioutil.WriteFile(path, content, mode); err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
 func compareSingleGolden(path string, result jsonnetResult) []error {
 	if result.outputMulti != nil {
 		return []error{fmt.Errorf("outputMulti is populated in a single-file test for %v", path)}
@@ -246,7 +223,7 @@ func compareSingleGolden(path string, result jsonnetResult) []error {
 	if err != nil {
 		return []error{fmt.Errorf("reading file %s: %v", path, err)}
 	}
-	if diff, hasDiff := compareGolden(result.output, golden); hasDiff {
+	if diff, hasDiff := testutils.CompareWithGolden(result.output, golden); hasDiff {
 		return []error{fmt.Errorf("golden file %v has diff:\n%v", path, diff)}
 	}
 	return nil
@@ -256,7 +233,7 @@ func updateSingleGolden(path string, result jsonnetResult) (updated []string, er
 	if result.outputMulti != nil {
 		return nil, fmt.Errorf("outputMulti is populated in a single-file test for %v", path)
 	}
-	changed, err := writeFile(path, []byte(result.output), 0666)
+	changed, err := testutils.UpdateGoldenFile(path, []byte(result.output), 0666)
 	if err != nil {
 		return nil, fmt.Errorf("updating golden file %v: %v", path, err)
 	}
@@ -289,7 +266,7 @@ func compareMultifileGolden(path string, result jsonnetResult) []error {
 			errs = append(errs, fmt.Errorf("jsonnet outputted file %v which does not exist in goldens", fn))
 			continue
 		}
-		if diff, hasDiff := compareGolden(content, goldenContent[fn]); hasDiff {
+		if diff, hasDiff := testutils.CompareWithGolden(content, goldenContent[fn]); hasDiff {
 			errs = append(errs, fmt.Errorf("golden file %v has diff:\n%v", fn, diff))
 		}
 	}
@@ -303,7 +280,7 @@ func updateMultifileGolden(path string, result jsonnetResult) ([]string, error) 
 	}
 	var updatedFiles []string
 	for fn, content := range result.outputMulti {
-		updated, err := writeFile(filepath.Join(path, fn), []byte(content), 0666)
+		updated, err := testutils.UpdateGoldenFile(filepath.Join(path, fn), []byte(content), 0666)
 		if err != nil {
 			return nil, fmt.Errorf("updating golden file %v: %v", fn, err)
 		}
@@ -398,7 +375,7 @@ func TestEval(t *testing.T) {
 	}
 }
 
-func withinWorkingDirectory(t *testing.T, dir string) func() error {
+func withinWorkingDirectory(t *testing.T, dir string) func() {
 	t.Helper()
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -407,8 +384,11 @@ func withinWorkingDirectory(t *testing.T, dir string) func() error {
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
 	}
-	return func() error {
-		return os.Chdir(cwd)
+	return func() {
+		err := os.Chdir(cwd)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 
@@ -426,7 +406,12 @@ func TestEvalUnusualFilenames(t *testing.T) {
 		if dir, err = ioutil.TempDir("", "jsonnet"); err != nil {
 			t.Fatal(err)
 		}
-		defer os.RemoveAll(dir)
+		defer func() {
+			err := os.RemoveAll(dir)
+			if err != nil {
+				panic(err)
+			}
+		}()
 	}
 
 	copySmallFile := func(t *testing.T, dst, src string) {
@@ -522,10 +507,4 @@ func TestEvalUnusualFilenames(t *testing.T) {
 			})
 		})
 	}
-}
-
-func diff(a, b string) string {
-	dmp := diffmatchpatch.New()
-	diffs := dmp.DiffMain(a, b, false)
-	return dmp.DiffPrettyText(diffs)
 }

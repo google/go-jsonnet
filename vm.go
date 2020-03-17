@@ -124,6 +124,9 @@ const (
 	evalKindStream           = iota
 )
 
+// version is the current gojsonnet's version
+const version = "v0.15.0"
+
 // Evaluate evaluates a Jsonnet program given by an Abstract Syntax Tree
 // and returns serialized JSON as string.
 // TODO(sbarzowski) perhaps is should return JSON in standard Go representation
@@ -253,5 +256,5 @@ func SnippetToAST(filename string, snippet string) (ast.Node, error) {
 
 // Version returns the Jsonnet version number.
 func Version() string {
-	return "v0.14.0"
+	return version
 }

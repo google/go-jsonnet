@@ -1,1 +1,2 @@
-std.tan(1)
+local tolerance = (import 'tolerance.libsonnet').tolerance;
+tolerance(std.tan(1))

@@ -1,0 +1,10 @@
+RUNTIME ERROR: substr third parameter should be a number, got string
+-------------------------------------------------
+	testdata/builtinSubStr_third_parameter_not_number:1:1-30	builtin function <substr>
+
+std.substr("hello", 0, "foo")
+
+-------------------------------------------------
+	During evaluation	
+
+

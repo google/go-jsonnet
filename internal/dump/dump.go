@@ -29,7 +29,7 @@ import (
 	"strconv"
 )
 
-var packageNameStripperRegexp = regexp.MustCompile("\\b[a-zA-Z_]+[a-zA-Z_0-9]+\\.")
+var packageNameStripperRegexp = regexp.MustCompile(`\b[a-zA-Z_]+[a-zA-Z_0-9]+\.`)
 
 // Options represents configuration option
 type Options struct {
@@ -59,16 +59,22 @@ type dumpState struct {
 	reusedPointers    []uintptr
 	primitivePointers []uintptr
 
-	currentPointerName string
-	homePackageRegexp  *regexp.Regexp
+	homePackageRegexp *regexp.Regexp
+}
+
+func mustWrite(w io.Writer, data []byte) {
+	_, err := w.Write(data)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (s *dumpState) indent() {
-	s.w.Write(bytes.Repeat([]byte("\t"), s.depth))
+	mustWrite(s.w, bytes.Repeat([]byte("\t"), s.depth))
 }
 
 func (s *dumpState) newline() {
-	s.w.Write([]byte("\n"))
+	mustWrite(s.w, []byte("\n"))
 }
 
 func (s *dumpState) dumpType(v reflect.Value) {
@@ -78,34 +84,34 @@ func (s *dumpState) dumpType(v reflect.Value) {
 	} else if s.homePackageRegexp != nil {
 		typeName = s.homePackageRegexp.ReplaceAllLiteralString(typeName, "")
 	}
-	s.w.Write([]byte(typeName))
+	mustWrite(s.w, []byte(typeName))
 }
 
 func (s *dumpState) dumpSlice(v reflect.Value) {
 	s.dumpType(v)
 	numEntries := v.Len()
 	if numEntries == 0 {
-		s.w.Write([]byte("{}"))
+		mustWrite(s.w, []byte("{}"))
 		return
 	}
-	s.w.Write([]byte("{"))
+	mustWrite(s.w, []byte("{"))
 	s.newline()
 	s.depth++
 	for i := 0; i < numEntries; i++ {
 		s.indent()
 		s.dumpVal(v.Index(i))
-		s.w.Write([]byte(","))
+		mustWrite(s.w, []byte(","))
 		s.newline()
 	}
 	s.depth--
 	s.indent()
-	s.w.Write([]byte("}"))
+	mustWrite(s.w, []byte("}"))
 }
 
 func (s *dumpState) dumpStruct(v reflect.Value) {
 	dumpPreamble := func() {
 		s.dumpType(v)
-		s.w.Write([]byte("{"))
+		mustWrite(s.w, []byte("{"))
 		s.newline()
 		s.depth++
 	}
@@ -122,26 +128,26 @@ func (s *dumpState) dumpStruct(v reflect.Value) {
 			preambleDumped = true
 		}
 		s.indent()
-		s.w.Write([]byte(vtf.Name))
-		s.w.Write([]byte(": "))
+		mustWrite(s.w, []byte(vtf.Name))
+		mustWrite(s.w, []byte(": "))
 		s.dumpVal(v.Field(i))
-		s.w.Write([]byte(","))
+		mustWrite(s.w, []byte(","))
 		s.newline()
 	}
 	if preambleDumped {
 		s.depth--
 		s.indent()
-		s.w.Write([]byte("}"))
+		mustWrite(s.w, []byte("}"))
 	} else {
 		// There were no fields dumped
 		s.dumpType(v)
-		s.w.Write([]byte("{}"))
+		mustWrite(s.w, []byte("{}"))
 	}
 }
 
 func (s *dumpState) dumpMap(v reflect.Value) {
 	s.dumpType(v)
-	s.w.Write([]byte("{"))
+	mustWrite(s.w, []byte("{"))
 	s.newline()
 	s.depth++
 	keys := v.MapKeys()
@@ -149,14 +155,14 @@ func (s *dumpState) dumpMap(v reflect.Value) {
 	for _, key := range keys {
 		s.indent()
 		s.dumpVal(key)
-		s.w.Write([]byte(": "))
+		mustWrite(s.w, []byte(": "))
 		s.dumpVal(v.MapIndex(key))
-		s.w.Write([]byte(","))
+		mustWrite(s.w, []byte(","))
 		s.newline()
 	}
 	s.depth--
 	s.indent()
-	s.w.Write([]byte("}"))
+	mustWrite(s.w, []byte("}"))
 }
 
 func (s *dumpState) dump(value interface{}) {
@@ -164,7 +170,7 @@ func (s *dumpState) dump(value interface{}) {
 		if s.config.VariableDescription != "" {
 			fmt.Fprintf(s.w, "\n// %s\n", s.config.VariableDescription)
 		}
-		s.w.Write([]byte("var " + s.config.VariableName + " = "))
+		mustWrite(s.w, []byte("var "+s.config.VariableName+" = "))
 	}
 
 	if value == nil {
@@ -194,11 +200,11 @@ func (s *dumpState) dump(value interface{}) {
 		s.dumpVal(v)
 		s.w = oldWriter
 		if buf.Len() > 100 {
-			s.w.Write([]byte("_" + s.config.VariableName))
+			mustWrite(s.w, []byte("_"+s.config.VariableName))
 			s.newline()
-			s.w.Write([]byte("var _" + s.config.VariableName + " = "))
+			mustWrite(s.w, []byte("var _"+s.config.VariableName+" = "))
 		}
-		s.w.Write(buf.Bytes())
+		mustWrite(s.w, buf.Bytes())
 	}
 	s.newline()
 }
@@ -206,7 +212,7 @@ func (s *dumpState) dump(value interface{}) {
 func (s *dumpState) printPrimitivePointer(value reflect.Value, pointerName string) {
 	v := deInterface(value)
 
-	s.w.Write([]byte("var " + pointerName + "Var" + " = "))
+	mustWrite(s.w, []byte("var "+pointerName+"Var"+" = "))
 	switch v.Kind() {
 	case reflect.Bool:
 		printBool(s.w, v.Bool())
@@ -244,11 +250,11 @@ func (s *dumpState) printPrimitivePointer(value reflect.Value, pointerName strin
 		printComplex(s.w, v.Complex(), 64)
 
 	case reflect.String:
-		s.w.Write([]byte(strconv.Quote(v.String())))
+		mustWrite(s.w, []byte(strconv.Quote(v.String())))
 	}
 
 	s.newline()
-	s.w.Write([]byte("var " + pointerName + " = &" + pointerName + "Var"))
+	mustWrite(s.w, []byte("var "+pointerName+" = &"+pointerName+"Var"))
 	s.newline()
 }
 
@@ -263,7 +269,7 @@ func (s *dumpState) dumpPrimitivePointerVal(value reflect.Value) {
 	case reflect.Invalid:
 		// Do nothing.  We should never get here since invalid has already
 		// been handled above.
-		s.w.Write([]byte("<invalid>"))
+		mustWrite(s.w, []byte("<invalid>"))
 
 	case reflect.Slice:
 		if v.IsNil() {
@@ -310,7 +316,7 @@ func (s *dumpState) dumpReusedPointerVal(value reflect.Value) {
 	case reflect.Invalid:
 		// Do nothing.  We should never get here since invalid has already
 		// been handled above.
-		s.w.Write([]byte("<invalid>"))
+		mustWrite(s.w, []byte("<invalid>"))
 
 	case reflect.Slice:
 		if v.IsNil() {
@@ -338,7 +344,7 @@ func (s *dumpState) dumpReusedPointerVal(value reflect.Value) {
 	case reflect.Ptr:
 		pointerName, isReused, isPrimitive, isFirstVisit := s.nameForPointer(v), s.isReusedPointer(v), s.isPrimitivePointer(v), s.visitPointerAndCheckIfFirstTime(v)
 		if isReused && !isPrimitive && isFirstVisit {
-			s.w.Write([]byte("var " + pointerName + " = &"))
+			mustWrite(s.w, []byte("var "+pointerName+" = &"))
 			s.dumpVal(v.Elem())
 			s.newline()
 		} else {
@@ -349,7 +355,7 @@ func (s *dumpState) dumpReusedPointerVal(value reflect.Value) {
 
 func (s *dumpState) dumpVal(value reflect.Value) {
 	if value.Kind() == reflect.Ptr && value.IsNil() {
-		s.w.Write([]byte("nil"))
+		mustWrite(s.w, []byte("nil"))
 		return
 	}
 
@@ -359,7 +365,7 @@ func (s *dumpState) dumpVal(value reflect.Value) {
 	case reflect.Invalid:
 		// Do nothing.  We should never get here since invalid has already
 		// been handled above.
-		s.w.Write([]byte("<invalid>"))
+		mustWrite(s.w, []byte("<invalid>"))
 
 	case reflect.Bool:
 		printBool(s.w, v.Bool())
@@ -397,7 +403,7 @@ func (s *dumpState) dumpVal(value reflect.Value) {
 		printComplex(s.w, v.Complex(), 64)
 
 	case reflect.String:
-		s.w.Write([]byte(strconv.Quote(v.String())))
+		mustWrite(s.w, []byte(strconv.Quote(v.String())))
 
 	case reflect.Slice:
 		if v.IsNil() {
@@ -419,9 +425,9 @@ func (s *dumpState) dumpVal(value reflect.Value) {
 	case reflect.Ptr:
 		pointerName, isPrimitive, isReused := s.nameForPointer(v), s.isPrimitivePointer(v), s.isReusedPointer(v)
 		if isPrimitive || isReused {
-			s.w.Write([]byte(pointerName))
+			mustWrite(s.w, []byte(pointerName))
 		} else {
-			s.w.Write([]byte("&"))
+			mustWrite(s.w, []byte("&"))
 			s.dumpVal(v.Elem())
 		}
 
@@ -438,19 +444,6 @@ func (s *dumpState) dumpVal(value reflect.Value) {
 			fmt.Fprintf(s.w, "%v", v.String())
 		}
 	}
-}
-
-// call to signal that the pointer is being visited, returns true if this is the
-// first visit to that pointer. Used to detect when to output the entire contents
-// behind a pointer (the first time), and when to just emit a name (all other times)
-func (s *dumpState) visitPointerAndCheckIfItIsTheFirstTime(ptr uintptr) bool {
-	for _, addr := range s.visitedPointers {
-		if addr == ptr {
-			return false
-		}
-	}
-	s.visitedPointers = append(s.visitedPointers, ptr)
-	return true
 }
 
 func (s *dumpState) nameForPointer(v reflect.Value) string {

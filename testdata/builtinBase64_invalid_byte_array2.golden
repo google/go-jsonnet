@@ -1,0 +1,10 @@
+RUNTIME ERROR: base64 encountered invalid codepoint value in the array (must be 0 <= X <= 255), got 256
+-------------------------------------------------
+	testdata/builtinBase64_invalid_byte_array2:1:1-21	builtin function <base64>
+
+std.base64([1, 256])
+
+-------------------------------------------------
+	During evaluation	
+
+

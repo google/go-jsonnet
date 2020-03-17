@@ -43,6 +43,13 @@ type Node interface {
 	FreeVariables() Identifiers
 	SetFreeVariables(Identifiers)
 	SetContext(Context)
+	// OpenFodder returns the fodder before the first token of an AST node.
+	// Since every AST node has opening fodder, it is defined here.
+	// If the AST node is left recursive (e.g. BinaryOp) then it is ambiguous
+	// where the fodder should be stored.  This is resolved by storing it as
+	// far inside the tree as possible.  OpenFodder returns a pointer to allow
+	// the caller to modify the fodder.
+	OpenFodder() *Fodder
 }
 
 // Nodes represents a Node slice.
@@ -82,8 +89,8 @@ func (n *NodeBase) Loc() *LocationRange {
 }
 
 // OpenFodder returns a NodeBase's opening fodder.
-func (n *NodeBase) OpenFodder() Fodder {
-	return n.Fodder
+func (n *NodeBase) OpenFodder() *Fodder {
+	return &n.Fodder
 }
 
 // FreeVariables returns a NodeBase's freeVariables.
@@ -371,20 +378,23 @@ type Error struct {
 type Function struct {
 	NodeBase
 	ParenLeftFodder Fodder
-	Parameters      Parameters
+	Parameters      []Parameter
 	// Always false if there were no parameters.
 	TrailingComma    bool
 	ParenRightFodder Fodder
 	Body             Node
 }
 
-// NamedParameter represents an optional named parameter of a function.
-type NamedParameter struct {
+// Parameter represents a parameter of function.
+// If DefaultArg is set, it's an optional named parameter.
+// Otherwise, it's a positional parameter and EqFodder is not used.
+type Parameter struct {
 	NameFodder  Fodder
 	Name        Identifier
 	EqFodder    Fodder
 	DefaultArg  Node
 	CommaFodder Fodder
+	LocRange    LocationRange
 }
 
 // CommaSeparatedID represents an expression that is an element of a
@@ -393,13 +403,6 @@ type CommaSeparatedID struct {
 	NameFodder  Fodder
 	Name        Identifier
 	CommaFodder Fodder
-}
-
-// Parameters represents the required positional parameters and optional named
-// parameters to a function definition.
-type Parameters struct {
-	Required []CommaSeparatedID
-	Optional []NamedParameter
 }
 
 // ---------------------------------------------------------------------------
@@ -432,9 +435,10 @@ type Index struct {
 	LeftBracketFodder Fodder
 	Index             Node
 	// When Index is being used, this is the fodder before the ']'.
-	// When Id is being used, this is always empty.
+	// When Id is being used, this is the fodder before the id.
 	RightBracketFodder Fodder
-	Id                 *Identifier
+	//nolint: golint,stylecheck // keeping Id instead of ID for now to avoid breaking 3rd parties
+	Id *Identifier
 }
 
 // Slice represents an array slice a[begin:end:step].
@@ -465,6 +469,8 @@ type LocalBind struct {
 	Fun *Function
 	// The fodder before the closing ',' or ';' (whichever it is)
 	CloseFodder Fodder
+
+	LocRange LocationRange
 }
 
 // LocalBinds represents a LocalBind slice.
@@ -495,7 +501,6 @@ type LiteralNull struct{ NodeBase }
 // LiteralNumber represents a JSON number
 type LiteralNumber struct {
 	NodeBase
-	Value          float64
 	OriginalString string
 }
 
@@ -528,9 +533,10 @@ func (k LiteralStringKind) FullyEscaped() bool {
 // LiteralString represents a JSON string
 type LiteralString struct {
 	NodeBase
-	Value       string
-	Kind        LiteralStringKind
-	BlockIndent string
+	Value           string
+	Kind            LiteralStringKind
+	BlockIndent     string
+	BlockTermIndent string
 }
 
 // ---------------------------------------------------------------------------
@@ -582,23 +588,26 @@ type ObjectField struct {
 	// If Method is set then Expr2 == Method.Body.
 	// There is no base fodder in Method because there was no `function`
 	// keyword.
-	Method       *Function
-	Fodder1      Fodder
-	Expr1        Node // Not in scope of the object
+	Method  *Function
+	Fodder1 Fodder
+	Expr1   Node // Not in scope of the object
+	//nolint: golint,stylecheck // keeping Id instead of ID for now to avoid breaking 3rd parties
 	Id           *Identifier
 	Fodder2      Fodder
 	OpFodder     Fodder
 	Expr2, Expr3 Node // In scope of the object (can see self).
 	CommaFodder  Fodder
+	LocRange     LocationRange
 }
 
 // ObjectFieldLocalNoMethod creates a non-method local object field.
-func ObjectFieldLocalNoMethod(id *Identifier, body Node) ObjectField {
+func ObjectFieldLocalNoMethod(id *Identifier, body Node, loc LocationRange) ObjectField {
 	return ObjectField{
-		Kind:  ObjectLocal,
-		Hide:  ObjectFieldVisible,
-		Id:    id,
-		Expr2: body,
+		Kind:     ObjectLocal,
+		Hide:     ObjectFieldVisible,
+		Id:       id,
+		Expr2:    body,
+		LocRange: loc,
 	}
 }
 
@@ -624,6 +633,8 @@ type DesugaredObjectField struct {
 	Name      Node
 	Body      Node
 	PlusSuper bool
+
+	LocRange LocationRange
 }
 
 // DesugaredObjectFields represents a DesugaredObjectField slice.
@@ -646,10 +657,11 @@ type DesugaredObject struct {
 //   { [e]: e for x in e for.. if... }.
 type ObjectComp struct {
 	NodeBase
-	Fields        ObjectFields
-	TrailingComma bool
-	Spec          ForSpec
-	CloseFodder   Fodder
+	Fields              ObjectFields
+	TrailingCommaFodder Fodder
+	TrailingComma       bool
+	Spec                ForSpec
+	CloseFodder         Fodder
 }
 
 // ---------------------------------------------------------------------------
@@ -682,7 +694,8 @@ type SuperIndex struct {
 	// If super.f, the fodder before the 'f'
 	// If super[e], the fodder before the ']'.
 	IDFodder Fodder
-	Id       *Identifier
+	//nolint: golint,stylecheck // keeping Id instead of ID for now to avoid breaking 3rd parties
+	Id *Identifier
 }
 
 // InSuper represents the e in super construct.
@@ -740,6 +753,7 @@ type Unary struct {
 // Var represents variables.
 type Var struct {
 	NodeBase
+	//nolint: golint,stylecheck // keeping Id instead of ID for now to avoid breaking 3rd parties
 	Id Identifier
 }
 

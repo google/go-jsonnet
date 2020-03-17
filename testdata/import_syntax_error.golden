@@ -1,0 +1,10 @@
+RUNTIME ERROR: testdata/syntax_error.jsonnet:2:1 Unexpected end of file
+-------------------------------------------------
+	testdata/import_syntax_error:1:1-30	$
+
+import "syntax_error.jsonnet"
+
+-------------------------------------------------
+	During evaluation	
+
+

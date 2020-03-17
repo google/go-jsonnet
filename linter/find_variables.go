@@ -27,14 +27,13 @@ func cloneScope(oldScope vScope) vScope {
 }
 
 func findVariablesInFunc(node *ast.Function, info *LintingInfo, scope vScope) {
-	for _, param := range node.Parameters.Required {
+	for _, param := range node.Parameters {
 		addVar(param.Name, node, info, scope, true)
 	}
-	for _, param := range node.Parameters.Optional {
-		addVar(param.Name, node, info, scope, true)
-	}
-	for _, param := range node.Parameters.Optional {
-		findVariables(param.DefaultArg, info, scope)
+	for _, param := range node.Parameters {
+		if param.DefaultArg != nil {
+			findVariables(param.DefaultArg, info, scope)
+		}
 	}
 	findVariables(node.Body, info, scope)
 }

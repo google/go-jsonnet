@@ -17,14 +17,12 @@ limitations under the License.
 package program
 
 import (
-	"bytes"
-	"encoding/hex"
 	"fmt"
 	"reflect"
-	"unicode/utf8"
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/internal/errors"
+	"github.com/google/go-jsonnet/internal/parser"
 )
 
 var desugaredBop = map[ast.BinaryOp]ast.Identifier{
@@ -39,60 +37,6 @@ func makeStr(s string) *ast.LiteralString {
 		Kind:        ast.StringDouble,
 		BlockIndent: "",
 	}
-}
-
-func stringUnescape(loc *ast.LocationRange, s string) (string, error) {
-	var buf bytes.Buffer
-	// read one rune at a time
-	for i := 0; i < len(s); {
-		r, w := utf8.DecodeRuneInString(s[i:])
-		i += w
-		switch r {
-		case '\\':
-			if i >= len(s) {
-				return "", errors.MakeStaticError("Truncated escape sequence in string literal.", *loc)
-			}
-			r2, w := utf8.DecodeRuneInString(s[i:])
-			i += w
-			switch r2 {
-			case '"':
-				buf.WriteRune('"')
-			case '\'':
-				buf.WriteRune('\'')
-			case '\\':
-				buf.WriteRune('\\')
-			case '/':
-				buf.WriteRune('/') // See json.org, \/ is a valid escape.
-			case 'b':
-				buf.WriteRune('\b')
-			case 'f':
-				buf.WriteRune('\f')
-			case 'n':
-				buf.WriteRune('\n')
-			case 'r':
-				buf.WriteRune('\r')
-			case 't':
-				buf.WriteRune('\t')
-			case 'u':
-				if i+4 > len(s) {
-					return "", errors.MakeStaticError("Truncated unicode escape sequence in string literal.", *loc)
-				}
-				codeBytes, err := hex.DecodeString(s[i : i+4])
-				if err != nil {
-					return "", errors.MakeStaticError(fmt.Sprintf("Unicode escape sequence was malformed: %s", s[0:4]), *loc)
-				}
-				code := int(codeBytes[0])*256 + int(codeBytes[1])
-				buf.WriteRune(rune(code))
-				i += 4
-			default:
-				return "", errors.MakeStaticError(fmt.Sprintf("Unknown escape sequence in string literal: \\%c", r2), *loc)
-			}
-
-		default:
-			buf.WriteRune(r)
-		}
-	}
-	return buf.String(), nil
 }
 
 func desugarFields(nodeBase ast.NodeBase, fields *ast.ObjectFields, objLevel int) (*ast.DesugaredObject, error) {
@@ -120,6 +64,9 @@ func desugarFields(nodeBase ast.NodeBase, fields *ast.ObjectFields, objLevel int
 			}
 			onFailure := &ast.Error{Expr: msg}
 			asserts = append(asserts, &ast.Conditional{
+				NodeBase: ast.NodeBase{
+					LocRange: field.LocRange,
+				},
 				Cond:        field.Expr2,
 				BranchTrue:  &ast.LiteralBoolean{Value: true}, // ignored anyway
 				BranchFalse: onFailure,
@@ -130,6 +77,7 @@ func desugarFields(nodeBase ast.NodeBase, fields *ast.ObjectFields, objLevel int
 				Name:      makeStr(string(*field.Id)),
 				Body:      field.Expr2,
 				PlusSuper: field.SuperSugar,
+				LocRange:  field.LocRange,
 			})
 
 		case ast.ObjectFieldExpr, ast.ObjectFieldStr:
@@ -138,12 +86,14 @@ func desugarFields(nodeBase ast.NodeBase, fields *ast.ObjectFields, objLevel int
 				Name:      field.Expr1,
 				Body:      field.Expr2,
 				PlusSuper: field.SuperSugar,
+				LocRange:  field.LocRange,
 			})
 
 		case ast.ObjectLocal:
 			locals = append(locals, ast.LocalBind{
 				Variable: *field.Id,
 				Body:     ast.Clone(field.Expr2), // TODO(sbarzowski) not sure if clone is needed
+				LocRange: field.LocRange,
 			})
 		default:
 			panic(fmt.Sprintf("Unexpected object field kind %v", field.Kind))
@@ -167,7 +117,10 @@ func desugarFields(nodeBase ast.NodeBase, fields *ast.ObjectFields, objLevel int
 			return nil, err
 		}
 	}
-	desugarLocalBinds(locals, objLevel+1)
+	err := desugarLocalBinds(locals, objLevel+1)
+	if err != nil {
+		return nil, err
+	}
 	for i := range desugaredFields {
 		field := &(desugaredFields[i])
 		if field.Name != nil {
@@ -192,10 +145,8 @@ func desugarFields(nodeBase ast.NodeBase, fields *ast.ObjectFields, objLevel int
 
 func simpleLambda(body ast.Node, paramName ast.Identifier) ast.Node {
 	return &ast.Function{
-		Body: body,
-		Parameters: ast.Parameters{
-			Required: []ast.CommaSeparatedID{{Name: paramName}},
-		},
+		Body:       body,
+		Parameters: []ast.Parameter{{Name: paramName}},
 	}
 }
 
@@ -431,11 +382,13 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		}
 
 	case *ast.Function:
-		for i := range node.Parameters.Optional {
-			param := &node.Parameters.Optional[i]
-			err = desugar(&param.DefaultArg, objLevel)
-			if err != nil {
-				return
+		for i := range node.Parameters {
+			param := &node.Parameters[i]
+			if param.DefaultArg != nil {
+				err = desugar(&param.DefaultArg, objLevel)
+				if err != nil {
+					return
+				}
 			}
 		}
 		err = desugar(&node.Body, objLevel)
@@ -515,7 +468,7 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 
 	case *ast.LiteralString:
 		if node.Kind.FullyEscaped() {
-			unescaped, err := stringUnescape(node.Loc(), node.Value)
+			unescaped, err := parser.StringUnescape(node.Loc(), node.Value)
 			if err != nil {
 				return err
 			}

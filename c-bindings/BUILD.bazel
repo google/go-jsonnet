@@ -13,9 +13,8 @@ go_library(
     name = "go_default_library",
     srcs = [
         "c-bindings.go",
+        "handles.go",
         "internal.h",
-        "json.cpp",
-        "json.h",
         "libjsonnet.cpp",
     ],
     cdeps = [
@@ -26,7 +25,10 @@ go_library(
     cxxopts = ["-std=c++11"],
     importpath = "github.com/google/go-jsonnet/c-bindings",
     visibility = ["//visibility:private"],
-    deps = ["//:go_default_library"],
+    deps = [
+        "//:go_default_library",
+        "//ast:go_default_library",
+    ],
 )
 
 go_binary(

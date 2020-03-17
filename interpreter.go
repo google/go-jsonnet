@@ -22,6 +22,7 @@ import (
 	"math"
 	"reflect"
 	"sort"
+	"strconv"
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/astgen"
@@ -204,14 +205,6 @@ func (s *callStack) getCurrentEnv(ast ast.Node) environment {
 	)
 }
 
-func (s *callStack) getTopEnv() environment {
-	top := s.stack[len(s.stack)-1]
-	if !top.isCall {
-		panic("getTopEnv is allowed only for artifical nodes which are called in new environment")
-	}
-	return top.env
-}
-
 // Build a binding frame containing specified variables.
 func (s *callStack) capture(freeVars ast.Identifiers) bindingFrame {
 	env := make(bindingFrame)
@@ -379,8 +372,8 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 			}
 			var fieldName string
 			switch fieldNameValue := fieldNameValue.(type) {
-			case *valueString:
-				fieldName = fieldNameValue.getString()
+			case valueString:
+				fieldName = fieldNameValue.getGoString()
 			case *valueNull:
 				// Omitted field.
 				continue
@@ -424,7 +417,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		if err != nil {
 			return nil, err
 		}
-		return nil, i.Error(msg.getString(), trace)
+		return nil, i.Error(msg.getGoString(), trace)
 
 	case *ast.Index:
 		targetValue, err := i.evaluate(node.Target, nonTailCall)
@@ -441,7 +434,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 			if err != nil {
 				return nil, err
 			}
-			return target.index(i, trace, indexString.getString())
+			return target.index(i, trace, indexString.getGoString())
 		case *valueArray:
 			indexInt, err := i.getNumber(index, trace)
 			if err != nil {
@@ -450,7 +443,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 			// TODO(https://github.com/google/jsonnet/issues/377): non-integer indexes should be an error
 			return target.index(i, trace, int(indexInt.value))
 
-		case *valueString:
+		case valueString:
 			indexInt, err := i.getNumber(index, trace)
 			if err != nil {
 				return nil, err
@@ -476,7 +469,14 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		return makeValueNull(), nil
 
 	case *ast.LiteralNumber:
-		return makeValueNumber(node.Value), nil
+		// Since the lexer ensures that OriginalString is of
+		// the right form, this will only fail if the number is
+		// too large to fit in a double.
+		num, err := strconv.ParseFloat(node.OriginalString, 64)
+		if err != nil {
+			return nil, i.Error("overflow", trace)
+		}
+		return makeValueNumber(num), nil
 
 	case *ast.LiteralString:
 		return makeValueString(node.Value), nil
@@ -517,7 +517,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		if err != nil {
 			return nil, err
 		}
-		return objectIndex(i, trace, i.stack.getSelfBinding().super(), indexStr.getString())
+		return objectIndex(i, trace, i.stack.getSelfBinding().super(), indexStr.getGoString())
 
 	case *ast.InSuper:
 		index, err := i.evaluate(node.Index, nonTailCall)
@@ -528,7 +528,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		if err != nil {
 			return nil, err
 		}
-		hasField := objectHasField(i.stack.getSelfBinding().super(), indexStr.getString(), withHidden)
+		hasField := objectHasField(i.stack.getSelfBinding().super(), indexStr.getGoString(), withHidden)
 		return makeValueBoolean(hasField), nil
 
 	case *ast.Function:
@@ -636,8 +636,8 @@ func (i *interpreter) manifestJSON(trace traceElement, v value) (interface{}, er
 	case *valueNumber:
 		return v.value, nil
 
-	case *valueString:
-		return v.getString(), nil
+	case valueString:
+		return v.getGoString(), nil
 
 	case *valueNull:
 		return nil, nil
@@ -802,8 +802,8 @@ func (i *interpreter) manifestAndSerializeJSON(
 // manifestString expects the value to be a string and returns it.
 func (i *interpreter) manifestString(buf *bytes.Buffer, trace traceElement, v value) error {
 	switch v := v.(type) {
-	case *valueString:
-		buf.WriteString(v.getString())
+	case valueString:
+		buf.WriteString(v.getGoString())
 		return nil
 	default:
 		return makeRuntimeError(fmt.Sprintf("expected string result, got: %s", v.getType().name), i.getCurrentStackTrace(trace))
@@ -960,6 +960,7 @@ func (i *interpreter) getNumber(val value, trace traceElement) (*valueNumber, er
 	}
 }
 
+//nolint:unused
 func (i *interpreter) evaluateNumber(pv potentialValue, trace traceElement) (*valueNumber, error) {
 	v, err := i.evaluatePV(pv, trace)
 	if err != nil {
@@ -990,6 +991,7 @@ func (i *interpreter) evaluateInt(pv potentialValue, trace traceElement) (int, e
 	return i.getInt(v, trace)
 }
 
+//nolint:unused
 func (i *interpreter) getInt64(val value, trace traceElement) (int64, error) {
 	num, err := i.getNumber(val, trace)
 	if err != nil {
@@ -1002,6 +1004,7 @@ func (i *interpreter) getInt64(val value, trace traceElement) (int64, error) {
 	return intNum, nil
 }
 
+//nolint:unused
 func (i *interpreter) evaluateInt64(pv potentialValue, trace traceElement) (int64, error) {
 	v, err := i.evaluatePV(pv, trace)
 	if err != nil {
@@ -1010,16 +1013,17 @@ func (i *interpreter) evaluateInt64(pv potentialValue, trace traceElement) (int6
 	return i.getInt64(v, trace)
 }
 
-func (i *interpreter) getString(val value, trace traceElement) (*valueString, error) {
+func (i *interpreter) getString(val value, trace traceElement) (valueString, error) {
 	switch v := val.(type) {
-	case *valueString:
+	case valueString:
 		return v, nil
 	default:
-		return nil, i.typeErrorSpecific(val, &valueString{}, trace)
+		return nil, i.typeErrorSpecific(val, emptyString(), trace)
 	}
 }
 
-func (i *interpreter) evaluateString(pv potentialValue, trace traceElement) (*valueString, error) {
+//nolint:unused
+func (i *interpreter) evaluateString(pv potentialValue, trace traceElement) (valueString, error) {
 	v, err := i.evaluatePV(pv, trace)
 	if err != nil {
 		return nil, err
@@ -1036,6 +1040,7 @@ func (i *interpreter) getBoolean(val value, trace traceElement) (*valueBoolean, 
 	}
 }
 
+//nolint:unused
 func (i *interpreter) evaluateBoolean(pv potentialValue, trace traceElement) (*valueBoolean, error) {
 	v, err := i.evaluatePV(pv, trace)
 	if err != nil {
@@ -1053,6 +1058,7 @@ func (i *interpreter) getArray(val value, trace traceElement) (*valueArray, erro
 	}
 }
 
+//nolint:unused
 func (i *interpreter) evaluateArray(pv potentialValue, trace traceElement) (*valueArray, error) {
 	v, err := i.evaluatePV(pv, trace)
 	if err != nil {
@@ -1070,6 +1076,7 @@ func (i *interpreter) getFunction(val value, trace traceElement) (*valueFunction
 	}
 }
 
+//nolint:unused
 func (i *interpreter) evaluateFunction(pv potentialValue, trace traceElement) (*valueFunction, error) {
 	v, err := i.evaluatePV(pv, trace)
 	if err != nil {

@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["test_utils.go"],
+    importpath = "github.com/google/go-jsonnet/internal/testutils",
+    visibility = ["//:__subpackages__"],
+    deps = ["@com_github_sergi_go_diff//diffmatchpatch:go_default_library"],
+)
