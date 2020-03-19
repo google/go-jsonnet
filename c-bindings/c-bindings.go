@@ -79,7 +79,6 @@ func (i *importer) Import(importedFrom, importedPath string) (contents jsonnet.C
 	if _, isCached := i.contentCache[foundHere]; !isCached {
 		i.contentCache[foundHere] = jsonnet.MakeContents(result)
 	}
-	fmt.Fprintf(os.Stderr, "%#+v\n", i.contentCache[foundHere])
 	return i.contentCache[foundHere], foundHere, nil
 }
 
