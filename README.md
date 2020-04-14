@@ -19,6 +19,12 @@ This code is known to work on Go 1.8 and above. We recommend always using the ne
 go get github.com/google/go-jsonnet/cmd/jsonnet
 ```
 
+It's also available on Homebrew:
+
+```
+brew install go-jsonnet
+```
+
 ## Build instructions (go 1.11+)
 
 ```bash
