@@ -146,10 +146,10 @@ func (p *parser) parseArgument() (ast.Fodder, *ast.Identifier, ast.Fodder, ast.N
 func (p *parser) parseArguments(elementKind string) (*token, *ast.Arguments, bool, errors.StaticError) {
 	args := &ast.Arguments{}
 	gotComma := false
-	commaFodder := ast.Fodder{}
 	namedArgumentAdded := false
 	first := true
 	for {
+		commaFodder := ast.Fodder{}
 		next := p.peek()
 
 		if next.kind == tokenParenR {
