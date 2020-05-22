@@ -867,8 +867,8 @@ func liftBitwise(f func(int64, int64) int64) func(*interpreter, traceElement, va
 }
 
 // TODO(sbarzowski) negative shifts
-var builtinShiftL = liftBitwise(func(x, y int64) int64 { return x << uint(y) })
-var builtinShiftR = liftBitwise(func(x, y int64) int64 { return x >> uint(y) })
+var builtinShiftL = liftBitwise(func(x, y int64) int64 { return x << uint(y%64) })
+var builtinShiftR = liftBitwise(func(x, y int64) int64 { return x >> uint(y%64) })
 var builtinBitwiseAnd = liftBitwise(func(x, y int64) int64 { return x & y })
 var builtinBitwiseOr = liftBitwise(func(x, y int64) int64 { return x | y })
 var builtinBitwiseXor = liftBitwise(func(x, y int64) int64 { return x ^ y })
