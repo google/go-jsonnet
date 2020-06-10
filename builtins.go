@@ -866,9 +866,35 @@ func liftBitwise(f func(int64, int64) int64) func(*interpreter, traceElement, va
 	}
 }
 
-// TODO(sbarzowski) negative shifts
-var builtinShiftL = liftBitwise(func(x, y int64) int64 { return x << uint(y%64) })
-var builtinShiftR = liftBitwise(func(x, y int64) int64 { return x >> uint(y%64) })
+func shiftBitwise(shiftLeft bool) func(*interpreter, traceElement, value, value) (value, error) {
+	return func(i *interpreter, trace traceElement, xv, yv value) (value, error) {
+		x, err := i.getNumber(xv, trace)
+		if err != nil {
+			return nil, err
+		}
+		y, err := i.getNumber(yv, trace)
+		if err != nil {
+			return nil, err
+		}
+		if x.value < math.MinInt64 || x.value > math.MaxInt64 {
+			msg := fmt.Sprintf("Bitwise operator argument %v outside of range [%v, %v]", x.value, int64(math.MinInt64), int64(math.MaxInt64))
+			return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+		}
+		if y.value < 0 {
+			return nil, makeRuntimeError("Shift by negative exponent.", i.getCurrentStackTrace(trace))
+		}
+		var result int64
+		if shiftLeft {
+			result = int64(x.value) << (int64(y.value) % 64)
+		} else {
+			result = int64(x.value) >> (int64(y.value) % 64)
+		}
+		return makeDoubleCheck(i, trace, float64(result))
+	}
+}
+
+var builtinShiftL = shiftBitwise(true)
+var builtinShiftR = shiftBitwise(false)
 var builtinBitwiseAnd = liftBitwise(func(x, y int64) int64 { return x & y })
 var builtinBitwiseOr = liftBitwise(func(x, y int64) int64 { return x | y })
 var builtinBitwiseXor = liftBitwise(func(x, y int64) int64 { return x ^ y })
