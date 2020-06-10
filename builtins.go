@@ -885,9 +885,9 @@ func shiftBitwise(shiftLeft bool) func(*interpreter, traceElement, value, value)
 		}
 		var result int64
 		if shiftLeft {
-			result = int64(x.value) << (int64(y.value) % 64)
+			result = int64(x.value) << (uint(y.value) % 64)
 		} else {
-			result = int64(x.value) >> (int64(y.value) % 64)
+			result = int64(x.value) >> (uint(y.value) % 64)
 		}
 		return makeDoubleCheck(i, trace, float64(result))
 	}
