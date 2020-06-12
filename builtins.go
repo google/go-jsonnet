@@ -844,7 +844,7 @@ var builtinExponent = liftNumeric(func(f float64) float64 {
 	return float64(exponent)
 })
 
-func liftBitwise(f func(int64, int64) int64) func(*interpreter, traceElement, value, value) (value, error) {
+func liftBitwise(f func(int64, int64) int64, positiveRightArg bool) func(*interpreter, traceElement, value, value) (value, error) {
 	return func(i *interpreter, trace traceElement, xv, yv value) (value, error) {
 		x, err := i.getNumber(xv, trace)
 		if err != nil {
@@ -862,16 +862,18 @@ func liftBitwise(f func(int64, int64) int64) func(*interpreter, traceElement, va
 			msg := fmt.Sprintf("Bitwise operator argument %v outside of range [%v, %v]", y.value, int64(math.MinInt64), int64(math.MaxInt64))
 			return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
 		}
+		if positiveRightArg && y.value < 0 {
+			return nil, makeRuntimeError("Shift by negative exponent.", i.getCurrentStackTrace(trace))
+		}
 		return makeDoubleCheck(i, trace, float64(f(int64(x.value), int64(y.value))))
 	}
 }
 
-// TODO(sbarzowski) negative shifts
-var builtinShiftL = liftBitwise(func(x, y int64) int64 { return x << uint(y%64) })
-var builtinShiftR = liftBitwise(func(x, y int64) int64 { return x >> uint(y%64) })
-var builtinBitwiseAnd = liftBitwise(func(x, y int64) int64 { return x & y })
-var builtinBitwiseOr = liftBitwise(func(x, y int64) int64 { return x | y })
-var builtinBitwiseXor = liftBitwise(func(x, y int64) int64 { return x ^ y })
+var builtinShiftL = liftBitwise(func(x, y int64) int64 { return x << uint(y%64) }, true)
+var builtinShiftR = liftBitwise(func(x, y int64) int64 { return x >> uint(y%64) }, true)
+var builtinBitwiseAnd = liftBitwise(func(x, y int64) int64 { return x & y }, false)
+var builtinBitwiseOr = liftBitwise(func(x, y int64) int64 { return x | y }, false)
+var builtinBitwiseXor = liftBitwise(func(x, y int64) int64 { return x ^ y }, false)
 
 func builtinObjectFieldsEx(i *interpreter, trace traceElement, objv, includeHiddenV value) (value, error) {
 	obj, err := i.getObject(objv, trace)
