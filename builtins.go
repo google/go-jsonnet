@@ -25,7 +25,9 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/google/go-jsonnet/ast"
@@ -1161,6 +1163,106 @@ func builtinParseJSON(i *interpreter, trace traceElement, str value) (value, err
 	return jsonToValue(i, trace, parsedJSON)
 }
 
+// We have a very similar logic here /interpreter.go@v0.16.0#L695 and here: /interpreter.go@v0.16.0#L627
+// These should ideally be unified
+// For backwards compatibility reasons, we are manually marshalling to json so we can control formatting
+// In the future, it might be apt to use a library [pretty-printing] function
+func builtinManifestJSONEx(i *interpreter, trace traceElement, obj, indent value) (value, error) {
+	vindent, err := i.getString(indent, trace)
+	if err != nil {
+		return nil, err
+	}
+
+	sindent := vindent.getGoString()
+
+	var path []string
+
+	var aux func(ov value, path []string, cindent string) (string, error)
+	aux = func(ov value, path []string, cindent string) (string, error) {
+		if ov == nil {
+			fmt.Println("value is nil")
+			return "null", nil
+		}
+
+		switch v := ov.(type) {
+		case *valueNull:
+			return "null", nil
+		case valueString:
+			b, err := json.Marshal(v.getGoString())
+			if err != nil {
+				return "", i.Error(fmt.Sprintf("failed to marshal valueString to JSON: %v", err.Error()), trace)
+			}
+			return string(b), nil
+		case *valueNumber:
+			return strconv.FormatFloat(v.value, 'f', -1, 64), nil
+		case *valueBoolean:
+			return fmt.Sprintf("%t", v.value), nil
+		case *valueFunction:
+			return "", i.Error(fmt.Sprintf("tried to manifest function at %s", path), trace)
+		case *valueArray:
+			newIndent := cindent + sindent
+			lines := []string{"[\n"}
+
+			var arrayLines []string
+			for aI, cThunk := range v.elements {
+				cTv, err := cThunk.getValue(i, trace)
+				if err != nil {
+					return "", err
+				}
+
+				newPath := append(path, strconv.FormatInt(int64(aI), 10))
+				s, err := aux(cTv, newPath, newIndent)
+				if err != nil {
+					return "", err
+				}
+				arrayLines = append(arrayLines, newIndent + s)
+			}
+			lines = append(lines, strings.Join(arrayLines, ",\n"))
+			lines = append(lines, "\n"+cindent+"]")
+			return strings.Join(lines, ""), nil
+		case *valueObject:
+			newIndent := cindent + sindent
+			lines := []string{"{\n"}
+
+			fields := objectFields(v, withoutHidden)
+			sort.Strings(fields)
+			var objectLines []string
+			for _, fieldName := range fields {
+				fieldValue, err := v.index(i, trace, fieldName)
+				if err != nil {
+					return "", err
+				}
+
+				fieldNameMarshalled, err := json.Marshal(fieldName)
+				if err != nil {
+					return "", i.Error(fmt.Sprintf("failed to marshal object fieldname to JSON: %v", err.Error()), trace)
+				}
+
+				newPath := append(path, fieldName)
+				mvs, err := aux(fieldValue, newPath, newIndent)
+				if err != nil {
+					return "", err
+				}
+
+				line := newIndent + string(fieldNameMarshalled) + ": " + mvs
+				objectLines = append(objectLines, line)
+			}
+			lines = append(lines, strings.Join(objectLines, ",\n"))
+			lines = append(lines, "\n"+cindent+"}")
+			return strings.Join(lines, ""), nil
+		default:
+			return "", i.Error(fmt.Sprintf("unknown type to marshal to JSON: %s", reflect.TypeOf(v)), trace)
+		}
+	}
+
+	finalString, err := aux(obj, path, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return makeValueString(finalString), nil
+}
+
 func builtinExtVar(i *interpreter, trace traceElement, name value) (value, error) {
 	str, err := i.getString(name, trace)
 	if err != nil {
@@ -1467,6 +1569,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "base64Decode", function: builtinBase64Decode, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "base64DecodeBytes", function: builtinBase64DecodeBytes, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseJson", function: builtinParseJSON, params: ast.Identifiers{"str"}},
+	&binaryBuiltin{name: "manifestJsonEx", function: builtinManifestJSONEx, params: ast.Identifiers{"x", "str"}},
 	&unaryBuiltin{name: "base64", function: builtinBase64, params: ast.Identifiers{"input"}},
 	&unaryBuiltin{name: "encodeUTF8", function: builtinEncodeUTF8, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "decodeUTF8", function: builtinDecodeUTF8, params: ast.Identifiers{"arr"}},

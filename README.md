@@ -65,7 +65,7 @@ Additionally if any files were moved around, see the section [Keeping the Bazel 
 
 ## Running Benchmarks
 
-Setup
+### Method 1
 
 ```bash
 go get golang.org/x/tools/cmd/benchcmp
@@ -88,6 +88,28 @@ go build ./cmd/jsonnet
 ```bash
 # e.g. ./benchmark.sh Builtin
 ./benchmark.sh <TestNameFilter>
+```
+
+### Method 2
+
+1. get `benchcmp`
+
+```bash
+go get golang.org/x/tools/cmd/benchcmp
+```
+
+2. Make sure you build a jsonnet binary _prior_ to making changes.
+
+```bash
+make build-old
+```
+
+3. iterate with (which will also automatically rebuild the new binary `./jsonnet`)
+
+_replace the FILTER with the name of the test you are working on_
+
+```bash
+FILTER=Builtin_manifestJsonEx make benchmark
 ```
 
 ## Implementation Notes
