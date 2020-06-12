@@ -43,14 +43,14 @@ build:
 .PHONY: build
 
 build.old:
-	go build ./cmd/jsonnet -o jsonnet-old
+	go build -o jsonnet-old ./cmd/jsonnet
 .PHONY: build.old
 
 test:
 	./tests.sh
 .PHONY: test
 
-benchmark : FILTER="Builtin"
+benchmark : FILTER ?= Builtin
 benchmark: build
 	./benchmark.sh ${FILTER}
 .PHONY: benchmark
