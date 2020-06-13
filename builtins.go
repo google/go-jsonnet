@@ -1163,6 +1163,18 @@ func builtinParseJSON(i *interpreter, trace traceElement, str value) (value, err
 	return jsonToValue(i, trace, parsedJSON)
 }
 
+func jsonEncode(v interface{}) (string, error) {
+	buf := new(bytes.Buffer)
+	enc := json.NewEncoder(buf)
+	enc.SetEscapeHTML(false)
+	err := enc.Encode(v)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimRight(buf.String(), "\n"), nil
+}
+
 // We have a very similar logic here /interpreter.go@v0.16.0#L695 and here: /interpreter.go@v0.16.0#L627
 // These should ideally be unified
 // For backwards compatibility reasons, we are manually marshalling to json so we can control formatting
@@ -1188,11 +1200,11 @@ func builtinManifestJSONEx(i *interpreter, trace traceElement, obj, indent value
 		case *valueNull:
 			return "null", nil
 		case valueString:
-			b, err := json.Marshal(v.getGoString())
+			jStr, err := jsonEncode(v.getGoString())
 			if err != nil {
 				return "", i.Error(fmt.Sprintf("failed to marshal valueString to JSON: %v", err.Error()), trace)
 			}
-			return string(b), nil
+			return jStr, nil
 		case *valueNumber:
 			return strconv.FormatFloat(v.value, 'f', -1, 64), nil
 		case *valueBoolean:
@@ -1233,11 +1245,11 @@ func builtinManifestJSONEx(i *interpreter, trace traceElement, obj, indent value
 					return "", err
 				}
 
-				fieldNameMarshalled, err := json.Marshal(fieldName)
+				fieldNameMarshalled, err := jsonEncode(fieldName)
 				if err != nil {
 					return "", i.Error(fmt.Sprintf("failed to marshal object fieldname to JSON: %v", err.Error()), trace)
 				}
-
+				
 				newPath := append(path, fieldName)
 				mvs, err := aux(fieldValue, newPath, newIndent)
 				if err != nil {

@@ -1,0 +1,1 @@
+"{\n  \"bam\": true,\n  \"bar\": \"bar\",\n  \"baz\": 1,\n  \"bazel\": 1.42,\n  \"bim\": false,\n  \"blamo\": {\n    \"cereal\": [\n      \"<>& fizbuzz\"\n    ],\n    \"treats\": [\n      {\n        \"name\": \"chocolate\"\n      }\n    ]\n  },\n  \"boom\": -1,\n  \"foo\": \"bar\"\n}"
