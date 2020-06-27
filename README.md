@@ -9,9 +9,9 @@
 [Coverage Status Widget]: https://coveralls.io/repos/github/google/go-jsonnet/badge.svg?branch=master
 [Coverage Status]: https://coveralls.io/github/google/go-jsonnet?branch=master
 
-This an implementation of [Jsonnet](http://jsonnet.org/) in pure Go. It is feature complete but is not as heavily exercised as the [Jsonnet C++ implementation](https://github.com/google/jsonnet).  Please try it out and give feedback.
+This an implementation of [Jsonnet](http://jsonnet.org/) in pure Go. It is a feature complete, production-ready implementation. It is compatible with the original [Jsonnet C++ implementation](https://github.com/google/jsonnet). Bindings to C and Python are available (but not battle-tested yet).
 
-This code is known to work on Go 1.8 and above. We recommend always using the newest stable release of Go.
+This code is known to work on Go 1.11 and above. We recommend always using the newest stable release of Go.
 
 ## Installation instructions
 
