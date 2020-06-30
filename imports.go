@@ -19,6 +19,8 @@ package jsonnet
 import (
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/url"
 	"os"
 	"path"
 
@@ -190,33 +192,62 @@ func (importer *FileImporter) tryPath(dir, importedPath string) (found bool, con
 	if importer.fsCache == nil {
 		importer.fsCache = make(map[string]*fsCacheEntry)
 	}
+
 	var absPath string
-	if path.IsAbs(importedPath) {
+
+	url, err := url.Parse(importedPath)
+	if err != nil {
+		panic(err)
+	}
+	if url.Scheme == "http" || url.Scheme == "https" {
 		absPath = importedPath
 	} else {
-		absPath = path.Join(dir, importedPath)
+		if path.IsAbs(importedPath) {
+			absPath = importedPath
+		} else {
+			absPath = path.Join(dir, importedPath)
+		}
 	}
+
 	var entry *fsCacheEntry
 	if cacheEntry, isCached := importer.fsCache[absPath]; isCached {
 		entry = cacheEntry
 	} else {
-		contentBytes, err := ioutil.ReadFile(absPath)
-		if err != nil {
-			if os.IsNotExist(err) {
-				entry = &fsCacheEntry{
-					exists: false,
-				}
-			} else {
-				return false, Contents{}, "", err
+		if url.Scheme == "http" || url.Scheme == "https" {
+			resp, err := http.Get(absPath)
+			if err != nil {
+				fmt.Println("hey there was an error!")
+				fmt.Println(absPath)
+				fmt.Println(err)
+				panic(err)
 			}
-		} else {
+			defer resp.Body.Close()
+
+			contentBytes, err := ioutil.ReadAll(resp.Body)
 			entry = &fsCacheEntry{
 				exists:   true,
 				contents: MakeContents(string(contentBytes)),
 			}
+		} else {
+			contentBytes, err := ioutil.ReadFile(absPath)
+			if err != nil {
+				if os.IsNotExist(err) {
+					entry = &fsCacheEntry{
+						exists: false,
+					}
+				} else {
+					return false, Contents{}, "", err
+				}
+			} else {
+				entry = &fsCacheEntry{
+					exists:   true,
+					contents: MakeContents(string(contentBytes)),
+				}
+			}
 		}
-		importer.fsCache[absPath] = entry
 	}
+	importer.fsCache[absPath] = entry
+
 	return entry.exists, entry.contents, absPath, nil
 }
 
@@ -239,6 +270,7 @@ func (importer *FileImporter) Import(importedFrom, importedPath string) (content
 		return Contents{}, "", fmt.Errorf("couldn't open import %#v: no match locally or in the Jsonnet library paths", importedPath)
 	}
 	return content, foundHere, nil
+
 }
 
 // MemoryImporter "imports" data from an in-memory map.
