@@ -214,16 +214,20 @@ func (importer *FileImporter) tryPath(dir, importedPath string) (found bool, con
 		entry = cacheEntry
 	} else {
 		if url.Scheme == "http" || url.Scheme == "https" {
-			resp, err := http.Get(absPath)
+			client := &http.Client{}
+			req, err := http.NewRequest("GET", absPath, nil)
+			req.Header.Add("Authorization", "token "+os.Getenv("GITHUB_TOKEN"))
+			req.Header.Add("Accept", "application/vnd.github.v3.raw")
+			resp, err := client.Do(req)
 			if err != nil {
-				fmt.Println("hey there was an error!")
 				fmt.Println(absPath)
 				fmt.Println(err)
-				panic(err)
+				return false, Contents{}, "", err
 			}
 			defer resp.Body.Close()
 
 			contentBytes, err := ioutil.ReadAll(resp.Body)
+
 			entry = &fsCacheEntry{
 				exists:   true,
 				contents: MakeContents(string(contentBytes)),
