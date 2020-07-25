@@ -255,31 +255,46 @@ func builtinMakeArray(i *interpreter, trace traceElement, szv, funcv value) (val
 }
 
 func builtinFlatMap(i *interpreter, trace traceElement, funcv, arrv value) (value, error) {
-	arr, err := i.getArray(arrv, trace)
-	if err != nil {
-		return nil, err
-	}
 	fun, err := i.getFunction(funcv, trace)
 	if err != nil {
 		return nil, err
 	}
-	num := arr.length()
-	// Start with capacity of the original array.
-	// This may spare us a few reallocations.
-	// TODO(sbarzowski) verify that it actually helps
-	elems := make([]*cachedThunk, 0, num)
-	for counter := 0; counter < num; counter++ {
-		returnedValue, err := fun.call(i, trace, args(arr.elements[counter]))
-		if err != nil {
-			return nil, err
+	switch arrv := arrv.(type) {
+	case *valueArray:
+		num := arrv.length()
+		// Start with capacity of the original array.
+		// This may spare us a few reallocations.
+		// TODO(sbarzowski) verify that it actually helps
+		elems := make([]*cachedThunk, 0, num)
+		for counter := 0; counter < num; counter++ {
+			returnedValue, err := fun.call(i, trace, args(arrv.elements[counter]))
+			if err != nil {
+				return nil, err
+			}
+			returned, err := i.getArray(returnedValue, trace)
+			if err != nil {
+				return nil, err
+			}
+			elems = append(elems, returned.elements...)
 		}
-		returned, err := i.getArray(returnedValue, trace)
-		if err != nil {
-			return nil, err
+		return makeValueArray(elems), nil
+	case valueString:
+		var str strings.Builder
+		for _, elem := range arrv.getRunes() {
+			returnedValue, err := fun.call(i, trace, args(readyThunk(makeValueString(string(elem)))))
+			if err != nil {
+				return nil, err
+			}
+			returned, err := i.getString(returnedValue, trace)
+			if err != nil {
+				return nil, err
+			}
+			str.WriteString(returned.getGoString())
 		}
-		elems = append(elems, returned.elements...)
+		return makeValueString(str.String()), nil
+	default:
+		return nil, i.Error("std.flatMap second param must be array / string, got "+arrv.getType().name, trace)
 	}
-	return makeValueArray(elems), nil
 }
 
 func joinArrays(i *interpreter, trace traceElement, sep *valueArray, arr *valueArray) (value, error) {
@@ -1227,7 +1242,7 @@ func builtinManifestJSONEx(i *interpreter, trace traceElement, obj, indent value
 				if err != nil {
 					return "", err
 				}
-				arrayLines = append(arrayLines, newIndent + s)
+				arrayLines = append(arrayLines, newIndent+s)
 			}
 			lines = append(lines, strings.Join(arrayLines, ",\n"))
 			lines = append(lines, "\n"+cindent+"]")
@@ -1249,7 +1264,7 @@ func builtinManifestJSONEx(i *interpreter, trace traceElement, obj, indent value
 				if err != nil {
 					return "", i.Error(fmt.Sprintf("failed to marshal object fieldname to JSON: %v", err.Error()), trace)
 				}
-				
+
 				newPath := append(path, fieldName)
 				mvs, err := aux(fieldValue, newPath, newIndent)
 				if err != nil {
