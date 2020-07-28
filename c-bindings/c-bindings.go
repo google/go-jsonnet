@@ -106,12 +106,12 @@ func jsonnet_make() *C.struct_JsonnetVm {
 		os.Exit(1)
 	}
 
-	return C.jsonnet_internal_make_vm_with_id(C.uint32_t(id))
+	return C.jsonnet_internal_make_vm_with_id(C.uint64_t(id))
 }
 
 //export jsonnet_destroy
 func jsonnet_destroy(vmRef *C.struct_JsonnetVm) {
-	if err := handles.free(uint32(vmRef.id)); err != nil {
+	if err := handles.free(uint64(vmRef.id)); err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
@@ -120,7 +120,7 @@ func jsonnet_destroy(vmRef *C.struct_JsonnetVm) {
 }
 
 func getVM(vmRef *C.struct_JsonnetVm) *vm {
-	ref, err := handles.get(uint32(vmRef.id))
+	ref, err := handles.get(uint64(vmRef.id))
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
@@ -411,7 +411,7 @@ func jsonnet_json_destroy(vmRef *C.struct_JsonnetVm, v *C.struct_JsonnetJsonValu
 		jsonnet_json_destroy(vmRef, child)
 	}
 
-	if err := handles.free(uint32(v.id)); err != nil {
+	if err := handles.free(uint64(v.id)); err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
@@ -427,11 +427,11 @@ func createJSONValue(vmRef *C.struct_JsonnetVm, val interface{}) *C.struct_Jsonn
 		os.Exit(1)
 	}
 
-	return C.jsonnet_internal_make_json_with_id(C.uint32_t(id))
+	return C.jsonnet_internal_make_json_with_id(C.uint64_t(id))
 }
 
 func getJSONValue(jsonRef *C.struct_JsonnetJsonValue) *jsonValue {
-	ref, err := handles.get(uint32(jsonRef.id))
+	ref, err := handles.get(uint64(jsonRef.id))
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
