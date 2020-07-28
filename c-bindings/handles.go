@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-const maxID = 100000
+const maxID = (1 << 63) - 1
 
 // Because of Go GC, there are restrictions on keeping Go pointers in C.
 // We cannot just pass *jsonnet.VM/JsonValue to C. So instead we use "handle" structs in C
@@ -18,7 +18,7 @@ const maxID = 100000
 // handlesTable is the set of active, valid Jsonnet allocated handles
 type handlesTable struct {
 	objects  []interface{}
-	freedIDs []uint32
+	freedIDs []uint64
 }
 
 // errMaxNumberOfOpenHandles tells that there was an attempt to create more than maxID open handles
@@ -28,14 +28,14 @@ var errMaxNumberOfOpenHandles = fmt.Errorf("maximum number of constructed Jsonne
 var errInvalidHandle = errors.New("invalid handle ID was provided")
 
 // make registers the new object as a handle and returns the corresponding ID
-func (h *handlesTable) make(obj interface{}) (uint32, error) {
-	var id uint32
+func (h *handlesTable) make(obj interface{}) (uint64, error) {
+	var id uint64
 
 	if len(h.freedIDs) > 0 {
 		id, h.freedIDs = h.freedIDs[len(h.freedIDs)-1], h.freedIDs[:len(h.freedIDs)-1]
 		h.objects[id-1] = obj
 	} else {
-		id = uint32(len(h.objects) + 1)
+		id = uint64(len(h.objects) + 1)
 
 		if id > maxID {
 			return 0, errMaxNumberOfOpenHandles
@@ -48,7 +48,7 @@ func (h *handlesTable) make(obj interface{}) (uint32, error) {
 }
 
 // free marks the given handle ID as unused
-func (h *handlesTable) free(id uint32) error {
+func (h *handlesTable) free(id uint64) error {
 	if err := h.ensureValidID(id); err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (h *handlesTable) free(id uint32) error {
 }
 
 // get returns the corresponding object for the provided ID
-func (h *handlesTable) get(id uint32) (interface{}, error) {
+func (h *handlesTable) get(id uint64) (interface{}, error) {
 	if err := h.ensureValidID(id); err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (h *handlesTable) get(id uint32) (interface{}, error) {
 }
 
 // ensureValidID returns an error if the given handle ID is invalid, otherwise returns nil
-func (h *handlesTable) ensureValidID(id uint32) error {
+func (h *handlesTable) ensureValidID(id uint64) error {
 	if id == 0 || uint64(id) > uint64(len(h.objects)) {
 		return errInvalidHandle
 	}
