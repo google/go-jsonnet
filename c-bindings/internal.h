@@ -3,17 +3,17 @@
 #include <stdint.h>
 
 struct JsonnetVm {
-    uint64_t id;
+    uintptr_t id;
 };
 
-struct JsonnetVm *jsonnet_internal_make_vm_with_id(uint64_t id);
+struct JsonnetVm *jsonnet_internal_make_vm_with_id(uintptr_t id);
 void jsonnet_internal_free_vm(struct JsonnetVm *x);
 
 struct JsonnetJsonValue {
-    uint64_t id;
+    uintptr_t id;
 };
 
-struct JsonnetJsonValue *jsonnet_internal_make_json_with_id(uint64_t id);
+struct JsonnetJsonValue *jsonnet_internal_make_json_with_id(uintptr_t id);
 void jsonnet_internal_free_json(struct JsonnetJsonValue *x);
 
 typedef struct JsonnetJsonValue *JsonnetNativeCallback(void *ctx,
