@@ -41,7 +41,7 @@ func (h *handlesTable) make(obj interface{}) (uintptr, error) {
 
 // free removes an object with the given ID
 func (h *handlesTable) free(id uintptr) error {
-	if _, ok := h.handles[id]; !ok {
+	if handle := h.handles[id]; handle == nil {
 		return errInvalidHandle
 	}
 
@@ -51,9 +51,9 @@ func (h *handlesTable) free(id uintptr) error {
 
 // get returns the corresponding object for the provided ID
 func (h *handlesTable) get(id uintptr) (interface{}, error) {
-	if _, ok := h.handles[id]; !ok {
-		return nil, errInvalidHandle
+	if handle := h.handles[id]; handle != nil {
+		return handle.ref, nil
 	}
 
-	return h.handles[id].ref, nil
+	return nil, errInvalidHandle
 }
