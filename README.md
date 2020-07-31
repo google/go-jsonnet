@@ -32,6 +32,7 @@ git clone git@github.com:google/go-jsonnet.git
 cd go-jsonnet
 go build ./cmd/jsonnet
 go build ./cmd/jsonnetfmt
+go build ./cmd/jsonnet-deps
 ```
 To build with [Bazel](https://bazel.build/) instead:
 ```bash
@@ -41,6 +42,7 @@ git submodule init
 git submodule update
 bazel build //cmd/jsonnet
 bazel build //cmd/jsonnetfmt
+bazel build //cmd/jsonnet-deps
 ```
 The resulting _jsonnet_ program will then be available at a platform-specific path, such as _bazel-bin/cmd/jsonnet/darwin_amd64_stripped/jsonnet_ for macOS.
 

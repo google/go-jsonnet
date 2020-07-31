@@ -23,7 +23,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/fatih/color"
@@ -91,15 +90,6 @@ func usage(o io.Writer) {
 	fmt.Fprintln(o, "  The -- option suppresses option processing for subsequent arguments.")
 	fmt.Fprintln(o, "  Note that since filenames and jsonnet programs can begin with -, it is")
 	fmt.Fprintln(o, "  advised to use -- if the argument is unknown, e.g. jsonnet -- \"$FILENAME\".")
-}
-
-func safeStrToInt(str string) (i int) {
-	i, err := strconv.Atoi(str)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Invalid integer \"%s\"\n", str)
-		os.Exit(1)
-	}
-	return
 }
 
 type config struct {
@@ -203,7 +193,7 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 			}
 			break
 		} else if arg == "-s" || arg == "--max-stack" {
-			l := safeStrToInt(cmd.NextArg(&i, args))
+			l := cmd.SafeStrToInt(cmd.NextArg(&i, args))
 			if l < 1 {
 				return processArgsStatusFailure, fmt.Errorf("invalid --max-stack value: %d", l)
 			}
@@ -212,9 +202,6 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 			dir := cmd.NextArg(&i, args)
 			if len(dir) == 0 {
 				return processArgsStatusFailure, fmt.Errorf("-J argument was empty string")
-			}
-			if dir[len(dir)-1] != '/' {
-				dir += "/"
 			}
 			config.evalJpath = append(config.evalJpath, dir)
 		} else if arg == "-V" || arg == "--ext-str" {
@@ -250,7 +237,7 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 				return processArgsStatusFailure, err
 			}
 		} else if arg == "-t" || arg == "--max-trace" {
-			l := safeStrToInt(cmd.NextArg(&i, args))
+			l := cmd.SafeStrToInt(cmd.NextArg(&i, args))
 			if l < 0 {
 				return processArgsStatusFailure, fmt.Errorf("invalid --max-trace value: %d", l)
 			}
@@ -314,7 +301,7 @@ func writeMultiOutputFiles(output map[string]string, outputDir, outputFile strin
 			return err
 		}
 		defer func() {
-			if ferr := manifest.Close(); err != nil {
+			if ferr := manifest.Close(); ferr != nil {
 				err = ferr
 			}
 		}()
@@ -363,7 +350,7 @@ func writeMultiOutputFiles(output map[string]string, outputDir, outputFile strin
 			return err
 		}
 		defer func() {
-			if ferr := f.Close(); err != nil {
+			if ferr := f.Close(); ferr != nil {
 				err = ferr
 			}
 		}()
@@ -389,7 +376,7 @@ func writeOutputStream(output []string, outputFile string) (err error) {
 			return err
 		}
 		defer func() {
-			if ferr := f.Close(); err != nil {
+			if ferr := f.Close(); ferr != nil {
 				err = ferr
 			}
 		}()
