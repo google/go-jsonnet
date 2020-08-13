@@ -29,6 +29,7 @@ go_library(
         "//ast:go_default_library",
         "//astgen:go_default_library",
         "//internal/errors:go_default_library",
+        "//internal/parser:go_default_library",
         "//internal/program:go_default_library",
         "@io_k8s_sigs_yaml//:go_default_library",
     ],

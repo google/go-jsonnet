@@ -447,8 +447,9 @@ var Obj = &struct { Foo *Zeo; Bar *Zeo }{
 		},
 	}
 	for _, test := range testcases {
-		Config.StripPackageNames = true
-		output := Sdump(test.input())
+		opts := Config
+		opts.StripPackageNames = true
+		output := opts.Sdump(test.input())
 		if test.expected != output {
 			t.Errorf("test case %s failed, expected : \n%#v\n, got : \n%#v", test.name, test.expected, output)
 		}
@@ -465,7 +466,7 @@ func TestSdumpLargeDefinition(t *testing.T) {
 	}
 	got := Sdump(&largeStruct{1, 2, 3, 4, 5})
 	want := `var Obj = _Obj
-var _Obj = &largeStruct{
+var _Obj = &dump.largeStruct{
 	ABCDEFGHIJKLMNOBQRSTUVWXYZ0: int(1),
 	ABCDEFGHIJKLMNOBQRSTUVWXYZ1: int(2),
 	ABCDEFGHIJKLMNOBQRSTUVWXYZ2: int(3),

@@ -19,9 +19,14 @@ package jsonnet
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"runtime/debug"
+	"sort"
+	"strings"
 
 	"github.com/google/go-jsonnet/ast"
+	"github.com/google/go-jsonnet/internal/parser"
 	"github.com/google/go-jsonnet/internal/program"
 )
 
@@ -125,7 +130,7 @@ const (
 )
 
 // version is the current gojsonnet's version
-const version = "v0.15.0"
+const version = "v0.16.0"
 
 // Evaluate evaluates a Jsonnet program given by an Abstract Syntax Tree
 // and returns serialized JSON as string.
@@ -186,6 +191,77 @@ func (vm *VM) evaluateSnippet(filename string, snippet string, kind evalKind) (o
 	return output, nil
 }
 
+func getAbsPath(path string) (string, error) {
+	var absPath string
+	if filepath.IsAbs(path) {
+		absPath = path
+	} else {
+		wd, err := os.Getwd()
+		if err != nil {
+			return "", nil
+		}
+		absPath = strings.Join([]string{wd, path}, string(filepath.Separator))
+	}
+	cleanedAbsPath, err := filepath.EvalSymlinks(absPath)
+	if err != nil {
+		return "", err
+	}
+	return cleanedAbsPath, nil
+}
+
+func (vm *VM) findDependencies(filePath string, node *ast.Node, dependencies map[string]struct{}, stackTrace *[]traceFrame) (err error) {
+	var cleanedAbsPath string
+	switch i := (*node).(type) {
+	case *ast.Import:
+		node, foundAt, err := vm.ImportAST(filePath, i.File.Value)
+		if err != nil {
+			*stackTrace = append([]traceFrame{{Loc: *i.Loc()}}, *stackTrace...)
+			return err
+		}
+		cleanedAbsPath = foundAt
+		if _, isFileImporter := vm.importer.(*FileImporter); isFileImporter {
+			cleanedAbsPath, err = getAbsPath(foundAt)
+			if err != nil {
+				*stackTrace = append([]traceFrame{{Loc: *i.Loc()}}, *stackTrace...)
+				return err
+			}
+		}
+		// Check that we haven't already parsed the imported file.
+		if _, alreadyParsed := dependencies[cleanedAbsPath]; alreadyParsed {
+			return nil
+		}
+		dependencies[cleanedAbsPath] = struct{}{}
+		err = vm.findDependencies(foundAt, &node, dependencies, stackTrace)
+		if err != nil {
+			*stackTrace = append([]traceFrame{{Loc: *i.Loc()}}, *stackTrace...)
+			return err
+		}
+	case *ast.ImportStr:
+		foundAt, err := vm.ResolveImport(filePath, i.File.Value)
+		if err != nil {
+			*stackTrace = append([]traceFrame{{Loc: *i.Loc()}}, *stackTrace...)
+			return err
+		}
+		cleanedAbsPath = foundAt
+		if _, isFileImporter := vm.importer.(*FileImporter); isFileImporter {
+			cleanedAbsPath, err = getAbsPath(foundAt)
+			if err != nil {
+				*stackTrace = append([]traceFrame{{Loc: *i.Loc()}}, *stackTrace...)
+				return err
+			}
+		}
+		dependencies[cleanedAbsPath] = struct{}{}
+	default:
+		for _, node := range parser.Children(i) {
+			err = vm.findDependencies(filePath, &node, dependencies, stackTrace)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return
+}
+
 // EvaluateSnippet evaluates a string containing Jsonnet code, return a JSON
 // string.
 //
@@ -223,6 +299,60 @@ func (vm *VM) EvaluateSnippetMulti(filename string, snippet string) (files map[s
 	}
 	files = output.(map[string]string)
 	return
+}
+
+// FindDependencies returns a sorted array of unique transitive dependencies (via import or importstr)
+// from all the given `importedPaths` which are themselves excluded from the returned array.
+// The `importedPaths` are parsed as if they were imported from a Jsonnet file located at `importedFrom`.
+func (vm *VM) FindDependencies(importedFrom string, importedPaths []string) ([]string, error) {
+	var nodes []*ast.Node
+	var stackTrace []traceFrame
+	filePaths := make([]string, len(importedPaths))
+	depsToExclude := make([]string, len(importedPaths))
+	deps := make(map[string]struct{})
+
+	for i, filePath := range importedPaths {
+		node, foundAt, err := vm.ImportAST(importedFrom, filePath)
+		if err != nil {
+			return nil, err
+		}
+		cleanedAbsPath := foundAt
+		if _, isFileImporter := vm.importer.(*FileImporter); isFileImporter {
+			cleanedAbsPath, err = getAbsPath(foundAt)
+			if err != nil {
+				return nil, err
+			}
+		}
+		nodes = append(nodes, &node)
+		filePaths[i] = foundAt
+
+		// Add `importedPaths` to the dependencies so that they are not parsed again.
+		// Will be removed before returning.
+		deps[cleanedAbsPath] = struct{}{}
+		depsToExclude[i] = cleanedAbsPath
+	}
+
+	for i, filePath := range filePaths {
+		err := vm.findDependencies(filePath, nodes[i], deps, &stackTrace)
+		if err != nil {
+			err = makeRuntimeError(err.Error(), stackTrace)
+			return nil, errors.New(vm.ErrorFormatter.Format(err))
+		}
+	}
+
+	// Exclude `importedPaths` from the dependencies.
+	for _, dep := range depsToExclude {
+		delete(deps, dep)
+	}
+
+	dependencies, i := make([]string, len(deps)), 0
+	for key := range deps {
+		dependencies[i] = key
+		i++
+	}
+	sort.Strings(dependencies)
+
+	return dependencies, nil
 }
 
 // ResolveImport finds the actual path where the imported file can be found.

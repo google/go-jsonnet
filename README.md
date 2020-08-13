@@ -9,14 +9,20 @@
 [Coverage Status Widget]: https://coveralls.io/repos/github/google/go-jsonnet/badge.svg?branch=master
 [Coverage Status]: https://coveralls.io/github/google/go-jsonnet?branch=master
 
-This an implementation of [Jsonnet](http://jsonnet.org/) in pure Go. It is feature complete but is not as heavily exercised as the [Jsonnet C++ implementation](https://github.com/google/jsonnet).  Please try it out and give feedback.
+This an implementation of [Jsonnet](http://jsonnet.org/) in pure Go. It is a feature complete, production-ready implementation. It is compatible with the original [Jsonnet C++ implementation](https://github.com/google/jsonnet). Bindings to C and Python are available (but not battle-tested yet).
 
-This code is known to work on Go 1.8 and above. We recommend always using the newest stable release of Go.
+This code is known to work on Go 1.11 and above. We recommend always using the newest stable release of Go.
 
 ## Installation instructions
 
 ```
 go get github.com/google/go-jsonnet/cmd/jsonnet
+```
+
+It's also available on Homebrew:
+
+```
+brew install go-jsonnet
 ```
 
 ## Build instructions (go 1.11+)
@@ -26,6 +32,7 @@ git clone git@github.com:google/go-jsonnet.git
 cd go-jsonnet
 go build ./cmd/jsonnet
 go build ./cmd/jsonnetfmt
+go build ./cmd/jsonnet-deps
 ```
 To build with [Bazel](https://bazel.build/) instead:
 ```bash
@@ -35,6 +42,7 @@ git submodule init
 git submodule update
 bazel build //cmd/jsonnet
 bazel build //cmd/jsonnetfmt
+bazel build //cmd/jsonnet-deps
 ```
 The resulting _jsonnet_ program will then be available at a platform-specific path, such as _bazel-bin/cmd/jsonnet/darwin_amd64_stripped/jsonnet_ for macOS.
 
@@ -59,7 +67,7 @@ Additionally if any files were moved around, see the section [Keeping the Bazel 
 
 ## Running Benchmarks
 
-Setup
+### Method 1
 
 ```bash
 go get golang.org/x/tools/cmd/benchcmp
@@ -82,6 +90,28 @@ go build ./cmd/jsonnet
 ```bash
 # e.g. ./benchmark.sh Builtin
 ./benchmark.sh <TestNameFilter>
+```
+
+### Method 2
+
+1. get `benchcmp`
+
+```bash
+go get golang.org/x/tools/cmd/benchcmp
+```
+
+2. Make sure you build a jsonnet binary _prior_ to making changes.
+
+```bash
+make build-old
+```
+
+3. iterate with (which will also automatically rebuild the new binary `./jsonnet`)
+
+_replace the FILTER with the name of the test you are working on_
+
+```bash
+FILTER=Builtin_manifestJsonEx make benchmark
 ```
 
 ## Implementation Notes

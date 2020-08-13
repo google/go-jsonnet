@@ -1,1 +1,10 @@
-0
+RUNTIME ERROR: Shift by negative exponent.
+-------------------------------------------------
+	testdata/bitwise_shift4:1:1-15	$
+
+10000 >> (-10)
+
+-------------------------------------------------
+	During evaluation	
+
+

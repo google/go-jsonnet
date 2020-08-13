@@ -23,7 +23,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/fatih/color"
@@ -42,53 +41,55 @@ func usage(o io.Writer) {
 	fmt.Fprintln(o, "jsonnet {<option>} <filename>")
 	fmt.Fprintln(o)
 	fmt.Fprintln(o, "Available options:")
-	fmt.Fprintln(o, "  -h / --help             This message")
-	fmt.Fprintln(o, "  -e / --exec             Treat filename as code")
-	fmt.Fprintln(o, "  -J / --jpath <dir>      Specify an additional library search dir (right-most wins)")
-	fmt.Fprintln(o, "  -o / --output-file <file> Write to the output file rather than stdout")
-	fmt.Fprintln(o, "  -m / --multi <dir>      Write multiple files to the directory, list files on stdout")
-	fmt.Fprintln(o, "  -c / --create-output-dirs  Automatically creates all parent directories for files")
-	fmt.Fprintln(o, "  -y / --yaml-stream      Write output as a YAML stream of JSON documents")
-	fmt.Fprintln(o, "  -S / --string           Expect a string, manifest as plain text")
-	fmt.Fprintln(o, "  -s / --max-stack <n>    Number of allowed stack frames")
-	fmt.Fprintln(o, "  -t / --max-trace <n>    Max length of stack trace before cropping")
-	fmt.Fprintln(o, "  --version               Print version")
+	fmt.Fprintln(o, "  -h / --help                This message")
+	fmt.Fprintln(o, "  -e / --exec                Treat filename as code")
+	fmt.Fprintln(o, "  -J / --jpath <dir>         Specify an additional library search dir")
+	fmt.Fprintln(o, "                             (right-most wins)")
+	fmt.Fprintln(o, "  -o / --output-file <file>  Write to the output file rather than stdout")
+	fmt.Fprintln(o, "  -m / --multi <dir>         Write multiple files to the directory, list files")
+	fmt.Fprintln(o, "                             on stdout")
+	fmt.Fprintln(o, "  -c / --create-output-dirs  Automatically creates all parent directories for")
+	fmt.Fprintln(o, "                             files")
+	fmt.Fprintln(o, "  -y / --yaml-stream         Write output as a YAML stream of JSON documents")
+	fmt.Fprintln(o, "  -S / --string              Expect a string, manifest as plain text")
+	fmt.Fprintln(o, "  -s / --max-stack <n>       Number of allowed stack frames")
+	fmt.Fprintln(o, "  -t / --max-trace <n>       Max length of stack trace before cropping")
+	fmt.Fprintln(o, "  --version                  Print version")
+	fmt.Fprintln(o)
 	fmt.Fprintln(o, "Available options for specifying values of 'external' variables:")
-	fmt.Fprintln(o, "Provide the value as a string:")
-	fmt.Fprintln(o, "  -V / --ext-str <var>[=<val>]     If <val> is omitted, get from environment var <var>")
-	fmt.Fprintln(o, "       --ext-str-file <var>=<file> Read the string from the file")
-	fmt.Fprintln(o, "Provide a value as Jsonnet code:")
-	fmt.Fprintln(o, "  --ext-code <var>[=<code>]    If <code> is omitted, get from environment var <var>")
-	fmt.Fprintln(o, "  --ext-code-file <var>=<file> Read the code from the file")
+	fmt.Fprintln(o, "  Provide the value as a string:")
+	fmt.Fprintln(o, "  -V / --ext-str <var>[=<val>]      If <val> is omitted, get from environment")
+	fmt.Fprintln(o, "                                    var <var>")
+	fmt.Fprintln(o, "       --ext-str-file <var>=<file>  Read the string from the file")
+	fmt.Fprintln(o, "  Provide a value as Jsonnet code:")
+	fmt.Fprintln(o, "  --ext-code <var>[=<code>]         If <code> is omitted, get from environment")
+	fmt.Fprintln(o, "                                    var <var>")
+	fmt.Fprintln(o, "  --ext-code-file <var>=<file>      Read the code from the file")
+	fmt.Fprintln(o)
 	fmt.Fprintln(o, "Available options for specifying values of 'top-level arguments':")
-	fmt.Fprintln(o, "Provide the value as a string:")
-	fmt.Fprintln(o, "  -A / --tla-str <var>[=<val>]     If <val> is omitted, get from environment var <var>")
-	fmt.Fprintln(o, "       --tla-str-file <var>=<file> Read the string from the file")
-	fmt.Fprintln(o, "Provide a value as Jsonnet code:")
-	fmt.Fprintln(o, "  --tla-code <var>[=<code>]    If <code> is omitted, get from environment var <var>")
-	fmt.Fprintln(o, "  --tla-code-file <var>=<file> Read the code from the file")
+	fmt.Fprintln(o, "  Provide the value as a string:")
+	fmt.Fprintln(o, "  -A / --tla-str <var>[=<val>]      If <val> is omitted, get from environment")
+	fmt.Fprintln(o, "                                    var <var>")
+	fmt.Fprintln(o, "       --tla-str-file <var>=<file>  Read the string from the file")
+	fmt.Fprintln(o, "  Provide a value as Jsonnet code:")
+	fmt.Fprintln(o, "  --tla-code <var>[=<code>]         If <code> is omitted, get from environment")
+	fmt.Fprintln(o, "                                    var <var>")
+	fmt.Fprintln(o, "  --tla-code-file <var>=<file>      Read the code from the file")
+	fmt.Fprintln(o)
 	fmt.Fprintln(o, "Environment variables:")
-	fmt.Fprintln(o, "JSONNET_PATH is a colon (semicolon on Windows) separated list of directories added")
-	fmt.Fprintln(o, "in reverse order before the paths specified by --jpath (i.e. left-most wins)")
-	fmt.Fprintln(o, "E.g. JSONNET_PATH=a:b jsonnet -J c -J d is equivalent to:")
-	fmt.Fprintln(o, "JSONNET_PATH=d:c:a:b jsonnet")
-	fmt.Fprintln(o, "jsonnet -J b -J a -J c -J d")
+	fmt.Fprintln(o, "  JSONNET_PATH is a colon (semicolon on Windows) separated list of directories")
+	fmt.Fprintln(o, "  added in reverse order before the paths specified by --jpath (i.e. left-most")
+	fmt.Fprintln(o, "  wins). E.g. these are equivalent:")
+	fmt.Fprintln(o, "    JSONNET_PATH=a:b jsonnet -J c -J d")
+	fmt.Fprintln(o, "    JSONNET_PATH=d:c:a:b jsonnet")
+	fmt.Fprintln(o, "    jsonnet -J b -J a -J c -J d")
 	fmt.Fprintln(o)
 	fmt.Fprintln(o, "In all cases:")
-	fmt.Fprintln(o, "<filename> can be - (stdin)")
-	fmt.Fprintln(o, "Multichar options are expanded e.g. -abc becomes -a -b -c.")
-	fmt.Fprintln(o, "The -- option suppresses option processing for subsequent arguments.")
-	fmt.Fprintln(o, "Note that since filenames and jsonnet programs can begin with -, it is advised to")
-	fmt.Fprintln(o, "use -- if the argument is unknown, e.g. jsonnet -- \"$FILENAME\".")
-}
-
-func safeStrToInt(str string) (i int) {
-	i, err := strconv.Atoi(str)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Invalid integer \"%s\"\n", str)
-		os.Exit(1)
-	}
-	return
+	fmt.Fprintln(o, "  <filename> can be - (stdin)")
+	fmt.Fprintln(o, "  Multichar options are expanded e.g. -abc becomes -a -b -c.")
+	fmt.Fprintln(o, "  The -- option suppresses option processing for subsequent arguments.")
+	fmt.Fprintln(o, "  Note that since filenames and jsonnet programs can begin with -, it is")
+	fmt.Fprintln(o, "  advised to use -- if the argument is unknown, e.g. jsonnet -- \"$FILENAME\".")
 }
 
 type config struct {
@@ -192,7 +193,7 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 			}
 			break
 		} else if arg == "-s" || arg == "--max-stack" {
-			l := safeStrToInt(cmd.NextArg(&i, args))
+			l := cmd.SafeStrToInt(cmd.NextArg(&i, args))
 			if l < 1 {
 				return processArgsStatusFailure, fmt.Errorf("invalid --max-stack value: %d", l)
 			}
@@ -201,9 +202,6 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 			dir := cmd.NextArg(&i, args)
 			if len(dir) == 0 {
 				return processArgsStatusFailure, fmt.Errorf("-J argument was empty string")
-			}
-			if dir[len(dir)-1] != '/' {
-				dir += "/"
 			}
 			config.evalJpath = append(config.evalJpath, dir)
 		} else if arg == "-V" || arg == "--ext-str" {
@@ -239,7 +237,7 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 				return processArgsStatusFailure, err
 			}
 		} else if arg == "-t" || arg == "--max-trace" {
-			l := safeStrToInt(cmd.NextArg(&i, args))
+			l := cmd.SafeStrToInt(cmd.NextArg(&i, args))
 			if l < 0 {
 				return processArgsStatusFailure, fmt.Errorf("invalid --max-trace value: %d", l)
 			}
@@ -303,7 +301,7 @@ func writeMultiOutputFiles(output map[string]string, outputDir, outputFile strin
 			return err
 		}
 		defer func() {
-			if ferr := manifest.Close(); err != nil {
+			if ferr := manifest.Close(); ferr != nil {
 				err = ferr
 			}
 		}()
@@ -352,7 +350,7 @@ func writeMultiOutputFiles(output map[string]string, outputDir, outputFile strin
 			return err
 		}
 		defer func() {
-			if ferr := f.Close(); err != nil {
+			if ferr := f.Close(); ferr != nil {
 				err = ferr
 			}
 		}()
@@ -378,7 +376,7 @@ func writeOutputStream(output []string, outputFile string) (err error) {
 			return err
 		}
 		defer func() {
-			if ferr := f.Close(); err != nil {
+			if ferr := f.Close(); ferr != nil {
 				err = ferr
 			}
 		}()

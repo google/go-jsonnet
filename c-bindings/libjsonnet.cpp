@@ -6,7 +6,7 @@ extern "C" {
     #include "internal.h"
 }
 
-struct JsonnetVm *jsonnet_internal_make_vm_with_id(uint32_t id) {
+struct JsonnetVm *jsonnet_internal_make_vm_with_id(uintptr_t id) {
     JsonnetVm *vm = new JsonnetVm();
     vm->id = id;
     return vm;
@@ -16,7 +16,7 @@ void jsonnet_internal_free_vm(struct JsonnetVm *x) {
     delete(x);
 }
 
-struct JsonnetJsonValue *jsonnet_internal_make_json_with_id(uint32_t id) {
+struct JsonnetJsonValue *jsonnet_internal_make_json_with_id(uintptr_t id) {
     JsonnetJsonValue *json = new JsonnetJsonValue();
     json->id = id;
     return json;

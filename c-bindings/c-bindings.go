@@ -79,11 +79,10 @@ func (i *importer) Import(importedFrom, importedPath string) (contents jsonnet.C
 	if _, isCached := i.contentCache[foundHere]; !isCached {
 		i.contentCache[foundHere] = jsonnet.MakeContents(result)
 	}
-	fmt.Fprintf(os.Stderr, "%#+v\n", i.contentCache[foundHere])
 	return i.contentCache[foundHere], foundHere, nil
 }
 
-var handles = handlesTable{}
+var handles = newHandlesTable()
 var versionString *C.char
 
 //export jsonnet_version
@@ -107,12 +106,12 @@ func jsonnet_make() *C.struct_JsonnetVm {
 		os.Exit(1)
 	}
 
-	return C.jsonnet_internal_make_vm_with_id(C.uint32_t(id))
+	return C.jsonnet_internal_make_vm_with_id(C.uintptr_t(id))
 }
 
 //export jsonnet_destroy
 func jsonnet_destroy(vmRef *C.struct_JsonnetVm) {
-	if err := handles.free(uint32(vmRef.id)); err != nil {
+	if err := handles.free(uintptr(vmRef.id)); err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
@@ -121,7 +120,7 @@ func jsonnet_destroy(vmRef *C.struct_JsonnetVm) {
 }
 
 func getVM(vmRef *C.struct_JsonnetVm) *vm {
-	ref, err := handles.get(uint32(vmRef.id))
+	ref, err := handles.get(uintptr(vmRef.id))
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
@@ -412,7 +411,7 @@ func jsonnet_json_destroy(vmRef *C.struct_JsonnetVm, v *C.struct_JsonnetJsonValu
 		jsonnet_json_destroy(vmRef, child)
 	}
 
-	if err := handles.free(uint32(v.id)); err != nil {
+	if err := handles.free(uintptr(v.id)); err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
 	}
@@ -428,11 +427,11 @@ func createJSONValue(vmRef *C.struct_JsonnetVm, val interface{}) *C.struct_Jsonn
 		os.Exit(1)
 	}
 
-	return C.jsonnet_internal_make_json_with_id(C.uint32_t(id))
+	return C.jsonnet_internal_make_json_with_id(C.uintptr_t(id))
 }
 
 func getJSONValue(jsonRef *C.struct_JsonnetJsonValue) *jsonValue {
-	ref, err := handles.get(uint32(jsonRef.id))
+	ref, err := handles.get(uintptr(jsonRef.id))
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())

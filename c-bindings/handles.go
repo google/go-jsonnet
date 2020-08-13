@@ -2,10 +2,8 @@ package main
 
 import (
 	"errors"
-	"fmt"
+	"unsafe"
 )
-
-const maxID = 100000
 
 // Because of Go GC, there are restrictions on keeping Go pointers in C.
 // We cannot just pass *jsonnet.VM/JsonValue to C. So instead we use "handle" structs in C
@@ -17,62 +15,45 @@ const maxID = 100000
 
 // handlesTable is the set of active, valid Jsonnet allocated handles
 type handlesTable struct {
-	objects  []interface{}
-	freedIDs []uint32
+	handles map[uintptr]*handle
 }
 
-// errMaxNumberOfOpenHandles tells that there was an attempt to create more than maxID open handles
-var errMaxNumberOfOpenHandles = fmt.Errorf("maximum number of constructed Jsonnet handles exceeded (%d)", maxID)
+type handle struct {
+	ref interface{}
+}
 
 // errInvalidHandle tells that there was an attempt to dereference invalid handle ID
 var errInvalidHandle = errors.New("invalid handle ID was provided")
 
-// make registers the new object as a handle and returns the corresponding ID
-func (h *handlesTable) make(obj interface{}) (uint32, error) {
-	var id uint32
-
-	if len(h.freedIDs) > 0 {
-		id, h.freedIDs = h.freedIDs[len(h.freedIDs)-1], h.freedIDs[:len(h.freedIDs)-1]
-		h.objects[id-1] = obj
-	} else {
-		id = uint32(len(h.objects) + 1)
-
-		if id > maxID {
-			return 0, errMaxNumberOfOpenHandles
-		}
-
-		h.objects = append(h.objects, obj)
+func newHandlesTable() handlesTable {
+	return handlesTable{
+		handles: make(map[uintptr]*handle),
 	}
+}
 
+// make registers the new object as a handle and returns the corresponding ID
+func (h *handlesTable) make(obj interface{}) (uintptr, error) {
+	entry := &handle{ref: obj}
+	id := uintptr(unsafe.Pointer(entry))
+	h.handles[id] = entry
 	return id, nil
 }
 
-// free marks the given handle ID as unused
-func (h *handlesTable) free(id uint32) error {
-	if err := h.ensureValidID(id); err != nil {
-		return err
+// free removes an object with the given ID
+func (h *handlesTable) free(id uintptr) error {
+	if handle := h.handles[id]; handle == nil {
+		return errInvalidHandle
 	}
 
-	h.objects[id-1] = nil
-	h.freedIDs = append(h.freedIDs, id)
-
+	delete(h.handles, id)
 	return nil
 }
 
 // get returns the corresponding object for the provided ID
-func (h *handlesTable) get(id uint32) (interface{}, error) {
-	if err := h.ensureValidID(id); err != nil {
-		return nil, err
+func (h *handlesTable) get(id uintptr) (interface{}, error) {
+	if handle := h.handles[id]; handle != nil {
+		return handle.ref, nil
 	}
 
-	return h.objects[id-1], nil
-}
-
-// ensureValidID returns an error if the given handle ID is invalid, otherwise returns nil
-func (h *handlesTable) ensureValidID(id uint32) error {
-	if id == 0 || uint64(id) > uint64(len(h.objects)) {
-		return errInvalidHandle
-	}
-
-	return nil
+	return nil, errInvalidHandle
 }
