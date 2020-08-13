@@ -74,7 +74,7 @@ type YAMLReader struct {
 	reader Reader
 }
 
-// Creates a new YAMLReader
+// NewYAMLReader creates a new YAMLReader
 func NewYAMLReader(r *bufio.Reader) *YAMLReader {
 	return &YAMLReader{
 		reader: &LineReader{reader: r},
