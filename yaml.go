@@ -64,14 +64,17 @@ func (d *YAMLToJSONDecoder) Decode(into interface{}) error {
 	return err
 }
 
+// Reader reads bytes
 type Reader interface {
 	Read() ([]byte, error)
 }
 
+// YAMLReader reads YAML
 type YAMLReader struct {
 	reader Reader
 }
 
+// Creates a new YAMLReader
 func NewYAMLReader(r *bufio.Reader) *YAMLReader {
 	return &YAMLReader{
 		reader: &LineReader{reader: r},
@@ -112,6 +115,7 @@ func (r *YAMLReader) Read() ([]byte, error) {
 	}
 }
 
+// LineReader reads single lines.
 type LineReader struct {
 	reader *bufio.Reader
 }
