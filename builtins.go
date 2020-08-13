@@ -1618,11 +1618,8 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "base64Decode", function: builtinBase64Decode, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "base64DecodeBytes", function: builtinBase64DecodeBytes, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseJson", function: builtinParseJSON, params: ast.Identifiers{"str"}},
-<<<<<<< HEAD
 	&unaryBuiltin{name: "parseYaml", function: builtinParseYAML, parameters: ast.Identifiers{"str"}},
-=======
 	&binaryBuiltin{name: "manifestJsonEx", function: builtinManifestJSONEx, params: ast.Identifiers{"value", "indent"}},
->>>>>>> master
 	&unaryBuiltin{name: "base64", function: builtinBase64, params: ast.Identifiers{"input"}},
 	&unaryBuiltin{name: "encodeUTF8", function: builtinEncodeUTF8, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "decodeUTF8", function: builtinDecodeUTF8, params: ast.Identifiers{"arr"}},
