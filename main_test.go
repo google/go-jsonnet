@@ -137,7 +137,7 @@ func runInternalJsonnet(i jsonnetInput) jsonnetResult {
 	vm.NativeFunction(jsonToString)
 	vm.NativeFunction(nativeError)
 
-	rawAST, _, staticErr := parser.SnippetToRawAST(i.name, string(i.input))
+	rawAST, _, staticErr := parser.SnippetToRawAST(ast.DiagnosticFileName(i.name), "", string(i.input))
 	if staticErr != nil {
 		return jsonnetResult{
 			output:  errFormatter.Format(staticErr) + "\n",
@@ -155,7 +155,8 @@ func runInternalJsonnet(i jsonnetInput) jsonnetResult {
 	}
 	testChildren(desugaredAST)
 
-	rawOutput, err := vm.evaluateSnippet(i.name, string(i.input), i.eKind)
+	// TODO(sbarzowski) We should treat the tests as anonymous snippets or import them with an importer.
+	rawOutput, err := vm.evaluateSnippet(ast.DiagnosticFileName(i.name), i.name, string(i.input), i.eKind)
 	switch {
 	case err != nil:
 		// TODO(sbarzowski) perhaps somehow mark that we are processing

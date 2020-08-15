@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/internal/dump"
 	"github.com/google/go-jsonnet/internal/program"
 )
@@ -33,7 +34,7 @@ func main() {
 		panic(err)
 	}
 
-	node, err := program.SnippetToAST("<std>", string(buf))
+	node, err := program.SnippetToAST(ast.DiagnosticFileName("<std>"), "", string(buf))
 	if err != nil {
 		panic(err)
 	}

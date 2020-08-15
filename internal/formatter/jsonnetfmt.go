@@ -136,7 +136,7 @@ func visitFile(p pass.ASTPass, node *ast.Node, finalFodder *ast.Fodder) {
 // Format returns code that is equivalent to its input but better formatted
 // according to the given options.
 func Format(filename string, input string, options Options) (string, error) {
-	node, finalFodder, err := parser.SnippetToRawAST(filename, input)
+	node, finalFodder, err := parser.SnippetToRawAST(ast.DiagnosticFileName(filename), "", input)
 	if err != nil {
 		return "", err
 	}

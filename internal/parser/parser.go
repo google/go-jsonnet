@@ -1384,8 +1384,8 @@ func Parse(t Tokens) (ast.Node, ast.Fodder, errors.StaticError) {
 
 // SnippetToRawAST converts a Jsonnet code snippet to an AST (without any transformations).
 // Any fodder after the final token is returned as well.
-func SnippetToRawAST(filename string, snippet string) (ast.Node, ast.Fodder, error) {
-	tokens, err := Lex(filename, snippet)
+func SnippetToRawAST(diagnosticFilename ast.DiagnosticFileName, importedFilename, snippet string) (ast.Node, ast.Fodder, error) {
+	tokens, err := Lex(diagnosticFilename, importedFilename, snippet)
 	if err != nil {
 		return nil, nil, err
 	}
