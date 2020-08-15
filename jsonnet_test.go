@@ -2,8 +2,11 @@ package jsonnet
 
 import (
 	"bytes"
+	"reflect"
 	"testing"
 	"unicode/utf8"
+
+	"github.com/google/go-jsonnet/ast"
 )
 
 type errorFormattingTest struct {
@@ -15,7 +18,7 @@ type errorFormattingTest struct {
 func genericTestErrorMessage(t *testing.T, tests []errorFormattingTest, format func(RuntimeError) string) {
 	for _, test := range tests {
 		vm := MakeVM()
-		rawOutput, err := vm.evaluateSnippet(test.name, test.input, evalKindRegular)
+		rawOutput, err := vm.evaluateSnippet(ast.DiagnosticFileName(test.name), "", test.input, evalKindRegular)
 		var errString string
 		if err != nil {
 			switch typedErr := err.(type) {
@@ -80,17 +83,17 @@ func TestMinimalError(t *testing.T) {
 
 func removeExcessiveWhitespace(s string) string {
 	var buf bytes.Buffer
-	separated := true
+	needsSeparation := false
 	for i, w := 0, 0; i < len(s); i += w {
 		runeValue, width := utf8.DecodeRuneInString(s[i:])
 		if runeValue == '\n' || runeValue == ' ' {
-			if !separated {
-				buf.WriteString(" ")
-				separated = true
-			}
+			needsSeparation = true
 		} else {
+			if needsSeparation {
+				buf.WriteString(" ")
+				needsSeparation = false
+			}
 			buf.WriteRune(runeValue)
-			separated = false
 		}
 		w = width
 	}
@@ -106,7 +109,7 @@ func TestCustomImporter(t *testing.T) {
 		},
 	})
 	input := `[import "a.jsonnet", importstr "b.jsonnet"]`
-	expected := `[ 4, "3 + 3" ] `
+	expected := `[ 4, "3 + 3" ]`
 	actual, err := vm.EvaluateSnippet("custom_import.jsonnet", input)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -114,6 +117,101 @@ func TestCustomImporter(t *testing.T) {
 	actual = removeExcessiveWhitespace(actual)
 	if actual != expected {
 		t.Errorf("Expected %q, but got %q", expected, actual)
+	}
+}
+
+type importHistoryEntry struct {
+	importedFrom string
+	importedPath string
+}
+
+type importerWithHistory struct {
+	i       MemoryImporter
+	history []importHistoryEntry
+}
+
+func (importer *importerWithHistory) Import(importedFrom, importedPath string) (contents Contents, foundAt string, err error) {
+	importer.history = append(importer.history, importHistoryEntry{importedFrom, importedPath})
+	return importer.i.Import(importedFrom, importedPath)
+}
+
+func TestExtVarImportedFrom(t *testing.T) {
+	vm := MakeVM()
+	vm.ExtCode("aaa", "import 'a.jsonnet'")
+	importer := importerWithHistory{
+		i: MemoryImporter{
+			map[string]Contents{
+				"a.jsonnet": MakeContents("2 + 2"),
+			},
+		},
+	}
+	vm.Importer(&importer)
+	input := `std.extVar('aaa')`
+	expected := `4`
+	actual, err := vm.EvaluateSnippet("blah.jsonnet", input)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	actual = removeExcessiveWhitespace(actual)
+	if actual != expected {
+		t.Errorf("Expected %q, but got %q", expected, actual)
+	}
+	expectedImportHistory := []importHistoryEntry{importHistoryEntry{"", "a.jsonnet"}}
+	if !reflect.DeepEqual(importer.history, expectedImportHistory) {
+		t.Errorf("Expected %q, but got %q", expectedImportHistory, importer.history)
+	}
+}
+
+func TestTLAImportedFrom(t *testing.T) {
+	vm := MakeVM()
+	vm.TLACode("aaa", "import 'a.jsonnet'")
+	importer := importerWithHistory{
+		i: MemoryImporter{
+			map[string]Contents{
+				"a.jsonnet": MakeContents("2 + 2"),
+			},
+		},
+	}
+	vm.Importer(&importer)
+	input := `function(aaa) aaa`
+	expected := `4`
+	actual, err := vm.EvaluateSnippet("blah.jsonnet", input)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	actual = removeExcessiveWhitespace(actual)
+	if actual != expected {
+		t.Errorf("Expected %q, but got %q", expected, actual)
+	}
+	expectedImportHistory := []importHistoryEntry{importHistoryEntry{"", "a.jsonnet"}}
+	if !reflect.DeepEqual(importer.history, expectedImportHistory) {
+		t.Errorf("Expected %q, but got %q", expectedImportHistory, importer.history)
+	}
+}
+
+func TestAnonymousImportedFrom(t *testing.T) {
+	vm := MakeVM()
+	importer := importerWithHistory{
+		i: MemoryImporter{
+			map[string]Contents{
+				"a.jsonnet": MakeContents("2 + 2"),
+			},
+		},
+	}
+	vm.Importer(&importer)
+	input := `import "a.jsonnet"`
+	expected := `4`
+	actual, err := vm.EvaluateAnonymousSnippet("blah.jsonnet", input)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+	actual = removeExcessiveWhitespace(actual)
+	if actual != expected {
+		t.Errorf("Expected %q, but got %q", expected, actual)
+	}
+	expectedImportHistory := []importHistoryEntry{importHistoryEntry{"", "a.jsonnet"}}
+	if !reflect.DeepEqual(importer.history, expectedImportHistory) {
+		t.Errorf("Expected %q, but got %q", expectedImportHistory, importer.history)
 	}
 }
 

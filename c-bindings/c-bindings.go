@@ -139,6 +139,8 @@ func getVM(vmRef *C.struct_JsonnetVm) *vm {
 
 func evaluateSnippet(vmRef *C.struct_JsonnetVm, filename string, code string, e *C.int) *C.char {
 	vm := getVM(vmRef)
+	// We still use a deprecated function to keep backwards compatible behavior.
+	//nolint:staticcheck
 	out, err := vm.EvaluateSnippet(filename, code)
 	var result *C.char
 	if err != nil {
