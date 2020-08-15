@@ -50,6 +50,13 @@ type Importer interface {
 	Import(importedFrom, importedPath string) (contents Contents, foundAt string, err error)
 }
 
+// ImportProcessor allows to dynamically modify the result returned by the
+// Importer, for example to convert other formats to a Jsonnet snippet before
+// evaluating.
+type ImportProcessor interface {
+	Process(contents Contents, foundAt string) (Contents, error)
+}
+
 // Contents is a representation of imported data. It is a simple
 // string wrapper, which makes it easier to enforce the caching policy.
 type Contents struct {
@@ -79,12 +86,14 @@ type importCache struct {
 	astCache            map[string]ast.Node
 	codeCache           map[string]potentialValue
 	importer            Importer
+	processor           ImportProcessor
 }
 
 // makeImportCache creates an importCache using an Importer.
-func makeImportCache(importer Importer) *importCache {
+func makeImportCache(importer Importer, processor ImportProcessor) *importCache {
 	return &importCache{
 		importer:            importer,
+		processor:           processor,
 		foundAtVerification: make(map[string]Contents),
 		astCache:            make(map[string]ast.Node),
 		codeCache:           make(map[string]potentialValue),
@@ -115,9 +124,19 @@ func (cache *importCache) importAST(importedFrom, importedPath string) (ast.Node
 	if err != nil {
 		return nil, "", err
 	}
+
 	if cachedNode, isCached := cache.astCache[foundAt]; isCached {
 		return cachedNode, foundAt, nil
 	}
+
+	if cache.processor != nil {
+		c, err := cache.processor.Process(contents, foundAt)
+		if err != nil {
+			return nil, "", err
+		}
+		contents = c
+	}
+
 	node, err := program.SnippetToAST(foundAt, contents.String())
 	cache.astCache[foundAt] = node
 	return node, foundAt, err

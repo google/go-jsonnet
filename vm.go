@@ -36,14 +36,15 @@ import (
 // VM is the core interpreter and is the touchpoint used to parse and execute
 // Jsonnet.
 type VM struct {
-	MaxStack       int
-	ext            vmExtMap
-	tla            vmExtMap
-	nativeFuncs    map[string]*NativeFunction
-	importer       Importer
-	ErrorFormatter ErrorFormatter
-	StringOutput   bool
-	importCache    *importCache
+	MaxStack        int
+	ext             vmExtMap
+	tla             vmExtMap
+	nativeFuncs     map[string]*NativeFunction
+	importer        Importer
+	importProcessor ImportProcessor
+	ErrorFormatter  ErrorFormatter
+	StringOutput    bool
+	importCache     *importCache
 }
 
 // External variable or top level argument provided before execution
@@ -61,20 +62,21 @@ type vmExtMap map[string]vmExt
 func MakeVM() *VM {
 	defaultImporter := &FileImporter{}
 	return &VM{
-		MaxStack:       500,
-		ext:            make(vmExtMap),
-		tla:            make(vmExtMap),
-		nativeFuncs:    make(map[string]*NativeFunction),
-		ErrorFormatter: &termErrorFormatter{pretty: false, maxStackTraceSize: 20},
-		importer:       &FileImporter{},
-		importCache:    makeImportCache(defaultImporter),
+		MaxStack:        500,
+		ext:             make(vmExtMap),
+		tla:             make(vmExtMap),
+		nativeFuncs:     make(map[string]*NativeFunction),
+		ErrorFormatter:  &termErrorFormatter{pretty: false, maxStackTraceSize: 20},
+		importer:        &FileImporter{},
+		importProcessor: nil,
+		importCache:     makeImportCache(defaultImporter, nil),
 	}
 }
 
 // Fully flush cache. This should be executed when we are no longer sure that the source files
 // didn't change, for example when the importer changed.
 func (vm *VM) flushCache() {
-	vm.importCache = makeImportCache(vm.importer)
+	vm.importCache = makeImportCache(vm.importer, vm.importProcessor)
 }
 
 // Flush value cache. This should be executed when calculated values may no longer be up to date,
@@ -112,6 +114,13 @@ func (vm *VM) TLACode(key string, val string) {
 // Importer sets Importer to use during evaluation (import callback).
 func (vm *VM) Importer(i Importer) {
 	vm.importer = i
+	vm.flushCache()
+}
+
+// ImportProcessor sets the ImportProcesor to use during evaluation
+// (post-processing callback)
+func (vm *VM) ImportProcessor(i ImportProcessor) {
+	vm.importProcessor = i
 	vm.flushCache()
 }
 
