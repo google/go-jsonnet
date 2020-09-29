@@ -51,3 +51,37 @@ archives:
       amd64: x86_64
 checksum:
   name_template: 'checksums.txt'
+
+nfpms:
+  - id: jsonnet
+    package_name: jsonnet-go
+    builds:
+      - jsonnet
+    description: A data templating language for app and tool developers
+    homepage: https://github.com/google/go-jsonnet
+    license: Apache 2.0
+    formats:
+      - deb
+    bindir: /usr/bin
+    maintainer: David Cunningham <dcunnin@google.com>
+    file_name_template: "jsonnet-go_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    overrides:
+      deb:
+        conflicts:
+          # See: https://packages.ubuntu.com/jsonnet
+          - jsonnet
+  - id: jsonnetfmt
+    package_name: jsonnetfmt-go
+    builds:
+      - jsonnetfmt
+    homepage: https://github.com/google/go-jsonnet
+    license: Apache 2.0
+    formats:
+      - deb
+    bindir: /usr/bin
+    file_name_template: "jsonnetfmt-go_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    overrides:
+      deb:
+        conflicts:
+          # See: https://packages.ubuntu.com/jsonnet
+          - jsonnetfmt
