@@ -199,7 +199,7 @@ func concatStrings(a, b valueString) valueString {
 	}
 }
 
-func stringLessThan(a, b valueString) bool {
+func stringCmp(a, b valueString) int {
 	runesA := a.getRunes()
 	runesB := b.getRunes()
 	var length int
@@ -210,10 +210,10 @@ func stringLessThan(a, b valueString) bool {
 	}
 	for i := 0; i < length; i++ {
 		if runesA[i] != runesB[i] {
-			return runesA[i] < runesB[i]
+			return runeCmp(runesA[i], runesB[i])
 		}
 	}
-	return len(runesA) < len(runesB)
+	return intCmp(len(runesA), len(runesB))
 }
 
 func stringEqual(a, b valueString) bool {
@@ -245,10 +245,6 @@ func (*valueBoolean) getType() *valueType {
 
 func makeValueBoolean(v bool) *valueBoolean {
 	return &valueBoolean{value: v}
-}
-
-func (b *valueBoolean) not() *valueBoolean {
-	return makeValueBoolean(!b.value)
 }
 
 type valueNumber struct {

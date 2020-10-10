@@ -76,7 +76,7 @@ go get golang.org/x/tools/cmd/benchcmp
 1. Make sure you build a jsonnet binary _prior_ to making changes.
 
 ```bash
-go build ./cmd/jsonnet -o jsonnet-old
+go build -o jsonnet-old ./cmd/jsonnet
 ```
 
 2. Make changes (iterate as needed), and rebuild new binary
