@@ -130,48 +130,82 @@ func builtinModulo(i *interpreter, trace traceElement, xv, yv value) (value, err
 	return makeDoubleCheck(i, trace, math.Mod(x.value, y.value))
 }
 
-func valueLess(i *interpreter, trace traceElement, x, yv value) (bool, error) {
+func valueCmp(i *interpreter, trace traceElement, x, y value) (int, error) {
 	switch left := x.(type) {
 	case *valueNumber:
-		right, err := i.getNumber(yv, trace)
+		right, err := i.getNumber(y, trace)
 		if err != nil {
-			return false, err
+			return 0, err
 		}
-		return left.value < right.value, nil
+		return float64Cmp(left.value, right.value), nil
 	case valueString:
-		right, err := i.getString(yv, trace)
+		right, err := i.getString(y, trace)
 		if err != nil {
-			return false, err
+			return 0, err
 		}
-		return stringLessThan(left, right), nil
+		return stringCmp(left, right), nil
+	case *valueArray:
+		right, err := i.getArray(y, trace)
+		if err != nil {
+			return 0, err
+		}
+		return arrayCmp(i, trace, left, right)
 	default:
-		return false, i.typeErrorGeneral(x, trace)
+		return 0, i.typeErrorGeneral(x, trace)
 	}
 }
 
-func builtinLess(i *interpreter, trace traceElement, x, yv value) (value, error) {
-	b, err := valueLess(i, trace, x, yv)
-	return makeValueBoolean(b), err
+func arrayCmp(i *interpreter, trace traceElement, x, y *valueArray) (int, error) {
+	for index := 0; index < minInt(x.length(), y.length()); index++ {
+		left, err := x.index(i, trace, index)
+		if err != nil {
+			return 0, err
+		}
+		right, err := y.index(i, trace, index)
+		if err != nil {
+			return 0, err
+		}
+		cmp, err := valueCmp(i, trace, left, right)
+		if err != nil {
+			return 0, err
+		}
+		if cmp != 0 {
+			return cmp, nil
+		}
+	}
+	return intCmp(x.length(), y.length()), nil
+}
+
+func builtinLess(i *interpreter, trace traceElement, x, y value) (value, error) {
+	r, err := valueCmp(i, trace, x, y)
+	if err != nil {
+		return nil, err
+	}
+	return makeValueBoolean(r == -1), nil
 }
 
 func builtinGreater(i *interpreter, trace traceElement, x, y value) (value, error) {
-	return builtinLess(i, trace, y, x)
+	r, err := valueCmp(i, trace, x, y)
+	if err != nil {
+		return nil, err
+	}
+	return makeValueBoolean(r == 1), nil
 }
 
 func builtinGreaterEq(i *interpreter, trace traceElement, x, y value) (value, error) {
-	res, err := builtinLess(i, trace, x, y)
+	r, err := valueCmp(i, trace, x, y)
 	if err != nil {
 		return nil, err
 	}
-	return res.(*valueBoolean).not(), nil
+	return makeValueBoolean(r >= 0), nil
 }
 
 func builtinLessEq(i *interpreter, trace traceElement, x, y value) (value, error) {
-	res, err := builtinGreater(i, trace, x, y)
+	r, err := valueCmp(i, trace, x, y)
 	if err != nil {
 		return nil, err
 	}
-	return res.(*valueBoolean).not(), nil
+	return makeValueBoolean(r <= 0), nil
 }
 
 func builtinLength(i *interpreter, trace traceElement, x value) (value, error) {
@@ -421,12 +455,12 @@ func (d *sortData) Len() int {
 }
 
 func (d *sortData) Less(i, j int) bool {
-	b, err := valueLess(d.i, d.trace, d.keys[i], d.keys[j])
+	r, err := valueCmp(d.i, d.trace, d.keys[i], d.keys[j])
 	if err != nil {
 		d.err = err
 		panic("Error while comparing elements")
 	}
-	return b
+	return r == -1
 }
 
 func (d *sortData) Swap(i, j int) {
