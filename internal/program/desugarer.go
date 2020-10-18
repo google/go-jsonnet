@@ -204,8 +204,22 @@ func desugarObjectComp(comp *ast.ObjectComp, objLevel int) (ast.Node, error) {
 		return nil, err
 	}
 
+	// Magic merging which follows doesn't support object locals, so we need
+	// to desugar them completely, i.e. put them inside the fields. The locals
+	// can be different for each field in a comprehension (unlike locals in
+	// "normal" objects which have a fixed value), so it's not even too wasteful.
+	if len(obj.Locals) > 0 {
+		field := &obj.Fields[0]
+		field.Body = &ast.Local{
+			Body:  field.Body,
+			Binds: obj.Locals,
+			// TODO(sbarzowski) should I set some NodeBase stuff here?
+		}
+		obj.Locals = nil
+	}
+
 	if len(obj.Fields) != 1 {
-		panic("Too many fields in object comprehension, it should have been caught during parsing")
+		panic("Wrong number of fields in object comprehension, it should have been caught during parsing")
 	}
 
 	desugaredArrayComp, err := desugarForSpec(wrapInArray(obj), &comp.Spec, objLevel)

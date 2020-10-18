@@ -1111,28 +1111,23 @@ func builtinUglyObjectFlatMerge(i *interpreter, trace traceElement, x value) (va
 		return nil, err
 	}
 	newFields := make(simpleObjectFieldMap)
-	var anyObj *simpleObject
 	for _, elem := range objarr.elements {
 		obj, err := i.evaluateObject(elem, trace)
 		if err != nil {
 			return nil, err
 		}
+
 		// starts getting ugly - we mess with object internals
 		simpleObj := obj.uncached.(*simpleObject)
+
+		if len(simpleObj.locals) > 0 {
+			panic("Locals should have been desugared in object comprehension.")
+		}
+
 		// there is only one field, really
 		for fieldName, fieldVal := range simpleObj.fields {
 			if _, alreadyExists := newFields[fieldName]; alreadyExists {
 				return nil, i.Error(duplicateFieldNameErrMsg(fieldName), trace)
-			}
-
-			// Here is the tricky part. Each field in a comprehension has different
-			// upValues, because for example in {[v]: v for v in ["x", "y", "z"] },
-			// the v is different for each field.
-			// Yet, even though upValues are field-specific, they are shadowed by object locals,
-			// so we need to make holes to let them pass through
-			upValues := simpleObj.upValues
-			for _, l := range simpleObj.locals {
-				delete(upValues, l.name)
 			}
 
 			newFields[fieldName] = simpleObjectField{
@@ -1143,24 +1138,13 @@ func builtinUglyObjectFlatMerge(i *interpreter, trace traceElement, x value) (va
 				},
 			}
 		}
-		anyObj = simpleObj
-	}
-
-	var locals []objectLocal
-	var localUpValues bindingFrame
-	if len(objarr.elements) > 0 {
-		// another ugliness - we just take the locals of our last object,
-		// we assume that the locals are the same for each of merged objects
-		locals = anyObj.locals
-		// note that there are already holes for object locals
-		localUpValues = anyObj.upValues
 	}
 
 	return makeValueSimpleObject(
-		localUpValues,
+		nil,
 		newFields,
 		[]unboundField{}, // No asserts allowed
-		locals,
+		nil,
 	), nil
 }
 
