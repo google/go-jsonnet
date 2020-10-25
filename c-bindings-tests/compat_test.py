@@ -17,6 +17,36 @@ lib.jsonnet_evaluate_snippet.argtypes = [
 ]
 lib.jsonnet_evaluate_snippet.restype = ctypes.POINTER(ctypes.c_char)
 
+lib.jsonnet_evaluate_snippet_stream.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_char_p,
+    ctypes.c_char_p,
+    ctypes.POINTER(ctypes.c_int),
+]
+lib.jsonnet_evaluate_snippet_stream.restype = ctypes.POINTER(ctypes.c_char)
+
+lib.jsonnet_evaluate_snippet_multi.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_char_p,
+    ctypes.c_char_p,
+    ctypes.POINTER(ctypes.c_int),
+]
+lib.jsonnet_evaluate_snippet_multi.restype = ctypes.POINTER(ctypes.c_char)
+
+lib.jsonnet_evaluate_file_stream.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_char_p,
+    ctypes.POINTER(ctypes.c_int),
+]
+lib.jsonnet_evaluate_file_stream.restype = ctypes.POINTER(ctypes.c_char)
+
+lib.jsonnet_evaluate_file_multi.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_char_p,
+    ctypes.POINTER(ctypes.c_int),
+]
+lib.jsonnet_evaluate_file_multi.restype = ctypes.POINTER(ctypes.c_char)
+
 lib.jsonnet_make.argtypes = []
 lib.jsonnet_make.restype = ctypes.c_void_p
 
@@ -41,7 +71,7 @@ lib.jsonnet_jpath_add.argtypes = [
     ctypes.c_char_p,
 ]
 lib.jsonnet_jpath_add.restype = None
-        
+
 lib.jsonnet_max_trace.argtypes = [
     ctypes.c_void_p,
     ctypes.c_int,
@@ -187,6 +217,17 @@ def free_buffer(vm, buf):
 def to_bytes(buf):
     return ctypes.cast(buf, ctypes.c_char_p).value
 
+def to_bytes_list(buf):
+    res = []
+    raw_ptr = ctypes.cast(buf, ctypes.c_void_p).value
+    while True:
+        elem = ctypes.cast(raw_ptr, ctypes.c_char_p).value
+        if len(elem) == 0:
+            break
+        res.append(elem)
+        raw_ptr = raw_ptr + len(elem) + 1
+    return res
+
 @NATIVE_CALLBACK
 def square_native(ctx, argv, success):
     a = ctypes.c_double(0)
@@ -273,6 +314,32 @@ class TestJsonnetEvaluateBindings(unittest.TestCase):
         self.assertEqual(b'xxxyyy\n', to_bytes(res))
         free_buffer(self.vm, res)
 
+    def test_jsonnet_evaluate_snippet_stream(self):
+        res = lib.jsonnet_evaluate_snippet_stream(
+            self.vm,
+            b"vm1",
+            b"['aaa', 'bbb', {foo: 'bar', bar: 'baz'}]",
+            self.err_ref
+        )
+        self.assertEqual([
+                b'"aaa"\n',
+                b'"bbb"\n',
+                b'{\n   "bar": "baz",\n   "foo": "bar"\n}\n'
+            ], to_bytes_list(res))
+
+    def test_jsonnet_evaluate_snippet_multi(self):
+        res = lib.jsonnet_evaluate_snippet_multi(
+            self.vm,
+            b"vm1",
+            b"{foo: 'bar', bar: 'baz'}",
+            self.err_ref
+        )
+        self.assertEqual([
+                b'bar',
+                b'"baz"\n',
+                b'foo',
+                b'"bar"\n',
+            ], to_bytes_list(res))
 
     def test_params(self):
         lib.jsonnet_ext_var(self.vm, b"e1", b"a")
@@ -304,6 +371,23 @@ class TestJsonnetEvaluateBindings(unittest.TestCase):
         res = lib.jsonnet_evaluate_file(self.vm, b"jsonnet_import_test/foo.jsonnet", self.err_ref)
         self.assertEqual(b"42\n", to_bytes(res))
         free_buffer(self.vm, res)
+
+    def test_jsonnet_evaluate_file_stream(self):
+        res = lib.jsonnet_evaluate_file_stream(self.vm, b"jsonnet_import_test/stream.jsonnet", self.err_ref)
+        self.assertEqual([
+                b'"aaa"\n',
+                b'"bbb"\n',
+                b'{\n   "bar": "baz",\n   "foo": "bar"\n}\n'
+            ], to_bytes_list(res))
+
+    def test_jsonnet_evaluate_file_multi(self):
+        res = lib.jsonnet_evaluate_file_multi(self.vm, b"jsonnet_import_test/multi.jsonnet", self.err_ref)
+        self.assertEqual([
+                b'bar',
+                b'"baz"\n',
+                b'foo',
+                b'"bar"\n',
+            ], to_bytes_list(res))
 
     def test_jsonnet_version(self):
         res = lib.jsonnet_version()
@@ -388,7 +472,7 @@ class TestJsonnetJsonValueBindings(unittest.TestCase):
 
     def test_jsonnet_array(self):
         h = lib.jsonnet_json_make_array(self.vm)
-        
+
         lib.jsonnet_json_array_append(self.vm, h, lib.jsonnet_json_make_string(self.vm, b"Test 1.1"))
         lib.jsonnet_json_array_append(self.vm, h, lib.jsonnet_json_make_string(self.vm, b"Test 1.2"))
         lib.jsonnet_json_array_append(self.vm, h, lib.jsonnet_json_make_string(self.vm, b"Test 1.3"))
@@ -401,7 +485,7 @@ class TestJsonnetJsonValueBindings(unittest.TestCase):
 
     def test_jsonnet_object(self):
         h = lib.jsonnet_json_make_object(self.vm)
-        
+
         lib.jsonnet_json_object_append(self.vm, h, b"arg1", lib.jsonnet_json_make_string(self.vm, b"Test 1.1"))
         lib.jsonnet_json_object_append(self.vm, h, b"arg2", lib.jsonnet_json_make_string(self.vm, b"Test 1.2"))
         lib.jsonnet_json_object_append(self.vm, h, b"arg3", lib.jsonnet_json_make_string(self.vm, b"Test 1.3"))
