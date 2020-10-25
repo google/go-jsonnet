@@ -14,7 +14,11 @@ import (
 	// #include "internal.h"
 	"C"
 )
-import "errors"
+import (
+	"errors"
+	"sort"
+	"strings"
+)
 
 type vm struct {
 	*jsonnet.VM
@@ -153,11 +157,75 @@ func evaluateSnippet(vmRef *C.struct_JsonnetVm, filename string, code string, e 
 	return result
 }
 
+func evaluateSnippetStream(vmRef *C.struct_JsonnetVm, filename string, code string, e *C.int) *C.char {
+	vm := getVM(vmRef)
+	// We still use a deprecated function to keep backwards compatible behavior.
+	//nolint:staticcheck
+	out, err := vm.EvaluateSnippetStream(filename, code)
+	var result *C.char
+	if err != nil {
+		*e = 1
+		result = C.CString(err.Error())
+	} else {
+		*e = 0
+		var buf strings.Builder
+		for _, s := range out {
+			buf.WriteString(s)
+			buf.WriteByte(0)
+		}
+		result = C.CString(buf.String())
+	}
+	return result
+}
+
+func evaluateSnippetMulti(vmRef *C.struct_JsonnetVm, filename string, code string, e *C.int) *C.char {
+	vm := getVM(vmRef)
+	// We still use a deprecated function to keep backwards compatible behavior.
+	//nolint:staticcheck
+	out, err := vm.EvaluateSnippetMulti(filename, code)
+	var result *C.char
+	if err != nil {
+		*e = 1
+		result = C.CString(err.Error())
+	} else {
+		*e = 0
+		// We go through filenames in sorted order to get deterministic output.
+		filenames := make([]string, 0, len(out))
+		for filename := range out {
+			filenames = append(filenames, filename)
+		}
+		sort.Strings(filenames)
+		var buf strings.Builder
+		for _, filename := range filenames {
+			buf.WriteString(filename)
+			buf.WriteByte(0)
+			buf.WriteString(out[filename])
+			buf.WriteByte(0)
+		}
+		result = C.CString(buf.String())
+	}
+	return result
+}
+
 //export jsonnet_evaluate_snippet
 func jsonnet_evaluate_snippet(vmRef *C.struct_JsonnetVm, filename *C.char, code *C.char, e *C.int) *C.char {
 	f := C.GoString(filename)
 	s := C.GoString(code)
 	return evaluateSnippet(vmRef, f, s, e)
+}
+
+//export jsonnet_evaluate_snippet_stream
+func jsonnet_evaluate_snippet_stream(vmRef *C.struct_JsonnetVm, filename *C.char, code *C.char, e *C.int) *C.char {
+	f := C.GoString(filename)
+	s := C.GoString(code)
+	return evaluateSnippetStream(vmRef, f, s, e)
+}
+
+//export jsonnet_evaluate_snippet_multi
+func jsonnet_evaluate_snippet_multi(vmRef *C.struct_JsonnetVm, filename *C.char, code *C.char, e *C.int) *C.char {
+	f := C.GoString(filename)
+	s := C.GoString(code)
+	return evaluateSnippetMulti(vmRef, f, s, e)
 }
 
 //export jsonnet_evaluate_file
@@ -166,10 +234,31 @@ func jsonnet_evaluate_file(vmRef *C.struct_JsonnetVm, filename *C.char, e *C.int
 	data, err := ioutil.ReadFile(f)
 	if err != nil {
 		*e = 1
-		// TODO(sbarzowski) make sure that it's ok allocation-wise
 		return C.CString(fmt.Sprintf("Failed to read input file: %s: %s", f, err.Error()))
 	}
 	return evaluateSnippet(vmRef, f, string(data), e)
+}
+
+//export jsonnet_evaluate_file_stream
+func jsonnet_evaluate_file_stream(vmRef *C.struct_JsonnetVm, filename *C.char, e *C.int) *C.char {
+	f := C.GoString(filename)
+	data, err := ioutil.ReadFile(f)
+	if err != nil {
+		*e = 1
+		return C.CString(fmt.Sprintf("Failed to read input file: %s: %s", f, err.Error()))
+	}
+	return evaluateSnippetStream(vmRef, f, string(data), e)
+}
+
+//export jsonnet_evaluate_file_multi
+func jsonnet_evaluate_file_multi(vmRef *C.struct_JsonnetVm, filename *C.char, e *C.int) *C.char {
+	f := C.GoString(filename)
+	data, err := ioutil.ReadFile(f)
+	if err != nil {
+		*e = 1
+		return C.CString(fmt.Sprintf("Failed to read input file: %s: %s", f, err.Error()))
+	}
+	return evaluateSnippetMulti(vmRef, f, string(data), e)
 }
 
 //export jsonnet_max_stack
