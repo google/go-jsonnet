@@ -5,7 +5,9 @@ RUNTIME ERROR: Operator % cannot be used on types number and string.
       error 'Operator % cannot be used on types ' + std.type(a) + ' and ' + std.type(b) + '.',
 
 -------------------------------------------------
-		
+	testdata/percent_bad:1:1-9	
+
+42 % "x"
 
 -------------------------------------------------
 	During evaluation	

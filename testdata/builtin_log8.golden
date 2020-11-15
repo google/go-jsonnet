@@ -1,6 +1,6 @@
 RUNTIME ERROR: Not a number
 -------------------------------------------------
-	testdata/builtin_log8:1:1-24	builtin function <log>
+	testdata/builtin_log8:1:1-24	$
 
 std.log(-1000000000000)
 

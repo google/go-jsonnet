@@ -131,10 +131,10 @@ func (cache *importCache) importAST(importedFrom, importedPath string) (ast.Node
 }
 
 // ImportString imports a string, caches it and then returns it.
-func (cache *importCache) importString(importedFrom, importedPath string, i *interpreter, trace traceElement) (valueString, error) {
+func (cache *importCache) importString(importedFrom, importedPath string, i *interpreter) (valueString, error) {
 	data, _, err := cache.importData(importedFrom, importedPath)
 	if err != nil {
-		return nil, i.Error(err.Error(), trace)
+		return nil, i.Error(err.Error())
 	}
 	return makeValueString(data.String()), nil
 }
@@ -158,10 +158,10 @@ func codeToPV(i *interpreter, filename string, code string) *cachedThunk {
 }
 
 // ImportCode imports code from a path.
-func (cache *importCache) importCode(importedFrom, importedPath string, i *interpreter, trace traceElement) (value, error) {
+func (cache *importCache) importCode(importedFrom, importedPath string, i *interpreter) (value, error) {
 	node, foundAt, err := cache.importAST(importedFrom, importedPath)
 	if err != nil {
-		return nil, i.Error(err.Error(), trace)
+		return nil, i.Error(err.Error())
 	}
 	var pv potentialValue
 	if cachedPV, isCached := cache.codeCache[foundAt]; !isCached {
@@ -176,7 +176,7 @@ func (cache *importCache) importCode(importedFrom, importedPath string, i *inter
 	} else {
 		pv = cachedPV
 	}
-	return i.evaluatePV(pv, trace)
+	return i.evaluatePV(pv)
 }
 
 // Concrete importers

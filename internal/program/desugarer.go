@@ -155,7 +155,7 @@ func buildAnd(left ast.Node, right ast.Node) ast.Node {
 }
 
 // inside is assumed to be already desugared (and cannot be desugared again)
-func desugarForSpec(inside ast.Node, forSpec *ast.ForSpec, objLevel int) (ast.Node, error) {
+func desugarForSpec(inside ast.Node, loc ast.LocationRange, forSpec *ast.ForSpec, objLevel int) (ast.Node, error) {
 	var body ast.Node
 	if len(forSpec.Conditions) > 0 {
 		cond := forSpec.Conditions[0].Expr
@@ -179,11 +179,11 @@ func desugarForSpec(inside ast.Node, forSpec *ast.ForSpec, objLevel int) (ast.No
 	if err != nil {
 		return nil, err
 	}
-	current := buildStdCall("flatMap", function, forSpec.Expr)
+	current := buildStdCall("flatMap", loc, function, forSpec.Expr)
 	if forSpec.Outer == nil {
 		return current, nil
 	}
-	return desugarForSpec(current, forSpec.Outer, objLevel)
+	return desugarForSpec(current, loc, forSpec.Outer, objLevel)
 }
 
 func wrapInArray(inside ast.Node) ast.Node {
@@ -195,7 +195,7 @@ func desugarArrayComp(comp *ast.ArrayComp, objLevel int) (ast.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	return desugarForSpec(wrapInArray(comp.Body), &comp.Spec, objLevel)
+	return desugarForSpec(wrapInArray(comp.Body), *comp.Loc(), &comp.Spec, objLevel)
 }
 
 func desugarObjectComp(comp *ast.ObjectComp, objLevel int) (ast.Node, error) {
@@ -222,12 +222,12 @@ func desugarObjectComp(comp *ast.ObjectComp, objLevel int) (ast.Node, error) {
 		panic("Wrong number of fields in object comprehension, it should have been caught during parsing")
 	}
 
-	desugaredArrayComp, err := desugarForSpec(wrapInArray(obj), &comp.Spec, objLevel)
+	desugaredArrayComp, err := desugarForSpec(wrapInArray(obj), *comp.Loc(), &comp.Spec, objLevel)
 	if err != nil {
 		return nil, err
 	}
 
-	desugaredComp := buildStdCall("$objectFlatMerge", desugaredArrayComp)
+	desugaredComp := buildStdCall("$objectFlatMerge", *comp.Loc(), desugaredArrayComp)
 	return desugaredComp, nil
 }
 
@@ -245,7 +245,7 @@ func buildSimpleIndex(obj ast.Node, member ast.Identifier) ast.Node {
 	}
 }
 
-func buildStdCall(builtinName ast.Identifier, args ...ast.Node) ast.Node {
+func buildStdCall(builtinName ast.Identifier, loc ast.LocationRange, args ...ast.Node) ast.Node {
 	std := &ast.Var{Id: "std"}
 	builtin := buildSimpleIndex(std, builtinName)
 	positional := make([]ast.CommaSeparatedExpr, len(args))
@@ -253,6 +253,9 @@ func buildStdCall(builtinName ast.Identifier, args ...ast.Node) ast.Node {
 		positional[i].Expr = args[i]
 	}
 	return &ast.Apply{
+		NodeBase: ast.NodeBase{
+			LocRange: loc,
+		},
 		Target:    builtin,
 		Arguments: ast.Arguments{Positional: positional},
 	}
@@ -350,9 +353,9 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		if funcname, replaced := desugaredBop[node.Op]; replaced {
 			if node.Op == ast.BopIn {
 				// reversed order of arguments
-				*astPtr = buildStdCall(funcname, node.Right, node.Left)
+				*astPtr = buildStdCall(funcname, *node.Loc(), node.Right, node.Left)
 			} else {
-				*astPtr = buildStdCall(funcname, node.Left, node.Right)
+				*astPtr = buildStdCall(funcname, *node.Loc(), node.Left, node.Right)
 			}
 			return desugar(astPtr, objLevel)
 		}
@@ -455,7 +458,7 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		if node.Step == nil {
 			node.Step = &ast.LiteralNull{}
 		}
-		*astPtr = buildStdCall("slice", node.Target, node.BeginIndex, node.EndIndex, node.Step)
+		*astPtr = buildStdCall("slice", *node.Loc(), node.Target, node.BeginIndex, node.EndIndex, node.Step)
 		err = desugar(astPtr, objLevel)
 		if err != nil {
 			return

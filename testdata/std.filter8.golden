@@ -1,6 +1,6 @@
 RUNTIME ERROR: Unexpected type function, expected array
 -------------------------------------------------
-	testdata/std.filter8:1:1-36	builtin function <filter>
+	testdata/std.filter8:1:1-36	$
 
 std.filter([42], function(i) "xxx")
 

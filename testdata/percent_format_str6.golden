@@ -37,7 +37,9 @@ RUNTIME ERROR: Not enough values to format: 1, expected more than 1
       std.format(a, b)
 
 -------------------------------------------------
-		
+	testdata/percent_format_str6:1:1-16	
+
+"x %s %s" % "y"
 
 -------------------------------------------------
 	During evaluation	

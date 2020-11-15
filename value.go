@@ -58,7 +58,7 @@ var arrayType = &valueType{"array"}
 // TODO(sbarzowski) perhaps call it just "Thunk"?
 type potentialValue interface {
 	// fromWhere keeps the information from where the evaluation was requested.
-	getValue(i *interpreter, fromWhere traceElement) (value, error)
+	getValue(i *interpreter) (value, error)
 
 	aPotentialValue()
 }
@@ -78,7 +78,7 @@ type valueString interface {
 	length() int
 	getRunes() []rune
 	getGoString() string
-	index(i *interpreter, trace traceElement, index int) (value, error)
+	index(i *interpreter, index int) (value, error)
 }
 
 // valueFlatString represents a string value, internally using a []rune for quick
@@ -89,11 +89,11 @@ type valueFlatString struct {
 	value []rune
 }
 
-func (s *valueFlatString) index(i *interpreter, trace traceElement, index int) (value, error) {
+func (s *valueFlatString) index(i *interpreter, index int) (value, error) {
 	if 0 <= index && index < s.length() {
 		return makeValueString(string(s.value[index])), nil
 	}
-	return nil, i.Error(fmt.Sprintf("Index %d out of bounds, not within [0, %v)", index, s.length()), trace)
+	return nil, i.Error(fmt.Sprintf("Index %d out of bounds, not within [0, %v)", index, s.length()))
 }
 
 func (s *valueFlatString) getRunes() []rune {
@@ -142,12 +142,12 @@ func (s *valueStringTree) flattenToLeft() {
 	}
 }
 
-func (s *valueStringTree) index(i *interpreter, trace traceElement, index int) (value, error) {
+func (s *valueStringTree) index(i *interpreter, index int) (value, error) {
 	if 0 <= index && index < s.len {
 		s.flattenToLeft()
-		return s.left.index(i, trace, index)
+		return s.left.index(i, index)
 	}
-	return nil, i.Error(fmt.Sprintf("Index %d out of bounds, not within [0, %v)", index, s.length()), trace)
+	return nil, i.Error(fmt.Sprintf("Index %d out of bounds, not within [0, %v)", index, s.length()))
 }
 
 func (s *valueStringTree) getRunes() []rune {
@@ -290,11 +290,11 @@ type valueArray struct {
 	elements []*cachedThunk
 }
 
-func (arr *valueArray) index(i *interpreter, trace traceElement, index int) (value, error) {
+func (arr *valueArray) index(i *interpreter, index int) (value, error) {
 	if 0 <= index && index < arr.length() {
-		return i.evaluatePV(arr.elements[index], trace)
+		return i.evaluatePV(arr.elements[index])
 	}
-	return nil, i.Error(fmt.Sprintf("Index %d out of bounds, not within [0, %v)", index, arr.length()), trace)
+	return nil, i.Error(fmt.Sprintf("Index %d out of bounds, not within [0, %v)", index, arr.length()))
 }
 
 func (arr *valueArray) length() int {
@@ -337,29 +337,29 @@ type valueFunction struct {
 
 // TODO(sbarzowski) better name?
 type evalCallable interface {
-	evalCall(args callArguments, i *interpreter, trace traceElement) (value, error)
+	evalCall(args callArguments, i *interpreter) (value, error)
 	parameters() []namedParameter
 }
 
-func (f *valueFunction) call(i *interpreter, trace traceElement, args callArguments) (value, error) {
-	err := checkArguments(i, trace, args, f.parameters())
+func (f *valueFunction) call(i *interpreter, args callArguments) (value, error) {
+	err := checkArguments(i, args, f.parameters())
 	if err != nil {
 		return nil, err
 	}
-	return f.ec.evalCall(args, i, trace)
+	return f.ec.evalCall(args, i)
 }
 
 func (f *valueFunction) parameters() []namedParameter {
 	return f.ec.parameters()
 }
 
-func checkArguments(i *interpreter, trace traceElement, args callArguments, params []namedParameter) error {
+func checkArguments(i *interpreter, args callArguments, params []namedParameter) error {
 
 	numPassed := len(args.positional)
 	maxExpected := len(params)
 
 	if numPassed > maxExpected {
-		return i.Error(fmt.Sprintf("function expected %v positional argument(s), but got %v", maxExpected, numPassed), trace)
+		return i.Error(fmt.Sprintf("function expected %v positional argument(s), but got %v", maxExpected, numPassed))
 	}
 
 	// Parameter names the function will accept.
@@ -375,17 +375,17 @@ func checkArguments(i *interpreter, trace traceElement, args callArguments, para
 	}
 	for _, arg := range args.named {
 		if _, present := received[arg.name]; present {
-			return i.Error(fmt.Sprintf("Argument %v already provided", arg.name), trace)
+			return i.Error(fmt.Sprintf("Argument %v already provided", arg.name))
 		}
 		if _, present := accepted[arg.name]; !present {
-			return i.Error(fmt.Sprintf("function has no parameter %v", arg.name), trace)
+			return i.Error(fmt.Sprintf("function has no parameter %v", arg.name))
 		}
 		received[arg.name] = true
 	}
 
 	for _, param := range params {
 		if _, present := received[param.name]; !present && param.defaultArg == nil {
-			return i.Error(fmt.Sprintf("Missing argument: %v", param.name), trace)
+			return i.Error(fmt.Sprintf("Missing argument: %v", param.name))
 		}
 	}
 
@@ -492,8 +492,8 @@ func (*valueObject) getType() *valueType {
 	return objectType
 }
 
-func (obj *valueObject) index(i *interpreter, trace traceElement, field string) (value, error) {
-	return objectIndex(i, trace, objectBinding(obj), field)
+func (obj *valueObject) index(i *interpreter, field string) (value, error) {
+	return objectIndex(i, objectBinding(obj), field)
 }
 
 func (obj *valueObject) assertionsChecked() bool {
@@ -545,14 +545,14 @@ type simpleObject struct {
 	locals   []objectLocal
 }
 
-func checkAssertionsHelper(i *interpreter, trace traceElement, obj *valueObject, curr uncachedObject, superDepth int) error {
+func checkAssertionsHelper(i *interpreter, obj *valueObject, curr uncachedObject, superDepth int) error {
 	switch curr := curr.(type) {
 	case *extendedObject:
-		err := checkAssertionsHelper(i, trace, obj, curr.right, superDepth)
+		err := checkAssertionsHelper(i, obj, curr.right, superDepth)
 		if err != nil {
 			return err
 		}
-		err = checkAssertionsHelper(i, trace, obj, curr.left, superDepth+curr.right.inheritanceSize())
+		err = checkAssertionsHelper(i, obj, curr.left, superDepth+curr.right.inheritanceSize())
 		if err != nil {
 			return err
 		}
@@ -561,7 +561,7 @@ func checkAssertionsHelper(i *interpreter, trace traceElement, obj *valueObject,
 		for _, assert := range curr.asserts {
 			sb := selfBinding{self: obj, superDepth: superDepth}
 			fieldUpValues := prepareFieldUpvalues(sb, curr.upValues, curr.locals)
-			_, err := assert.evaluate(i, trace, sb, fieldUpValues, "")
+			_, err := assert.evaluate(i, sb, fieldUpValues, "")
 			if err != nil {
 				return err
 			}
@@ -574,13 +574,13 @@ func checkAssertionsHelper(i *interpreter, trace traceElement, obj *valueObject,
 	}
 }
 
-func checkAssertions(i *interpreter, trace traceElement, obj *valueObject) error {
+func checkAssertions(i *interpreter, obj *valueObject) error {
 	if !obj.assertionsChecked() {
 		// Assertions may refer to the object that will normally
 		// trigger checking of assertions, resulting in an endless recursion.
 		// To avoid that, while we check them, we treat them as already passed.
 		obj.setAssertionsCheckResult(errNoErrorInObjectInvariants)
-		obj.setAssertionsCheckResult(checkAssertionsHelper(i, trace, obj, obj.uncached, 0))
+		obj.setAssertionsCheckResult(checkAssertionsHelper(i, obj, obj.uncached, 0))
 	}
 	return obj.getAssertionsCheckResult()
 }
@@ -610,7 +610,7 @@ type simpleObjectField struct {
 
 // unboundField is a field that doesn't know yet in which object it is.
 type unboundField interface {
-	evaluate(i *interpreter, trace traceElement, sb selfBinding, origBinding bindingFrame, fieldName string) (value, error)
+	evaluate(i *interpreter, sb selfBinding, origBinding bindingFrame, fieldName string) (value, error)
 }
 
 // extendedObject represents an object created through inheritance (left + right).
@@ -699,18 +699,18 @@ func prepareFieldUpvalues(sb selfBinding, upValues bindingFrame, locals []object
 	return newUpValues
 }
 
-func objectIndex(i *interpreter, trace traceElement, sb selfBinding, fieldName string) (value, error) {
-	err := checkAssertions(i, trace, sb.self)
+func objectIndex(i *interpreter, sb selfBinding, fieldName string) (value, error) {
+	err := checkAssertions(i, sb.self)
 	if err != nil {
 		return nil, err
 	}
 	if sb.superDepth >= sb.self.uncached.inheritanceSize() {
-		return nil, i.Error("Attempt to use super when there is no super class.", trace)
+		return nil, i.Error("Attempt to use super when there is no super class.")
 	}
 
 	found, field, upValues, locals, foundAt := findField(sb.self.uncached, sb.superDepth, fieldName)
 	if !found {
-		return nil, i.Error(fmt.Sprintf("Field does not exist: %s", fieldName), trace)
+		return nil, i.Error(fmt.Sprintf("Field does not exist: %s", fieldName))
 	}
 
 	if val, ok := sb.self.cache[objectCacheKey{field: fieldName, depth: foundAt}]; ok {
@@ -720,7 +720,7 @@ func objectIndex(i *interpreter, trace traceElement, sb selfBinding, fieldName s
 	fieldSelfBinding := selfBinding{self: sb.self, superDepth: foundAt}
 	fieldUpValues := prepareFieldUpvalues(fieldSelfBinding, upValues, locals)
 
-	val, err := field.field.evaluate(i, trace, fieldSelfBinding, fieldUpValues, fieldName)
+	val, err := field.field.evaluate(i, fieldSelfBinding, fieldUpValues, fieldName)
 
 	if err == nil {
 		sb.self.cache[objectCacheKey{field: fieldName, depth: foundAt}] = val

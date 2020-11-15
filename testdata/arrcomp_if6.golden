@@ -5,7 +5,9 @@ RUNTIME ERROR: x
 [x for x in [1] if error "x"]
 
 -------------------------------------------------
-		builtin function <flatMap>
+	testdata/arrcomp_if6:1:1-30	
+
+[x for x in [1] if error "x"]
 
 -------------------------------------------------
 	During evaluation	

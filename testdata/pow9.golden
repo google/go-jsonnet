@@ -1,6 +1,6 @@
 RUNTIME ERROR: Unexpected type string, expected number
 -------------------------------------------------
-	testdata/pow9:1:1-19	builtin function <pow>
+	testdata/pow9:1:1-19	$
 
 std.pow(42, "xxx")
 

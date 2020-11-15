@@ -1,6 +1,6 @@
 RUNTIME ERROR: Unexpected type number, expected object
 -------------------------------------------------
-	testdata/builtinObjectFieldsEx_bad:1:1-29	builtin function <objectFieldsEx>
+	testdata/builtinObjectFieldsEx_bad:1:1-29	$
 
 std.objectFieldsEx(42, true)
 

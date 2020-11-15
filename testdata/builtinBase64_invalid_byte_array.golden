@@ -1,6 +1,6 @@
 RUNTIME ERROR: base64 encountered a non-integer value in the array, got string
 -------------------------------------------------
-	testdata/builtinBase64_invalid_byte_array:1:1-23	builtin function <base64>
+	testdata/builtinBase64_invalid_byte_array:1:1-23	$
 
 std.base64([1, "foo"])
 
