@@ -1,4 +1,4 @@
-RUNTIME ERROR: couldn't manifest function in JSON output.
+RUNTIME ERROR: couldn't manifest function as JSON
 -------------------------------------------------
 	testdata/function_plus_string:1:1-24	$
 

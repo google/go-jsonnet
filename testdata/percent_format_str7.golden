@@ -38,7 +38,9 @@ RUNTIME ERROR: Format required number at 0, got string
       std.format(a, b)
 
 -------------------------------------------------
-		
+	testdata/percent_format_str7:1:1-15	
+
+"x %d" % ["y"]
 
 -------------------------------------------------
 	During evaluation	

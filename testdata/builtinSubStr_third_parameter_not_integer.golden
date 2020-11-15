@@ -1,6 +1,6 @@
 RUNTIME ERROR: substr third parameter should be an integer, got 1.200000
 -------------------------------------------------
-	testdata/builtinSubStr_third_parameter_not_integer:1:1-28	builtin function <substr>
+	testdata/builtinSubStr_third_parameter_not_integer:1:1-28	$
 
 std.substr("hello", 0, 1.2)
 

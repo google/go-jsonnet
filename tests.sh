@@ -3,6 +3,7 @@
 set -e
 
 PYTHON_COMMAND=${PYTHON_COMMAND:=python}
+JSONNET_CPP_DIR=${JSONNET_CPP_DIR:=$PWD/cpp-jsonnet}
 
 set -x
 
@@ -19,6 +20,7 @@ else
 fi
 
 export IMPLEMENTATION=golang
+export OVERRIDE_DIR="$PWD/testdata/cpp-tests-override/"
 
 go build ./cmd/jsonnet
 go build ./cmd/jsonnetfmt
@@ -28,5 +30,5 @@ export DISABLE_ERROR_TESTS=true
 export JSONNETFMT_BIN="$PWD/jsonnetfmt"
 export JSONNET_BIN="$PWD/jsonnet"
 
-cd cpp-jsonnet
+cd "$JSONNET_CPP_DIR"
 exec ./tests.sh

@@ -1,6 +1,6 @@
 RUNTIME ERROR: Unexpected type number, expected array
 -------------------------------------------------
-	testdata/std.sort4:1:1-29	builtin function <sort>
+	testdata/std.sort4:1:1-29	$
 
 std.sort([1, [error "foo"]])
 

@@ -1,6 +1,6 @@
 RUNTIME ERROR: Unexpected type number, expected string
 -------------------------------------------------
-	testdata/builtinObjectHasExBadField:1:1-31	builtin function <objectHasEx>
+	testdata/builtinObjectHasExBadField:1:1-31	$
 
 std.objectHasEx({}, 42, false)
 

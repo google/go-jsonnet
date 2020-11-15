@@ -1,0 +1,10 @@
+RUNTIME ERROR: std.flatMap second param must be array / string, got object
+-------------------------------------------------
+	testdata/array_comp_try_iterate_over_obj:1:1-16	
+
+[a for a in {}]
+
+-------------------------------------------------
+	During evaluation	
+
+

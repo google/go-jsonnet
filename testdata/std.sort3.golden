@@ -5,7 +5,7 @@ RUNTIME ERROR: foo
 std.sort([1,2, error "foo"])
 
 -------------------------------------------------
-	testdata/std.sort3:1:1-29	builtin function <sort>
+	testdata/std.sort3:1:1-29	$
 
 std.sort([1,2, error "foo"])
 

@@ -3,7 +3,9 @@ RUNTIME ERROR: Unexpected type number, expected boolean
 		
 
 -------------------------------------------------
-		builtin function <flatMap>
+	testdata/arrcomp_if7:1:1-29	
+
+[x for x in [1, 2, 3] if 42]
 
 -------------------------------------------------
 	During evaluation	

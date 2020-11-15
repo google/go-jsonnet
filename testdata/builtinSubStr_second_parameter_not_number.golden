@@ -1,6 +1,6 @@
 RUNTIME ERROR: substr second parameter should be a number, got string
 -------------------------------------------------
-	testdata/builtinSubStr_second_parameter_not_number:1:1-30	builtin function <substr>
+	testdata/builtinSubStr_second_parameter_not_number:1:1-30	$
 
 std.substr("hello", "foo", 5)
 

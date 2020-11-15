@@ -20,7 +20,9 @@ RUNTIME ERROR: Too many values to format: 1, expected 0
       std.format(a, b)
 
 -------------------------------------------------
-		
+	testdata/percent_bad2:1:1-9	
+
+"x" % 42
 
 -------------------------------------------------
 	During evaluation	

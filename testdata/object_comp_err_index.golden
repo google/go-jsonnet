@@ -5,7 +5,9 @@ RUNTIME ERROR: xxx
 { [error "xxx"]: 42 for x in [1] }
 
 -------------------------------------------------
-		builtin function <$objectFlatMerge>
+	testdata/object_comp_err_index:1:1-35	
+
+{ [error "xxx"]: 42 for x in [1] }
 
 -------------------------------------------------
 	During evaluation	

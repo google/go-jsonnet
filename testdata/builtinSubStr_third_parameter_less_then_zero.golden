@@ -1,6 +1,6 @@
 RUNTIME ERROR: substr third parameter should be greater than zero, got -1
 -------------------------------------------------
-	testdata/builtinSubStr_third_parameter_less_then_zero:1:1-27	builtin function <substr>
+	testdata/builtinSubStr_third_parameter_less_then_zero:1:1-27	$
 
 std.substr("hello", 0, -1)
 
