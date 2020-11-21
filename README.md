@@ -125,6 +125,17 @@ export PATH=$PATH:$GOPATH/bin  # If you haven't already
 go generate
 ```
 
+## Update cpp-jsonnet sub-repo
+
+This repo depends on [the original Jsonnet repo](https://github.com/google/jsonnet). Shared parts include the standard library, headers files for C API and some tests.
+
+You can update the submodule and regenerate dependent files with one command:
+```
+./update_cpp_jsonnet.sh
+```
+
+Note: It needs to be run from repo root.
+
 ## Updating and modifying the standard library
 
 Standard library source code is kept in `cpp-jsonnet` submodule, because it is shared with [Jsonnet C++
@@ -133,10 +144,10 @@ implementation](https://github.com/google/jsonnet).
 For performance reasons we perform preprocessing on the standard library, so for the changes to be visible, regeneration is necessary:
 
 ```bash
-git submodule init
-git submodule update
 go run cmd/dumpstdlibast/dumpstdlibast.go cpp-jsonnet/stdlib/std.jsonnet > astgen/stdast.go
 ```
+
+**The
 
 The above command creates the _astgen/stdast.go_ file which puts the desugared standard library into the right data structures, which lets us avoid the parsing overhead during execution. Note that this step is not necessary to perform manually when building with Bazel; the Bazel target regenerates the _astgen/stdast.go_ (writing it into Bazel's build sandbox directory tree) file when necessary.
 
