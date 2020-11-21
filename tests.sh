@@ -28,6 +28,5 @@ export DISABLE_ERROR_TESTS=true
 export JSONNETFMT_BIN="$PWD/jsonnetfmt"
 export JSONNET_BIN="$PWD/jsonnet"
 
-git submodule update --recursive cpp-jsonnet
 cd cpp-jsonnet
 exec ./tests.sh
