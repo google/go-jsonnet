@@ -42,6 +42,7 @@ static const char *exc_to_str(void)
 
 struct NativeCtx {
     struct JsonnetVm *vm;
+    PyThreadState **py_thread;
     PyObject *callback;
     size_t argc;
 };
@@ -139,6 +140,8 @@ static struct JsonnetJsonValue *cpython_native_callback(
     const struct NativeCtx *ctx = ctx_;
     int i;
 
+    PyEval_RestoreThread(*ctx->py_thread);
+
     PyObject *arglist;  // Will hold a tuple of strings.
     PyObject *result;  // Will hold a string.
 
@@ -168,6 +171,7 @@ static struct JsonnetJsonValue *cpython_native_callback(
             // TODO(dcunnin): Support objects (to dicts).
             Py_DECREF(arglist);
             *succ = 0;
+            *ctx->py_thread = PyEval_SaveThread();
             return jsonnet_json_make_string(ctx->vm, "Non-primitive param.");
         }
         PyTuple_SetItem(arglist, i, pyobj);
@@ -182,6 +186,7 @@ static struct JsonnetJsonValue *cpython_native_callback(
         struct JsonnetJsonValue *r = jsonnet_json_make_string(ctx->vm, exc_to_str());
         *succ = 0;
         PyErr_Clear();
+        *ctx->py_thread = PyEval_SaveThread();
         return r;
     }
 
@@ -193,12 +198,14 @@ static struct JsonnetJsonValue *cpython_native_callback(
         *succ = 0;
         r = jsonnet_json_make_string(ctx->vm, err_msg);
     }
+    *ctx->py_thread = PyEval_SaveThread();
     return r;
 }
 
 
 struct ImportCtx {
     struct JsonnetVm *vm;
+    PyThreadState **py_thread;
     PyObject *callback;
 };
 
@@ -209,6 +216,7 @@ static char *cpython_import_callback(void *ctx_, const char *base, const char *r
     PyObject *arglist, *result;
     char *out;
 
+    PyEval_RestoreThread(*ctx->py_thread);
     arglist = Py_BuildValue("(s, s)", base, rel);
     result = PyEval_CallObject(ctx->callback, arglist);
     Py_DECREF(arglist);
@@ -218,6 +226,7 @@ static char *cpython_import_callback(void *ctx_, const char *base, const char *r
         char *out = jsonnet_str(ctx->vm, exc_to_str());
         *success = 0;
         PyErr_Clear();
+        *ctx->py_thread = PyEval_SaveThread();
         return out;
     }
 
@@ -252,6 +261,7 @@ static char *cpython_import_callback(void *ctx_, const char *base, const char *r
     }
 
     Py_DECREF(result);
+    *ctx->py_thread = PyEval_SaveThread();
 
     return out;
 }
@@ -340,7 +350,7 @@ int handle_import_callback(struct ImportCtx *ctx, PyObject *import_callback)
  * \returns 1 on success, 0 with exception set upon failure.
  */
 static int handle_native_callbacks(struct JsonnetVm *vm, PyObject *native_callbacks,
-                                   struct NativeCtx **ctxs)
+                                   struct NativeCtx **ctxs, PyThreadState **py_thread)
 {
     size_t num_natives = 0;
     PyObject *key, *val;
@@ -433,6 +443,7 @@ static int handle_native_callbacks(struct JsonnetVm *vm, PyObject *native_callba
         }
         params_c[num_params] = NULL;
         (*ctxs)[num_natives].vm = vm;
+        (*ctxs)[num_natives].py_thread = py_thread;
         (*ctxs)[num_natives].callback = PyTuple_GetItem(val, 1);
         (*ctxs)[num_natives].argc = num_params;
         jsonnet_native_callback(vm, key_, cpython_native_callback, &(*ctxs)[num_natives],
@@ -448,11 +459,12 @@ static int handle_native_callbacks(struct JsonnetVm *vm, PyObject *native_callba
 static PyObject* evaluate_file(PyObject* self, PyObject* args, PyObject *keywds)
 {
     const char *filename;
-    const char *jpathdir = NULL;
-    char *out;
+    char *out, *jpath_str;
     unsigned max_stack = 500, gc_min_objects = 1000, max_trace = 20;
     double gc_growth_trigger = 2;
     int error;
+    Py_ssize_t num_jpathdir, i;
+    PyObject *jpathdir = NULL;
     PyObject *ext_vars = NULL, *ext_codes = NULL;
     PyObject *tla_vars = NULL, *tla_codes = NULL;
     PyObject *import_callback = NULL;
@@ -469,7 +481,7 @@ static PyObject* evaluate_file(PyObject* self, PyObject* args, PyObject *keywds)
     (void) self;
 
     if (!PyArg_ParseTupleAndKeywords(
-        args, keywds, "s|sIIdOOOOIOO", kwlist,
+        args, keywds, "s|OIIdOOOOIOO", kwlist,
         &filename, &jpathdir,
         &max_stack, &gc_min_objects, &gc_growth_trigger, &ext_vars,
         &ext_codes, &tla_vars, &tla_codes, &max_trace, &import_callback,
@@ -477,27 +489,58 @@ static PyObject* evaluate_file(PyObject* self, PyObject* args, PyObject *keywds)
         return NULL;
     }
 
+    PyThreadState *py_thread;
+
     vm = jsonnet_make();
     jsonnet_max_stack(vm, max_stack);
     jsonnet_gc_min_objects(vm, gc_min_objects);
     jsonnet_max_trace(vm, max_trace);
     jsonnet_gc_growth_trigger(vm, gc_growth_trigger);
-    if (jpathdir != NULL)
-      jsonnet_jpath_add(vm, jpathdir);
+
+    if (jpathdir != NULL) {
+        // Support string for backward compatibility with <= 0.15.0
+#if PY_MAJOR_VERSION >= 3
+        if (PyUnicode_Check(jpathdir)) {
+            jpath_str = PyUnicode_AsUTF8(jpathdir);
+#else
+        if (PyString_Check(jpathdir)) {
+            jpath_str = PyString_AsString(jpathdir);
+#endif
+            jsonnet_jpath_add(vm, jpath_str);
+        } else if (PyList_Check(jpathdir)) {
+            num_jpathdir = PyList_Size(jpathdir);
+            for (i = 0; i < num_jpathdir ; ++i) {
+                PyObject *jpath = PyList_GetItem(jpathdir, i);
+#if PY_MAJOR_VERSION >= 3
+                if (PyUnicode_Check(jpath)) {
+                    jpath_str = PyUnicode_AsUTF8(jpath);
+#else
+                if (PyString_Check(jpath)) {
+                    jpath_str = PyString_AsString(jpath);
+#endif
+                    jsonnet_jpath_add(vm, jpath_str);
+                }
+            }
+        }
+    }
+
     if (!handle_vars(vm, ext_vars, 0, 0)) return NULL;
     if (!handle_vars(vm, ext_codes, 1, 0)) return NULL;
     if (!handle_vars(vm, tla_vars, 0, 1)) return NULL;
     if (!handle_vars(vm, tla_codes, 1, 1)) return NULL;
-    struct ImportCtx ctx = { vm, import_callback };
+
+    struct ImportCtx ctx = { vm, &py_thread, import_callback };
     if (!handle_import_callback(&ctx, import_callback)) {
         return NULL;
     }
     struct NativeCtx *ctxs = NULL;
-    if (!handle_native_callbacks(vm, native_callbacks, &ctxs)) {
+    if (!handle_native_callbacks(vm, native_callbacks, &ctxs, &py_thread)) {
         free(ctxs);
         return NULL;
     }
+    py_thread = PyEval_SaveThread();
     out = jsonnet_evaluate_file(vm, filename, &error);
+    PyEval_RestoreThread(py_thread);
     free(ctxs);
     return handle_result(vm, out, error);
 }
@@ -505,11 +548,12 @@ static PyObject* evaluate_file(PyObject* self, PyObject* args, PyObject *keywds)
 static PyObject* evaluate_snippet(PyObject* self, PyObject* args, PyObject *keywds)
 {
     const char *filename, *src;
-    const char *jpathdir = NULL;
-    char *out;
+    char *out, *jpath_str;
     unsigned max_stack = 500, gc_min_objects = 1000, max_trace = 20;
     double gc_growth_trigger = 2;
     int error;
+    Py_ssize_t num_jpathdir, i;
+    PyObject *jpathdir = NULL;
     PyObject *ext_vars = NULL, *ext_codes = NULL;
     PyObject *tla_vars = NULL, *tla_codes = NULL;
     PyObject *import_callback = NULL;
@@ -526,7 +570,7 @@ static PyObject* evaluate_snippet(PyObject* self, PyObject* args, PyObject *keyw
     (void) self;
 
     if (!PyArg_ParseTupleAndKeywords(
-        args, keywds, "ss|sIIdOOOOIOO", kwlist,
+        args, keywds, "ss|OIIdOOOOIOO", kwlist,
         &filename, &src, &jpathdir,
         &max_stack, &gc_min_objects, &gc_growth_trigger, &ext_vars,
         &ext_codes, &tla_vars, &tla_codes, &max_trace, &import_callback,
@@ -534,27 +578,57 @@ static PyObject* evaluate_snippet(PyObject* self, PyObject* args, PyObject *keyw
         return NULL;
     }
 
+    PyThreadState *py_thread;
+
     vm = jsonnet_make();
     jsonnet_max_stack(vm, max_stack);
     jsonnet_gc_min_objects(vm, gc_min_objects);
     jsonnet_max_trace(vm, max_trace);
     jsonnet_gc_growth_trigger(vm, gc_growth_trigger);
-    if (jpathdir != NULL)
-      jsonnet_jpath_add(vm, jpathdir);
+
+    if (jpathdir != NULL) {
+        // Support string for backward compatibility with <= 0.15.0
+#if PY_MAJOR_VERSION >= 3
+        if (PyUnicode_Check(jpathdir)) {
+            jpath_str = PyUnicode_AsUTF8(jpathdir);
+#else
+        if (PyString_Check(jpathdir)) {
+            jpath_str = PyString_AsString(jpathdir);
+#endif
+            jsonnet_jpath_add(vm, jpath_str);
+        } else if (PyList_Check(jpathdir)) {
+            num_jpathdir = PyList_Size(jpathdir);
+            for (i = 0; i < num_jpathdir ; ++i) {
+                PyObject *jpath = PyList_GetItem(jpathdir, i);
+#if PY_MAJOR_VERSION >= 3
+                if (PyUnicode_Check(jpath)) {
+                    jpath_str = PyUnicode_AsUTF8(jpath);
+#else
+                if (PyString_Check(jpath)) {
+                    jpath_str = PyString_AsString(jpath);
+#endif
+                    jsonnet_jpath_add(vm, jpath_str);
+                }
+            }
+        }
+    }
+
     if (!handle_vars(vm, ext_vars, 0, 0)) return NULL;
     if (!handle_vars(vm, ext_codes, 1, 0)) return NULL;
     if (!handle_vars(vm, tla_vars, 0, 1)) return NULL;
     if (!handle_vars(vm, tla_codes, 1, 1)) return NULL;
-    struct ImportCtx ctx = { vm, import_callback };
+    struct ImportCtx ctx = { vm, &py_thread, import_callback };
     if (!handle_import_callback(&ctx, import_callback)) {
         return NULL;
     }
     struct NativeCtx *ctxs = NULL;
-    if (!handle_native_callbacks(vm, native_callbacks, &ctxs)) {
+    if (!handle_native_callbacks(vm, native_callbacks, &ctxs, &py_thread)) {
         free(ctxs);
         return NULL;
     }
+    py_thread = PyEval_SaveThread();
     out = jsonnet_evaluate_snippet(vm, filename, src, &error);
+    PyEval_RestoreThread(py_thread);
     free(ctxs);
     return handle_result(vm, out, error);
 }
