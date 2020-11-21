@@ -339,9 +339,14 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 			node.Message = buildLiteralString("Assertion failed")
 		}
 		*astPtr = &ast.Conditional{
-			Cond:        node.Cond,
-			BranchTrue:  node.Rest,
-			BranchFalse: &ast.Error{Expr: node.Message},
+			Cond:       node.Cond,
+			BranchTrue: node.Rest,
+			BranchFalse: &ast.Error{
+				NodeBase: ast.NodeBase{
+					LocRange: *node.Loc(),
+				},
+				Expr: node.Message,
+			},
 		}
 		err = desugar(astPtr, objLevel)
 		if err != nil {

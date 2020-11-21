@@ -1,6 +1,8 @@
 RUNTIME ERROR: Assertion failed
 -------------------------------------------------
-		
+	testdata/assert3:1:1-20	
+
+assert 42 != 42; 42
 
 -------------------------------------------------
 	During evaluation	

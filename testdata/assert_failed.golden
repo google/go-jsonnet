@@ -1,6 +1,8 @@
 RUNTIME ERROR: Assertion failed
 -------------------------------------------------
-		
+	testdata/assert_failed:1:1-19	
+
+assert false; true
 
 -------------------------------------------------
 	During evaluation	
