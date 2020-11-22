@@ -32,7 +32,7 @@ def jsonnet_go_repositories():
     _maybe(
         http_archive,
         name = "cpp_jsonnet",
-        sha256 = "fa1a4047942797b7c4ed39718a20d63d1b98725fb5cf563efbc1ecca3375426f",
-        strip_prefix = "jsonnet-0.16.0",
-        urls = ["https://github.com/google/jsonnet/archive/v0.16.0.tar.gz"],
+        sha256 = "076b52edf888c01097010ad4299e3b2e7a72b60a41abbc65af364af1ed3c8dbe",
+        strip_prefix = "jsonnet-0.17.0",
+        urls = ["https://github.com/google/jsonnet/archive/v0.17.0.tar.gz"],
     )
