@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"sync"
 	"unsafe"
 )
 
@@ -15,6 +16,7 @@ import (
 
 // handlesTable is the set of active, valid Jsonnet allocated handles
 type handlesTable struct {
+	mu      sync.Mutex
 	handles map[uintptr]*handle
 }
 
@@ -34,6 +36,8 @@ func newHandlesTable() handlesTable {
 // make registers the new object as a handle and returns the corresponding ID
 func (h *handlesTable) make(obj interface{}) (uintptr, error) {
 	entry := &handle{ref: obj}
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	id := uintptr(unsafe.Pointer(entry))
 	h.handles[id] = entry
 	return id, nil
@@ -41,6 +45,8 @@ func (h *handlesTable) make(obj interface{}) (uintptr, error) {
 
 // free removes an object with the given ID
 func (h *handlesTable) free(id uintptr) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	if handle := h.handles[id]; handle == nil {
 		return errInvalidHandle
 	}
@@ -51,6 +57,8 @@ func (h *handlesTable) free(id uintptr) error {
 
 // get returns the corresponding object for the provided ID
 func (h *handlesTable) get(id uintptr) (interface{}, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	if handle := h.handles[id]; handle != nil {
 		return handle.ref, nil
 	}
