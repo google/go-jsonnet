@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/go-jsonnet"
 	"github.com/google/go-jsonnet/ast"
+	"github.com/google/go-jsonnet/formatter"
 
 	// #cgo CXXFLAGS: -std=c++11 -Wall -I../cpp-jsonnet/include
 	// #include "internal.h"
@@ -22,7 +23,8 @@ import (
 
 type vm struct {
 	*jsonnet.VM
-	importer *jsonnet.FileImporter
+	importer      *jsonnet.FileImporter
+	formatOptions formatter.Options
 }
 
 type jsonValue struct {
@@ -100,7 +102,7 @@ func jsonnet_version() *C.char {
 
 //export jsonnet_make
 func jsonnet_make() *C.struct_JsonnetVm {
-	newVM := &vm{jsonnet.MakeVM(), &jsonnet.FileImporter{}}
+	newVM := &vm{jsonnet.MakeVM(), &jsonnet.FileImporter{}, formatter.DefaultOptions()}
 	newVM.Importer(newVM.importer)
 
 	id, err := handles.make(newVM)
@@ -537,6 +539,104 @@ func getJSONValue(jsonRef *C.struct_JsonnetJsonValue) *jsonValue {
 	}
 
 	return v
+}
+
+//export jsonnet_fmt_indent
+func jsonnet_fmt_indent(vmRef *C.struct_JsonnetVm, n C.int) {
+	vm := getVM(vmRef)
+	vm.formatOptions.Indent = int(n)
+}
+
+//export jsonnet_fmt_max_blank_lines
+func jsonnet_fmt_max_blank_lines(vmRef *C.struct_JsonnetVm, n C.int) {
+	vm := getVM(vmRef)
+	vm.formatOptions.MaxBlankLines = int(n)
+}
+
+//export jsonnet_fmt_string
+func jsonnet_fmt_string(vmRef *C.struct_JsonnetVm, c C.int) {
+	vm := getVM(vmRef)
+	switch c {
+	case 'd':
+		vm.formatOptions.StringStyle = formatter.StringStyleDouble
+	case 's':
+		vm.formatOptions.StringStyle = formatter.StringStyleSingle
+	case 'l':
+		vm.formatOptions.StringStyle = formatter.StringStyleLeave
+	default:
+		vm.formatOptions.StringStyle = formatter.StringStyleLeave
+	}
+}
+
+//export jsonnet_fmt_comment
+func jsonnet_fmt_comment(vmRef *C.struct_JsonnetVm, c C.int) {
+	vm := getVM(vmRef)
+	switch c {
+	case 'h':
+		vm.formatOptions.CommentStyle = formatter.CommentStyleHash
+	case 's':
+		vm.formatOptions.CommentStyle = formatter.CommentStyleSlash
+	case 'l':
+		vm.formatOptions.CommentStyle = formatter.CommentStyleLeave
+	default:
+		vm.formatOptions.CommentStyle = formatter.CommentStyleLeave
+	}
+}
+
+//export jsonnet_fmt_pad_arrays
+func jsonnet_fmt_pad_arrays(vmRef *C.struct_JsonnetVm, v C.int) {
+	vm := getVM(vmRef)
+	vm.formatOptions.PadArrays = v != 0
+}
+
+//export jsonnet_fmt_pad_objects
+func jsonnet_fmt_pad_objects(vmRef *C.struct_JsonnetVm, v C.int) {
+	vm := getVM(vmRef)
+	vm.formatOptions.PadObjects = v != 0
+}
+
+//export jsonnet_fmt_pretty_field_names
+func jsonnet_fmt_pretty_field_names(vmRef *C.struct_JsonnetVm, v C.int) {
+	vm := getVM(vmRef)
+	vm.formatOptions.PrettyFieldNames = v != 0
+}
+
+//export jsonnet_fmt_sort_imports
+func jsonnet_fmt_sort_imports(vmRef *C.struct_JsonnetVm, v C.int) {
+	vm := getVM(vmRef)
+	vm.formatOptions.SortImports = v != 0
+}
+
+//export jsonnet_fmt_snippet
+func jsonnet_fmt_snippet(vmRef *C.struct_JsonnetVm, filename *C.char, code *C.char, e *C.int) *C.char {
+	f := C.GoString(filename)
+	s := C.GoString(code)
+	return formatSnippet(vmRef, f, s, e)
+}
+
+//export jsonnet_fmt_file
+func jsonnet_fmt_file(vmRef *C.struct_JsonnetVm, filename *C.char, e *C.int) *C.char {
+	f := C.GoString(filename)
+	data, err := ioutil.ReadFile(f)
+	if err != nil {
+		*e = 1
+		return C.CString(fmt.Sprintf("Failed to read input file: %s: %s", f, err.Error()))
+	}
+	return formatSnippet(vmRef, f, string(data), e)
+}
+
+func formatSnippet(vmRef *C.struct_JsonnetVm, filename string, code string, e *C.int) *C.char {
+	vm := getVM(vmRef)
+	out, err := formatter.Format(filename, code, vm.formatOptions)
+	var result *C.char
+	if err != nil {
+		*e = 1
+		result = C.CString(err.Error())
+	} else {
+		*e = 0
+		result = C.CString(out)
+	}
+	return result
 }
 
 func main() {
