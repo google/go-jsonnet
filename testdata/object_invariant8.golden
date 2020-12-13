@@ -1,6 +1,11 @@
 RUNTIME ERROR: Object assertion failed.
 -------------------------------------------------
-		
+	testdata/object_invariant8:1:9-27	
+
+{ x: 5, assert self.x == 4 }
+
+-------------------------------------------------
+	Checking object assertions	
 
 -------------------------------------------------
 	During manifestation	

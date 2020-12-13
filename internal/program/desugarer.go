@@ -62,7 +62,12 @@ func desugarFields(nodeBase ast.NodeBase, fields *ast.ObjectFields, objLevel int
 			if msg == nil {
 				msg = buildLiteralString("Object assertion failed.")
 			}
-			onFailure := &ast.Error{Expr: msg}
+			onFailure := &ast.Error{
+				NodeBase: ast.NodeBase{
+					LocRange: field.LocRange,
+				},
+				Expr: msg,
+			}
 			asserts = append(asserts, &ast.Conditional{
 				NodeBase: ast.NodeBase{
 					LocRange: field.LocRange,

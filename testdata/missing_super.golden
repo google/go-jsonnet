@@ -5,6 +5,9 @@ RUNTIME ERROR: Attempt to use super when there is no super class.
 { x: super.x }
 
 -------------------------------------------------
+	Field "x"	
+
+-------------------------------------------------
 	During manifestation	
 
 

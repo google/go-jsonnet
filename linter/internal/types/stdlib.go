@@ -124,7 +124,7 @@ func prepareStdlib(g *typeGraph) {
 		"setInter":  g.newFuncType(anyArrayType, []ast.Parameter{required("a"), required("b"), optional("keyF")}),
 		"setUnion":  g.newFuncType(anyArrayType, []ast.Parameter{required("a"), required("b"), optional("keyF")}),
 		"setDiff":   g.newFuncType(anyArrayType, []ast.Parameter{required("a"), required("b"), optional("keyF")}),
-		"setMember": g.newFuncType(anyArrayType, []ast.Parameter{required("x"), required("arr"), optional("keyF")}),
+		"setMember": g.newFuncType(boolType, []ast.Parameter{required("x"), required("arr"), optional("keyF")}),
 
 		// Encoding
 
