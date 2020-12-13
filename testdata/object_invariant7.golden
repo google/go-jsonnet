@@ -5,6 +5,9 @@ RUNTIME ERROR: Attempt to use super when there is no super class.
 { x: 5, assert super.x == 5 } 
 
 -------------------------------------------------
+	Checking object assertions	
+
+-------------------------------------------------
 	During manifestation	
 
 

@@ -572,6 +572,7 @@ func checkAssertionsHelper(i *interpreter, obj *valueObject, curr uncachedObject
 	default:
 		panic(fmt.Sprintf("Unknown object type %#v", curr))
 	}
+
 }
 
 func checkAssertions(i *interpreter, obj *valueObject) error {
@@ -611,6 +612,7 @@ type simpleObjectField struct {
 // unboundField is a field that doesn't know yet in which object it is.
 type unboundField interface {
 	evaluate(i *interpreter, sb selfBinding, origBinding bindingFrame, fieldName string) (value, error)
+	loc() *ast.LocationRange
 }
 
 // extendedObject represents an object created through inheritance (left + right).

@@ -10,6 +10,9 @@ RUNTIME ERROR: xxx
 { local foo(bar) = error bar, baz: foo("xxx") }
 
 -------------------------------------------------
+	Field "baz"	
+
+-------------------------------------------------
 	During manifestation	
 
 

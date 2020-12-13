@@ -1,6 +1,11 @@
 RUNTIME ERROR: xxx
 -------------------------------------------------
-		
+	testdata/object_invariant14:1:3-22	
+
+{ assert false: "xxx" }
+
+-------------------------------------------------
+	Checking object assertions	
 
 -------------------------------------------------
 	During manifestation	

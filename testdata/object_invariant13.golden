@@ -5,6 +5,9 @@ RUNTIME ERROR: x
 { assert error "x" }
 
 -------------------------------------------------
+	Checking object assertions	
+
+-------------------------------------------------
 	During manifestation	
 
 
