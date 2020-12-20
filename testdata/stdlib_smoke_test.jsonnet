@@ -15,9 +15,20 @@
     length: std.length(x=[]),
     objectHas: std.objectHas(o={}, f="fieldname"),
     objectFields: std.objectFields(o={}),
+    objectValues: std.objectValues(o={}),
     objectHasAll: std.objectHasAll(o={}, f="fieldname"),
+    objectFieldsAll: std.objectFieldsAll(o={}),
+    objectValuesAll: std.objectValuesAll(o={}),
     prune: std.prune(a={x: null, y: [null, "42"]}),
     mapWithKey: std.mapWithKey(func=function(key, value) 42, obj={a: 17}),
+
+    // isSomething
+    isArray: std.isArray(v=[]),
+    isBoolean: std.isBoolean(v=true),
+    isFunction: std.isFunction(v=function() 42),
+    isNumber: std.isNumber(v=42),
+    isObject: std.isObject(v={}),
+    isString: std.isString(v=""),
 
     // Mathematical utilities
     abs: std.abs(n=-42),

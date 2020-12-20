@@ -31,10 +31,20 @@ func prepareStdlib(g *typeGraph) {
 		"length":          g.newSimpleFuncType(numberType, "x"),
 		"objectHas":       g.newSimpleFuncType(boolType, "o", "f"),
 		"objectFields":    g.newSimpleFuncType(arrayOfString, "o"),
+		"objectValues":    g.newSimpleFuncType(anyArrayType, "o"),
 		"objectHasAll":    g.newSimpleFuncType(boolType, "o", "f"),
 		"objectFieldsAll": g.newSimpleFuncType(arrayOfString, "o"),
+		"objectValuesAll": g.newSimpleFuncType(anyArrayType, "o"),
 		"prune":           g.newSimpleFuncType(anyObjectType, "a"),
 		"mapWithKey":      g.newSimpleFuncType(anyObjectType, "func", "obj"),
+
+		// isSomething
+		"isArray":    g.newSimpleFuncType(boolType, "v"),
+		"isBoolean":  g.newSimpleFuncType(boolType, "v"),
+		"isFunction": g.newSimpleFuncType(boolType, "v"),
+		"isNumber":   g.newSimpleFuncType(boolType, "v"),
+		"isObject":   g.newSimpleFuncType(boolType, "v"),
+		"isString":   g.newSimpleFuncType(boolType, "v"),
 
 		// Mathematical utilities
 		"abs":      g.newSimpleFuncType(numberType, "n"),
@@ -124,7 +134,7 @@ func prepareStdlib(g *typeGraph) {
 		"setInter":  g.newFuncType(anyArrayType, []ast.Parameter{required("a"), required("b"), optional("keyF")}),
 		"setUnion":  g.newFuncType(anyArrayType, []ast.Parameter{required("a"), required("b"), optional("keyF")}),
 		"setDiff":   g.newFuncType(anyArrayType, []ast.Parameter{required("a"), required("b"), optional("keyF")}),
-		"setMember": g.newFuncType(anyArrayType, []ast.Parameter{required("x"), required("arr"), optional("keyF")}),
+		"setMember": g.newFuncType(boolType, []ast.Parameter{required("x"), required("arr"), optional("keyF")}),
 
 		// Encoding
 
