@@ -345,17 +345,7 @@ func writeMultiOutputFiles(output map[string]string, outputDir, outputFile strin
 			}
 		}
 
-		f, err := os.Create(filename)
-		if err != nil {
-			return err
-		}
-		defer func() {
-			if ferr := f.Close(); ferr != nil {
-				err = ferr
-			}
-		}()
-
-		_, err = f.WriteString(newContent)
+		err = ioutil.WriteFile(filename, []byte(newContent), 0666)
 		if err != nil {
 			return err
 		}
