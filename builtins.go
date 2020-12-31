@@ -1227,14 +1227,14 @@ func builtinManifestJSONEx(i *interpreter, arguments []value) (value, error) {
 		return nil, err
 	}
 
-	vsep, err := i.getString(arguments[3])
+	vkvSep, err := i.getString(arguments[3])
 	if err != nil {
 		return nil, err
 	}
 
 	sindent := vindent.getGoString()
 	newline := vnewline.getGoString()
-	sep := vsep.getGoString()
+	kvSep := vkvSep.getGoString()
 
 	var path []string
 
@@ -1305,7 +1305,7 @@ func builtinManifestJSONEx(i *interpreter, arguments []value) (value, error) {
 					return "", err
 				}
 
-				line := newIndent + string(fieldNameMarshalled) + sep + mvs
+				line := newIndent + string(fieldNameMarshalled) + kvSep + mvs
 				objectLines = append(objectLines, line)
 			}
 			lines = append(lines, strings.Join(objectLines, ","+newline))
