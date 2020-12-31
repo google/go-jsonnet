@@ -1211,7 +1211,6 @@ func jsonEncode(v interface{}) (string, error) {
 // These should ideally be unified
 // For backwards compatibility reasons, we are manually marshalling to json so we can control formatting
 // In the future, it might be apt to use a library [pretty-printing] function
-//func builtinManifestJSONEx(i *interpreter, obj, indent value) (value, error) {
 func builtinManifestJSONEx(i *interpreter, arguments []value) (value, error) {
 	obj, err := i.getObject(arguments[0])
 	if err != nil {
@@ -1228,14 +1227,14 @@ func builtinManifestJSONEx(i *interpreter, arguments []value) (value, error) {
 		return nil, err
 	}
 
-	vkey_val_sep, err := i.getString(arguments[3])
+	vsep, err := i.getString(arguments[3])
 	if err != nil {
 		return nil, err
 	}
 
 	sindent := vindent.getGoString()
 	newline := vnewline.getGoString()
-	key_val_sep := vkey_val_sep.getGoString()
+	sep := vsep.getGoString()
 
 	var path []string
 
@@ -1306,7 +1305,7 @@ func builtinManifestJSONEx(i *interpreter, arguments []value) (value, error) {
 					return "", err
 				}
 
-				line := newIndent + string(fieldNameMarshalled) + key_val_sep + mvs
+				line := newIndent + string(fieldNameMarshalled) + sep + mvs
 				objectLines = append(objectLines, line)
 			}
 			lines = append(lines, strings.Join(objectLines, ","+newline))
@@ -1625,7 +1624,6 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "base64Decode", function: builtinBase64Decode, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "base64DecodeBytes", function: builtinBase64DecodeBytes, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseJson", function: builtinParseJSON, params: ast.Identifiers{"str"}},
-	//&binaryBuiltin{name: "manifestJsonEx", function: builtinManifestJSONEx, params: ast.Identifiers{"value", "indent"}},
 	&generalBuiltin{name: "manifestJsonEx", function: builtinManifestJSONEx, params: []generalBuiltinParameter{{name: "value"}, {name: "indent"},
 		{name: "newline", defaultValue: &valueFlatString{value: []rune("\n")}},
 		{name: "key_val_sep", defaultValue: &valueFlatString{value: []rune(": ")}}}},
