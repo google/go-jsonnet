@@ -1195,7 +1195,12 @@ func prepareExtVars(i *interpreter, ext vmExtMap, kind string) map[string]*cache
 	result := make(map[string]*cachedThunk)
 	for name, content := range ext {
 		if content.isCode {
-			result[name] = codeToPV(i, "<"+kind+":"+name+">", content.value)
+			filename := "<" + kind + ":" + name + ">"
+			if content.isNode {
+				result[name] = nodeToPV(i, filename, content.node)
+			} else {
+				result[name] = codeToPV(i, filename, content.value)
+			}
 		} else {
 			result[name] = readyThunk(makeValueString(content.value))
 		}

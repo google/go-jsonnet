@@ -139,6 +139,15 @@ func (cache *importCache) importString(importedFrom, importedPath string, i *int
 	return makeValueString(data.String()), nil
 }
 
+func nodeToPV(i *interpreter, filename string, node ast.Node) *cachedThunk {
+	env := makeInitialEnv(filename, i.baseStd)
+	return &cachedThunk{
+		env:     &env,
+		body:    node,
+		content: nil,
+	}
+}
+
 func codeToPV(i *interpreter, filename string, code string) *cachedThunk {
 	node, err := program.SnippetToAST(ast.DiagnosticFileName(filename), "", code)
 	if err != nil {
@@ -149,12 +158,7 @@ func codeToPV(i *interpreter, filename string, code string) *cachedThunk {
 		// The same thinking applies to external variables.
 		return &cachedThunk{err: err}
 	}
-	env := makeInitialEnv(filename, i.baseStd)
-	return &cachedThunk{
-		env:     &env,
-		body:    node,
-		content: nil,
-	}
+	return nodeToPV(i, filename, node)
 }
 
 // ImportCode imports code from a path.
