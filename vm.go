@@ -53,6 +53,11 @@ type vmExt struct {
 	// isCode determines whether it should be evaluated as jsonnet code or
 	// treated as string.
 	isCode bool
+	// an ext or TLS code variable can also be initialized from an AST node
+	node ast.Node
+	// isNode determines if a code variable has been initialized using an AST node
+	// as opposed to a code string.
+	isNode bool
 }
 
 type vmExtMap map[string]vmExt
@@ -95,6 +100,12 @@ func (vm *VM) ExtCode(key string, val string) {
 	vm.flushValueCache()
 }
 
+// ExtCodeNode binds a Jsonnet external code var to the given AST node.
+func (vm *VM) ExtCodeNode(key string, node ast.Node) {
+	vm.ext[key] = vmExt{node: node, isCode: true, isNode: true}
+	vm.flushValueCache()
+}
+
 // TLAVar binds a Jsonnet top level argument to the given value.
 func (vm *VM) TLAVar(key string, val string) {
 	vm.tla[key] = vmExt{value: val, isCode: false}
@@ -106,6 +117,12 @@ func (vm *VM) TLAVar(key string, val string) {
 // TLACode binds a Jsonnet top level argument to the given code.
 func (vm *VM) TLACode(key string, val string) {
 	vm.tla[key] = vmExt{value: val, isCode: true}
+	// Setting a TLA does not require flushing the cache - see above.
+}
+
+// TLACodeNode binds a Jsonnet top level argument to the given AST node.
+func (vm *VM) TLACodeNode(key string, node ast.Node) {
+	vm.tla[key] = vmExt{node: node, isCode: true, isNode: true}
 	// Setting a TLA does not require flushing the cache - see above.
 }
 
