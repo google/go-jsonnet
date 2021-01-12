@@ -46,18 +46,23 @@ type VM struct {
 	importCache    *importCache
 }
 
+// extKind indicates the kind of external variable that is being initialized for the VM
+type extKind int
+
+const (
+	extKindString extKind = iota // a simple string
+	extKindCode                  // a code snippet represented as a string
+	extKindNode                  // an ast.Node that is passed in
+)
+
 // External variable or top level argument provided before execution
 type vmExt struct {
-	// jsonnet code to evaluate or string to pass
+	// the kind of external variable that is specified.
+	kind extKind
+	// jsonnet code to evaluate (kind=extKindCode) or string to pass (kind=extKindString)
 	value string
-	// isCode determines whether it should be evaluated as jsonnet code or
-	// treated as string.
-	isCode bool
-	// an ext or TLS code variable can also be initialized from an AST node
+	// the specified node for kind=extKindNode
 	node ast.Node
-	// isNode determines if a code variable has been initialized using an AST node
-	// as opposed to a code string.
-	isNode bool
 }
 
 type vmExtMap map[string]vmExt
@@ -90,25 +95,25 @@ func (vm *VM) flushValueCache() {
 
 // ExtVar binds a Jsonnet external var to the given value.
 func (vm *VM) ExtVar(key string, val string) {
-	vm.ext[key] = vmExt{value: val, isCode: false}
+	vm.ext[key] = vmExt{value: val, kind: extKindString}
 	vm.flushValueCache()
 }
 
 // ExtCode binds a Jsonnet external code var to the given code.
 func (vm *VM) ExtCode(key string, val string) {
-	vm.ext[key] = vmExt{value: val, isCode: true}
+	vm.ext[key] = vmExt{value: val, kind: extKindCode}
 	vm.flushValueCache()
 }
 
 // ExtCodeNode binds a Jsonnet external code var to the given AST node.
 func (vm *VM) ExtCodeNode(key string, node ast.Node) {
-	vm.ext[key] = vmExt{node: node, isCode: true, isNode: true}
+	vm.ext[key] = vmExt{node: node, kind: extKindNode}
 	vm.flushValueCache()
 }
 
 // TLAVar binds a Jsonnet top level argument to the given value.
 func (vm *VM) TLAVar(key string, val string) {
-	vm.tla[key] = vmExt{value: val, isCode: false}
+	vm.tla[key] = vmExt{value: val, kind: extKindString}
 	// Setting a TLA does not require flushing the cache.
 	// Only the results of evaluation of imported files are cached
 	// and the TLAs do not affect these unlike extVars.
@@ -116,13 +121,13 @@ func (vm *VM) TLAVar(key string, val string) {
 
 // TLACode binds a Jsonnet top level argument to the given code.
 func (vm *VM) TLACode(key string, val string) {
-	vm.tla[key] = vmExt{value: val, isCode: true}
+	vm.tla[key] = vmExt{value: val, kind: extKindCode}
 	// Setting a TLA does not require flushing the cache - see above.
 }
 
 // TLACodeNode binds a Jsonnet top level argument to the given AST node.
 func (vm *VM) TLACodeNode(key string, node ast.Node) {
-	vm.tla[key] = vmExt{node: node, isCode: true, isNode: true}
+	vm.tla[key] = vmExt{node: node, kind: extKindNode}
 	// Setting a TLA does not require flushing the cache - see above.
 }
 
