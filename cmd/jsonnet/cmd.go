@@ -32,7 +32,7 @@ import (
 )
 
 func version(o io.Writer) {
-	fmt.Fprintf(o, "Jsonnet commandline interpreter %s\n", jsonnet.Version())
+	fmt.Fprintf(o, "Jsonnet commandline interpreter (Go implementation) %s\n", jsonnet.Version())
 }
 
 func usage(o io.Writer) {
