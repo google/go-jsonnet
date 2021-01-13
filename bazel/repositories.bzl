@@ -33,6 +33,6 @@ def jsonnet_go_repositories():
         http_archive,
         name = "cpp_jsonnet",
         sha256 = "076b52edf888c01097010ad4299e3b2e7a72b60a41abbc65af364af1ed3c8dbe",
-        strip_prefix = "jsonnet-0.17.0",
-        urls = ["https://github.com/google/jsonnet/archive/v0.17.0.tar.gz"],
+        strip_prefix = "jsonnet-90cad75dcc2eafdcf059c901169d36539dc8a699",
+        urls = ["https://github.com/google/jsonnet/archive/90cad75dcc2eafdcf059c901169d36539dc8a699.tar.gz"],
     )
