@@ -1194,9 +1194,13 @@ func evaluateStd(i *interpreter) (value, error) {
 func prepareExtVars(i *interpreter, ext vmExtMap, kind string) map[string]*cachedThunk {
 	result := make(map[string]*cachedThunk)
 	for name, content := range ext {
-		if content.isCode {
-			result[name] = codeToPV(i, "<"+kind+":"+name+">", content.value)
-		} else {
+		diagnosticFile := "<" + kind + ":" + name + ">"
+		switch content.kind {
+		case extKindCode:
+			result[name] = codeToPV(i, diagnosticFile, content.value)
+		case extKindNode:
+			result[name] = nodeToPV(i, diagnosticFile, content.node)
+		default:
 			result[name] = readyThunk(makeValueString(content.value))
 		}
 	}

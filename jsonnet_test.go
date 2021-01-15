@@ -2,6 +2,7 @@ package jsonnet
 
 import (
 	"bytes"
+	"encoding/json"
 	"reflect"
 	"strings"
 	"testing"
@@ -264,4 +265,65 @@ func TestTLAReset(t *testing.T) {
 	if !strings.Contains(err.Error(), "Missing argument") {
 		t.Errorf("unexpected error %v", err)
 	}
+}
+
+func assertVarOutput(t *testing.T, jsonStr string) {
+	var data struct {
+		Var  string `json:"var"`
+		Code string `json:"code"`
+		Node string `json:"node"`
+	}
+	err := json.Unmarshal([]byte(jsonStr), &data)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if data.Var != "var" {
+		t.Errorf("var attribute not correct, want '%s' got '%s'", "var", data.Var)
+	}
+	if data.Code != "code" {
+		t.Errorf("code attribute not correct, want '%s' got '%s'", "code", data.Code)
+	}
+	if data.Node != "node" {
+		t.Errorf("node attribute not correct, want '%s' got '%s'", "node", data.Node)
+	}
+}
+
+func TestExtTypes(t *testing.T) {
+	node, err := SnippetToAST("var.jsonnet", `{ node: 'node' }`)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	vm := MakeVM()
+	vm.ExtVar("var", "var")
+	vm.ExtCode("code", `{ code: 'code'}`)
+	vm.ExtNode("node", node)
+
+	jsonStr, err := vm.EvaluateAnonymousSnippet(
+		"caller.jsonnet",
+		`{ var: std.extVar('var') } + std.extVar('code') + std.extVar('node')`,
+	)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	assertVarOutput(t, jsonStr)
+}
+
+func TestTLATypes(t *testing.T) {
+	node, err := SnippetToAST("var.jsonnet", `{ node: 'node' }`)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	vm := MakeVM()
+	vm.TLAVar("var", "var")
+	vm.TLACode("code", `{ code: 'code'}`)
+	vm.TLANode("node", node)
+
+	jsonStr, err := vm.EvaluateAnonymousSnippet(
+		"caller.jsonnet",
+		`function (var, code, node) { var: var } + code + node`,
+	)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	assertVarOutput(t, jsonStr)
 }
