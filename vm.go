@@ -95,6 +95,12 @@ func (vm *VM) ExtCode(key string, val string) {
 	vm.flushValueCache()
 }
 
+// ExtReset rests all external variables registered for this VM.
+func (vm *VM) ExtReset() {
+	vm.ext = make(vmExtMap)
+	vm.flushValueCache()
+}
+
 // TLAVar binds a Jsonnet top level argument to the given value.
 func (vm *VM) TLAVar(key string, val string) {
 	vm.tla[key] = vmExt{value: val, isCode: false}
@@ -107,6 +113,11 @@ func (vm *VM) TLAVar(key string, val string) {
 func (vm *VM) TLACode(key string, val string) {
 	vm.tla[key] = vmExt{value: val, isCode: true}
 	// Setting a TLA does not require flushing the cache - see above.
+}
+
+// TLAReset resets all TLSa registered for this VM.
+func (vm *VM) TLAReset() {
+	vm.tla = make(vmExtMap)
 }
 
 // Importer sets Importer to use during evaluation (import callback).
