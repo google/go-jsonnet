@@ -21,20 +21,28 @@ import (
 	"github.com/google/go-jsonnet/internal/pass"
 )
 
-// FixPlusObject is a formatter pass that replaces e {} with e + {}.
-type FixPlusObject struct {
+// RemovePlusObject is a formatter pass that replaces ((e)) with (e).
+type RemovePlusObject struct {
 	pass.Base
 }
 
-// Visit replaces ApplyBrace with Binary node.
-func (c *FixPlusObject) Visit(p pass.ASTPass, node *ast.Node, ctx pass.Context) {
-	applyBrace, ok := (*node).(*ast.ApplyBrace)
+// Visit replaces e + { ... } with an ApplyBrace in some situations.
+func (c *RemovePlusObject) Visit(p pass.ASTPass, node *ast.Node, ctx pass.Context) {
+	binary, ok := (*node).(*ast.Binary)
 	if ok {
-		*node = &ast.Binary{
-			NodeBase: applyBrace.NodeBase,
-			Left:     applyBrace.Left,
-			Op:       ast.BopPlus,
-			Right:    applyBrace.Right,
+		// Could relax this to allow more ASTs on the LHS but this seems OK for now.
+		_, leftIsVar := binary.Left.(*ast.Var)
+		_, leftIsIndex := binary.Left.(*ast.Index)
+		if leftIsVar || leftIsIndex {
+			rhs, ok := binary.Right.(*ast.Object)
+			if ok && binary.Op == ast.BopPlus {
+				ast.FodderMoveFront(&rhs.Fodder, &binary.OpFodder)
+				*node = &ast.ApplyBrace{
+					NodeBase: binary.NodeBase,
+					Left:     binary.Left,
+					Right:    rhs,
+				}
+			}
 		}
 	}
 	c.Base.Visit(p, node, ctx)

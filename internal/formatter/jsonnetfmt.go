@@ -66,6 +66,8 @@ type Options struct {
 	// SortImports causes imports at the top of the file to be sorted in groups
 	// by filename.
 	SortImports bool
+	// UseImplicitPlus removes plus sign where it is not required.
+	UseImplicitPlus bool
 
 	StripEverything     bool
 	StripComments       bool
@@ -79,6 +81,7 @@ func DefaultOptions() Options {
 		MaxBlankLines:    2,
 		StringStyle:      StringStyleSingle,
 		CommentStyle:     CommentStyleSlash,
+		UseImplicitPlus:  true,
 		PrettyFieldNames: true,
 		PadArrays:        false,
 		PadObjects:       true,
@@ -152,7 +155,11 @@ func Format(filename string, input string, options Options) (string, error) {
 	visitFile(&FixNewlines{}, &node, &finalFodder)
 	visitFile(&FixTrailingCommas{}, &node, &finalFodder)
 	visitFile(&FixParens{}, &node, &finalFodder)
-	visitFile(&FixPlusObject{}, &node, &finalFodder)
+	if options.UseImplicitPlus {
+		visitFile(&RemovePlusObject{}, &node, &finalFodder)
+	} else {
+		visitFile(&AddPlusObject{}, &node, &finalFodder)
+	}
 	visitFile(&NoRedundantSliceColon{}, &node, &finalFodder)
 	if options.StripComments {
 		visitFile(&StripComments{}, &node, &finalFodder)
