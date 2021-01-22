@@ -58,6 +58,8 @@ func usage(o io.Writer) {
 	fmt.Fprintln(o, "  --[no-]pad-objects         { x: 1, y: 2 } instead of {x: 1, y: 2}")
 	fmt.Fprintln(o, "                             (on by default)")
 	fmt.Fprintln(o, "  --[no-]sort-imports        Sorting of imports (on by default)")
+	fmt.Fprintln(o, "  --[no-]use-implicit-plus   Remove plus signs where they are not required")
+	fmt.Fprintln(o, "                             (on by default)")
 	fmt.Fprintln(o, "  --version                  Print version")
 	fmt.Fprintln(o)
 	fmt.Fprintln(o, "In all cases:")
@@ -161,6 +163,10 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 			default:
 				return processArgsStatusFailure, fmt.Errorf("invalid --comment-style value: %s", str)
 			}
+		} else if arg == "--use-implicit-plus" {
+			config.options.UseImplicitPlus = true
+		} else if arg == "--no-use-implicit-plus" {
+			config.options.UseImplicitPlus = false
 		} else if arg == "--pretty-field-names" {
 			config.options.PrettyFieldNames = true
 		} else if arg == "--no-pretty-field-names" {
