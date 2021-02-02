@@ -115,7 +115,7 @@ func (vm *VM) TLACode(key string, val string) {
 	// Setting a TLA does not require flushing the cache - see above.
 }
 
-// TLAReset resets all TLSa registered for this VM.
+// TLAReset resets all TLAs registered for this VM.
 func (vm *VM) TLAReset() {
 	vm.tla = make(vmExtMap)
 }
