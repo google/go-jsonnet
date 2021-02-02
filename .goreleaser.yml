@@ -36,7 +36,7 @@ builds:
       - arm64
     ignore:
       - goos: darwin
-        goarch: 386
+      - goarch: 386
 
     id: jsonnetfmt
     main: ./cmd/jsonnetfmt
@@ -50,7 +50,7 @@ archives:
       386: i386
       amd64: x86_64
 checksum:
-  name_template: 'checksums.txt'
+  name_template: "checksums.txt"
 
 nfpms:
   - id: jsonnet

@@ -1,0 +1,86 @@
+name: ci
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+jobs:
+  test:
+    name: Test go${{ matrix.goVersion}}.x ${{ matrix.goArch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goVersion: "1"
+            GOARCH: "amd64"
+            SKIP_PYTHON_BINDINGS_TESTS: "0"
+          # - goVersion: "1"
+          #   GOARCH: "arm64"
+          #   SKIP_PYTHON_BINDINGS_TESTS: "0"
+          # - goVersion: "1"
+          #   GOARCH: "386"
+          #   SKIP_PYTHON_BINDINGS_TESTS: "1"
+          # - goVersion: "1"
+          #   GOARCH: "ppc64le"
+          #   SKIP_PYTHON_BINDINGS_TESTS: "0"
+          - goVersion: "1.11"
+            GOARCH: "amd64"
+            SKIP_PYTHON_BINDINGS_TESTS: "0"
+          - goVersion: "1.12"
+            GOARCH: "amd64"
+            SKIP_PYTHON_BINDINGS_TESTS: "0"
+          - goVersion: "1.13"
+            GOARCH: "amd64"
+            SKIP_PYTHON_BINDINGS_TESTS: "0"
+          - goVersion: "1.14"
+            GOARCH: "amd64"
+            SKIP_PYTHON_BINDINGS_TESTS: "0"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.goVersion }}
+      - run: sudo apt install python3-dev python3-setuptools
+      - run: pip install -U wheel
+      - run: pip install -U pytest setuptools
+      - run: make install.dependencies
+      - run: make test
+        env:
+          GOARCH: ${{ matrix.GOARCH }}
+          CGO_ENABLED: "1"
+          SKIP_PYTHON_BINDINGS_TESTS: ${{ matrix.SKIP_PYTHON_BINDINGS_TESTS }}
+
+  all:
+    name: Check all
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: sudo apt install python3-dev python3-setuptools
+      - run: pip install -U wheel
+      - run: pip install -U pytest setuptools
+      # - uses: golangci/golangci-lint-action@v2
+      #   with:
+      #     version: v1.30.0
+      - run: make all
+      - name: Install goveralls
+        env:
+          GO111MODULE: off
+        run: |
+          export GOPATH=$GITHUB_WORKSPACE
+          go get github.com/mattn/goveralls
+      - name: Send coverage
+        env:
+          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./bin/goveralls -coverprofile=coverage.out -service=github
+
+  goreleaser:
+    name: Goreleaser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: goreleaser/goreleaser-action@v2
+        with:
+          args: release --snapshot --skip-publish --rm-dist
