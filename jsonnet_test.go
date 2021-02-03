@@ -3,6 +3,7 @@ package jsonnet
 import (
 	"bytes"
 	"reflect"
+	"strings"
 	"testing"
 	"unicode/utf8"
 
@@ -226,5 +227,41 @@ func TestContents(t *testing.T) {
 	c3 := MakeContents(a)
 	if c2 == c3 {
 		t.Errorf("Contents should distinguish between different instances even if they have the same data inside")
+	}
+}
+
+func TestExtReset(t *testing.T) {
+	vm := MakeVM()
+	vm.ExtVar("fooString", "bar")
+	vm.ExtCode("fooCode", "true")
+	_, err := vm.EvaluateAnonymousSnippet("test.jsonnet", `{ str: std.extVar('fooString'), code: std.extVar('fooCode') }`)
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+	vm.ExtReset()
+	_, err = vm.EvaluateAnonymousSnippet("test.jsonnet", `{ str: std.extVat('fooString'), code: std.extVar('fooCode') }`)
+	if err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "Undefined external variable") {
+		t.Errorf("unexpected error %v", err)
+	}
+}
+
+func TestTLAReset(t *testing.T) {
+	vm := MakeVM()
+	vm.TLAVar("fooString", "bar")
+	vm.TLACode("fooCode", "true")
+	_, err := vm.EvaluateAnonymousSnippet("test.jsonnet", `function (fooString, fooCode) { str: fooString, code: fooCode }`)
+	if err != nil {
+		t.Fatalf("unexpected error %v", err)
+	}
+	vm.TLAReset()
+	_, err = vm.EvaluateAnonymousSnippet("test.jsonnet", `function(fooString, fooCode) { str: fooString, code: fooCode }`)
+	if err == nil {
+		t.Fatalf("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "Missing argument") {
+		t.Errorf("unexpected error %v", err)
 	}
 }
