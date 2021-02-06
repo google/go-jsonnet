@@ -1,0 +1,7 @@
+# How to use pre-commit hook: https://pre-commit.com
+- id: jsonnet-format
+  name: Format fix for jsonnet/libsonnet files
+  entry: jsonnetfmt -i
+  language: golang
+  files: '\.(jsonnet|libsonnet)$'
+  additional_dependencies: [ "github.com/google/go-jsonnet/cmd/jsonnetfmt" ]
