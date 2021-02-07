@@ -19,6 +19,7 @@ package jsonnet
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"math"
 	"reflect"
 	"sort"
@@ -257,6 +258,9 @@ type interpreter struct {
 
 	// Keeps imports
 	importCache *importCache
+
+	// Output stream for trace() for
+	traceOut io.Writer
 }
 
 // Map union, b takes precedence when keys collide.
@@ -1215,10 +1219,11 @@ func buildObject(hide ast.ObjectFieldHide, fields map[string]value) *valueObject
 	return makeValueSimpleObject(bindingFrame{}, fieldMap, nil, nil)
 }
 
-func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*NativeFunction, maxStack int, ic *importCache) (*interpreter, error) {
+func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*NativeFunction, maxStack int, ic *importCache, traceOut io.Writer) (*interpreter, error) {
 	i := interpreter{
 		stack:       makeCallStack(maxStack),
 		importCache: ic,
+		traceOut:    traceOut,
 		nativeFuncs: nativeFuncs,
 	}
 
@@ -1288,9 +1293,9 @@ func evaluateAux(i *interpreter, node ast.Node, tla vmExtMap) (value, error) {
 
 // TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
 func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, ic *importCache, stringOutputMode bool) (string, error) {
+	maxStack int, ic *importCache, traceOut io.Writer, stringOutputMode bool) (string, error) {
 
-	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic)
+	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic, traceOut)
 	if err != nil {
 		return "", err
 	}
@@ -1317,9 +1322,9 @@ func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]
 
 // TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
 func evaluateMulti(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, ic *importCache, stringOutputMode bool) (map[string]string, error) {
+	maxStack int, ic *importCache, traceOut io.Writer, stringOutputMode bool) (map[string]string, error) {
 
-	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic)
+	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic, traceOut)
 	if err != nil {
 		return nil, err
 	}
@@ -1337,9 +1342,9 @@ func evaluateMulti(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[st
 
 // TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
 func evaluateStream(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, ic *importCache) ([]string, error) {
+	maxStack int, ic *importCache, traceOut io.Writer) ([]string, error) {
 
-	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic)
+	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic, traceOut)
 	if err != nil {
 		return nil, err
 	}
