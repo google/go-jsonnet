@@ -3,6 +3,7 @@ package jsonnet
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -326,4 +327,25 @@ func TestTLATypes(t *testing.T) {
 		t.Fatalf("Unexpected error: %v", err)
 	}
 	assertVarOutput(t, jsonStr)
+}
+
+func TestSetTraceOut(t *testing.T) {
+	traceOut := &strings.Builder{}
+	vm := MakeVM()
+	vm.SetTraceOut(traceOut)
+
+	const filename = "blah.jsonnet"
+	const msg = "TestSetTraceOut Trace Message"
+	expected := fmt.Sprintf("TRACE: %s:1 %s", filename, msg)
+	input := fmt.Sprintf("std.trace('%s', 'rest')", msg)
+
+	_, err := vm.EvaluateAnonymousSnippet(filename, input)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
+
+	actual := removeExcessiveWhitespace(traceOut.String())
+	if actual != expected {
+		t.Errorf("Expected %q, but got %q", expected, actual)
+	}
 }
