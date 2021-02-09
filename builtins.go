@@ -247,7 +247,7 @@ func builtinTrace(i *interpreter, x value, y value) (value, error) {
 		return nil, err
 	}
 	trace := i.stack.currentTrace
-	filename := trace.loc.FileName
+	filename := trace.loc.File.DiagnosticFileName
 	line := trace.loc.Begin.Line
 	fmt.Fprintf(
 		i.traceOut, "TRACE: %s:%d %s\n", filename, line, xStr.getGoString())

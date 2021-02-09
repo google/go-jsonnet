@@ -96,7 +96,7 @@ func (vm *VM) flushValueCache() {
 	vm.importCache.flushValueCache()
 }
 
-// SetTraceOut sets the output stream for the builtin function trace(). The default is os.Stderr.
+// SetTraceOut sets the output stream for the builtin function std.trace().
 func (vm *VM) SetTraceOut(traceOut io.Writer) {
 	vm.traceOut = traceOut
 }

@@ -334,11 +334,12 @@ func TestSetTraceOut(t *testing.T) {
 	vm := MakeVM()
 	vm.SetTraceOut(traceOut)
 
-	const msg = "Some Trace Message"
-	expected := fmt.Sprintf("TRACE: :1 %s", msg)
+	const filename = "blah.jsonnet"
+	const msg = "TestSetTraceOut Trace Message"
+	expected := fmt.Sprintf("TRACE: %s:1 %s", filename, msg)
 	input := fmt.Sprintf("std.trace('%s', 'rest')", msg)
 
-	_, err := vm.EvaluateAnonymousSnippet("blah.jsonnet", input)
+	_, err := vm.EvaluateAnonymousSnippet(filename, input)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
