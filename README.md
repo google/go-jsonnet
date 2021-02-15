@@ -25,6 +25,15 @@ It's also available on Homebrew:
 brew install go-jsonnet
 ```
 
+`jsonnetfmt` and `jsonnet-lint` are also available as [pre-commit](https://github.com/pre-commit/pre-commit) hooks. Example `.pre-commit-config.yaml`:
+```yaml
+- repo: https://github.com/google/go-jsonnet
+  rev: # ref you want to point at, e.g. v0.17.0
+  hooks:
+    - id: jsonnet-format
+    - id: jsonnet-lint
+```
+
 ## Build instructions (go 1.11+)
 
 ```bash
