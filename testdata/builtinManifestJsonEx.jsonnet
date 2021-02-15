@@ -1,4 +1,4 @@
-local a = {
+local object = {
   foo: 'bar',
   bar: self.foo,
   baz: 1,
@@ -19,9 +19,9 @@ local a = {
   },
 };
 
-local b = [
+local array = [
   'bar',
-  a.foo,
+  object.foo,
   1,
   1.42,
   -1,
@@ -41,6 +41,10 @@ local b = [
 ];
 
 {
-  a: std.manifestJsonEx(a, '  '),
-  b: std.manifestJsonEx(b, '  '),
+  array: std.manifestJsonEx(array, '  '),
+  bool: std.manifestJsonEx(true, '   '),
+  'null': std.manifestJsonEx(null, '   '),
+  object: std.manifestJsonEx(object, '  '),
+  number: std.manifestJsonEx(42, '   '),
+  string: std.manifestJsonEx('foo', '   '),
 }

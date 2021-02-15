@@ -1,4 +1,8 @@
 {
-   "a": "{\n  \"bam\": true,\n  \"bar\": \"bar\",\n  \"baz\": 1,\n  \"bazel\": 1.42,\n  \"bim\": false,\n  \"blamo\": {\n    \"cereal\": [\n      \"<>& fizbuzz\"\n    ],\n    \"treats\": [\n      {\n        \"name\": \"chocolate\"\n      }\n    ]\n  },\n  \"boom\": -1,\n  \"foo\": \"bar\"\n}",
-   "b": "[\n  \"bar\",\n  \"bar\",\n  1,\n  1.42,\n  -1,\n  false,\n  true,\n  {\n    \"cereal\": [\n      \"<>& fizbuzz\"\n    ],\n    \"treats\": [\n      {\n        \"name\": \"chocolate\"\n      }\n    ]\n  }\n]"
+   "array": "[\n  \"bar\",\n  \"bar\",\n  1,\n  1.42,\n  -1,\n  false,\n  true,\n  {\n    \"cereal\": [\n      \"<>& fizbuzz\"\n    ],\n    \"treats\": [\n      {\n        \"name\": \"chocolate\"\n      }\n    ]\n  }\n]",
+   "bool": "true",
+   "null": "null",
+   "number": "42",
+   "object": "{\n  \"bam\": true,\n  \"bar\": \"bar\",\n  \"baz\": 1,\n  \"bazel\": 1.42,\n  \"bim\": false,\n  \"blamo\": {\n    \"cereal\": [\n      \"<>& fizbuzz\"\n    ],\n    \"treats\": [\n      {\n        \"name\": \"chocolate\"\n      }\n    ]\n  },\n  \"boom\": -1,\n  \"foo\": \"bar\"\n}",
+   "string": "\"foo\""
 }
