@@ -1211,10 +1211,7 @@ func jsonEncode(v interface{}) (string, error) {
 // For backwards compatibility reasons, we are manually marshalling to json so we can control formatting
 // In the future, it might be apt to use a library [pretty-printing] function
 func builtinManifestJSONEx(i *interpreter, arguments []value) (value, error) {
-	obj, err := i.getObject(arguments[0])
-	if err != nil {
-		return nil, err
-	}
+	val := arguments[0]
 
 	vindent, err := i.getString(arguments[1])
 	if err != nil {
@@ -1315,7 +1312,7 @@ func builtinManifestJSONEx(i *interpreter, arguments []value) (value, error) {
 		}
 	}
 
-	finalString, err := aux(obj, path, "")
+	finalString, err := aux(val, path, "")
 	if err != nil {
 		return nil, err
 	}
