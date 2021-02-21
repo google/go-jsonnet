@@ -38,4 +38,10 @@ char* jsonnet_internal_execute_import(JsonnetImportCallback *cb,
                                       char **found_here,
                                       int *success);
 
+typedef int JsonnetIoWriterCallback(char *str, int *success);
+
+int jsonnet_internal_execute_writer(JsonnetIoWriterCallback *cb,
+                                    char *str,
+                                    int *success);
+
 void jsonnet_internal_free_string(char *str);

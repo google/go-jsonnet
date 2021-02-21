@@ -639,5 +639,23 @@ func formatSnippet(vmRef *C.struct_JsonnetVm, filename string, code string, e *C
 	return result
 }
 
+type traceOut struct {
+	cb *C.JsonnetIoWriterCallback
+}
+
+func (o *traceOut) Write(p []byte) (int, error) {
+	success := C.int(0)
+	str := C.CString(string(p))
+	var n C.int = C.jsonnet_internal_execute_writer(o.cb, str, &success)
+	C.jsonnet_internal_free_string(str)
+	return int(n), nil
+}
+
+//export jsonnet_set_trace_out_callback
+func jsonnet_set_trace_out_callback(vmRef *C.struct_JsonnetVm, cb *C.JsonnetIoWriterCallback) {
+	vm := getVM(vmRef)
+	vm.SetTraceOut(&traceOut{cb})
+}
+
 func main() {
 }

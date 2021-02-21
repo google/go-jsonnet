@@ -44,6 +44,13 @@ char* jsonnet_internal_execute_import(JsonnetImportCallback *cb,
     return (cb)(ctx, base, rel, found_here, success);
 }
 
+int jsonnet_internal_execute_writer(JsonnetIoWriterCallback *cb,
+                                    char *str,
+                                    int *success)
+{
+    return (cb)(str, success);
+}
+
 void jsonnet_internal_free_string(char *str) {
     if (str != nullptr) {
         ::free(str);
