@@ -518,7 +518,7 @@ class TestJsonnetEvaluateBindings(unittest.TestCase):
         msg = b"test_jsonnet_set_trace_out_callback trace message"
         expected = b"TRACE: " + fname + b":1 " + msg + b"\n"
         snippet = b"std.trace('" + msg + b"', 'rest')"
-        res = lib.jsonnet_evaluate_snippet(self.vm, fname, snippet, self.err_ref)
+        lib.jsonnet_evaluate_snippet(self.vm, fname, snippet, self.err_ref)
         self.assertEqual(io_writer_buf,  expected)
 
     def tearDown(self):
