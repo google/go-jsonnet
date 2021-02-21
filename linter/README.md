@@ -6,11 +6,11 @@ This is a linter for Jsonnet. It is alpha stage, but it should be already useful
 
 The linter detect the following kinds of issues:
 * "Type" problems, such as:
-    ∗ Accessing nonexistent fields
-    ∗ Calling a function with a wrong number of arguments or named arguments
+    * Accessing nonexistent fields
+    * Calling a function with a wrong number of arguments or named arguments
     which do not match the parameters
-    ∗ Trying to call a value which is not a function
-    ∗ Trying to index a value which is not an object, array or a string
+    * Trying to call a value which is not a function
+    * Trying to index a value which is not an object, array or a string
 * Unused variables
 * Endlessly looping constructs, which are always invalid, but often appear  as a result of confusion about language semantics (e.g. local x = x + 1)
 * Anything that is statically detected during normal execution, such as syntax errors and undeclared variables.
