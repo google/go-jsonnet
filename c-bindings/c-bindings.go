@@ -648,6 +648,9 @@ func (o *traceOut) Write(p []byte) (int, error) {
 	str := C.CString(string(p))
 	var n C.int = C.jsonnet_internal_execute_writer(o.cb, str, &success)
 	C.jsonnet_internal_free_string(str)
+	if success != 1 {
+		return int(n), errors.New("std.trace() failed to write to output stream")
+	}
 	return int(n), nil
 }
 
