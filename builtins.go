@@ -1195,8 +1195,8 @@ func builtinParseJSON(i *interpreter, str value) (value, error) {
 	return jsonToValue(i, parsedJSON)
 }
 
-func builtinParseYAML(i *interpreter, trace traceElement, str value) (value, error) {
-	sval, err := i.getString(str, trace)
+func builtinParseYAML(i *interpreter, str value) (value, error) {
+	sval, err := i.getString(str)
 	if err != nil {
 		return nil, err
 	}
@@ -1209,11 +1209,11 @@ func builtinParseYAML(i *interpreter, trace traceElement, str value) (value, err
 			if err == io.EOF {
 				break
 			}
-			return nil, i.Error(fmt.Sprintf("failed to parse YAML: %v", err.Error()), trace)
+			return nil, i.Error(fmt.Sprintf("failed to parse YAML: %v", err.Error()))
 		}
 		elems = append(elems, elem)
 	}
-	return jsonToValue(i, trace, elems)
+	return jsonToValue(i, elems)
 }
 
 func jsonEncode(v interface{}) (string, error) {
