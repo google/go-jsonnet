@@ -97,6 +97,7 @@ func prepareStdlib(g *typeGraph) {
 		"parseOctal": g.newSimpleFuncType(numberType, "str"),
 		"parseHex":   g.newSimpleFuncType(numberType, "str"),
 		"parseJson":  g.newSimpleFuncType(jsonType, "str"),
+		"parseYaml":  g.newSimpleFuncType(jsonType, "str"),
 		"encodeUTF8": g.newSimpleFuncType(arrayOfNumber, "str"),
 		"decodeUTF8": g.newSimpleFuncType(stringType, "arr"),
 

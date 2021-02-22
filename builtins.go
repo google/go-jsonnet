@@ -1201,6 +1201,9 @@ func builtinParseYAML(i *interpreter, str value) (value, error) {
 		return nil, err
 	}
 	s := sval.getGoString()
+
+	isYamlStream := strings.Contains(s, "---")
+
 	elems := []interface{}{}
 	d := NewYAMLToJSONDecoder(strings.NewReader(s))
 	for {
@@ -1213,7 +1216,12 @@ func builtinParseYAML(i *interpreter, str value) (value, error) {
 		}
 		elems = append(elems, elem)
 	}
-	return jsonToValue(i, elems)
+
+  if isYamlStream {
+  	return jsonToValue(i, elems)
+  } else {
+    return jsonToValue(i, elems[0])
+  }
 }
 
 func jsonEncode(v interface{}) (string, error) {
