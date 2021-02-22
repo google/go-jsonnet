@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"os"
 	"reflect"
 	"sort"
 	"strconv"
@@ -34,11 +33,11 @@ import (
 	"github.com/google/go-jsonnet/ast"
 )
 
-func builtinPlus(i *interpreter, trace traceElement, x, y value) (value, error) {
+func builtinPlus(i *interpreter, x, y value) (value, error) {
 	// TODO(sbarzowski) perhaps a more elegant way to dispatch
 	switch right := y.(type) {
 	case valueString:
-		left, err := builtinToString(i, trace, x)
+		left, err := builtinToString(i, x)
 		if err != nil {
 			return nil, err
 		}
@@ -47,13 +46,13 @@ func builtinPlus(i *interpreter, trace traceElement, x, y value) (value, error) 
 	}
 	switch left := x.(type) {
 	case *valueNumber:
-		right, err := i.getNumber(y, trace)
+		right, err := i.getNumber(y)
 		if err != nil {
 			return nil, err
 		}
-		return makeDoubleCheck(i, trace, left.value+right.value)
+		return makeDoubleCheck(i, left.value+right.value)
 	case valueString:
-		right, err := builtinToString(i, trace, y)
+		right, err := builtinToString(i, y)
 		if err != nil {
 			return nil, err
 		}
@@ -63,119 +62,153 @@ func builtinPlus(i *interpreter, trace traceElement, x, y value) (value, error) 
 		case *valueObject:
 			return makeValueExtendedObject(left, right), nil
 		default:
-			return nil, i.typeErrorSpecific(y, &valueObject{}, trace)
+			return nil, i.typeErrorSpecific(y, &valueObject{})
 		}
 
 	case *valueArray:
-		right, err := i.getArray(y, trace)
+		right, err := i.getArray(y)
 		if err != nil {
 			return nil, err
 		}
 		return concatArrays(left, right), nil
 	default:
-		return nil, i.typeErrorGeneral(x, trace)
+		return nil, i.typeErrorGeneral(x)
 	}
 }
 
-func builtinMinus(i *interpreter, trace traceElement, xv, yv value) (value, error) {
-	x, err := i.getNumber(xv, trace)
+func builtinMinus(i *interpreter, xv, yv value) (value, error) {
+	x, err := i.getNumber(xv)
 	if err != nil {
 		return nil, err
 	}
-	y, err := i.getNumber(yv, trace)
+	y, err := i.getNumber(yv)
 	if err != nil {
 		return nil, err
 	}
-	return makeDoubleCheck(i, trace, x.value-y.value)
+	return makeDoubleCheck(i, x.value-y.value)
 }
 
-func builtinMult(i *interpreter, trace traceElement, xv, yv value) (value, error) {
-	x, err := i.getNumber(xv, trace)
+func builtinMult(i *interpreter, xv, yv value) (value, error) {
+	x, err := i.getNumber(xv)
 	if err != nil {
 		return nil, err
 	}
-	y, err := i.getNumber(yv, trace)
+	y, err := i.getNumber(yv)
 	if err != nil {
 		return nil, err
 	}
-	return makeDoubleCheck(i, trace, x.value*y.value)
+	return makeDoubleCheck(i, x.value*y.value)
 }
 
-func builtinDiv(i *interpreter, trace traceElement, xv, yv value) (value, error) {
-	x, err := i.getNumber(xv, trace)
+func builtinDiv(i *interpreter, xv, yv value) (value, error) {
+	x, err := i.getNumber(xv)
 	if err != nil {
 		return nil, err
 	}
-	y, err := i.getNumber(yv, trace)
+	y, err := i.getNumber(yv)
 	if err != nil {
 		return nil, err
 	}
 	if y.value == 0 {
-		return nil, i.Error("Division by zero.", trace)
+		return nil, i.Error("Division by zero.")
 	}
-	return makeDoubleCheck(i, trace, x.value/y.value)
+	return makeDoubleCheck(i, x.value/y.value)
 }
 
-func builtinModulo(i *interpreter, trace traceElement, xv, yv value) (value, error) {
-	x, err := i.getNumber(xv, trace)
+func builtinModulo(i *interpreter, xv, yv value) (value, error) {
+	x, err := i.getNumber(xv)
 	if err != nil {
 		return nil, err
 	}
-	y, err := i.getNumber(yv, trace)
+	y, err := i.getNumber(yv)
 	if err != nil {
 		return nil, err
 	}
 	if y.value == 0 {
-		return nil, i.Error("Division by zero.", trace)
+		return nil, i.Error("Division by zero.")
 	}
-	return makeDoubleCheck(i, trace, math.Mod(x.value, y.value))
+	return makeDoubleCheck(i, math.Mod(x.value, y.value))
 }
 
-func valueLess(i *interpreter, trace traceElement, x, yv value) (bool, error) {
+func valueCmp(i *interpreter, x, y value) (int, error) {
 	switch left := x.(type) {
 	case *valueNumber:
-		right, err := i.getNumber(yv, trace)
+		right, err := i.getNumber(y)
 		if err != nil {
-			return false, err
+			return 0, err
 		}
-		return left.value < right.value, nil
+		return float64Cmp(left.value, right.value), nil
 	case valueString:
-		right, err := i.getString(yv, trace)
+		right, err := i.getString(y)
 		if err != nil {
-			return false, err
+			return 0, err
 		}
-		return stringLessThan(left, right), nil
+		return stringCmp(left, right), nil
+	case *valueArray:
+		right, err := i.getArray(y)
+		if err != nil {
+			return 0, err
+		}
+		return arrayCmp(i, left, right)
 	default:
-		return false, i.typeErrorGeneral(x, trace)
+		return 0, i.typeErrorGeneral(x)
 	}
 }
 
-func builtinLess(i *interpreter, trace traceElement, x, yv value) (value, error) {
-	b, err := valueLess(i, trace, x, yv)
-	return makeValueBoolean(b), err
+func arrayCmp(i *interpreter, x, y *valueArray) (int, error) {
+	for index := 0; index < minInt(x.length(), y.length()); index++ {
+		left, err := x.index(i, index)
+		if err != nil {
+			return 0, err
+		}
+		right, err := y.index(i, index)
+		if err != nil {
+			return 0, err
+		}
+		cmp, err := valueCmp(i, left, right)
+		if err != nil {
+			return 0, err
+		}
+		if cmp != 0 {
+			return cmp, nil
+		}
+	}
+	return intCmp(x.length(), y.length()), nil
 }
 
-func builtinGreater(i *interpreter, trace traceElement, x, y value) (value, error) {
-	return builtinLess(i, trace, y, x)
-}
-
-func builtinGreaterEq(i *interpreter, trace traceElement, x, y value) (value, error) {
-	res, err := builtinLess(i, trace, x, y)
+func builtinLess(i *interpreter, x, y value) (value, error) {
+	r, err := valueCmp(i, x, y)
 	if err != nil {
 		return nil, err
 	}
-	return res.(*valueBoolean).not(), nil
+	return makeValueBoolean(r == -1), nil
 }
 
-func builtinLessEq(i *interpreter, trace traceElement, x, y value) (value, error) {
-	res, err := builtinGreater(i, trace, x, y)
+func builtinGreater(i *interpreter, x, y value) (value, error) {
+	r, err := valueCmp(i, x, y)
 	if err != nil {
 		return nil, err
 	}
-	return res.(*valueBoolean).not(), nil
+	return makeValueBoolean(r == 1), nil
 }
 
-func builtinLength(i *interpreter, trace traceElement, x value) (value, error) {
+func builtinGreaterEq(i *interpreter, x, y value) (value, error) {
+	r, err := valueCmp(i, x, y)
+	if err != nil {
+		return nil, err
+	}
+	return makeValueBoolean(r >= 0), nil
+}
+
+func builtinLessEq(i *interpreter, x, y value) (value, error) {
+	r, err := valueCmp(i, x, y)
+	if err != nil {
+		return nil, err
+	}
+	return makeValueBoolean(r <= 0), nil
+}
+
+func builtinLength(i *interpreter, x value) (value, error) {
 	var num int
 	switch x := x.(type) {
 	case *valueObject:
@@ -191,33 +224,34 @@ func builtinLength(i *interpreter, trace traceElement, x value) (value, error) {
 			}
 		}
 	default:
-		return nil, i.typeErrorGeneral(x, trace)
+		return nil, i.typeErrorGeneral(x)
 	}
 	return makeValueNumber(float64(num)), nil
 }
 
-func builtinToString(i *interpreter, trace traceElement, x value) (value, error) {
+func builtinToString(i *interpreter, x value) (value, error) {
 	switch x := x.(type) {
 	case valueString:
 		return x, nil
 	}
 	var buf bytes.Buffer
-	err := i.manifestAndSerializeJSON(&buf, trace, x, false, "")
+	err := i.manifestAndSerializeJSON(&buf, x, false, "")
 	if err != nil {
 		return nil, err
 	}
 	return makeValueString(buf.String()), nil
 }
 
-func builtinTrace(i *interpreter, trace traceElement, x value, y value) (value, error) {
-	xStr, err := i.getString(x, trace)
+func builtinTrace(i *interpreter, x value, y value) (value, error) {
+	xStr, err := i.getString(x)
 	if err != nil {
 		return nil, err
 	}
-	filename := trace.loc.FileName
+	trace := i.stack.currentTrace
+	filename := trace.loc.File.DiagnosticFileName
 	line := trace.loc.Begin.Line
 	fmt.Fprintf(
-		os.Stderr, "TRACE: %s:%d %s\n", filename, line, xStr.getGoString())
+		i.traceOut, "TRACE: %s:%d %s\n", filename, line, xStr.getGoString())
 	return y, nil
 }
 
@@ -231,12 +265,12 @@ type astMakeArrayElement struct {
 	index    int
 }
 
-func builtinMakeArray(i *interpreter, trace traceElement, szv, funcv value) (value, error) {
-	sz, err := i.getInt(szv, trace)
+func builtinMakeArray(i *interpreter, szv, funcv value) (value, error) {
+	sz, err := i.getInt(szv)
 	if err != nil {
 		return nil, err
 	}
-	fun, err := i.getFunction(funcv, trace)
+	fun, err := i.getFunction(funcv)
 	if err != nil {
 		return nil, err
 	}
@@ -255,8 +289,8 @@ func builtinMakeArray(i *interpreter, trace traceElement, szv, funcv value) (val
 	return makeValueArray(elems), nil
 }
 
-func builtinFlatMap(i *interpreter, trace traceElement, funcv, arrv value) (value, error) {
-	fun, err := i.getFunction(funcv, trace)
+func builtinFlatMap(i *interpreter, funcv, arrv value) (value, error) {
+	fun, err := i.getFunction(funcv)
 	if err != nil {
 		return nil, err
 	}
@@ -268,11 +302,11 @@ func builtinFlatMap(i *interpreter, trace traceElement, funcv, arrv value) (valu
 		// TODO(sbarzowski) verify that it actually helps
 		elems := make([]*cachedThunk, 0, num)
 		for counter := 0; counter < num; counter++ {
-			returnedValue, err := fun.call(i, trace, args(arrv.elements[counter]))
+			returnedValue, err := fun.call(i, args(arrv.elements[counter]))
 			if err != nil {
 				return nil, err
 			}
-			returned, err := i.getArray(returnedValue, trace)
+			returned, err := i.getArray(returnedValue)
 			if err != nil {
 				return nil, err
 			}
@@ -282,11 +316,11 @@ func builtinFlatMap(i *interpreter, trace traceElement, funcv, arrv value) (valu
 	case valueString:
 		var str strings.Builder
 		for _, elem := range arrv.getRunes() {
-			returnedValue, err := fun.call(i, trace, args(readyThunk(makeValueString(string(elem)))))
+			returnedValue, err := fun.call(i, args(readyThunk(makeValueString(string(elem)))))
 			if err != nil {
 				return nil, err
 			}
-			returned, err := i.getString(returnedValue, trace)
+			returned, err := i.getString(returnedValue)
 			if err != nil {
 				return nil, err
 			}
@@ -294,15 +328,15 @@ func builtinFlatMap(i *interpreter, trace traceElement, funcv, arrv value) (valu
 		}
 		return makeValueString(str.String()), nil
 	default:
-		return nil, i.Error("std.flatMap second param must be array / string, got "+arrv.getType().name, trace)
+		return nil, i.Error("std.flatMap second param must be array / string, got " + arrv.getType().name)
 	}
 }
 
-func joinArrays(i *interpreter, trace traceElement, sep *valueArray, arr *valueArray) (value, error) {
+func joinArrays(i *interpreter, sep *valueArray, arr *valueArray) (value, error) {
 	result := make([]*cachedThunk, 0, arr.length())
 	first := true
 	for _, elem := range arr.elements {
-		elemValue, err := i.evaluatePV(elem, trace)
+		elemValue, err := i.evaluatePV(elem)
 		if err != nil {
 			return nil, err
 		}
@@ -315,7 +349,7 @@ func joinArrays(i *interpreter, trace traceElement, sep *valueArray, arr *valueA
 			}
 			result = append(result, v.elements...)
 		default:
-			return nil, i.typeErrorSpecific(elemValue, &valueArray{}, trace)
+			return nil, i.typeErrorSpecific(elemValue, &valueArray{})
 		}
 		first = false
 
@@ -323,11 +357,11 @@ func joinArrays(i *interpreter, trace traceElement, sep *valueArray, arr *valueA
 	return makeValueArray(result), nil
 }
 
-func joinStrings(i *interpreter, trace traceElement, sep valueString, arr *valueArray) (value, error) {
+func joinStrings(i *interpreter, sep valueString, arr *valueArray) (value, error) {
 	result := make([]rune, 0, arr.length())
 	first := true
 	for _, elem := range arr.elements {
-		elemValue, err := i.evaluatePV(elem, trace)
+		elemValue, err := i.evaluatePV(elem)
 		if err != nil {
 			return nil, err
 		}
@@ -340,30 +374,30 @@ func joinStrings(i *interpreter, trace traceElement, sep valueString, arr *value
 			}
 			result = append(result, v.getRunes()...)
 		default:
-			return nil, i.typeErrorSpecific(elemValue, emptyString(), trace)
+			return nil, i.typeErrorSpecific(elemValue, emptyString())
 		}
 		first = false
 	}
 	return makeStringFromRunes(result), nil
 }
 
-func builtinJoin(i *interpreter, trace traceElement, sep, arrv value) (value, error) {
-	arr, err := i.getArray(arrv, trace)
+func builtinJoin(i *interpreter, sep, arrv value) (value, error) {
+	arr, err := i.getArray(arrv)
 	if err != nil {
 		return nil, err
 	}
 	switch sep := sep.(type) {
 	case valueString:
-		return joinStrings(i, trace, sep, arr)
+		return joinStrings(i, sep, arr)
 	case *valueArray:
-		return joinArrays(i, trace, sep, arr)
+		return joinArrays(i, sep, arr)
 	default:
-		return nil, i.Error("join first parameter should be string or array, got "+sep.getType().name, trace)
+		return nil, i.Error("join first parameter should be string or array, got " + sep.getType().name)
 	}
 }
 
-func builtinReverse(i *interpreter, trace traceElement, arrv value) (value, error) {
-	arr, err := i.getArray(arrv, trace)
+func builtinReverse(i *interpreter, arrv value) (value, error) {
+	arr, err := i.getArray(arrv)
 	if err != nil {
 		return nil, err
 	}
@@ -379,12 +413,12 @@ func builtinReverse(i *interpreter, trace traceElement, arrv value) (value, erro
 	return makeValueArray(reversedArray), nil
 }
 
-func builtinFilter(i *interpreter, trace traceElement, funcv, arrv value) (value, error) {
-	arr, err := i.getArray(arrv, trace)
+func builtinFilter(i *interpreter, funcv, arrv value) (value, error) {
+	arr, err := i.getArray(arrv)
 	if err != nil {
 		return nil, err
 	}
-	fun, err := i.getFunction(funcv, trace)
+	fun, err := i.getFunction(funcv)
 	if err != nil {
 		return nil, err
 	}
@@ -394,11 +428,11 @@ func builtinFilter(i *interpreter, trace traceElement, funcv, arrv value) (value
 	// TODO(sbarzowski) verify that it actually helps
 	elems := make([]*cachedThunk, 0, num)
 	for counter := 0; counter < num; counter++ {
-		includedValue, err := fun.call(i, trace, args(arr.elements[counter]))
+		includedValue, err := fun.call(i, args(arr.elements[counter]))
 		if err != nil {
 			return nil, err
 		}
-		included, err := i.getBoolean(includedValue, trace)
+		included, err := i.getBoolean(includedValue)
 		if err != nil {
 			return nil, err
 		}
@@ -411,7 +445,6 @@ func builtinFilter(i *interpreter, trace traceElement, funcv, arrv value) (value
 
 type sortData struct {
 	i      *interpreter
-	trace  traceElement
 	thunks []*cachedThunk
 	keys   []value
 	err    error
@@ -422,12 +455,12 @@ func (d *sortData) Len() int {
 }
 
 func (d *sortData) Less(i, j int) bool {
-	b, err := valueLess(d.i, d.trace, d.keys[i], d.keys[j])
+	r, err := valueCmp(d.i, d.keys[i], d.keys[j])
 	if err != nil {
 		d.err = err
 		panic("Error while comparing elements")
 	}
-	return b
+	return r == -1
 }
 
 func (d *sortData) Swap(i, j int) {
@@ -447,26 +480,26 @@ func (d *sortData) Sort() (err error) {
 	return
 }
 
-func builtinSort(i *interpreter, trace traceElement, arguments []value) (value, error) {
+func builtinSort(i *interpreter, arguments []value) (value, error) {
 	arrv := arguments[0]
 	keyFv := arguments[1]
 
-	arr, err := i.getArray(arrv, trace)
+	arr, err := i.getArray(arrv)
 	if err != nil {
 		return nil, err
 	}
-	keyF, err := i.getFunction(keyFv, trace)
+	keyF, err := i.getFunction(keyFv)
 	if err != nil {
 		return nil, err
 	}
 	num := arr.length()
 
-	data := sortData{i: i, trace: trace, thunks: make([]*cachedThunk, num), keys: make([]value, num)}
+	data := sortData{i: i, thunks: make([]*cachedThunk, num), keys: make([]value, num)}
 
 	for counter := 0; counter < num; counter++ {
 		var err error
 		data.thunks[counter] = arr.elements[counter]
-		data.keys[counter], err = keyF.call(i, trace, args(arr.elements[counter]))
+		data.keys[counter], err = keyF.call(i, args(arr.elements[counter]))
 		if err != nil {
 			return nil, err
 		}
@@ -480,12 +513,12 @@ func builtinSort(i *interpreter, trace traceElement, arguments []value) (value, 
 	return makeValueArray(data.thunks), nil
 }
 
-func builtinRange(i *interpreter, trace traceElement, fromv, tov value) (value, error) {
-	from, err := i.getInt(fromv, trace)
+func builtinRange(i *interpreter, fromv, tov value) (value, error) {
+	from, err := i.getInt(fromv)
 	if err != nil {
 		return nil, err
 	}
-	to, err := i.getInt(tov, trace)
+	to, err := i.getInt(tov)
 	if err != nil {
 		return nil, err
 	}
@@ -496,16 +529,16 @@ func builtinRange(i *interpreter, trace traceElement, fromv, tov value) (value, 
 	return makeValueArray(elems), nil
 }
 
-func builtinNegation(i *interpreter, trace traceElement, x value) (value, error) {
-	b, err := i.getBoolean(x, trace)
+func builtinNegation(i *interpreter, x value) (value, error) {
+	b, err := i.getBoolean(x)
 	if err != nil {
 		return nil, err
 	}
 	return makeValueBoolean(!b.value), nil
 }
 
-func builtinBitNeg(i *interpreter, trace traceElement, x value) (value, error) {
-	n, err := i.getNumber(x, trace)
+func builtinBitNeg(i *interpreter, x value) (value, error) {
+	n, err := i.getNumber(x)
 	if err != nil {
 		return nil, err
 	}
@@ -513,12 +546,12 @@ func builtinBitNeg(i *interpreter, trace traceElement, x value) (value, error) {
 	return int64ToValue(^intValue), nil
 }
 
-func builtinIdentity(i *interpreter, trace traceElement, x value) (value, error) {
+func builtinIdentity(i *interpreter, x value) (value, error) {
 	return x, nil
 }
 
-func builtinUnaryPlus(i *interpreter, trace traceElement, x value) (value, error) {
-	n, err := i.getNumber(x, trace)
+func builtinUnaryPlus(i *interpreter, x value) (value, error) {
+	n, err := i.getNumber(x)
 	if err != nil {
 		return nil, err
 	}
@@ -526,8 +559,8 @@ func builtinUnaryPlus(i *interpreter, trace traceElement, x value) (value, error
 	return makeValueNumber(n.value), nil
 }
 
-func builtinUnaryMinus(i *interpreter, trace traceElement, x value) (value, error) {
-	n, err := i.getNumber(x, trace)
+func builtinUnaryMinus(i *interpreter, x value) (value, error) {
+	n, err := i.getNumber(x)
 	if err != nil {
 		return nil, err
 	}
@@ -536,25 +569,25 @@ func builtinUnaryMinus(i *interpreter, trace traceElement, x value) (value, erro
 
 // TODO(sbarzowski) since we have a builtin implementation of equals it's no longer really
 // needed and we should deprecate it eventually
-func primitiveEquals(i *interpreter, trace traceElement, x, y value) (value, error) {
+func primitiveEquals(i *interpreter, x, y value) (value, error) {
 	if x.getType() != y.getType() {
 		return makeValueBoolean(false), nil
 	}
 	switch left := x.(type) {
 	case *valueBoolean:
-		right, err := i.getBoolean(y, trace)
+		right, err := i.getBoolean(y)
 		if err != nil {
 			return nil, err
 		}
 		return makeValueBoolean(left.value == right.value), nil
 	case *valueNumber:
-		right, err := i.getNumber(y, trace)
+		right, err := i.getNumber(y)
 		if err != nil {
 			return nil, err
 		}
 		return makeValueBoolean(left.value == right.value), nil
 	case valueString:
-		right, err := i.getString(y, trace)
+		right, err := i.getString(y)
 		if err != nil {
 			return nil, err
 		}
@@ -562,34 +595,33 @@ func primitiveEquals(i *interpreter, trace traceElement, x, y value) (value, err
 	case *valueNull:
 		return makeValueBoolean(true), nil
 	case *valueFunction:
-		return nil, i.Error("Cannot test equality of functions", trace)
+		return nil, i.Error("Cannot test equality of functions")
 	default:
 		return nil, i.Error(
-			"primitiveEquals operates on primitive types, got "+x.getType().name,
-			trace,
+			"primitiveEquals operates on primitive types, got " + x.getType().name,
 		)
 	}
 }
 
-func rawEquals(i *interpreter, trace traceElement, x, y value) (bool, error) {
+func rawEquals(i *interpreter, x, y value) (bool, error) {
 	if x.getType() != y.getType() {
 		return false, nil
 	}
 	switch left := x.(type) {
 	case *valueBoolean:
-		right, err := i.getBoolean(y, trace)
+		right, err := i.getBoolean(y)
 		if err != nil {
 			return false, err
 		}
 		return left.value == right.value, nil
 	case *valueNumber:
-		right, err := i.getNumber(y, trace)
+		right, err := i.getNumber(y)
 		if err != nil {
 			return false, err
 		}
 		return left.value == right.value, nil
 	case valueString:
-		right, err := i.getString(y, trace)
+		right, err := i.getString(y)
 		if err != nil {
 			return false, err
 		}
@@ -597,7 +629,7 @@ func rawEquals(i *interpreter, trace traceElement, x, y value) (bool, error) {
 	case *valueNull:
 		return true, nil
 	case *valueArray:
-		right, err := i.getArray(y, trace)
+		right, err := i.getArray(y)
 		if err != nil {
 			return false, err
 		}
@@ -605,15 +637,15 @@ func rawEquals(i *interpreter, trace traceElement, x, y value) (bool, error) {
 			return false, nil
 		}
 		for j := range left.elements {
-			leftElem, err := i.evaluatePV(left.elements[j], trace)
+			leftElem, err := i.evaluatePV(left.elements[j])
 			if err != nil {
 				return false, err
 			}
-			rightElem, err := i.evaluatePV(right.elements[j], trace)
+			rightElem, err := i.evaluatePV(right.elements[j])
 			if err != nil {
 				return false, err
 			}
-			eq, err := rawEquals(i, trace, leftElem, rightElem)
+			eq, err := rawEquals(i, leftElem, rightElem)
 			if err != nil {
 				return false, err
 			}
@@ -623,7 +655,7 @@ func rawEquals(i *interpreter, trace traceElement, x, y value) (bool, error) {
 		}
 		return true, nil
 	case *valueObject:
-		right, err := i.getObject(y, trace)
+		right, err := i.getObject(y)
 		if err != nil {
 			return false, err
 		}
@@ -641,15 +673,15 @@ func rawEquals(i *interpreter, trace traceElement, x, y value) (bool, error) {
 		}
 		for j := range leftFields {
 			fieldName := leftFields[j]
-			leftField, err := left.index(i, trace, fieldName)
+			leftField, err := left.index(i, fieldName)
 			if err != nil {
 				return false, err
 			}
-			rightField, err := right.index(i, trace, fieldName)
+			rightField, err := right.index(i, fieldName)
 			if err != nil {
 				return false, err
 			}
-			eq, err := rawEquals(i, trace, leftField, rightField)
+			eq, err := rawEquals(i, leftField, rightField)
 			if err != nil {
 				return false, err
 			}
@@ -659,33 +691,33 @@ func rawEquals(i *interpreter, trace traceElement, x, y value) (bool, error) {
 		}
 		return true, nil
 	case *valueFunction:
-		return false, i.Error("Cannot test equality of functions", trace)
+		return false, i.Error("Cannot test equality of functions")
 	}
 	panic(fmt.Sprintf("Unhandled case in equals %#+v %#+v", x, y))
 }
 
-func builtinEquals(i *interpreter, trace traceElement, x, y value) (value, error) {
-	eq, err := rawEquals(i, trace, x, y)
+func builtinEquals(i *interpreter, x, y value) (value, error) {
+	eq, err := rawEquals(i, x, y)
 	if err != nil {
 		return nil, err
 	}
 	return makeValueBoolean(eq), nil
 }
 
-func builtinNotEquals(i *interpreter, trace traceElement, x, y value) (value, error) {
-	eq, err := rawEquals(i, trace, x, y)
+func builtinNotEquals(i *interpreter, x, y value) (value, error) {
+	eq, err := rawEquals(i, x, y)
 	if err != nil {
 		return nil, err
 	}
 	return makeValueBoolean(!eq), nil
 }
 
-func builtinType(i *interpreter, trace traceElement, x value) (value, error) {
+func builtinType(i *interpreter, x value) (value, error) {
 	return makeValueString(x.getType().name), nil
 }
 
-func builtinMd5(i *interpreter, trace traceElement, x value) (value, error) {
-	str, err := i.getString(x, trace)
+func builtinMd5(i *interpreter, x value) (value, error) {
+	str, err := i.getString(x)
 	if err != nil {
 		return nil, err
 	}
@@ -693,7 +725,7 @@ func builtinMd5(i *interpreter, trace traceElement, x value) (value, error) {
 	return makeValueString(hex.EncodeToString(hash[:])), nil
 }
 
-func builtinBase64(i *interpreter, trace traceElement, input value) (value, error) {
+func builtinBase64(i *interpreter, input value) (value, error) {
 	var byteArr []byte
 
 	var sanityCheck = func(v int) (string, bool) {
@@ -707,7 +739,7 @@ func builtinBase64(i *interpreter, trace traceElement, input value) (value, erro
 
 	switch input.(type) {
 	case valueString:
-		vStr, err := i.getString(input, trace)
+		vStr, err := i.getString(input)
 		if err != nil {
 			return nil, err
 		}
@@ -717,47 +749,47 @@ func builtinBase64(i *interpreter, trace traceElement, input value) (value, erro
 			n := int(r)
 			msg, ok := sanityCheck(n)
 			if !ok {
-				return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+				return nil, makeRuntimeError(msg, i.getCurrentStackTrace())
 			}
 		}
 
 		byteArr = []byte(str)
 	case *valueArray:
-		vArr, err := i.getArray(input, trace)
+		vArr, err := i.getArray(input)
 		if err != nil {
 			return nil, err
 		}
 
 		for _, cThunk := range vArr.elements {
-			cTv, err := cThunk.getValue(i, trace)
+			cTv, err := cThunk.getValue(i)
 			if err != nil {
 				return nil, err
 			}
 
-			vInt, err := i.getInt(cTv, trace)
+			vInt, err := i.getInt(cTv)
 			if err != nil {
 				msg := fmt.Sprintf("base64 encountered a non-integer value in the array, got %s", cTv.getType().name)
-				return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+				return nil, makeRuntimeError(msg, i.getCurrentStackTrace())
 			}
 
 			msg, ok := sanityCheck(vInt)
 			if !ok {
-				return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+				return nil, makeRuntimeError(msg, i.getCurrentStackTrace())
 			}
 
 			byteArr = append(byteArr, byte(vInt))
 		}
 	default:
 		msg := fmt.Sprintf("base64 can only base64 encode strings / arrays of single bytes, got %s", input.getType().name)
-		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace())
 	}
 
 	sEnc := base64.StdEncoding.EncodeToString(byteArr)
 	return makeValueString(sEnc), nil
 }
 
-func builtinEncodeUTF8(i *interpreter, trace traceElement, x value) (value, error) {
-	str, err := i.getString(x, trace)
+func builtinEncodeUTF8(i *interpreter, x value) (value, error) {
+	str, err := i.getString(x)
 	if err != nil {
 		return nil, err
 	}
@@ -769,19 +801,19 @@ func builtinEncodeUTF8(i *interpreter, trace traceElement, x value) (value, erro
 	return makeValueArray(elems), nil
 }
 
-func builtinDecodeUTF8(i *interpreter, trace traceElement, x value) (value, error) {
-	arr, err := i.getArray(x, trace)
+func builtinDecodeUTF8(i *interpreter, x value) (value, error) {
+	arr, err := i.getArray(x)
 	if err != nil {
 		return nil, err
 	}
 	bs := make([]byte, len(arr.elements)) // it will be longer if characters fall outside of ASCII
 	for pos := range arr.elements {
-		v, err := i.evaluateInt(arr.elements[pos], trace)
+		v, err := i.evaluateInt(arr.elements[pos])
 		if err != nil {
 			return nil, err
 		}
 		if v < 0 || v > 255 {
-			return nil, i.Error(fmt.Sprintf("Bytes must be integers in range [0, 255], got %d", v), trace)
+			return nil, i.Error(fmt.Sprintf("Bytes must be integers in range [0, 255], got %d", v))
 		}
 		bs[pos] = byte(v)
 	}
@@ -792,47 +824,47 @@ func builtinDecodeUTF8(i *interpreter, trace traceElement, x value) (value, erro
 // https://en.wikipedia.org/wiki/Unicode#Architecture_and_terminology
 const codepointMax = 0x10FFFF
 
-func builtinChar(i *interpreter, trace traceElement, x value) (value, error) {
-	n, err := i.getNumber(x, trace)
+func builtinChar(i *interpreter, x value) (value, error) {
+	n, err := i.getNumber(x)
 	if err != nil {
 		return nil, err
 	}
 	if n.value > codepointMax {
-		return nil, i.Error(fmt.Sprintf("Invalid unicode codepoint, got %v", n.value), trace)
+		return nil, i.Error(fmt.Sprintf("Invalid unicode codepoint, got %v", n.value))
 	} else if n.value < 0 {
-		return nil, i.Error(fmt.Sprintf("Codepoints must be >= 0, got %v", n.value), trace)
+		return nil, i.Error(fmt.Sprintf("Codepoints must be >= 0, got %v", n.value))
 	}
 	return makeValueString(string(rune(n.value))), nil
 }
 
-func builtinCodepoint(i *interpreter, trace traceElement, x value) (value, error) {
-	str, err := i.getString(x, trace)
+func builtinCodepoint(i *interpreter, x value) (value, error) {
+	str, err := i.getString(x)
 	if err != nil {
 		return nil, err
 	}
 	if str.length() != 1 {
-		return nil, i.Error(fmt.Sprintf("codepoint takes a string of length 1, got length %v", str.length()), trace)
+		return nil, i.Error(fmt.Sprintf("codepoint takes a string of length 1, got length %v", str.length()))
 	}
 	return makeValueNumber(float64(str.getRunes()[0])), nil
 }
 
-func makeDoubleCheck(i *interpreter, trace traceElement, x float64) (value, error) {
+func makeDoubleCheck(i *interpreter, x float64) (value, error) {
 	if math.IsNaN(x) {
-		return nil, i.Error("Not a number", trace)
+		return nil, i.Error("Not a number")
 	}
 	if math.IsInf(x, 0) {
-		return nil, i.Error("Overflow", trace)
+		return nil, i.Error("Overflow")
 	}
 	return makeValueNumber(x), nil
 }
 
-func liftNumeric(f func(float64) float64) func(*interpreter, traceElement, value) (value, error) {
-	return func(i *interpreter, trace traceElement, x value) (value, error) {
-		n, err := i.getNumber(x, trace)
+func liftNumeric(f func(float64) float64) func(*interpreter, value) (value, error) {
+	return func(i *interpreter, x value) (value, error) {
+		n, err := i.getNumber(x)
 		if err != nil {
 			return nil, err
 		}
-		return makeDoubleCheck(i, trace, f(n.value))
+		return makeDoubleCheck(i, f(n.value))
 	}
 }
 
@@ -862,28 +894,28 @@ var builtinExponent = liftNumeric(func(f float64) float64 {
 	return float64(exponent)
 })
 
-func liftBitwise(f func(int64, int64) int64, positiveRightArg bool) func(*interpreter, traceElement, value, value) (value, error) {
-	return func(i *interpreter, trace traceElement, xv, yv value) (value, error) {
-		x, err := i.getNumber(xv, trace)
+func liftBitwise(f func(int64, int64) int64, positiveRightArg bool) func(*interpreter, value, value) (value, error) {
+	return func(i *interpreter, xv, yv value) (value, error) {
+		x, err := i.getNumber(xv)
 		if err != nil {
 			return nil, err
 		}
-		y, err := i.getNumber(yv, trace)
+		y, err := i.getNumber(yv)
 		if err != nil {
 			return nil, err
 		}
 		if x.value < math.MinInt64 || x.value > math.MaxInt64 {
 			msg := fmt.Sprintf("Bitwise operator argument %v outside of range [%v, %v]", x.value, int64(math.MinInt64), int64(math.MaxInt64))
-			return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+			return nil, makeRuntimeError(msg, i.getCurrentStackTrace())
 		}
 		if y.value < math.MinInt64 || y.value > math.MaxInt64 {
 			msg := fmt.Sprintf("Bitwise operator argument %v outside of range [%v, %v]", y.value, int64(math.MinInt64), int64(math.MaxInt64))
-			return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+			return nil, makeRuntimeError(msg, i.getCurrentStackTrace())
 		}
 		if positiveRightArg && y.value < 0 {
-			return nil, makeRuntimeError("Shift by negative exponent.", i.getCurrentStackTrace(trace))
+			return nil, makeRuntimeError("Shift by negative exponent.", i.getCurrentStackTrace())
 		}
-		return makeDoubleCheck(i, trace, float64(f(int64(x.value), int64(y.value))))
+		return makeDoubleCheck(i, float64(f(int64(x.value), int64(y.value))))
 	}
 }
 
@@ -893,12 +925,12 @@ var builtinBitwiseAnd = liftBitwise(func(x, y int64) int64 { return x & y }, fal
 var builtinBitwiseOr = liftBitwise(func(x, y int64) int64 { return x | y }, false)
 var builtinBitwiseXor = liftBitwise(func(x, y int64) int64 { return x ^ y }, false)
 
-func builtinObjectFieldsEx(i *interpreter, trace traceElement, objv, includeHiddenV value) (value, error) {
-	obj, err := i.getObject(objv, trace)
+func builtinObjectFieldsEx(i *interpreter, objv, includeHiddenV value) (value, error) {
+	obj, err := i.getObject(objv)
 	if err != nil {
 		return nil, err
 	}
-	includeHidden, err := i.getBoolean(includeHiddenV, trace)
+	includeHidden, err := i.getBoolean(includeHiddenV)
 	if err != nil {
 		return nil, err
 	}
@@ -911,16 +943,16 @@ func builtinObjectFieldsEx(i *interpreter, trace traceElement, objv, includeHidd
 	return makeValueArray(elems), nil
 }
 
-func builtinObjectHasEx(i *interpreter, trace traceElement, objv value, fnamev value, includeHiddenV value) (value, error) {
-	obj, err := i.getObject(objv, trace)
+func builtinObjectHasEx(i *interpreter, objv value, fnamev value, includeHiddenV value) (value, error) {
+	obj, err := i.getObject(objv)
 	if err != nil {
 		return nil, err
 	}
-	fname, err := i.getString(fnamev, trace)
+	fname, err := i.getString(fnamev)
 	if err != nil {
 		return nil, err
 	}
-	includeHidden, err := i.getBoolean(includeHiddenV, trace)
+	includeHidden, err := i.getBoolean(includeHiddenV)
 	if err != nil {
 		return nil, err
 	}
@@ -929,52 +961,52 @@ func builtinObjectHasEx(i *interpreter, trace traceElement, objv value, fnamev v
 	return makeValueBoolean(hasField), nil
 }
 
-func builtinPow(i *interpreter, trace traceElement, basev value, expv value) (value, error) {
-	base, err := i.getNumber(basev, trace)
+func builtinPow(i *interpreter, basev value, expv value) (value, error) {
+	base, err := i.getNumber(basev)
 	if err != nil {
 		return nil, err
 	}
-	exp, err := i.getNumber(expv, trace)
+	exp, err := i.getNumber(expv)
 	if err != nil {
 		return nil, err
 	}
-	return makeDoubleCheck(i, trace, math.Pow(base.value, exp.value))
+	return makeDoubleCheck(i, math.Pow(base.value, exp.value))
 }
 
-func builtinSubstr(i *interpreter, trace traceElement, inputStr, inputFrom, inputLen value) (value, error) {
-	strV, err := i.getString(inputStr, trace)
+func builtinSubstr(i *interpreter, inputStr, inputFrom, inputLen value) (value, error) {
+	strV, err := i.getString(inputStr)
 	if err != nil {
 		msg := fmt.Sprintf("substr first parameter should be a string, got %s", inputStr.getType().name)
-		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace())
 	}
 
-	fromV, err := i.getNumber(inputFrom, trace)
+	fromV, err := i.getNumber(inputFrom)
 	if err != nil {
 		msg := fmt.Sprintf("substr second parameter should be a number, got %s", inputFrom.getType().name)
-		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace())
 	}
 
 	if math.Mod(fromV.value, 1) != 0 {
 		msg := fmt.Sprintf("substr second parameter should be an integer, got %f", fromV.value)
-		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace())
 	}
 
-	lenV, err := i.getNumber(inputLen, trace)
+	lenV, err := i.getNumber(inputLen)
 	if err != nil {
 		msg := fmt.Sprintf("substr third parameter should be a number, got %s", inputLen.getType().name)
-		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace())
 	}
 
-	lenInt, err := i.getInt(lenV, trace)
+	lenInt, err := i.getInt(lenV)
 
 	if err != nil {
 		msg := fmt.Sprintf("substr third parameter should be an integer, got %f", lenV.value)
-		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace())
 	}
 
 	if lenInt < 0 {
 		msg := fmt.Sprintf("substr third parameter should be greater than zero, got %d", lenInt)
-		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace())
 	}
 
 	fromInt := int(fromV.value)
@@ -994,26 +1026,26 @@ func builtinSubstr(i *interpreter, trace traceElement, inputStr, inputFrom, inpu
 	return makeValueString(string(runes[fromInt:endIndex])), nil
 }
 
-func builtinSplitLimit(i *interpreter, trace traceElement, strv, cv, maxSplitsV value) (value, error) {
-	str, err := i.getString(strv, trace)
+func builtinSplitLimit(i *interpreter, strv, cv, maxSplitsV value) (value, error) {
+	str, err := i.getString(strv)
 	if err != nil {
 		return nil, err
 	}
-	c, err := i.getString(cv, trace)
+	c, err := i.getString(cv)
 	if err != nil {
 		return nil, err
 	}
-	maxSplits, err := i.getInt(maxSplitsV, trace)
+	maxSplits, err := i.getInt(maxSplitsV)
 	if err != nil {
 		return nil, err
 	}
 	if maxSplits < -1 {
-		return nil, i.Error(fmt.Sprintf("std.splitLimit third parameter should be -1 or non-negative, got %v", maxSplits), trace)
+		return nil, i.Error(fmt.Sprintf("std.splitLimit third parameter should be -1 or non-negative, got %v", maxSplits))
 	}
 	sStr := str.getGoString()
 	sC := c.getGoString()
 	if len(sC) != 1 {
-		return nil, i.Error(fmt.Sprintf("std.splitLimit second parameter should have length 1, got %v", len(sC)), trace)
+		return nil, i.Error(fmt.Sprintf("std.splitLimit second parameter should have length 1, got %v", len(sC)))
 	}
 
 	// the convention is slightly different from strings.splitN in Go (the meaning of non-negative values is shifted by one)
@@ -1031,16 +1063,16 @@ func builtinSplitLimit(i *interpreter, trace traceElement, strv, cv, maxSplitsV 
 	return makeValueArray(res), nil
 }
 
-func builtinStrReplace(i *interpreter, trace traceElement, strv, fromv, tov value) (value, error) {
-	str, err := i.getString(strv, trace)
+func builtinStrReplace(i *interpreter, strv, fromv, tov value) (value, error) {
+	str, err := i.getString(strv)
 	if err != nil {
 		return nil, err
 	}
-	from, err := i.getString(fromv, trace)
+	from, err := i.getString(fromv)
 	if err != nil {
 		return nil, err
 	}
-	to, err := i.getString(tov, trace)
+	to, err := i.getString(tov)
 	if err != nil {
 		return nil, err
 	}
@@ -1048,34 +1080,34 @@ func builtinStrReplace(i *interpreter, trace traceElement, strv, fromv, tov valu
 	sFrom := from.getGoString()
 	sTo := to.getGoString()
 	if len(sFrom) == 0 {
-		return nil, i.Error("'from' string must not be zero length.", trace)
+		return nil, i.Error("'from' string must not be zero length.")
 	}
 	return makeValueString(strings.Replace(sStr, sFrom, sTo, -1)), nil
 }
 
-func base64DecodeGoBytes(i *interpreter, trace traceElement, str string) ([]byte, error) {
+func base64DecodeGoBytes(i *interpreter, str string) ([]byte, error) {
 	strLen := len(str)
 	if strLen%4 != 0 {
 		msg := fmt.Sprintf("input string appears not to be a base64 encoded string. Wrong length found (%d)", strLen)
-		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace())
 	}
 
 	decodedBytes, err := base64.StdEncoding.DecodeString(str)
 	if err != nil {
-		return nil, i.Error(fmt.Sprintf("failed to decode: %s", err), trace)
+		return nil, i.Error(fmt.Sprintf("failed to decode: %s", err))
 	}
 
 	return decodedBytes, nil
 }
 
-func builtinBase64DecodeBytes(i *interpreter, trace traceElement, input value) (value, error) {
-	vStr, err := i.getString(input, trace)
+func builtinBase64DecodeBytes(i *interpreter, input value) (value, error) {
+	vStr, err := i.getString(input)
 	if err != nil {
 		msg := fmt.Sprintf("base64DecodeBytes requires a string, got %s", input.getType().name)
-		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace())
 	}
 
-	decodedBytes, err := base64DecodeGoBytes(i, trace, vStr.getGoString())
+	decodedBytes, err := base64DecodeGoBytes(i, vStr.getGoString())
 	if err != nil {
 		return nil, err
 	}
@@ -1088,14 +1120,14 @@ func builtinBase64DecodeBytes(i *interpreter, trace traceElement, input value) (
 	return makeValueArray(res), nil
 }
 
-func builtinBase64Decode(i *interpreter, trace traceElement, input value) (value, error) {
-	vStr, err := i.getString(input, trace)
+func builtinBase64Decode(i *interpreter, input value) (value, error) {
+	vStr, err := i.getString(input)
 	if err != nil {
 		msg := fmt.Sprintf("base64DecodeBytes requires a string, got %s", input.getType().name)
-		return nil, makeRuntimeError(msg, i.getCurrentStackTrace(trace))
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace())
 	}
 
-	decodedBytes, err := base64DecodeGoBytes(i, trace, vStr.getGoString())
+	decodedBytes, err := base64DecodeGoBytes(i, vStr.getGoString())
 	if err != nil {
 		return nil, err
 	}
@@ -1103,37 +1135,32 @@ func builtinBase64Decode(i *interpreter, trace traceElement, input value) (value
 	return makeValueString(string(decodedBytes)), nil
 }
 
-func builtinUglyObjectFlatMerge(i *interpreter, trace traceElement, x value) (value, error) {
+func builtinUglyObjectFlatMerge(i *interpreter, x value) (value, error) {
 	// TODO(sbarzowski) consider keeping comprehensions in AST
 	// It will probably be way less hacky, with better error messages and better performance
 
-	objarr, err := i.getArray(x, trace)
+	objarr, err := i.getArray(x)
 	if err != nil {
 		return nil, err
 	}
 	newFields := make(simpleObjectFieldMap)
-	var anyObj *simpleObject
 	for _, elem := range objarr.elements {
-		obj, err := i.evaluateObject(elem, trace)
+		obj, err := i.evaluateObject(elem)
 		if err != nil {
 			return nil, err
 		}
+
 		// starts getting ugly - we mess with object internals
 		simpleObj := obj.uncached.(*simpleObject)
+
+		if len(simpleObj.locals) > 0 {
+			panic("Locals should have been desugared in object comprehension.")
+		}
+
 		// there is only one field, really
 		for fieldName, fieldVal := range simpleObj.fields {
 			if _, alreadyExists := newFields[fieldName]; alreadyExists {
-				return nil, i.Error(duplicateFieldNameErrMsg(fieldName), trace)
-			}
-
-			// Here is the tricky part. Each field in a comprehension has different
-			// upValues, because for example in {[v]: v for v in ["x", "y", "z"] },
-			// the v is different for each field.
-			// Yet, even though upValues are field-specific, they are shadowed by object locals,
-			// so we need to make holes to let them pass through
-			upValues := simpleObj.upValues
-			for _, l := range simpleObj.locals {
-				delete(upValues, l.name)
+				return nil, i.Error(duplicateFieldNameErrMsg(fieldName))
 			}
 
 			newFields[fieldName] = simpleObjectField{
@@ -1144,29 +1171,18 @@ func builtinUglyObjectFlatMerge(i *interpreter, trace traceElement, x value) (va
 				},
 			}
 		}
-		anyObj = simpleObj
-	}
-
-	var locals []objectLocal
-	var localUpValues bindingFrame
-	if len(objarr.elements) > 0 {
-		// another ugliness - we just take the locals of our last object,
-		// we assume that the locals are the same for each of merged objects
-		locals = anyObj.locals
-		// note that there are already holes for object locals
-		localUpValues = anyObj.upValues
 	}
 
 	return makeValueSimpleObject(
-		localUpValues,
+		nil,
 		newFields,
 		[]unboundField{}, // No asserts allowed
-		locals,
+		nil,
 	), nil
 }
 
-func builtinParseJSON(i *interpreter, trace traceElement, str value) (value, error) {
-	sval, err := i.getString(str, trace)
+func builtinParseJSON(i *interpreter, str value) (value, error) {
+	sval, err := i.getString(str)
 	if err != nil {
 		return nil, err
 	}
@@ -1174,9 +1190,9 @@ func builtinParseJSON(i *interpreter, trace traceElement, str value) (value, err
 	var parsedJSON interface{}
 	err = json.Unmarshal([]byte(s), &parsedJSON)
 	if err != nil {
-		return nil, i.Error(fmt.Sprintf("failed to parse JSON: %v", err.Error()), trace)
+		return nil, i.Error(fmt.Sprintf("failed to parse JSON: %v", err.Error()))
 	}
-	return jsonToValue(i, trace, parsedJSON)
+	return jsonToValue(i, parsedJSON)
 }
 
 func builtinParseYAML(i *interpreter, trace traceElement, str value) (value, error) {
@@ -1216,13 +1232,27 @@ func jsonEncode(v interface{}) (string, error) {
 // These should ideally be unified
 // For backwards compatibility reasons, we are manually marshalling to json so we can control formatting
 // In the future, it might be apt to use a library [pretty-printing] function
-func builtinManifestJSONEx(i *interpreter, trace traceElement, obj, indent value) (value, error) {
-	vindent, err := i.getString(indent, trace)
+func builtinManifestJSONEx(i *interpreter, arguments []value) (value, error) {
+	val := arguments[0]
+
+	vindent, err := i.getString(arguments[1])
+	if err != nil {
+		return nil, err
+	}
+
+	vnewline, err := i.getString(arguments[2])
+	if err != nil {
+		return nil, err
+	}
+
+	vkvSep, err := i.getString(arguments[3])
 	if err != nil {
 		return nil, err
 	}
 
 	sindent := vindent.getGoString()
+	newline := vnewline.getGoString()
+	kvSep := vkvSep.getGoString()
 
 	var path []string
 
@@ -1239,7 +1269,7 @@ func builtinManifestJSONEx(i *interpreter, trace traceElement, obj, indent value
 		case valueString:
 			jStr, err := jsonEncode(v.getGoString())
 			if err != nil {
-				return "", i.Error(fmt.Sprintf("failed to marshal valueString to JSON: %v", err.Error()), trace)
+				return "", i.Error(fmt.Sprintf("failed to marshal valueString to JSON: %v", err.Error()))
 			}
 			return jStr, nil
 		case *valueNumber:
@@ -1247,14 +1277,14 @@ func builtinManifestJSONEx(i *interpreter, trace traceElement, obj, indent value
 		case *valueBoolean:
 			return fmt.Sprintf("%t", v.value), nil
 		case *valueFunction:
-			return "", i.Error(fmt.Sprintf("tried to manifest function at %s", path), trace)
+			return "", i.Error(fmt.Sprintf("tried to manifest function at %s", path))
 		case *valueArray:
 			newIndent := cindent + sindent
-			lines := []string{"[\n"}
+			lines := []string{"[" + newline}
 
 			var arrayLines []string
 			for aI, cThunk := range v.elements {
-				cTv, err := cThunk.getValue(i, trace)
+				cTv, err := cThunk.getValue(i)
 				if err != nil {
 					return "", err
 				}
@@ -1266,25 +1296,25 @@ func builtinManifestJSONEx(i *interpreter, trace traceElement, obj, indent value
 				}
 				arrayLines = append(arrayLines, newIndent+s)
 			}
-			lines = append(lines, strings.Join(arrayLines, ",\n"))
-			lines = append(lines, "\n"+cindent+"]")
+			lines = append(lines, strings.Join(arrayLines, ","+newline))
+			lines = append(lines, newline+cindent+"]")
 			return strings.Join(lines, ""), nil
 		case *valueObject:
 			newIndent := cindent + sindent
-			lines := []string{"{\n"}
+			lines := []string{"{" + newline}
 
 			fields := objectFields(v, withoutHidden)
 			sort.Strings(fields)
 			var objectLines []string
 			for _, fieldName := range fields {
-				fieldValue, err := v.index(i, trace, fieldName)
+				fieldValue, err := v.index(i, fieldName)
 				if err != nil {
 					return "", err
 				}
 
 				fieldNameMarshalled, err := jsonEncode(fieldName)
 				if err != nil {
-					return "", i.Error(fmt.Sprintf("failed to marshal object fieldname to JSON: %v", err.Error()), trace)
+					return "", i.Error(fmt.Sprintf("failed to marshal object fieldname to JSON: %v", err.Error()))
 				}
 
 				newPath := append(path, fieldName)
@@ -1293,18 +1323,18 @@ func builtinManifestJSONEx(i *interpreter, trace traceElement, obj, indent value
 					return "", err
 				}
 
-				line := newIndent + string(fieldNameMarshalled) + ": " + mvs
+				line := newIndent + string(fieldNameMarshalled) + kvSep + mvs
 				objectLines = append(objectLines, line)
 			}
-			lines = append(lines, strings.Join(objectLines, ",\n"))
-			lines = append(lines, "\n"+cindent+"}")
+			lines = append(lines, strings.Join(objectLines, ","+newline))
+			lines = append(lines, newline+cindent+"}")
 			return strings.Join(lines, ""), nil
 		default:
-			return "", i.Error(fmt.Sprintf("unknown type to marshal to JSON: %s", reflect.TypeOf(v)), trace)
+			return "", i.Error(fmt.Sprintf("unknown type to marshal to JSON: %s", reflect.TypeOf(v)))
 		}
 	}
 
-	finalString, err := aux(obj, path, "")
+	finalString, err := aux(val, path, "")
 	if err != nil {
 		return nil, err
 	}
@@ -1312,20 +1342,20 @@ func builtinManifestJSONEx(i *interpreter, trace traceElement, obj, indent value
 	return makeValueString(finalString), nil
 }
 
-func builtinExtVar(i *interpreter, trace traceElement, name value) (value, error) {
-	str, err := i.getString(name, trace)
+func builtinExtVar(i *interpreter, name value) (value, error) {
+	str, err := i.getString(name)
 	if err != nil {
 		return nil, err
 	}
 	index := str.getGoString()
 	if pv, ok := i.extVars[index]; ok {
-		return i.evaluatePV(pv, trace)
+		return i.evaluatePV(pv)
 	}
-	return nil, i.Error("Undefined external variable: "+string(index), trace)
+	return nil, i.Error("Undefined external variable: " + string(index))
 }
 
-func builtinNative(i *interpreter, trace traceElement, name value) (value, error) {
-	str, err := i.getString(name, trace)
+func builtinNative(i *interpreter, name value) (value, error) {
+	str, err := i.getString(name)
 	if err != nil {
 		return nil, err
 	}
@@ -1366,7 +1396,7 @@ func flattenArgs(args callArguments, params []namedParameter, defaults []value) 
 	return flatArgs
 }
 
-type unaryBuiltinFunc func(*interpreter, traceElement, value) (value, error)
+type unaryBuiltinFunc func(*interpreter, value) (value, error)
 
 type unaryBuiltin struct {
 	name     ast.Identifier
@@ -1374,19 +1404,14 @@ type unaryBuiltin struct {
 	params   ast.Identifiers
 }
 
-func getBuiltinTrace(trace traceElement, name ast.Identifier) traceElement {
-	context := "builtin function <" + string(name) + ">"
-	return traceElement{loc: trace.loc, context: &context}
-}
-
-func (b *unaryBuiltin) evalCall(args callArguments, i *interpreter, trace traceElement) (value, error) {
+func (b *unaryBuiltin) evalCall(args callArguments, i *interpreter) (value, error) {
 	flatArgs := flattenArgs(args, b.parameters(), []value{})
-	builtinTrace := getBuiltinTrace(trace, b.name)
-	x, err := flatArgs[0].getValue(i, trace)
+
+	x, err := flatArgs[0].getValue(i)
 	if err != nil {
 		return nil, err
 	}
-	return b.function(i, builtinTrace, x)
+	return b.function(i, x)
 }
 
 func (b *unaryBuiltin) parameters() []namedParameter {
@@ -1401,7 +1426,7 @@ func (b *unaryBuiltin) Name() ast.Identifier {
 	return b.name
 }
 
-type binaryBuiltinFunc func(*interpreter, traceElement, value, value) (value, error)
+type binaryBuiltinFunc func(*interpreter, value, value) (value, error)
 
 type binaryBuiltin struct {
 	name     ast.Identifier
@@ -1409,18 +1434,18 @@ type binaryBuiltin struct {
 	params   ast.Identifiers
 }
 
-func (b *binaryBuiltin) evalCall(args callArguments, i *interpreter, trace traceElement) (value, error) {
+func (b *binaryBuiltin) evalCall(args callArguments, i *interpreter) (value, error) {
 	flatArgs := flattenArgs(args, b.parameters(), []value{})
-	builtinTrace := getBuiltinTrace(trace, b.name)
-	x, err := flatArgs[0].getValue(i, trace)
+
+	x, err := flatArgs[0].getValue(i)
 	if err != nil {
 		return nil, err
 	}
-	y, err := flatArgs[1].getValue(i, trace)
+	y, err := flatArgs[1].getValue(i)
 	if err != nil {
 		return nil, err
 	}
-	return b.function(i, builtinTrace, x, y)
+	return b.function(i, x, y)
 }
 
 func (b *binaryBuiltin) parameters() []namedParameter {
@@ -1435,7 +1460,7 @@ func (b *binaryBuiltin) Name() ast.Identifier {
 	return b.name
 }
 
-type ternaryBuiltinFunc func(*interpreter, traceElement, value, value, value) (value, error)
+type ternaryBuiltinFunc func(*interpreter, value, value, value) (value, error)
 
 type ternaryBuiltin struct {
 	name     ast.Identifier
@@ -1443,22 +1468,22 @@ type ternaryBuiltin struct {
 	params   ast.Identifiers
 }
 
-func (b *ternaryBuiltin) evalCall(args callArguments, i *interpreter, trace traceElement) (value, error) {
+func (b *ternaryBuiltin) evalCall(args callArguments, i *interpreter) (value, error) {
 	flatArgs := flattenArgs(args, b.parameters(), []value{})
-	builtinTrace := getBuiltinTrace(trace, b.name)
-	x, err := flatArgs[0].getValue(i, trace)
+
+	x, err := flatArgs[0].getValue(i)
 	if err != nil {
 		return nil, err
 	}
-	y, err := flatArgs[1].getValue(i, trace)
+	y, err := flatArgs[1].getValue(i)
 	if err != nil {
 		return nil, err
 	}
-	z, err := flatArgs[2].getValue(i, trace)
+	z, err := flatArgs[2].getValue(i)
 	if err != nil {
 		return nil, err
 	}
-	return b.function(i, builtinTrace, x, y, z)
+	return b.function(i, x, y, z)
 }
 
 func (b *ternaryBuiltin) parameters() []namedParameter {
@@ -1473,7 +1498,7 @@ func (b *ternaryBuiltin) Name() ast.Identifier {
 	return b.name
 }
 
-type generalBuiltinFunc func(*interpreter, traceElement, []value) (value, error)
+type generalBuiltinFunc func(*interpreter, []value) (value, error)
 
 type generalBuiltinParameter struct {
 	name ast.Identifier
@@ -1519,18 +1544,17 @@ func (b *generalBuiltin) Name() ast.Identifier {
 	return b.name
 }
 
-func (b *generalBuiltin) evalCall(args callArguments, i *interpreter, trace traceElement) (value, error) {
+func (b *generalBuiltin) evalCall(args callArguments, i *interpreter) (value, error) {
 	flatArgs := flattenArgs(args, b.parameters(), b.defaultValues())
-	builtinTrace := getBuiltinTrace(trace, b.name)
 	values := make([]value, len(flatArgs))
 	for j := 0; j < len(values); j++ {
 		var err error
-		values[j], err = flatArgs[j].getValue(i, trace)
+		values[j], err = flatArgs[j].getValue(i)
 		if err != nil {
 			return nil, err
 		}
 	}
-	return b.function(i, builtinTrace, values)
+	return b.function(i, values)
 }
 
 // End of builtin utils
@@ -1594,8 +1618,8 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&binaryBuiltin{name: "objectFieldsEx", function: builtinObjectFieldsEx, params: ast.Identifiers{"obj", "hidden"}},
 	&ternaryBuiltin{name: "objectHasEx", function: builtinObjectHasEx, params: ast.Identifiers{"obj", "fname", "hidden"}},
 	&unaryBuiltin{name: "type", function: builtinType, params: ast.Identifiers{"x"}},
-	&unaryBuiltin{name: "char", function: builtinChar, params: ast.Identifiers{"x"}},
-	&unaryBuiltin{name: "codepoint", function: builtinCodepoint, params: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "char", function: builtinChar, params: ast.Identifiers{"n"}},
+	&unaryBuiltin{name: "codepoint", function: builtinCodepoint, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "ceil", function: builtinCeil, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "floor", function: builtinFloor, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "sqrt", function: builtinSqrt, params: ast.Identifiers{"x"}},
@@ -1609,9 +1633,9 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "exp", function: builtinExp, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "mantissa", function: builtinMantissa, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "exponent", function: builtinExponent, params: ast.Identifiers{"x"}},
-	&binaryBuiltin{name: "pow", function: builtinPow, params: ast.Identifiers{"base", "exp"}},
+	&binaryBuiltin{name: "pow", function: builtinPow, params: ast.Identifiers{"x", "n"}},
 	&binaryBuiltin{name: "modulo", function: builtinModulo, params: ast.Identifiers{"x", "y"}},
-	&unaryBuiltin{name: "md5", function: builtinMd5, params: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "md5", function: builtinMd5, params: ast.Identifiers{"s"}},
 	&ternaryBuiltin{name: "substr", function: builtinSubstr, params: ast.Identifiers{"str", "from", "len"}},
 	&ternaryBuiltin{name: "splitLimit", function: builtinSplitLimit, params: ast.Identifiers{"str", "c", "maxsplits"}},
 	&ternaryBuiltin{name: "strReplace", function: builtinStrReplace, params: ast.Identifiers{"str", "from", "to"}},
@@ -1619,7 +1643,9 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "base64DecodeBytes", function: builtinBase64DecodeBytes, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseJson", function: builtinParseJSON, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseYaml", function: builtinParseYAML, params: ast.Identifiers{"str"}},
-	&binaryBuiltin{name: "manifestJsonEx", function: builtinManifestJSONEx, params: ast.Identifiers{"value", "indent"}},
+	&generalBuiltin{name: "manifestJsonEx", function: builtinManifestJSONEx, params: []generalBuiltinParameter{{name: "value"}, {name: "indent"},
+		{name: "newline", defaultValue: &valueFlatString{value: []rune("\n")}},
+		{name: "key_val_sep", defaultValue: &valueFlatString{value: []rune(": ")}}}},
 	&unaryBuiltin{name: "base64", function: builtinBase64, params: ast.Identifiers{"input"}},
 	&unaryBuiltin{name: "encodeUTF8", function: builtinEncodeUTF8, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "decodeUTF8", function: builtinDecodeUTF8, params: ast.Identifiers{"arr"}},

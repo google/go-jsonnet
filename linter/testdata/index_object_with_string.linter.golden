@@ -1,0 +1,5 @@
+testdata/index_object_with_string:1:1-10 Indexed object has no field "foo"
+
+{}["foo"]
+
+

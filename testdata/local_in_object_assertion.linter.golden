@@ -1,0 +1,5 @@
+../testdata/local_in_object_assertion:1:9-15 Unused variable: x
+
+{ local x = 42, assert x == 42 }
+
+

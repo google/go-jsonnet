@@ -1,0 +1,5 @@
+testdata/index_array_or_string_with_string:1:1-36 Indexed value is assumed to be an array or a string, but index is not a number
+
+(if true then "foo" else [])["bar"]
+
+

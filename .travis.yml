@@ -6,14 +6,15 @@ matrix:
     - go: 1.11.x
     - go: 1.12.x
     - go: 1.13.x
+    - go: 1.x
       arch: amd64
     - name: "arch: arm64"
-      go: 1.13.x
+      go: 1.x
       arch: arm64
       env:
         - PYTHON_COMMAND=python3
     - name: "arch: i686"
-      go: 1.13.x
+      go: 1.x
       arch: amd64
       env:
         - PYTHON_COMMAND=python3
@@ -21,11 +22,10 @@ matrix:
         - CGO_ENABLED=1
         - SKIP_PYTHON_BINDINGS_TESTS=1
     - name: "arch: ppc64le"
-      go: 1.13.x
+      go: 1.x
       arch: ppc64le
       env:
         - PYTHON_COMMAND=python3
-    - go: tip
     - name: "Bazel Check"
       go: 1.x
       script: ./travisBazel.sh

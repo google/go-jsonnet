@@ -1,6 +1,11 @@
 RUNTIME ERROR: Object assertion failed.
 -------------------------------------------------
-		
+	testdata/object_invariant_plus2:1:18-30	
+
+{assert true} + {assert false}
+
+-------------------------------------------------
+	Checking object assertions	
 
 -------------------------------------------------
 	During manifestation	

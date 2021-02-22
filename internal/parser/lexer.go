@@ -276,9 +276,10 @@ type position struct {
 }
 
 type lexer struct {
-	fileName string // The file name being lexed, only used for errors
-	input    string // The input string
-	source   *ast.Source
+	diagnosticFilename ast.DiagnosticFileName // The file name being lexed, only used for errors
+	importedFilename   string                 // Imported filename, used for resolving relative imports
+	input              string                 // The input string
+	source             *ast.Source
 
 	pos position // Current position in input
 
@@ -295,14 +296,15 @@ type lexer struct {
 
 const lexEOF = -1
 
-func makeLexer(fn string, input string) *lexer {
+func makeLexer(diagnosticFilename ast.DiagnosticFileName, importedFilename, input string) *lexer {
 	return &lexer{
-		fileName:      fn,
-		input:         input,
-		source:        ast.BuildSource(input),
-		pos:           position{byteNo: 0, lineNo: 1, lineStart: 0},
-		tokenStartLoc: ast.Location{Line: 1, Column: 1},
-		freshLine:     true,
+		input:              input,
+		diagnosticFilename: diagnosticFilename,
+		importedFilename:   importedFilename,
+		source:             ast.BuildSource(diagnosticFilename, input),
+		pos:                position{byteNo: 0, lineNo: 1, lineStart: 0},
+		tokenStartLoc:      ast.Location{Line: 1, Column: 1},
+		freshLine:          true,
 	}
 }
 
@@ -363,7 +365,7 @@ func (l *lexer) emitFullToken(kind tokenKind, data, stringBlockIndent, stringBlo
 		data:                  data,
 		stringBlockIndent:     stringBlockIndent,
 		stringBlockTermIndent: stringBlockTermIndent,
-		loc:                   ast.MakeLocationRange(l.fileName, l.source, l.tokenStartLoc, l.location()),
+		loc:                   ast.MakeLocationRange(l.importedFilename, l.source, l.tokenStartLoc, l.location()),
 	})
 	l.fodder = ast.Fodder{}
 }
@@ -384,7 +386,7 @@ func (l *lexer) addFodderSafe(kind ast.FodderKind, blanks int, indent int, comme
 }
 
 func (l *lexer) makeStaticErrorPoint(msg string, loc ast.Location) errors.StaticError {
-	return errors.MakeStaticError(msg, ast.MakeLocationRange(l.fileName, l.source, loc, loc))
+	return errors.MakeStaticError(msg, ast.MakeLocationRange(l.importedFilename, l.source, loc, loc))
 }
 
 // lexWhitespace consumes all whitespace and returns the number of \n and number of
@@ -817,8 +819,8 @@ func (l *lexer) lexSymbol() error {
 }
 
 // Lex returns a slice of tokens recognised in input.
-func Lex(fn string, input string) (Tokens, error) {
-	l := makeLexer(fn, input)
+func Lex(diagnosticFilename ast.DiagnosticFileName, importedFilename, input string) (Tokens, error) {
+	l := makeLexer(diagnosticFilename, importedFilename, input)
 
 	var err error
 	for {

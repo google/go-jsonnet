@@ -18,7 +18,7 @@ go_library(
         "libjsonnet.cpp",
     ],
     cdeps = [
-        "//cpp-jsonnet/include:libjsonnet",
+        "@cpp_jsonnet//include:libjsonnet",
     ],
     cgo = True,
     copts = ["-Wall -Icpp-jsonnet/include"],  # keep

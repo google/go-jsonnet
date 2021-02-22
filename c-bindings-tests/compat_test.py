@@ -17,6 +17,36 @@ lib.jsonnet_evaluate_snippet.argtypes = [
 ]
 lib.jsonnet_evaluate_snippet.restype = ctypes.POINTER(ctypes.c_char)
 
+lib.jsonnet_evaluate_snippet_stream.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_char_p,
+    ctypes.c_char_p,
+    ctypes.POINTER(ctypes.c_int),
+]
+lib.jsonnet_evaluate_snippet_stream.restype = ctypes.POINTER(ctypes.c_char)
+
+lib.jsonnet_evaluate_snippet_multi.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_char_p,
+    ctypes.c_char_p,
+    ctypes.POINTER(ctypes.c_int),
+]
+lib.jsonnet_evaluate_snippet_multi.restype = ctypes.POINTER(ctypes.c_char)
+
+lib.jsonnet_evaluate_file_stream.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_char_p,
+    ctypes.POINTER(ctypes.c_int),
+]
+lib.jsonnet_evaluate_file_stream.restype = ctypes.POINTER(ctypes.c_char)
+
+lib.jsonnet_evaluate_file_multi.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_char_p,
+    ctypes.POINTER(ctypes.c_int),
+]
+lib.jsonnet_evaluate_file_multi.restype = ctypes.POINTER(ctypes.c_char)
+
 lib.jsonnet_make.argtypes = []
 lib.jsonnet_make.restype = ctypes.c_void_p
 
@@ -41,7 +71,7 @@ lib.jsonnet_jpath_add.argtypes = [
     ctypes.c_char_p,
 ]
 lib.jsonnet_jpath_add.restype = None
-        
+
 lib.jsonnet_max_trace.argtypes = [
     ctypes.c_void_p,
     ctypes.c_int,
@@ -179,6 +209,64 @@ lib.jsonnet_json_destroy.argtypes = [
 ]
 lib.jsonnet_json_destroy.restype = None
 
+# fmt declaration
+
+lib.jsonnet_fmt_snippet.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_char_p,
+    ctypes.c_char_p,
+    ctypes.POINTER(ctypes.c_int),
+]
+lib.jsonnet_fmt_snippet.restype = ctypes.POINTER(ctypes.c_char)
+
+lib.jsonnet_fmt_indent.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_int,
+]
+lib.jsonnet_fmt_indent.restype = None
+
+lib.jsonnet_fmt_max_blank_lines.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_int,
+]
+lib.jsonnet_fmt_max_blank_lines.restype = None
+
+lib.jsonnet_fmt_string.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_int,
+]
+lib.jsonnet_fmt_string.restype = None
+
+lib.jsonnet_fmt_comment.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_int,
+]
+lib.jsonnet_fmt_comment.restype = None
+
+lib.jsonnet_fmt_pad_arrays.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_int,
+]
+lib.jsonnet_fmt_pad_arrays.restype = None
+
+lib.jsonnet_fmt_pad_objects.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_int,
+]
+lib.jsonnet_fmt_pad_objects.restype = None
+
+lib.jsonnet_fmt_pretty_field_names.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_int,
+]
+lib.jsonnet_fmt_pretty_field_names.restype = None
+
+lib.jsonnet_fmt_sort_imports.argtypes = [
+    ctypes.c_void_p,
+    ctypes.c_int,
+]
+lib.jsonnet_fmt_sort_imports.restype = None
+
 # utils
 
 def free_buffer(vm, buf):
@@ -186,6 +274,17 @@ def free_buffer(vm, buf):
 
 def to_bytes(buf):
     return ctypes.cast(buf, ctypes.c_char_p).value
+
+def to_bytes_list(buf):
+    res = []
+    raw_ptr = ctypes.cast(buf, ctypes.c_void_p).value
+    while True:
+        elem = ctypes.cast(raw_ptr, ctypes.c_char_p).value
+        if len(elem) == 0:
+            break
+        res.append(elem)
+        raw_ptr = raw_ptr + len(elem) + 1
+    return res
 
 @NATIVE_CALLBACK
 def square_native(ctx, argv, success):
@@ -273,6 +372,32 @@ class TestJsonnetEvaluateBindings(unittest.TestCase):
         self.assertEqual(b'xxxyyy\n', to_bytes(res))
         free_buffer(self.vm, res)
 
+    def test_jsonnet_evaluate_snippet_stream(self):
+        res = lib.jsonnet_evaluate_snippet_stream(
+            self.vm,
+            b"vm1",
+            b"['aaa', 'bbb', {foo: 'bar', bar: 'baz'}]",
+            self.err_ref
+        )
+        self.assertEqual([
+                b'"aaa"\n',
+                b'"bbb"\n',
+                b'{\n   "bar": "baz",\n   "foo": "bar"\n}\n'
+            ], to_bytes_list(res))
+
+    def test_jsonnet_evaluate_snippet_multi(self):
+        res = lib.jsonnet_evaluate_snippet_multi(
+            self.vm,
+            b"vm1",
+            b"{foo: 'bar', bar: 'baz'}",
+            self.err_ref
+        )
+        self.assertEqual([
+                b'bar',
+                b'"baz"\n',
+                b'foo',
+                b'"bar"\n',
+            ], to_bytes_list(res))
 
     def test_params(self):
         lib.jsonnet_ext_var(self.vm, b"e1", b"a")
@@ -304,6 +429,23 @@ class TestJsonnetEvaluateBindings(unittest.TestCase):
         res = lib.jsonnet_evaluate_file(self.vm, b"jsonnet_import_test/foo.jsonnet", self.err_ref)
         self.assertEqual(b"42\n", to_bytes(res))
         free_buffer(self.vm, res)
+
+    def test_jsonnet_evaluate_file_stream(self):
+        res = lib.jsonnet_evaluate_file_stream(self.vm, b"jsonnet_import_test/stream.jsonnet", self.err_ref)
+        self.assertEqual([
+                b'"aaa"\n',
+                b'"bbb"\n',
+                b'{\n   "bar": "baz",\n   "foo": "bar"\n}\n'
+            ], to_bytes_list(res))
+
+    def test_jsonnet_evaluate_file_multi(self):
+        res = lib.jsonnet_evaluate_file_multi(self.vm, b"jsonnet_import_test/multi.jsonnet", self.err_ref)
+        self.assertEqual([
+                b'bar',
+                b'"baz"\n',
+                b'foo',
+                b'"bar"\n',
+            ], to_bytes_list(res))
 
     def test_jsonnet_version(self):
         res = lib.jsonnet_version()
@@ -388,7 +530,7 @@ class TestJsonnetJsonValueBindings(unittest.TestCase):
 
     def test_jsonnet_array(self):
         h = lib.jsonnet_json_make_array(self.vm)
-        
+
         lib.jsonnet_json_array_append(self.vm, h, lib.jsonnet_json_make_string(self.vm, b"Test 1.1"))
         lib.jsonnet_json_array_append(self.vm, h, lib.jsonnet_json_make_string(self.vm, b"Test 1.2"))
         lib.jsonnet_json_array_append(self.vm, h, lib.jsonnet_json_make_string(self.vm, b"Test 1.3"))
@@ -401,7 +543,7 @@ class TestJsonnetJsonValueBindings(unittest.TestCase):
 
     def test_jsonnet_object(self):
         h = lib.jsonnet_json_make_object(self.vm)
-        
+
         lib.jsonnet_json_object_append(self.vm, h, b"arg1", lib.jsonnet_json_make_string(self.vm, b"Test 1.1"))
         lib.jsonnet_json_object_append(self.vm, h, b"arg2", lib.jsonnet_json_make_string(self.vm, b"Test 1.2"))
         lib.jsonnet_json_object_append(self.vm, h, b"arg3", lib.jsonnet_json_make_string(self.vm, b"Test 1.3"))
@@ -411,6 +553,69 @@ class TestJsonnetJsonValueBindings(unittest.TestCase):
         lib.jsonnet_json_object_append(self.vm, h, b"arg7", lib.jsonnet_json_make_object(self.vm))
 
         lib.jsonnet_json_destroy(self.vm, h)
+
+
+    def tearDown(self):
+        lib.jsonnet_destroy(self.vm)
+
+class TestJsonnetFormatBindings(unittest.TestCase):
+    def setUp(self):
+        self.err = ctypes.c_int()
+        self.err_ref = ctypes.byref(self.err)
+        self.vm = lib.jsonnet_make()
+
+    def test_format(self):
+        res = lib.jsonnet_fmt_snippet(self.vm, b"fmt", b"local a = import 'z.libsonnet';\nlocal b = import 'y.libsonnet';\n{'n':1, s: \"y\", a: [1,2]}", self.err_ref)
+        self.assertEqual(b"local b = import 'y.libsonnet';\nlocal a = import 'z.libsonnet';\n{ n: 1, s: 'y', a: [1, 2] }\n", to_bytes(res))
+        free_buffer(self.vm, res)
+
+    def test_indent(self):
+        lib.jsonnet_fmt_indent(self.vm, 8)
+        res = lib.jsonnet_fmt_snippet(self.vm, b"fmt", b"{\nx:1,\ny:2\n}", self.err_ref)
+        self.assertEqual(b"{\n        x: 1,\n        y: 2,\n}\n", to_bytes(res))
+        free_buffer(self.vm, res)
+
+    def test_max_blank_lines(self):
+        lib.jsonnet_fmt_max_blank_lines(self.vm, 2)
+        res = lib.jsonnet_fmt_snippet(self.vm, b"fmt", b"{\nx:1,\n\n\n\n\ny:2\n}", self.err_ref)
+        self.assertEqual(b"{\n  x: 1,\n\n\n  y: 2,\n}\n", to_bytes(res))
+        free_buffer(self.vm, res)
+
+    def test_string(self):
+        lib.jsonnet_fmt_string(self.vm, ord('d'))
+        res = lib.jsonnet_fmt_snippet(self.vm, b"fmt", b"{x:'x'}", self.err_ref)
+        self.assertEqual(b"{ x: \"x\" }\n", to_bytes(res))
+        free_buffer(self.vm, res)
+
+    def test_comment(self):
+        lib.jsonnet_fmt_comment(self.vm, ord('h'))
+        res = lib.jsonnet_fmt_snippet(self.vm, b"fmt", b"// comment\n{}", self.err_ref)
+        self.assertEqual(b"# comment\n{}\n", to_bytes(res))
+        free_buffer(self.vm, res)
+
+    def test_pad_arrays(self):
+        lib.jsonnet_fmt_pad_arrays(self.vm, 1)
+        res = lib.jsonnet_fmt_snippet(self.vm, b"fmt", b"{x:[1,2,3]}", self.err_ref)
+        self.assertEqual(b"{ x: [ 1, 2, 3 ] }\n", to_bytes(res))
+        free_buffer(self.vm, res)
+
+    def test_pad_objects(self):
+        lib.jsonnet_fmt_pad_objects(self.vm, 0)
+        res = lib.jsonnet_fmt_snippet(self.vm, b"fmt", b"{ x: 1 }", self.err_ref)
+        self.assertEqual(b"{x: 1}\n", to_bytes(res))
+        free_buffer(self.vm, res)
+
+    def test_pretty_field_names(self):
+        lib.jsonnet_fmt_pretty_field_names(self.vm, 0)
+        res = lib.jsonnet_fmt_snippet(self.vm, b"fmt", b"{ 'x': 1 }", self.err_ref)
+        self.assertEqual(b"{ 'x': 1 }\n", to_bytes(res))
+        free_buffer(self.vm, res)
+
+    def test_sort_imports(self):
+        lib.jsonnet_fmt_sort_imports(self.vm, 0)
+        res = lib.jsonnet_fmt_snippet(self.vm, b"fmt", b"local a = import 'z.libsonnet';\nlocal b = import 'y.libsonnet';\na+b", self.err_ref)
+        self.assertEqual(b"local a = import 'z.libsonnet';\nlocal b = import 'y.libsonnet';\na + b\n", to_bytes(res))
+        free_buffer(self.vm, res)
 
 
     def tearDown(self):

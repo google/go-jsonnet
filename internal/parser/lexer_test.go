@@ -82,7 +82,7 @@ func SingleTest(t *testing.T, input string, expectedError string, expected Token
 	if len(testTokens) == 0 || testTokens[len(testTokens)-1].kind != tokenEndOfFile {
 		testTokens = append(testTokens, tEOF)
 	}
-	tokens, err := Lex("snippet", input)
+	tokens, err := Lex("snippet", "", input)
 	var errString string
 	if err != nil {
 		errString = err.Error()

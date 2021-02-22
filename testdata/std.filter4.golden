@@ -1,6 +1,6 @@
 RUNTIME ERROR: Unexpected type number, expected function
 -------------------------------------------------
-	testdata/std.filter4:1:1-19	builtin function <filter>
+	testdata/std.filter4:1:1-19	$
 
 std.filter(42, [])
 

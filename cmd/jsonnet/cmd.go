@@ -32,7 +32,7 @@ import (
 )
 
 func version(o io.Writer) {
-	fmt.Fprintf(o, "Jsonnet commandline interpreter %s\n", jsonnet.Version())
+	fmt.Fprintf(o, "Jsonnet commandline interpreter (Go implementation) %s\n", jsonnet.Version())
 }
 
 func usage(o io.Writer) {
@@ -345,17 +345,7 @@ func writeMultiOutputFiles(output map[string]string, outputDir, outputFile strin
 			}
 		}
 
-		f, err := os.Create(filename)
-		if err != nil {
-			return err
-		}
-		defer func() {
-			if ferr := f.Close(); ferr != nil {
-				err = ferr
-			}
-		}()
-
-		_, err = f.WriteString(newContent)
+		err = ioutil.WriteFile(filename, []byte(newContent), 0666)
 		if err != nil {
 			return err
 		}
@@ -447,16 +437,27 @@ func main() {
 		panic("Internal error: expected a single input file.")
 	}
 	filename := config.inputFiles[0]
+	// TODO(sbarzowski) Clean up SafeReadInput to be more in line with the new API
 	input := cmd.SafeReadInput(config.filenameIsCode, &filename)
 	var output string
 	var outputArray []string
 	var outputDict map[string]string
-	if config.evalMulti {
-		outputDict, err = vm.EvaluateSnippetMulti(filename, input)
-	} else if config.evalStream {
-		outputArray, err = vm.EvaluateSnippetStream(filename, input)
+	if config.filenameIsCode || config.inputFiles[0] == "-" {
+		if config.evalMulti {
+			outputDict, err = vm.EvaluateAnonymousSnippetMulti(filename, input)
+		} else if config.evalStream {
+			outputArray, err = vm.EvaluateAnonymousSnippetStream(filename, input)
+		} else {
+			output, err = vm.EvaluateAnonymousSnippet(filename, input)
+		}
 	} else {
-		output, err = vm.EvaluateSnippet(filename, input)
+		if config.evalMulti {
+			outputDict, err = vm.EvaluateFileMulti(filename)
+		} else if config.evalStream {
+			outputArray, err = vm.EvaluateFileStream(filename)
+		} else {
+			output, err = vm.EvaluateFile(filename)
+		}
 	}
 
 	cmd.MemProfile()

@@ -1,6 +1,6 @@
 RUNTIME ERROR: codepoint takes a string of length 1, got length 2
 -------------------------------------------------
-	testdata/std.codepoint3:1:1-20	builtin function <codepoint>
+	testdata/std.codepoint3:1:1-20	$
 
 std.codepoint("aa")
 

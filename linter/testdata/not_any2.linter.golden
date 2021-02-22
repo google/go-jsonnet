@@ -1,0 +1,13 @@
+testdata/not_any2:(1:1)-(9:9) Indexed object has no field "foo"
+
+[
+    2,
+    true,
+    "str",
+    null,
+    {},
+    function() null,
+    []
+][4].foo
+
+

@@ -21,9 +21,17 @@ import (
 	"fmt"
 )
 
+// DiagnosticFileName is a file name used for diagnostics.
+// It might be a dummy value, such as <std> or <extvar:something>.
+// It should never be passed to an importer.
+type DiagnosticFileName string
+
 // Source represents a source file.
 type Source struct {
 	Lines []string
+	// DiagnosticFileName is the imported path or a special string
+	// for indicating stdin, extvars and other non-imported sources.
+	DiagnosticFileName DiagnosticFileName
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -60,6 +68,7 @@ func LocationBefore(a Location, b Location) bool {
 
 // LocationRange represents a range of a source file.
 type LocationRange struct {
+	// FileName should be the imported path or "" for snippets etc.
 	FileName string
 	Begin    Location
 	End      Location // TODO(sbarzowski) inclusive? exclusive? a gap?
@@ -81,12 +90,13 @@ func (lr *LocationRange) IsSet() bool {
 
 func (lr *LocationRange) String() string {
 	if !lr.IsSet() {
+		// TODO(sbarzowski) when could this happen?
 		return lr.FileName
 	}
 
 	var filePrefix string
-	if len(lr.FileName) > 0 {
-		filePrefix = lr.FileName + ":"
+	if len(lr.File.DiagnosticFileName) > 0 {
+		filePrefix = string(lr.File.DiagnosticFileName) + ":"
 	}
 	if lr.Begin.Line == lr.End.Line {
 		if lr.Begin.Column == lr.End.Column {
@@ -141,7 +151,7 @@ func (sp *SourceProvider) GetSnippet(loc LocationRange) string {
 
 // BuildSource transforms a source file string into a Source struct.
 // TODO: This seems like a job for strings.Split() with a final \n touch-up.
-func BuildSource(s string) *Source {
+func BuildSource(dFilename DiagnosticFileName, s string) *Source {
 	var result []string
 	var lineBuf bytes.Buffer
 	for _, runeValue := range s {
@@ -154,7 +164,7 @@ func BuildSource(s string) *Source {
 	rest := lineBuf.String()
 	// Stuff after last end-of-line (EOF or some more code)
 	result = append(result, rest+"\n")
-	return &Source{result}
+	return &Source{result, dFilename}
 }
 
 func trimToLine(loc LocationRange, line int) LocationRange {

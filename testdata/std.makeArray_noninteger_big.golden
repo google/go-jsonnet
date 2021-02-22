@@ -1,6 +1,6 @@
 RUNTIME ERROR: Expected an integer, but got 1e+100
 -------------------------------------------------
-	testdata/std.makeArray_noninteger_big:1:1-36	builtin function <makeArray>
+	testdata/std.makeArray_noninteger_big:1:1-36	$
 
 std.makeArray(1e100, function(i) i)
 

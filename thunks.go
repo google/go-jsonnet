@@ -32,8 +32,12 @@ type readyValue struct {
 	content value
 }
 
-func (rv *readyValue) evaluate(i *interpreter, trace traceElement, sb selfBinding, origBinding bindingFrame, fieldName string) (value, error) {
+func (rv *readyValue) evaluate(i *interpreter, sb selfBinding, origBinding bindingFrame, fieldName string) (value, error) {
 	return rv.content, nil
+}
+
+func (rv *readyValue) loc() *ast.LocationRange {
+	return &ast.LocationRange{}
 }
 
 // potentialValues
@@ -58,14 +62,14 @@ func readyThunk(content value) *cachedThunk {
 	return &cachedThunk{content: content}
 }
 
-func (t *cachedThunk) getValue(i *interpreter, trace traceElement) (value, error) {
+func (t *cachedThunk) getValue(i *interpreter) (value, error) {
 	if t.content != nil {
 		return t.content, nil
 	}
 	if t.err != nil {
 		return nil, t.err
 	}
-	v, err := i.EvalInCleanEnv(trace, t.env, t.body, false)
+	v, err := i.EvalInCleanEnv(t.env, t.body, false)
 	if err != nil {
 		// TODO(sbarzowski) perhaps cache errors as well
 		// may be necessary if we allow handling them in any way
@@ -87,9 +91,14 @@ type codeUnboundField struct {
 	body ast.Node
 }
 
-func (f *codeUnboundField) evaluate(i *interpreter, trace traceElement, sb selfBinding, origBindings bindingFrame, fieldName string) (value, error) {
+func (f *codeUnboundField) evaluate(i *interpreter, sb selfBinding, origBindings bindingFrame, fieldName string) (value, error) {
 	env := makeEnvironment(origBindings, sb)
-	return i.EvalInCleanEnv(trace, &env, f.body, false)
+	val, err := i.EvalInCleanEnv(&env, f.body, false)
+	return val, err
+}
+
+func (f *codeUnboundField) loc() *ast.LocationRange {
+	return f.body.Loc()
 }
 
 // Provide additional bindings for a field. It shadows bindings from the object.
@@ -99,7 +108,7 @@ type bindingsUnboundField struct {
 	bindings bindingFrame
 }
 
-func (f *bindingsUnboundField) evaluate(i *interpreter, trace traceElement, sb selfBinding, origBindings bindingFrame, fieldName string) (value, error) {
+func (f *bindingsUnboundField) evaluate(i *interpreter, sb selfBinding, origBindings bindingFrame, fieldName string) (value, error) {
 	upValues := make(bindingFrame)
 	for variable, pvalue := range origBindings {
 		upValues[variable] = pvalue
@@ -107,7 +116,11 @@ func (f *bindingsUnboundField) evaluate(i *interpreter, trace traceElement, sb s
 	for variable, pvalue := range f.bindings {
 		upValues[variable] = pvalue
 	}
-	return f.inner.evaluate(i, trace, sb, upValues, fieldName)
+	return f.inner.evaluate(i, sb, upValues, fieldName)
+}
+
+func (f *bindingsUnboundField) loc() *ast.LocationRange {
+	return f.inner.loc()
 }
 
 // plusSuperUnboundField represents a `field+: ...` that hasn't been bound to an object.
@@ -115,19 +128,45 @@ type plusSuperUnboundField struct {
 	inner unboundField
 }
 
-func (f *plusSuperUnboundField) evaluate(i *interpreter, trace traceElement, sb selfBinding, origBinding bindingFrame, fieldName string) (value, error) {
-	right, err := f.inner.evaluate(i, trace, sb, origBinding, fieldName)
+func (f *plusSuperUnboundField) evaluate(i *interpreter, sb selfBinding, origBinding bindingFrame, fieldName string) (value, error) {
+	err := i.newCall(environment{}, false)
 	if err != nil {
 		return nil, err
 	}
+	stackSize := len(i.stack.stack)
+	defer i.stack.popIfExists(stackSize)
+
+	context := "+:"
+	i.stack.setCurrentTrace(traceElement{
+		loc:     f.loc(),
+		context: &context,
+	})
+	defer i.stack.clearCurrentTrace()
+
+	right, err := f.inner.evaluate(i, sb, origBinding, fieldName)
+	if err != nil {
+		return nil, err
+	}
+
 	if !objectHasField(sb.super(), fieldName, withHidden) {
 		return right, nil
 	}
-	left, err := objectIndex(i, trace, sb.super(), fieldName)
+
+	left, err := objectIndex(i, sb.super(), fieldName)
 	if err != nil {
 		return nil, err
 	}
-	return builtinPlus(i, trace, left, right)
+
+	value, err := builtinPlus(i, left, right)
+	if err != nil {
+		return nil, err
+	}
+
+	return value, nil
+}
+
+func (f *plusSuperUnboundField) loc() *ast.LocationRange {
+	return f.inner.loc()
 }
 
 // evalCallables
@@ -141,9 +180,9 @@ type closure struct {
 	params   []namedParameter
 }
 
-func forceThunks(i *interpreter, trace traceElement, args *bindingFrame) error {
+func forceThunks(i *interpreter, args *bindingFrame) error {
 	for _, arg := range *args {
-		_, err := arg.getValue(i, trace)
+		_, err := arg.getValue(i)
 		if err != nil {
 			return err
 		}
@@ -151,7 +190,7 @@ func forceThunks(i *interpreter, trace traceElement, args *bindingFrame) error {
 	return nil
 }
 
-func (closure *closure) evalCall(arguments callArguments, i *interpreter, trace traceElement) (value, error) {
+func (closure *closure) evalCall(arguments callArguments, i *interpreter) (value, error) {
 	argThunks := make(bindingFrame)
 	parameters := closure.parameters()
 	for i, arg := range arguments.positional {
@@ -175,7 +214,7 @@ func (closure *closure) evalCall(arguments callArguments, i *interpreter, trace 
 	}
 
 	if arguments.tailstrict {
-		err := forceThunks(i, trace, &argThunks)
+		err := forceThunks(i, &argThunks)
 		if err != nil {
 			return nil, err
 		}
@@ -185,7 +224,7 @@ func (closure *closure) evalCall(arguments callArguments, i *interpreter, trace 
 		addBindings(closure.env.upValues, argThunks),
 		closure.env.selfBinding,
 	)
-	return i.EvalInCleanEnv(trace, &calledEnvironment, closure.function.Body, arguments.tailstrict)
+	return i.EvalInCleanEnv(&calledEnvironment, closure.function.Body, arguments.tailstrict)
 }
 
 func (closure *closure) parameters() []namedParameter {
@@ -220,15 +259,15 @@ type NativeFunction struct {
 }
 
 // evalCall evaluates a call to a NativeFunction and returns the result.
-func (native *NativeFunction) evalCall(arguments callArguments, i *interpreter, trace traceElement) (value, error) {
+func (native *NativeFunction) evalCall(arguments callArguments, i *interpreter) (value, error) {
 	flatArgs := flattenArgs(arguments, native.parameters(), []value{})
 	nativeArgs := make([]interface{}, 0, len(flatArgs))
 	for _, arg := range flatArgs {
-		v, err := i.evaluatePV(arg, trace)
+		v, err := i.evaluatePV(arg)
 		if err != nil {
 			return nil, err
 		}
-		json, err := i.manifestJSON(trace, v)
+		json, err := i.manifestJSON(v)
 		if err != nil {
 			return nil, err
 		}
@@ -236,9 +275,9 @@ func (native *NativeFunction) evalCall(arguments callArguments, i *interpreter, 
 	}
 	resultJSON, err := native.Func(nativeArgs)
 	if err != nil {
-		return nil, i.Error(err.Error(), trace)
+		return nil, i.Error(err.Error())
 	}
-	return jsonToValue(i, trace, resultJSON)
+	return jsonToValue(i, resultJSON)
 }
 
 // Parameters returns a NativeFunction's parameters.

@@ -1,6 +1,6 @@
 RUNTIME ERROR: Unexpected type number, expected string
 -------------------------------------------------
-	testdata/std.md5_6:1:1-12	builtin function <md5>
+	testdata/std.md5_6:1:1-12	$
 
 std.md5(42)
 

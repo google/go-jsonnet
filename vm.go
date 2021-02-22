@@ -19,6 +19,7 @@ package jsonnet
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -44,15 +45,26 @@ type VM struct {
 	ErrorFormatter ErrorFormatter
 	StringOutput   bool
 	importCache    *importCache
+	traceOut       io.Writer
 }
+
+// extKind indicates the kind of external variable that is being initialized for the VM
+type extKind int
+
+const (
+	extKindVar  extKind = iota // a simple string
+	extKindCode                // a code snippet represented as a string
+	extKindNode                // an ast.Node that is passed in
+)
 
 // External variable or top level argument provided before execution
 type vmExt struct {
-	// jsonnet code to evaluate or string to pass
+	// the kind of external variable that is specified.
+	kind extKind
+	// jsonnet code to evaluate (kind=extKindCode) or string to pass (kind=extKindVar)
 	value string
-	// isCode determines whether it should be evaluated as jsonnet code or
-	// treated as string.
-	isCode bool
+	// the specified node for kind=extKindNode
+	node ast.Node
 }
 
 type vmExtMap map[string]vmExt
@@ -68,6 +80,7 @@ func MakeVM() *VM {
 		ErrorFormatter: &termErrorFormatter{pretty: false, maxStackTraceSize: 20},
 		importer:       &FileImporter{},
 		importCache:    makeImportCache(defaultImporter),
+		traceOut:       os.Stderr,
 	}
 }
 
@@ -83,21 +96,38 @@ func (vm *VM) flushValueCache() {
 	vm.importCache.flushValueCache()
 }
 
+// SetTraceOut sets the output stream for the builtin function std.trace().
+func (vm *VM) SetTraceOut(traceOut io.Writer) {
+	vm.traceOut = traceOut
+}
+
 // ExtVar binds a Jsonnet external var to the given value.
 func (vm *VM) ExtVar(key string, val string) {
-	vm.ext[key] = vmExt{value: val, isCode: false}
+	vm.ext[key] = vmExt{value: val, kind: extKindVar}
 	vm.flushValueCache()
 }
 
 // ExtCode binds a Jsonnet external code var to the given code.
 func (vm *VM) ExtCode(key string, val string) {
-	vm.ext[key] = vmExt{value: val, isCode: true}
+	vm.ext[key] = vmExt{value: val, kind: extKindCode}
+	vm.flushValueCache()
+}
+
+// ExtNode binds a Jsonnet external code var to the given AST node.
+func (vm *VM) ExtNode(key string, node ast.Node) {
+	vm.ext[key] = vmExt{node: node, kind: extKindNode}
+	vm.flushValueCache()
+}
+
+// ExtReset rests all external variables registered for this VM.
+func (vm *VM) ExtReset() {
+	vm.ext = make(vmExtMap)
 	vm.flushValueCache()
 }
 
 // TLAVar binds a Jsonnet top level argument to the given value.
 func (vm *VM) TLAVar(key string, val string) {
-	vm.tla[key] = vmExt{value: val, isCode: false}
+	vm.tla[key] = vmExt{value: val, kind: extKindVar}
 	// Setting a TLA does not require flushing the cache.
 	// Only the results of evaluation of imported files are cached
 	// and the TLAs do not affect these unlike extVars.
@@ -105,8 +135,19 @@ func (vm *VM) TLAVar(key string, val string) {
 
 // TLACode binds a Jsonnet top level argument to the given code.
 func (vm *VM) TLACode(key string, val string) {
-	vm.tla[key] = vmExt{value: val, isCode: true}
+	vm.tla[key] = vmExt{value: val, kind: extKindCode}
 	// Setting a TLA does not require flushing the cache - see above.
+}
+
+// TLANode binds a Jsonnet top level argument to the given AST node.
+func (vm *VM) TLANode(key string, node ast.Node) {
+	vm.tla[key] = vmExt{node: node, kind: extKindNode}
+	// Setting a TLA does not require flushing the cache - see above.
+}
+
+// TLAReset resets all TLAs registered for this VM.
+func (vm *VM) TLAReset() {
+	vm.tla = make(vmExtMap)
 }
 
 // Importer sets Importer to use during evaluation (import callback).
@@ -130,7 +171,7 @@ const (
 )
 
 // version is the current gojsonnet's version
-const version = "v0.16.0"
+const version = "v0.17.0"
 
 // Evaluate evaluates a Jsonnet program given by an Abstract Syntax Tree
 // and returns serialized JSON as string.
@@ -141,49 +182,49 @@ func (vm *VM) Evaluate(node ast.Node) (val string, err error) {
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	return evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.StringOutput)
+	return evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
 }
 
 // EvaluateStream evaluates a Jsonnet program given by an Abstract Syntax Tree
 // and returns an array of JSON strings.
-func (vm *VM) EvaluateStream(node ast.Node) (output interface{}, err error) {
+func (vm *VM) EvaluateStream(node ast.Node) (output []string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	return evaluateStream(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache)
+	return evaluateStream(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut)
 }
 
 // EvaluateMulti evaluates a Jsonnet program given by an Abstract Syntax Tree
 // and returns key-value pairs.
 // The keys are strings and the values are JSON strigns (serialized JSON).
-func (vm *VM) EvaluateMulti(node ast.Node) (output interface{}, err error) {
+func (vm *VM) EvaluateMulti(node ast.Node) (output map[string]string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	return evaluateMulti(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.StringOutput)
+	return evaluateMulti(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
 }
 
-func (vm *VM) evaluateSnippet(filename string, snippet string, kind evalKind) (output interface{}, err error) {
+func (vm *VM) evaluateSnippet(diagnosticFileName ast.DiagnosticFileName, filename string, snippet string, kind evalKind) (output interface{}, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	node, err := SnippetToAST(filename, snippet)
+	node, err := program.SnippetToAST(diagnosticFileName, filename, snippet)
 	if err != nil {
 		return "", err
 	}
 	switch kind {
 	case evalKindRegular:
-		output, err = evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.StringOutput)
+		output, err = evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
 	case evalKindMulti:
-		output, err = evaluateMulti(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.StringOutput)
+		output, err = evaluateMulti(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
 	case evalKindStream:
-		output, err = evaluateStream(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache)
+		output, err = evaluateStream(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut)
 	}
 	if err != nil {
 		return "", err
@@ -265,9 +306,11 @@ func (vm *VM) findDependencies(filePath string, node *ast.Node, dependencies map
 // EvaluateSnippet evaluates a string containing Jsonnet code, return a JSON
 // string.
 //
-// The filename parameter is only used for error messages.
+// The filename parameter is used for resolving relative imports and for errors messages.
+//
+// Deprecated: Use EvaluateFile or EvaluateAnonymousSnippet instead.
 func (vm *VM) EvaluateSnippet(filename string, snippet string) (json string, formattedErr error) {
-	output, err := vm.evaluateSnippet(filename, snippet, evalKindRegular)
+	output, err := vm.evaluateSnippet(ast.DiagnosticFileName(filename), filename, snippet, evalKindRegular)
 	if err != nil {
 		return "", errors.New(vm.ErrorFormatter.Format(err))
 	}
@@ -278,9 +321,11 @@ func (vm *VM) EvaluateSnippet(filename string, snippet string) (json string, for
 // EvaluateSnippetStream evaluates a string containing Jsonnet code to an array.
 // The array is returned as an array of JSON strings.
 //
-// The filename parameter is only used for error messages.
+// The filename parameter is used for resolving relative imports and for errors messages.
+//
+// Deprecated: Use EvaluateFileStream or EvaluateAnonymousSnippetStream instead.
 func (vm *VM) EvaluateSnippetStream(filename string, snippet string) (docs []string, formattedErr error) {
-	output, err := vm.evaluateSnippet(filename, snippet, evalKindStream)
+	output, err := vm.evaluateSnippet(ast.DiagnosticFileName(filename), filename, snippet, evalKindStream)
 	if err != nil {
 		return nil, errors.New(vm.ErrorFormatter.Format(err))
 	}
@@ -291,14 +336,103 @@ func (vm *VM) EvaluateSnippetStream(filename string, snippet string) (docs []str
 // EvaluateSnippetMulti evaluates a string containing Jsonnet code to key-value
 // pairs. The keys are field name strings and the values are JSON strings.
 //
-// The filename parameter is only used for error messages.
+// The filename parameter is used for resolving relative imports and for errors messages.
+//
+// Deprecated: Use EvaluateFileMulti or EvaluateAnonymousSnippetMulti instead.
 func (vm *VM) EvaluateSnippetMulti(filename string, snippet string) (files map[string]string, formattedErr error) {
-	output, err := vm.evaluateSnippet(filename, snippet, evalKindMulti)
+	output, err := vm.evaluateSnippet(ast.DiagnosticFileName(filename), filename, snippet, evalKindMulti)
 	if err != nil {
 		return nil, errors.New(vm.ErrorFormatter.Format(err))
 	}
 	files = output.(map[string]string)
 	return
+}
+
+// EvaluateAnonymousSnippet evaluates a string containing Jsonnet code, return a JSON
+// string.
+//
+// The filename parameter is only used for error messages.
+func (vm *VM) EvaluateAnonymousSnippet(filename string, snippet string) (json string, formattedErr error) {
+	output, err := vm.evaluateSnippet(ast.DiagnosticFileName(filename), "", snippet, evalKindRegular)
+	if err != nil {
+		return "", errors.New(vm.ErrorFormatter.Format(err))
+	}
+	json = output.(string)
+	return
+}
+
+// EvaluateAnonymousSnippetStream evaluates a string containing Jsonnet code to an array.
+// The array is returned as an array of JSON strings.
+//
+// The filename parameter is only used for error messages.
+func (vm *VM) EvaluateAnonymousSnippetStream(filename string, snippet string) (docs []string, formattedErr error) {
+	output, err := vm.evaluateSnippet(ast.DiagnosticFileName(filename), "", snippet, evalKindStream)
+	if err != nil {
+		return nil, errors.New(vm.ErrorFormatter.Format(err))
+	}
+	docs = output.([]string)
+	return
+}
+
+// EvaluateAnonymousSnippetMulti evaluates a string containing Jsonnet code to key-value
+// pairs. The keys are field name strings and the values are JSON strings.
+//
+// The filename parameter is only used for error messages.
+func (vm *VM) EvaluateAnonymousSnippetMulti(filename string, snippet string) (files map[string]string, formattedErr error) {
+	output, err := vm.evaluateSnippet(ast.DiagnosticFileName(filename), "", snippet, evalKindMulti)
+	if err != nil {
+		return nil, errors.New(vm.ErrorFormatter.Format(err))
+	}
+	files = output.(map[string]string)
+	return
+}
+
+// EvaluateFile evaluates Jsonnet code in a file and returns a JSON
+// string.
+//
+// The importer is used to fetch the contents of the file.
+func (vm *VM) EvaluateFile(filename string) (json string, formattedErr error) {
+	node, _, err := vm.ImportAST("", filename)
+	if err != nil {
+		return "", errors.New(vm.ErrorFormatter.Format(err))
+	}
+	output, err := vm.Evaluate(node)
+	if err != nil {
+		return "", errors.New(vm.ErrorFormatter.Format(err))
+	}
+	return output, nil
+}
+
+// EvaluateFileStream evaluates Jsonnet code in a file to an array.
+// The array is returned as an array of JSON strings.
+//
+// The importer is used to fetch the contents of the file.
+func (vm *VM) EvaluateFileStream(filename string) (docs []string, formattedErr error) {
+	node, _, err := vm.ImportAST("", filename)
+	if err != nil {
+		return nil, errors.New(vm.ErrorFormatter.Format(err))
+	}
+	output, err := vm.EvaluateStream(node)
+	if err != nil {
+		return nil, errors.New(vm.ErrorFormatter.Format(err))
+	}
+	return output, nil
+}
+
+// EvaluateFileMulti evaluates Jsonnet code in a file to key-value
+// pairs. The keys are field name strings and the values are JSON strings.
+//
+// The importer is used to fetch the contents of the file.
+func (vm *VM) EvaluateFileMulti(filename string) (files map[string]string, formattedErr error) {
+	node, _, err := vm.ImportAST("", filename)
+	if err != nil {
+		return nil, errors.New(vm.ErrorFormatter.Format(err))
+	}
+	output, err := vm.EvaluateMulti(node)
+	if err != nil {
+		return nil, errors.New(vm.ErrorFormatter.Format(err))
+	}
+	return output, nil
 }
 
 // FindDependencies returns a sorted array of unique transitive dependencies (via import or importstr)
@@ -381,7 +515,7 @@ func (vm *VM) ImportAST(importedFrom, importedPath string) (contents ast.Node, f
 
 // SnippetToAST parses a snippet and returns the resulting AST.
 func SnippetToAST(filename string, snippet string) (ast.Node, error) {
-	return program.SnippetToAST(filename, snippet)
+	return program.SnippetToAST(ast.DiagnosticFileName(filename), filename, snippet)
 }
 
 // Version returns the Jsonnet version number.

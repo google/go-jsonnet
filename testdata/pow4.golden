@@ -1,6 +1,6 @@
 RUNTIME ERROR: Not a number
 -------------------------------------------------
-	testdata/pow4:1:1-17	builtin function <pow>
+	testdata/pow4:1:1-17	$
 
 std.pow(-1, 0.2)
 

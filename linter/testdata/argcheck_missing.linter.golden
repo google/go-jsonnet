@@ -1,0 +1,5 @@
+testdata/argcheck_missing:2:1-4 Missing argument: x
+
+f()
+
+

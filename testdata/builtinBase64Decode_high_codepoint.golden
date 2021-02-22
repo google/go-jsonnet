@@ -1,6 +1,6 @@
 RUNTIME ERROR: failed to decode: illegal base64 data at input byte 0
 -------------------------------------------------
-	testdata/builtinBase64Decode_high_codepoint:1:1-25	builtin function <base64Decode>
+	testdata/builtinBase64Decode_high_codepoint:1:1-25	$
 
 std.base64Decode("ĀQ=")
 

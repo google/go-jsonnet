@@ -1,0 +1,5 @@
+../testdata/bad_function_call_and_error:1:28-37 Too many arguments, there can be at most 1, but 2 provided
+
+(function(x) x)(error "x", error "y")
+
+

@@ -1,0 +1,13 @@
+RUNTIME ERROR: Unexpected type null
+-------------------------------------------------
+	testdata/stacktrace_plussuper:2:7-9	+:
+
+  a+: {},
+
+-------------------------------------------------
+	Field "a"	
+
+-------------------------------------------------
+	During manifestation	
+
+

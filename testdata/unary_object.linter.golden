@@ -1,0 +1,5 @@
+../testdata/unary_object:1:1-5 Operand is not a number, it is assumed to be an object
+
++ {}
+
+

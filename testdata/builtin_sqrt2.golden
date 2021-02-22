@@ -1,6 +1,6 @@
 RUNTIME ERROR: Unexpected type string, expected number
 -------------------------------------------------
-	testdata/builtin_sqrt2:1:1-19	builtin function <sqrt>
+	testdata/builtin_sqrt2:1:1-19	$
 
 std.sqrt("cookie")
 

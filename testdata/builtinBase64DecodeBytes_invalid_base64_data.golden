@@ -1,6 +1,6 @@
 RUNTIME ERROR: input string appears not to be a base64 encoded string. Wrong length found (5)
 -------------------------------------------------
-	testdata/builtinBase64DecodeBytes_invalid_base64_data:1:1-31	builtin function <base64DecodeBytes>
+	testdata/builtinBase64DecodeBytes_invalid_base64_data:1:1-31	$
 
 std.base64DecodeBytes("wrong")
 

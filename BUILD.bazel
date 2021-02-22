@@ -19,6 +19,7 @@ go_library(
         "interpreter.go",
         "runtime_error.go",
         "thunks.go",
+        "util.go",
         "value.go",
         "vm.go",
         "yaml.go",

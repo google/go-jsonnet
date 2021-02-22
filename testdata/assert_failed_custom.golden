@@ -1,6 +1,8 @@
 RUNTIME ERROR: Custom Message
 -------------------------------------------------
-		
+	testdata/assert_failed_custom:1:1-38	
+
+assert false : "Custom Message"; true
 
 -------------------------------------------------
 	During evaluation	

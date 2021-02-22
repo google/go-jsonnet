@@ -29,7 +29,7 @@ void jsonnet_internal_free_json(struct JsonnetJsonValue *x) {
 struct JsonnetJsonValue* jsonnet_internal_execute_native(JsonnetNativeCallback *cb,
                                                          void *ctx,
                                                          const struct JsonnetJsonValue *const *argv,
-                                                         int *success) 
+                                                         int *success)
 {
     return (cb)(ctx, argv, success);
 }
@@ -48,11 +48,6 @@ void jsonnet_internal_free_string(char *str) {
     if (str != nullptr) {
         ::free(str);
     }
-}
-
-inline static void todo() {
-    fputs("TODO, NOT IMPLEMENTED YET\n", stderr);
-    abort();
 }
 
 void jsonnet_gc_min_objects(struct JsonnetVm *vm, unsigned v) {
@@ -90,30 +85,4 @@ char *jsonnet_realloc(JsonnetVm *vm, char *str, size_t sz)
             return r;
         }
     }
-}
-
-char *jsonnet_evaluate_file_multi(JsonnetVm *vm, const char *filename, int *error)
-{
-    todo();
-    return nullptr;
-}
-
-char *jsonnet_evaluate_file_stream(JsonnetVm *vm, const char *filename, int *error)
-{
-    todo();
-    return nullptr;
-}
-
-char *jsonnet_evaluate_snippet_multi(JsonnetVm *vm, const char *filename, const char *snippet,
-                                     int *error)
-{
-    todo();
-    return nullptr;
-}
-
-char *jsonnet_evaluate_snippet_stream(JsonnetVm *vm, const char *filename, const char *snippet,
-                                      int *error)
-{
-    todo();
-    return nullptr;
 }

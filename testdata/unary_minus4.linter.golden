@@ -1,0 +1,5 @@
+../testdata/unary_minus4:1:1-7 Operand is not a number, it is assumed to be a string
+
+-"xxx"
+
+

@@ -62,7 +62,12 @@ func desugarFields(nodeBase ast.NodeBase, fields *ast.ObjectFields, objLevel int
 			if msg == nil {
 				msg = buildLiteralString("Object assertion failed.")
 			}
-			onFailure := &ast.Error{Expr: msg}
+			onFailure := &ast.Error{
+				NodeBase: ast.NodeBase{
+					LocRange: field.LocRange,
+				},
+				Expr: msg,
+			}
 			asserts = append(asserts, &ast.Conditional{
 				NodeBase: ast.NodeBase{
 					LocRange: field.LocRange,
@@ -155,7 +160,7 @@ func buildAnd(left ast.Node, right ast.Node) ast.Node {
 }
 
 // inside is assumed to be already desugared (and cannot be desugared again)
-func desugarForSpec(inside ast.Node, forSpec *ast.ForSpec, objLevel int) (ast.Node, error) {
+func desugarForSpec(inside ast.Node, loc ast.LocationRange, forSpec *ast.ForSpec, objLevel int) (ast.Node, error) {
 	var body ast.Node
 	if len(forSpec.Conditions) > 0 {
 		cond := forSpec.Conditions[0].Expr
@@ -179,11 +184,11 @@ func desugarForSpec(inside ast.Node, forSpec *ast.ForSpec, objLevel int) (ast.No
 	if err != nil {
 		return nil, err
 	}
-	current := buildStdCall("flatMap", function, forSpec.Expr)
+	current := buildStdCall("flatMap", loc, function, forSpec.Expr)
 	if forSpec.Outer == nil {
 		return current, nil
 	}
-	return desugarForSpec(current, forSpec.Outer, objLevel)
+	return desugarForSpec(current, loc, forSpec.Outer, objLevel)
 }
 
 func wrapInArray(inside ast.Node) ast.Node {
@@ -195,7 +200,7 @@ func desugarArrayComp(comp *ast.ArrayComp, objLevel int) (ast.Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	return desugarForSpec(wrapInArray(comp.Body), &comp.Spec, objLevel)
+	return desugarForSpec(wrapInArray(comp.Body), *comp.Loc(), &comp.Spec, objLevel)
 }
 
 func desugarObjectComp(comp *ast.ObjectComp, objLevel int) (ast.Node, error) {
@@ -204,16 +209,30 @@ func desugarObjectComp(comp *ast.ObjectComp, objLevel int) (ast.Node, error) {
 		return nil, err
 	}
 
-	if len(obj.Fields) != 1 {
-		panic("Too many fields in object comprehension, it should have been caught during parsing")
+	// Magic merging which follows doesn't support object locals, so we need
+	// to desugar them completely, i.e. put them inside the fields. The locals
+	// can be different for each field in a comprehension (unlike locals in
+	// "normal" objects which have a fixed value), so it's not even too wasteful.
+	if len(obj.Locals) > 0 {
+		field := &obj.Fields[0]
+		field.Body = &ast.Local{
+			Body:  field.Body,
+			Binds: obj.Locals,
+			// TODO(sbarzowski) should I set some NodeBase stuff here?
+		}
+		obj.Locals = nil
 	}
 
-	desugaredArrayComp, err := desugarForSpec(wrapInArray(obj), &comp.Spec, objLevel)
+	if len(obj.Fields) != 1 {
+		panic("Wrong number of fields in object comprehension, it should have been caught during parsing")
+	}
+
+	desugaredArrayComp, err := desugarForSpec(wrapInArray(obj), *comp.Loc(), &comp.Spec, objLevel)
 	if err != nil {
 		return nil, err
 	}
 
-	desugaredComp := buildStdCall("$objectFlatMerge", desugaredArrayComp)
+	desugaredComp := buildStdCall("$objectFlatMerge", *comp.Loc(), desugaredArrayComp)
 	return desugaredComp, nil
 }
 
@@ -231,7 +250,7 @@ func buildSimpleIndex(obj ast.Node, member ast.Identifier) ast.Node {
 	}
 }
 
-func buildStdCall(builtinName ast.Identifier, args ...ast.Node) ast.Node {
+func buildStdCall(builtinName ast.Identifier, loc ast.LocationRange, args ...ast.Node) ast.Node {
 	std := &ast.Var{Id: "std"}
 	builtin := buildSimpleIndex(std, builtinName)
 	positional := make([]ast.CommaSeparatedExpr, len(args))
@@ -239,6 +258,9 @@ func buildStdCall(builtinName ast.Identifier, args ...ast.Node) ast.Node {
 		positional[i].Expr = args[i]
 	}
 	return &ast.Apply{
+		NodeBase: ast.NodeBase{
+			LocRange: loc,
+		},
 		Target:    builtin,
 		Arguments: ast.Arguments{Positional: positional},
 	}
@@ -322,9 +344,14 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 			node.Message = buildLiteralString("Assertion failed")
 		}
 		*astPtr = &ast.Conditional{
-			Cond:        node.Cond,
-			BranchTrue:  node.Rest,
-			BranchFalse: &ast.Error{Expr: node.Message},
+			Cond:       node.Cond,
+			BranchTrue: node.Rest,
+			BranchFalse: &ast.Error{
+				NodeBase: ast.NodeBase{
+					LocRange: *node.Loc(),
+				},
+				Expr: node.Message,
+			},
 		}
 		err = desugar(astPtr, objLevel)
 		if err != nil {
@@ -336,9 +363,9 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		if funcname, replaced := desugaredBop[node.Op]; replaced {
 			if node.Op == ast.BopIn {
 				// reversed order of arguments
-				*astPtr = buildStdCall(funcname, node.Right, node.Left)
+				*astPtr = buildStdCall(funcname, *node.Loc(), node.Right, node.Left)
 			} else {
-				*astPtr = buildStdCall(funcname, node.Left, node.Right)
+				*astPtr = buildStdCall(funcname, *node.Loc(), node.Left, node.Right)
 			}
 			return desugar(astPtr, objLevel)
 		}
@@ -441,7 +468,7 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 		if node.Step == nil {
 			node.Step = &ast.LiteralNull{}
 		}
-		*astPtr = buildStdCall("slice", node.Target, node.BeginIndex, node.EndIndex, node.Step)
+		*astPtr = buildStdCall("slice", *node.Loc(), node.Target, node.BeginIndex, node.EndIndex, node.Step)
 		err = desugar(astPtr, objLevel)
 		if err != nil {
 			return

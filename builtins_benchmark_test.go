@@ -55,3 +55,11 @@ func Benchmark_Builtin_base64_byte_array(b *testing.B) {
 func Benchmark_Builtin_manifestJsonEx(b *testing.B) {
 	RunBenchmark(b, "manifestJsonEx")
 }
+
+func Benchmark_Builtin_comparison(b *testing.B) {
+	RunBenchmark(b, "comparison")
+}
+
+func Benchmark_Builtin_comparison2(b *testing.B) {
+	RunBenchmark(b, "comparison2")
+}
