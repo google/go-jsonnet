@@ -1219,9 +1219,8 @@ func builtinParseYAML(i *interpreter, str value) (value, error) {
 
 	if isYamlStream {
 		return jsonToValue(i, elems)
-	} else {
-		return jsonToValue(i, elems[0])
 	}
+	return jsonToValue(i, elems[0])
 }
 
 func jsonEncode(v interface{}) (string, error) {
