@@ -644,10 +644,12 @@ type traceOut struct {
 }
 
 func (o *traceOut) Write(p []byte) (int, error) {
+	if len(p) == 0 {
+		return 0, nil
+	}
+
 	success := C.int(0)
-	str := C.CString(string(p))
-	var n C.int = C.jsonnet_internal_execute_writer(o.cb, str, &success)
-	C.jsonnet_internal_free_string(str)
+	var n C.int = C.jsonnet_internal_execute_writer(o.cb, (*C.char)(unsafe.Pointer(&p[0])), &success)
 	if success != 1 {
 		return int(n), errors.New("std.trace() failed to write to output stream")
 	}
