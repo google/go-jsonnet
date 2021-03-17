@@ -131,7 +131,8 @@ lib.jsonnet_import_callback.restype = None
 
 IO_WRITER_CALLBACK = ctypes.CFUNCTYPE(
     ctypes.c_int,
-    ctypes.c_char_p,
+    ctypes.c_void_p,
+    ctypes.c_size_t,
     ctypes.POINTER(ctypes.c_int)
 )
 
@@ -355,11 +356,11 @@ def import_callback(ctx, dir, rel, found_here, success):
 io_writer_buf = None
 
 @IO_WRITER_CALLBACK
-def io_writer_callback(p, success):
+def io_writer_callback(buf, nbytes, success):
     global io_writer_buf
-    io_writer_buf = p
+    io_writer_buf = ctypes.string_at(buf, nbytes)
     success[0] = ctypes.c_int(1)
-    return len(p)
+    return nbytes
 
 #  Returns content if worked, None if file not found, or throws an exception
 def jsonnet_try_path(dir, rel):

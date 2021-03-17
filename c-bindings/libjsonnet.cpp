@@ -45,10 +45,11 @@ char* jsonnet_internal_execute_import(JsonnetImportCallback *cb,
 }
 
 int jsonnet_internal_execute_writer(JsonnetIoWriterCallback *cb,
-                                    char *str,
+                                    const void *buf,
+                                    size_t nbytes,
                                     int *success)
 {
-    return (cb)(str, success);
+    return (cb)(buf, nbytes, success);
 }
 
 void jsonnet_internal_free_string(char *str) {

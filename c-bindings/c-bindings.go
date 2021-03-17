@@ -649,7 +649,8 @@ func (o *traceOut) Write(p []byte) (int, error) {
 	}
 
 	success := C.int(0)
-	var n C.int = C.jsonnet_internal_execute_writer(o.cb, (*C.char)(unsafe.Pointer(&p[0])), &success)
+	var n C.int = C.jsonnet_internal_execute_writer(o.cb, unsafe.Pointer(&p[0]),
+				                                    C.size_t(len(p)), &success)
 	if success != 1 {
 		return int(n), errors.New("std.trace() failed to write to output stream")
 	}
