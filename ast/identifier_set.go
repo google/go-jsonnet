@@ -22,9 +22,11 @@ func NewIdentifierSet(a ...Identifier) IdentifierSet {
 
 // ToSlice returns the elements of the current set as a slice
 func (set IdentifierSet) ToSlice() []Identifier {
-	var s []Identifier
+	s := make([]Identifier, len(set), len(set))
+	j := 0
 	for v := range set {
-		s = append(s, v)
+		s[j] = v
+		j++
 	}
 	return s
 }
