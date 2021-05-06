@@ -7,6 +7,7 @@ package formatter
 import (
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/internal/formatter"
+	"github.com/google/go-jsonnet/internal/parser"
 )
 
 // StringStyle controls how the reformatter rewrites string literals.
@@ -54,4 +55,9 @@ func Format(filename string, input string, options Options) (string, error) {
 // according to the given options.
 func FormatNode(node ast.Node, finalFodder ast.Fodder, options Options) (string, error) {
 	return formatter.FormatNode(node, finalFodder, options)
+}
+
+// SnippetToRawAST parses a snippet and returns the resulting AST.
+func SnippetToRawAST(filename string, snippet string) (ast.Node, ast.Fodder, error) {
+	return parser.SnippetToRawAST(ast.DiagnosticFileName(filename), "", snippet)
 }
