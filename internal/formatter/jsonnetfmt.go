@@ -141,6 +141,10 @@ func Format(filename string, input string, options Options) (string, error) {
 		return "", err
 	}
 
+	return FormatNode(node, finalFodder, options)
+}
+
+func FormatNode(node ast.Node, finalFodder ast.Fodder, options Options) (string, error) {
 	// Passes to enforce style on the AST.
 	if options.SortImports {
 		SortImports(&node)
