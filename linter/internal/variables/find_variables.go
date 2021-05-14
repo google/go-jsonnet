@@ -1,3 +1,5 @@
+// Package variables allows collecting the information about how variables
+// are used.
 package variables
 
 import (
