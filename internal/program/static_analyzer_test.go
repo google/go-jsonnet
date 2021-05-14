@@ -28,7 +28,7 @@ func TestSimpleNull(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error: %+v", err)
 	}
-	if ast.FreeVariables() != nil {
+	if len(ast.FreeVariables()) != 0 {
 		t.Errorf("Unexpected free variabled %+v", ast.FreeVariables())
 	}
 }
@@ -60,7 +60,7 @@ func TestSimpleLocal(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexpected error: %+v", err)
 	}
-	if node.FreeVariables() != nil {
+	if len(node.FreeVariables()) != 0 {
 		t.Errorf("Unexpected free variables %+v in root local. Expected none.", node.FreeVariables())
 	}
 	returned := node.Body.FreeVariables()
