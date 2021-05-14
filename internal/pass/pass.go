@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package pass provides a visitor framework for source code analysis
+// and transformation.
 package pass
 
 import (
