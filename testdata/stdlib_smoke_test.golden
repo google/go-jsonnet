@@ -96,6 +96,7 @@
    "length": 0,
    "lines": "a\nb\nc\n",
    "log": 1.6094379124341003,
+   "lstripChars": "bbbbcccc",
    "makeArray": [
       0,
       1,
@@ -155,6 +156,7 @@
       5
    ],
    "repeat": "foofoofoo",
+   "rstripChars": "aaabbbb",
    "set": [
       [
          1,
@@ -238,6 +240,7 @@
       "a",
       "h"
    ],
+   "stripChars": "bbbb",
    "substr": "s",
    "tan": -3.3805150062465854,
    "thisFile": "testdata/stdlib_smoke_test",
