@@ -23,6 +23,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"reflect"
 	"sort"
@@ -1194,6 +1195,34 @@ func builtinParseJSON(i *interpreter, str value) (value, error) {
 	return jsonToValue(i, parsedJSON)
 }
 
+func builtinParseYAML(i *interpreter, str value) (value, error) {
+	sval, err := i.getString(str)
+	if err != nil {
+		return nil, err
+	}
+	s := sval.getGoString()
+
+	isYamlStream := strings.Contains(s, "---")
+
+	elems := []interface{}{}
+	d := NewYAMLToJSONDecoder(strings.NewReader(s))
+	for {
+		var elem interface{}
+		if err := d.Decode(&elem); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, i.Error(fmt.Sprintf("failed to parse YAML: %v", err.Error()))
+		}
+		elems = append(elems, elem)
+	}
+
+	if isYamlStream {
+		return jsonToValue(i, elems)
+	}
+	return jsonToValue(i, elems[0])
+}
+
 func jsonEncode(v interface{}) (string, error) {
 	buf := new(bytes.Buffer)
 	enc := json.NewEncoder(buf)
@@ -1620,6 +1649,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "base64Decode", function: builtinBase64Decode, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "base64DecodeBytes", function: builtinBase64DecodeBytes, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseJson", function: builtinParseJSON, params: ast.Identifiers{"str"}},
+	&unaryBuiltin{name: "parseYaml", function: builtinParseYAML, params: ast.Identifiers{"str"}},
 	&generalBuiltin{name: "manifestJsonEx", function: builtinManifestJSONEx, params: []generalBuiltinParameter{{name: "value"}, {name: "indent"},
 		{name: "newline", defaultValue: &valueFlatString{value: []rune("\n")}},
 		{name: "key_val_sep", defaultValue: &valueFlatString{value: []rune(": ")}}}},
