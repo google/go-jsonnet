@@ -110,6 +110,7 @@ def jsonnet_go_dependencies():
         importpath = "sigs.k8s.io/yaml",
         sum = "h1:4A07+ZFc2wgJwo8YNlQpr1rVlgUDlxXHhPJciaPY5gs=",
         version = "v1.1.0",
+    )
     go_repository(
         name = "org_golang_x_sys",
         importpath = "golang.org/x/sys",
