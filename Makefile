@@ -10,11 +10,6 @@ install.dependencies:
 	git submodule update
 	go get github.com/clipperhouse/gen
 	go get github.com/clipperhouse/set
-	go get github.com/fatih/color
-	go get github.com/axw/gocov/gocov
-	go get github.com/mattn/goveralls
-	go get github.com/sergi/go-diff/diffmatchpatch
-	if ! go get github.com/golang/tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi;
 .PHONY: install.dependencies
 
 build.bazel:

@@ -639,5 +639,29 @@ func formatSnippet(vmRef *C.struct_JsonnetVm, filename string, code string, e *C
 	return result
 }
 
+type traceOut struct {
+	cb *C.JsonnetIoWriterCallback
+}
+
+func (o *traceOut) Write(p []byte) (int, error) {
+	if len(p) == 0 {
+		return 0, nil
+	}
+
+	success := C.int(0)
+	var n C.int = C.jsonnet_internal_execute_writer(o.cb, unsafe.Pointer(&p[0]),
+				                                    C.size_t(len(p)), &success)
+	if success != 1 {
+		return int(n), errors.New("std.trace() failed to write to output stream")
+	}
+	return int(n), nil
+}
+
+//export jsonnet_set_trace_out_callback
+func jsonnet_set_trace_out_callback(vmRef *C.struct_JsonnetVm, cb *C.JsonnetIoWriterCallback) {
+	vm := getVM(vmRef)
+	vm.SetTraceOut(&traceOut{cb})
+}
+
 func main() {
 }

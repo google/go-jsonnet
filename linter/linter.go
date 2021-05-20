@@ -12,7 +12,6 @@ import (
 	"github.com/google/go-jsonnet/linter/internal/common"
 	"github.com/google/go-jsonnet/linter/internal/traversal"
 	"github.com/google/go-jsonnet/linter/internal/types"
-	"github.com/google/go-jsonnet/linter/internal/utils"
 	"github.com/google/go-jsonnet/linter/internal/variables"
 )
 
@@ -66,7 +65,7 @@ func lint(vm *jsonnet.VM, node nodeWithLocation, errWriter *ErrorWriter) {
 			errWriter.writeError(vm, errors.MakeStaticError("Unused variable: "+string(v.Name), v.LocRange))
 		}
 	}
-	ec := utils.ErrCollector{}
+	ec := common.ErrCollector{}
 
 	vars := make(map[string]map[ast.Node]*common.Variable)
 	for importedPath, info := range variablesInFile {

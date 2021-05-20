@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-import unittest
 import ctypes
-import re
+import io
 import os
+import re
+import unittest
 
 
 lib = ctypes.CDLL('../c-bindings/libgojsonnet.so')
@@ -127,6 +128,19 @@ lib.jsonnet_import_callback.argtypes = [
     ctypes.c_void_p,
 ]
 lib.jsonnet_import_callback.restype = None
+
+IO_WRITER_CALLBACK = ctypes.CFUNCTYPE(
+    ctypes.c_int,
+    ctypes.c_void_p,
+    ctypes.c_size_t,
+    ctypes.POINTER(ctypes.c_int)
+)
+
+lib.jsonnet_set_trace_out_callback.argtypes = [
+    ctypes.c_void_p,
+    IO_WRITER_CALLBACK,
+]
+lib.jsonnet_set_trace_out_callback.restype = None
 
 # json declaration
 
@@ -339,6 +353,15 @@ def import_callback(ctx, dir, rel, found_here, success):
 
     return ctypes.addressof(dst.contents)
 
+io_writer_buf = None
+
+@IO_WRITER_CALLBACK
+def io_writer_callback(buf, nbytes, success):
+    global io_writer_buf
+    io_writer_buf = ctypes.string_at(buf, nbytes)
+    success[0] = ctypes.c_int(1)
+    return nbytes
+
 #  Returns content if worked, None if file not found, or throws an exception
 def jsonnet_try_path(dir, rel):
     if not rel:
@@ -489,6 +512,15 @@ class TestJsonnetEvaluateBindings(unittest.TestCase):
         res = lib.jsonnet_evaluate_snippet(self.vm, b"jsonnet_import_callback", b"""import 'foo.jsonnet'""", self.err_ref)
         self.assertEqual(b'42\n', to_bytes(res))
         free_buffer(self.vm, res)
+
+    def test_jsonnet_set_trace_out_callback(self):
+        lib.jsonnet_set_trace_out_callback(self.vm, io_writer_callback)
+        fname = b"vm1"
+        msg = b"test_jsonnet_set_trace_out_callback trace message"
+        expected = b"TRACE: " + fname + b":1 " + msg + b"\n"
+        snippet = b"std.trace('" + msg + b"', 'rest')"
+        lib.jsonnet_evaluate_snippet(self.vm, fname, snippet, self.err_ref)
+        self.assertEqual(io_writer_buf,  expected)
 
     def tearDown(self):
         lib.jsonnet_destroy(self.vm)

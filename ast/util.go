@@ -29,9 +29,11 @@ func (i IdentifierSet) AddIdentifiers(idents Identifiers) {
 
 // ToOrderedSlice returns the elements of the current set as an ordered slice.
 func (i IdentifierSet) ToOrderedSlice() []Identifier {
-	var s []Identifier
+	s := make([]Identifier, len(i))
+	j := 0
 	for v := range i {
-		s = append(s, v)
+		s[j] = v
+		j++
 	}
 	sort.Sort(identifierSorter(s))
 	return s

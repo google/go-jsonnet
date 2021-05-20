@@ -1,3 +1,4 @@
+// Package program provides API for AST pre-processing (desugaring, static analysis).
 package program
 
 import (

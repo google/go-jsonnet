@@ -28,5 +28,5 @@ gojsonnet.egg-info/
 /tests_path.source
 
 /jsonnet-lint
-
+/jsonnet-deps
 /builtin-benchmark-results

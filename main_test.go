@@ -60,13 +60,13 @@ var standardExtCode = map[string]string{
 }
 
 var metadataForTests = map[string]testMetadata{
-	"testdata/extvar_code":               testMetadata{extVars: standardExtVars, extCode: standardExtCode},
-	"testdata/extvar_error":              testMetadata{extVars: standardExtVars, extCode: standardExtCode},
-	"testdata/extvar_hermetic":           testMetadata{extVars: standardExtVars, extCode: standardExtCode},
-	"testdata/extvar_mutually_recursive": testMetadata{extVars: standardExtVars, extCode: standardExtCode},
-	"testdata/extvar_self_recursive":     testMetadata{extVars: standardExtVars, extCode: standardExtCode},
-	"testdata/extvar_static_error":       testMetadata{extVars: standardExtVars, extCode: standardExtCode},
-	"testdata/extvar_string":             testMetadata{extVars: standardExtVars, extCode: standardExtCode},
+	"testdata/extvar_code":               {extVars: standardExtVars, extCode: standardExtCode},
+	"testdata/extvar_error":              {extVars: standardExtVars, extCode: standardExtCode},
+	"testdata/extvar_hermetic":           {extVars: standardExtVars, extCode: standardExtCode},
+	"testdata/extvar_mutually_recursive": {extVars: standardExtVars, extCode: standardExtCode},
+	"testdata/extvar_self_recursive":     {extVars: standardExtVars, extCode: standardExtCode},
+	"testdata/extvar_static_error":       {extVars: standardExtVars, extCode: standardExtCode},
+	"testdata/extvar_string":             {extVars: standardExtVars, extCode: standardExtCode},
 }
 
 type mainTest struct {

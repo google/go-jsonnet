@@ -3,34 +3,25 @@ load(
     "http_archive",
 )
 
-def _maybe(repo_rule, name, **kwargs):
-    """Executes the given repository rule if it hasn't been executed already.
-    Args:
-      repo_rule: The repository rule to be executed (e.g.,
-          `native.git_repository`.)
-      name: The name of the repository to be defined by the rule.
-      **kwargs: Additional arguments passed directly to the repository rule.
-    """
-    if not native.existing_rule(name):
-        repo_rule(name = name, **kwargs)
-
 def jsonnet_go_repositories():
-    _maybe(
-        http_archive,
+    http_archive(
         name = "io_bazel_rules_go",
-        sha256 = "e6f8cb2da438cc4899809b66ba96d57397ed871640fe5c848ca9c56190b7c8ba",
-        strip_prefix = "rules_go-8ea79bbd5e6ea09dc611c245d1dc09ef7ab7118a",
-        urls = ["https://github.com/bazelbuild/rules_go/archive/8ea79bbd5e6ea09dc611c245d1dc09ef7ab7118a.zip"],
+        sha256 = "7904dbecbaffd068651916dce77ff3437679f9d20e1a7956bff43826e7645fcc",
+        urls = [
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.25.1/rules_go-v0.25.1.tar.gz",
+            "https://github.com/bazelbuild/rules_go/releases/download/v0.25.1/rules_go-v0.25.1.tar.gz",
+        ],
     )
-    _maybe(
-        http_archive,
+
+    http_archive(
         name = "bazel_gazelle",
-        sha256 = "c5faf839dd1da0065ed7d44ac248b01ab5ffcd0db46e7193439906df68867c39",
-        strip_prefix = "bazel-gazelle-38bd65ead186af23549480d6189b89c7c53c023e",
-        urls = ["https://github.com/bazelbuild/bazel-gazelle/archive/38bd65ead186af23549480d6189b89c7c53c023e.zip"],
+        sha256 = "222e49f034ca7a1d1231422cdb67066b885819885c356673cb1f72f748a3c9d4",
+        urls = [
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.22.3/bazel-gazelle-v0.22.3.tar.gz",
+            "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.22.3/bazel-gazelle-v0.22.3.tar.gz",
+        ],
     )
-    _maybe(
-        http_archive,
+    http_archive(
         name = "cpp_jsonnet",
         sha256 = "82d3cd35de8ef230d094b60a30e7659f415c350b0aa2bd62162cf2afdf163959",
         strip_prefix = "jsonnet-90cad75dcc2eafdcf059c901169d36539dc8a699",

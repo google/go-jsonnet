@@ -1,5 +1,5 @@
-package types
-
+// Package types provides type inference functionality. 
+//
 // Even though Jsonnet doesn't have a concept of static types
 // we can infer for each expression what values it can take.
 // Of course we cannot do this accurately at all times, but even
@@ -17,3 +17,5 @@ package types
 // First of all type processing split into two very distinct phases:
 // 1) Finding a type - an upper bound for the set of possible values for each expression.
 // 2) Checking all expressions in the AST using this information.
+package types
+

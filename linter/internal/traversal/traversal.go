@@ -1,19 +1,18 @@
-package traversal
-
 // Package traversal provides relatively lightweight checks
 // which can all fit within one traversal of the AST.
 // Currently available checks:
 // * Loop detection
 // TODO(sbarzowski) add more
+package traversal
 
 import (
 	"github.com/google/go-jsonnet/ast"
-	"github.com/google/go-jsonnet/linter/internal/utils"
+	"github.com/google/go-jsonnet/linter/internal/common"
 
 	"github.com/google/go-jsonnet/internal/parser"
 )
 
-func findLoopingInChildren(node ast.Node, vars map[ast.Identifier]ast.Node, runOf map[ast.Identifier]int, currentRun int, ec *utils.ErrCollector) bool {
+func findLoopingInChildren(node ast.Node, vars map[ast.Identifier]ast.Node, runOf map[ast.Identifier]int, currentRun int, ec *common.ErrCollector) bool {
 	for _, c := range parser.DirectChildren(node) {
 		found := findLooping(c, vars, runOf, currentRun, ec)
 		if found {
@@ -23,7 +22,7 @@ func findLoopingInChildren(node ast.Node, vars map[ast.Identifier]ast.Node, runO
 	return false
 }
 
-func findLooping(node ast.Node, vars map[ast.Identifier]ast.Node, runOf map[ast.Identifier]int, currentRun int, ec *utils.ErrCollector) bool {
+func findLooping(node ast.Node, vars map[ast.Identifier]ast.Node, runOf map[ast.Identifier]int, currentRun int, ec *common.ErrCollector) bool {
 	switch node := node.(type) {
 	case *ast.Var:
 		_, varFromThisLocal := vars[node.Id]
@@ -43,7 +42,7 @@ func findLooping(node ast.Node, vars map[ast.Identifier]ast.Node, runOf map[ast.
 	return findLoopingInChildren(node, vars, runOf, currentRun, ec)
 }
 
-func findLoopingInLocal(node *ast.Local, ec *utils.ErrCollector) {
+func findLoopingInLocal(node *ast.Local, ec *common.ErrCollector) {
 	vars := make(map[ast.Identifier]ast.Node)
 	runOf := make(map[ast.Identifier]int)
 	for _, b := range node.Binds {
@@ -62,7 +61,7 @@ func findLoopingInLocal(node *ast.Local, ec *utils.ErrCollector) {
 
 // Traverse visits all nodes in the AST and runs appropriate
 // checks.
-func Traverse(node ast.Node, ec *utils.ErrCollector) {
+func Traverse(node ast.Node, ec *common.ErrCollector) {
 	switch node := node.(type) {
 	case *ast.Local:
 		findLoopingInLocal(node, ec)
