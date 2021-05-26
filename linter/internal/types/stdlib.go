@@ -118,7 +118,7 @@ func prepareStdlib(g *typeGraph) {
 
 		"makeArray":     g.newSimpleFuncType(anyArrayType, "sz", "func"),
 		"count":         g.newSimpleFuncType(numberType, "arr", "x"),
-		"member":        g.newSimpleFuncType(numberType, "arr", "x"),
+		"member":        g.newSimpleFuncType(boolType, "arr", "x"),
 		"find":          g.newSimpleFuncType(arrayOfNumber, "value", "arr"),
 		"map":           g.newSimpleFuncType(anyArrayType, "func", "arr"),
 		"mapWithIndex":  g.newSimpleFuncType(anyArrayType, "func", "arr"),
