@@ -234,7 +234,7 @@ func calcTP(node ast.Node, varAt map[ast.Node]*common.Variable, g *typeGraph) ty
 		// no recursion yet
 		return tpRef(anyObjectType)
 	case *ast.SuperIndex:
-		return tpRef(anyObjectType)
+		return tpRef(anyType)
 	case *ast.InSuper:
 		return tpRef(boolType)
 	case *ast.Function:

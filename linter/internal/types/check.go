@@ -55,8 +55,8 @@ func check(node ast.Node, typeOf exprTypes, ec *common.ErrCollector) {
 			if !indexType.Number {
 				ec.StaticErr("Indexed value is assumed to be "+assumedType+", but index is not a number", node.Loc())
 			}
-		} else if !targetType.Array() {
-			// It's not an array so it must be an object
+		} else if !targetType.Array() && !targetType.String {
+			// It's not an array or a string so it must be an object
 			if !indexType.String {
 				ec.StaticErr("Indexed value is assumed to be an object, but index is not a string", node.Loc())
 			}
