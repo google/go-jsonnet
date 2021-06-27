@@ -72,6 +72,40 @@ func runTest(t *testing.T, test *linterTest, changedGoldensList *ChangedGoldensL
 	}
 }
 
+func runTests(t *testing.T, tests []*linterTest) {
+	read := func(file string) []byte {
+		bytz, err := ioutil.ReadFile(file)
+		if err != nil {
+			t.Fatalf("reading file: %s: %v", file, err)
+		}
+		return bytz
+	}
+
+	vm := jsonnet.MakeVM()
+
+	var snippets []Snippet
+
+	for _, test := range tests {
+		input := read(test.input)
+
+		snippets = append(snippets, Snippet{FileName: test.name, Code: string(input)})
+	}
+
+	var outBuilder strings.Builder
+
+	errorsFound := LintSnippet(vm, &outBuilder, snippets)
+
+	outData := outBuilder.String()
+
+	if outData == "" && errorsFound {
+		t.Error(fmt.Errorf("return value indicates problems present, but no output was produced"))
+	}
+
+	if outData != "" && !errorsFound {
+		t.Error(fmt.Errorf("return value indicates no problems, but output is not empty:\n%v", outData))
+	}
+}
+
 func TestLinter(t *testing.T) {
 	flag.Parse()
 
@@ -122,4 +156,8 @@ func TestLinter(t *testing.T) {
 			t.Fail()
 		})
 	}
+
+	t.Run("passing multiple input files", func(t *testing.T) {
+		runTests(t, tests)
+	})
 }
