@@ -22,6 +22,12 @@ type ErrorWriter struct {
 	Writer      io.Writer
 }
 
+// Snippet represents a jsonnet file data that to be linted
+type Snippet struct {
+	FileName string
+	Code     string
+}
+
 func (e *ErrorWriter) writeError(vm *jsonnet.VM, err errors.StaticError) {
 	e.ErrorsFound = true
 	_, writeErr := e.Writer.Write([]byte(vm.ErrorFormatter.Format(err) + "\n"))
@@ -38,10 +44,14 @@ type nodeWithLocation struct {
 }
 
 // Lint analyses a node and reports any issues it encounters to an error writer.
-func lint(vm *jsonnet.VM, node nodeWithLocation, errWriter *ErrorWriter) {
+func lint(vm *jsonnet.VM, nodes []nodeWithLocation, errWriter *ErrorWriter) {
 	roots := make(map[string]ast.Node)
-	roots[node.path] = node.node
-	getImports(vm, node, roots, errWriter)
+	for _, node := range nodes {
+		roots[node.path] = node.node
+	}
+	for _, node := range nodes {
+		getImports(vm, node, roots, errWriter)
+	}
 
 	variablesInFile := make(map[string]common.VariableInfo)
 
@@ -55,35 +65,38 @@ func lint(vm *jsonnet.VM, node nodeWithLocation, errWriter *ErrorWriter) {
 		return variables.FindVariables(node.node, variables.Environment{"std": &std})
 	}
 
-	variableInfo := findVariables(node)
 	for importedPath, rootNode := range roots {
 		variablesInFile[importedPath] = *findVariables(nodeWithLocation{rootNode, importedPath})
 	}
-
-	for _, v := range variableInfo.Variables {
-		if len(v.Occurences) == 0 && v.VariableKind == common.VarRegular && v.Name != "$" {
-			errWriter.writeError(vm, errors.MakeStaticError("Unused variable: "+string(v.Name), v.LocRange))
-		}
-	}
-	ec := common.ErrCollector{}
 
 	vars := make(map[string]map[ast.Node]*common.Variable)
 	for importedPath, info := range variablesInFile {
 		vars[importedPath] = info.VarAt
 	}
 
-	types.Check(node.node, roots, vars, func(currentPath, importedPath string) ast.Node {
-		node, _, err := vm.ImportAST(currentPath, importedPath)
-		if err != nil {
-			return nil
+	for _, node := range nodes {
+		variableInfo := findVariables(node)
+
+		for _, v := range variableInfo.Variables {
+			if len(v.Occurences) == 0 && v.VariableKind == common.VarRegular && v.Name != "$" {
+				errWriter.writeError(vm, errors.MakeStaticError("Unused variable: "+string(v.Name), v.LocRange))
+			}
 		}
-		return node
-	}, &ec)
+		ec := common.ErrCollector{}
 
-	traversal.Traverse(node.node, &ec)
+		types.Check(node.node, roots, vars, func(currentPath, importedPath string) ast.Node {
+			node, _, err := vm.ImportAST(currentPath, importedPath)
+			if err != nil {
+				return nil
+			}
+			return node
+		}, &ec)
 
-	for _, err := range ec.Errs {
-		errWriter.writeError(vm, err)
+		traversal.Traverse(node.node, &ec)
+
+		for _, err := range ec.Errs {
+			errWriter.writeError(vm, err)
+		}
 	}
 }
 
@@ -118,18 +131,24 @@ func getImports(vm *jsonnet.VM, node nodeWithLocation, roots map[string]ast.Node
 	}
 }
 
-// LintSnippet checks for problems in a single code snippet.
-func LintSnippet(vm *jsonnet.VM, output io.Writer, filename, code string) bool {
+// LintSnippet checks for problems in code snippet(s).
+func LintSnippet(vm *jsonnet.VM, output io.Writer, snippets []Snippet) bool {
 	errWriter := ErrorWriter{
 		Writer:      output,
 		ErrorsFound: false,
 	}
 
-	node, err := jsonnet.SnippetToAST(filename, code)
-	if err != nil {
-		errWriter.writeError(vm, err.(errors.StaticError)) // ugly but true
-		return true
+	var nodes []nodeWithLocation
+	for _, snippet := range snippets {
+		node, err := jsonnet.SnippetToAST(snippet.FileName, snippet.Code)
+
+		if err != nil {
+			errWriter.writeError(vm, err.(errors.StaticError)) // ugly but true
+		} else {
+			nodes = append(nodes, nodeWithLocation{node, snippet.FileName})
+		}
 	}
-	lint(vm, nodeWithLocation{node, filename}, &errWriter)
+
+	lint(vm, nodes, &errWriter)
 	return errWriter.ErrorsFound
 }

@@ -40,7 +40,7 @@ func runTest(t *testing.T, test *linterTest, changedGoldensList *ChangedGoldensL
 
 	var outBuilder strings.Builder
 
-	errorsFound := LintSnippet(vm, &outBuilder, test.name, string(input))
+	errorsFound := LintSnippet(vm, &outBuilder, []Snippet{Snippet{FileName: test.name, Code: string(input)}})
 
 	outData := outBuilder.String()
 
