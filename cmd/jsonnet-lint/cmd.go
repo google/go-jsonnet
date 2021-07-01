@@ -21,7 +21,7 @@ func version(o io.Writer) {
 func usage(o io.Writer) {
 	version(o)
 	fmt.Fprintln(o)
-	fmt.Fprintln(o, "jsonnet-lint {<option>} { <filename> }")
+	fmt.Fprintln(o, "jsonnet-lint {<option>} { <filenames ...> }")
 	fmt.Fprintln(o)
 	fmt.Fprintln(o, "Available options:")
 	fmt.Fprintln(o, "  -h / --help                This message")
@@ -53,8 +53,8 @@ func usage(o io.Writer) {
 
 type config struct {
 	// TODO(sbarzowski) Allow multiple root files checked at once for greater efficiency
-	inputFile string
-	evalJpath []string
+	inputFiles []string
+	evalJpath  []string
 }
 
 func makeConfig() config {
@@ -112,11 +112,7 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 		return processArgsStatusFailureUsage, fmt.Errorf("file not provided")
 	}
 
-	if len(remainingArgs) > 1 {
-		return processArgsStatusFailure, fmt.Errorf("only one file is allowed")
-	}
-
-	config.inputFile = remainingArgs[0]
+	config.inputFiles = remainingArgs
 	return processArgsStatusContinue, nil
 }
 
@@ -164,27 +160,27 @@ func main() {
 		JPaths: config.evalJpath,
 	})
 
-	inputFile, err := os.Open(config.inputFile)
-	if err != nil {
-		die(err)
-	}
-	data, err := ioutil.ReadAll(inputFile)
-	if err != nil {
-		die(err)
-	}
-	err = inputFile.Close()
-	if err != nil {
-		die(err)
+	var snippets []linter.Snippet
+	for _, inputFile := range config.inputFiles {
+		f, err := os.Open(inputFile)
+		if err != nil {
+			die(err)
+		}
+		data, err := ioutil.ReadAll(f)
+		if err != nil {
+			die(err)
+		}
+		err = f.Close()
+		if err != nil {
+			die(err)
+		}
+
+		snippets = append(snippets, linter.Snippet{FileName: inputFile, Code: string(data)})
 	}
 
 	cmd.MemProfile()
 
-	_, err = jsonnet.SnippetToAST(config.inputFile, string(data))
-	if err != nil {
-		die(err)
-	}
-
-	errorsFound := linter.LintSnippet(vm, os.Stderr, config.inputFile, string(data))
+	errorsFound := linter.LintSnippet(vm, os.Stderr, snippets)
 	if errorsFound {
 		fmt.Fprintf(os.Stderr, "Problems found!\n")
 		os.Exit(2)
