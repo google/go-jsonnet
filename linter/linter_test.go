@@ -113,7 +113,7 @@ func runTests(t *testing.T, tests []*linterTest) {
 		import_snippets = append(import_snippets, Snippet{FileName: filepath, Code: string(input)})
 	}
 
-	errorsFound = LintSnippet(vm, &outBuilder, snippets)
+	errorsFound = LintSnippet(vm, &outBuilder, import_snippets)
 	outData = outBuilder.String()
 	if outData == "" && errorsFound {
 		t.Error(fmt.Errorf("return value indicates problems present, but no output was produced"))
