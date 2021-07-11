@@ -117,6 +117,15 @@ func (cache *importCache) importData(importedFrom, importedPath string) (content
 	return
 }
 
+func (cache *importCache) snippetToAST(diagnosticFilename ast.DiagnosticFileName, importedFilename, snippet string) (ast.Node, error) {
+	if cachedNode, isCached := cache.astCache[importedFilename]; isCached {
+		return cachedNode, nil
+	}
+	node, err := program.SnippetToAST(diagnosticFilename, importedFilename, snippet)
+	cache.astCache[importedFilename] = node
+	return node, err
+}
+
 func (cache *importCache) importAST(importedFrom, importedPath string) (ast.Node, string, error) {
 	contents, foundAt, err := cache.importData(importedFrom, importedPath)
 	if err != nil {

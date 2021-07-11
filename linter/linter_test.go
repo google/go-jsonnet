@@ -104,6 +104,23 @@ func runTests(t *testing.T, tests []*linterTest) {
 	if outData != "" && !errorsFound {
 		t.Error(fmt.Errorf("return value indicates no problems, but output is not empty:\n%v", outData))
 	}
+
+	// passing as args for both importing file and imported file.
+	var import_snippets []Snippet
+
+	for _, filepath := range []string{"testdata/import.jsonnet", "testdata/call_integer.jsonnet"} {
+		input := read(filepath)
+		import_snippets = append(import_snippets, Snippet{FileName: filepath, Code: string(input)})
+	}
+
+	errorsFound = LintSnippet(vm, &outBuilder, snippets)
+	outData = outBuilder.String()
+	if outData == "" && errorsFound {
+		t.Error(fmt.Errorf("return value indicates problems present, but no output was produced"))
+	}
+	if outData != "" && !errorsFound {
+		t.Error(fmt.Errorf("return value indicates no problems, but output is not empty:\n%v", outData))
+	}
 }
 
 func TestLinter(t *testing.T) {

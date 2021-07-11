@@ -514,8 +514,8 @@ func (vm *VM) ImportAST(importedFrom, importedPath string) (contents ast.Node, f
 }
 
 // SnippetToAST parses a snippet and returns the resulting AST.
-func SnippetToAST(filename string, snippet string) (ast.Node, error) {
-	return program.SnippetToAST(ast.DiagnosticFileName(filename), filename, snippet)
+func (vm *VM) SnippetToAST(filename string, snippet string) (ast.Node, error) {
+	return vm.importCache.snippetToAST(ast.DiagnosticFileName(filename), filename, snippet)
 }
 
 // Version returns the Jsonnet version number.
