@@ -79,6 +79,7 @@ nfpms:
     formats:
       - deb
     bindir: /usr/bin
+    maintainer: David Cunningham <dcunnin@google.com>
     file_name_template: "jsonnetfmt-go_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     overrides:
       deb:
