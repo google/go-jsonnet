@@ -251,7 +251,7 @@ func buildSimpleIndex(obj ast.Node, member ast.Identifier) ast.Node {
 }
 
 func buildStdCall(builtinName ast.Identifier, loc ast.LocationRange, args ...ast.Node) ast.Node {
-	std := &ast.Var{Id: "std"}
+	std := &ast.Var{Id: "$std"}
 	builtin := buildSimpleIndex(std, builtinName)
 	positional := make([]ast.CommaSeparatedExpr, len(args))
 	for i := range args {

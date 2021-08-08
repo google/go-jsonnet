@@ -164,5 +164,5 @@ func analyzeVisit(a ast.Node, inObject bool, vars ast.IdentifierSet) error {
 // It enriches the AST with additional information about free variables in every node,
 // so it is necessary to always run it before executing the AST.
 func analyze(node ast.Node) error {
-	return analyzeVisit(node, false, ast.NewIdentifierSet("std"))
+	return analyzeVisit(node, false, ast.NewIdentifierSet("std", "$std"))
 }
