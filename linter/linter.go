@@ -62,7 +62,7 @@ func lint(vm *jsonnet.VM, nodes []nodeWithLocation, errWriter *ErrorWriter) {
 	}
 
 	findVariables := func(node nodeWithLocation) *common.VariableInfo {
-		return variables.FindVariables(node.node, variables.Environment{"std": &std})
+		return variables.FindVariables(node.node, variables.Environment{"std": &std, "$std": &std})
 	}
 
 	for importedPath, rootNode := range roots {

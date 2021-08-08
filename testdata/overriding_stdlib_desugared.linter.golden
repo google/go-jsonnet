@@ -1,0 +1,5 @@
+../testdata/overriding_stdlib_desugared:2:7-15 Unused variable: std
+
+local std = {};
+
+

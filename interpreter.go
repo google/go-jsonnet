@@ -1183,8 +1183,16 @@ func buildStdObject(i *interpreter) (*valueObject, error) {
 }
 
 func evaluateStd(i *interpreter) (value, error) {
+	// We are bootstrapping std before it is properly available.
+	// We need "$std" for desugaring.
+	// So, we're creating an empty thunk (evaluating will panic).
+	// We will fill it manually before it's evaluated, though.
+	// This "std" does not have std.thisFile.
+	stdThunk := &cachedThunk{}
 	beforeStdEnv := makeEnvironment(
-		bindingFrame{},
+		bindingFrame{
+			"$std": stdThunk,
+		},
 		makeUnboundSelfBinding(),
 	)
 	evalLoc := ast.MakeLocationRangeMessage("During evaluation of std")
@@ -1192,7 +1200,12 @@ func evaluateStd(i *interpreter) (value, error) {
 	node := astgen.StdAst
 	i.stack.setCurrentTrace(evalTrace)
 	defer i.stack.clearCurrentTrace()
-	return i.EvalInCleanEnv(&beforeStdEnv, node, false)
+	content, err := i.EvalInCleanEnv(&beforeStdEnv, node, false)
+	if err != nil {
+		return nil, err
+	}
+	stdThunk.content = content
+	return content, nil
 }
 
 func prepareExtVars(i *interpreter, ext vmExtMap, kind string) map[string]*cachedThunk {
@@ -1243,9 +1256,13 @@ func makeInitialEnv(filename string, baseStd *valueObject) environment {
 	fileSpecific := buildObject(ast.ObjectFieldHidden, map[string]value{
 		"thisFile": makeValueString(filename),
 	})
+
+	stdThunk := readyThunk(makeValueExtendedObject(baseStd, fileSpecific))
+
 	return makeEnvironment(
 		bindingFrame{
-			"std": readyThunk(makeValueExtendedObject(baseStd, fileSpecific)),
+			"std":  stdThunk,
+			"$std": stdThunk, // Unavailable to the user. To be used with desugaring.
 		},
 		makeUnboundSelfBinding(),
 	)
