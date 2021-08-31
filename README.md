@@ -34,6 +34,50 @@ brew install go-jsonnet
     - id: jsonnet-lint
 ```
 
+It can also be embedded in your own Go programs as a library:
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/google/go-jsonnet"
+)
+
+func main() {
+	vm := jsonnet.MakeVM()
+
+	snippet := `{
+		person1: {
+		    name: "Alice",
+		    welcome: "Hello " + self.name + "!",
+		},
+		person2: self.person1 { name: "Bob" },
+	}`
+
+	jsonStr, err := vm.EvaluateAnonymousSnippet("example1.jsonnet", snippet)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(jsonStr)
+	/*
+	   {
+	     "person1": {
+	         "name": "Alice",
+	         "welcome": "Hello Alice!"
+	     },
+	     "person2": {
+	         "name": "Bob",
+	         "welcome": "Hello Bob!"
+	     }
+	   }
+	*/
+}
+```
+
 ## Build instructions (go 1.11+)
 
 ```bash
