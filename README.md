@@ -51,7 +51,7 @@ func main() {
 
 	snippet := `{
 		person1: {
-			name: "Alice",
+		    name: "Alice",
 		    welcome: "Hello " + self.name + "!",
 		},
 		person2: self.person1 { name: "Bob" },
