@@ -30,3 +30,5 @@ gojsonnet.egg-info/
 /jsonnet-lint
 /jsonnet-deps
 /builtin-benchmark-results
+
+libjsonnet.wasm
