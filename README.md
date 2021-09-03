@@ -112,6 +112,18 @@ For additional target platform names, see the per-Go release definitions [here](
 
 Additionally if any files were moved around, see the section [Keeping the Bazel files up to date](#keeping-the-bazel-files-up-to-date).
 
+## Building libjsonnet.wasm
+
+```bash
+GOOS=js GOARCH=wasm go build -o libjsonnet.wasm ./cmd/wasm 
+```
+
+Or if using bazel:
+
+```
+bazel build //cmd/wasm:libjsonnet.wasm
+```
+
 ## Running tests
 
 ```bash

@@ -24,6 +24,7 @@ export OVERRIDE_DIR="$PWD/testdata/cpp-tests-override/"
 
 go build ./cmd/jsonnet
 go build ./cmd/jsonnetfmt
+GOOS=js GOARCH=wasm go build -o libjsonnet.wasm ./cmd/wasm
 
 export DISABLE_LIB_TESTS=true
 export DISABLE_ERROR_TESTS=true
