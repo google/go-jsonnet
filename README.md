@@ -11,7 +11,7 @@
 
 This an implementation of [Jsonnet](http://jsonnet.org/) in pure Go. It is a feature complete, production-ready implementation. It is compatible with the original [Jsonnet C++ implementation](https://github.com/google/jsonnet). Bindings to C and Python are available (but not battle-tested yet).
 
-This code is known to work on Go 1.11 and above. We recommend always using the newest stable release of Go.
+This code is known to work on Go 1.12 and above. We recommend always using the newest stable release of Go.
 
 ## Installation instructions
 
@@ -78,7 +78,7 @@ func main() {
 }
 ```
 
-## Build instructions (go 1.11+)
+## Build instructions (go 1.12+)
 
 ```bash
 git clone git@github.com:google/go-jsonnet.git
