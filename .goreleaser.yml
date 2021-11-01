@@ -15,7 +15,7 @@ builds:
       - arm64
     ignore:
       - goos: darwin
-      - goarch: 386
+        goarch: 386
 
     id: jsonnet
     main: ./cmd/jsonnet
@@ -36,7 +36,7 @@ builds:
       - arm64
     ignore:
       - goos: darwin
-      - goarch: 386
+        goarch: 386
 
     id: jsonnetfmt
     main: ./cmd/jsonnetfmt
