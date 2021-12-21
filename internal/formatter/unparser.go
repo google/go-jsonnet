@@ -85,8 +85,9 @@ func (u *unparser) fodderFill(fodder ast.Fodder, crowded bool, separateToken boo
 				u.write("  ")
 				u.write(fod.Comment[0])
 			}
+			u.write("\n")
 			if !skipTrailing {
-				for i := 0; i <= fod.Blanks; i++ {
+				for i := 0; i < fod.Blanks; i++ {
 					u.write("\n")
 				}
 				for i := 0; i < fod.Indent; i++ {
