@@ -194,8 +194,10 @@ func Format(filename string, input string, options Options) (string, error) {
 	u := &unparser{options: options}
 	u.unparse(node, false)
 	u.fillFinal(finalFodder, true, false)
-	// Final whitespace is stripped at lexing time.  Add a single new line
-	// as files ought to end with a new line.
-	u.write("\n")
+	if len(finalFodder) == 0 || finalFodder[len(finalFodder)-1].Kind == ast.FodderInterstitial {
+		// Final whitespace is stripped at lexing time.  If we didn't just output a new line in fillFinal,
+		// then add a single new line to ensure Jsonnet files end with a new line.
+		u.write("\n")
+	}
 	return u.string(), nil
 }
