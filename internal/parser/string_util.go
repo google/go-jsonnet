@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"unicode/utf16"
 	"unicode/utf8"
 
 	"github.com/google/go-jsonnet/ast"
@@ -67,9 +68,26 @@ func StringUnescape(loc *ast.LocationRange, s string) (string, error) {
 				if err != nil {
 					return "", errors.MakeStaticError(fmt.Sprintf("Unicode escape sequence was malformed: %s", s[0:4]), *loc)
 				}
-				code := int(codeBytes[0])*256 + int(codeBytes[1])
-				buf.WriteRune(rune(code))
 				i += 4
+				code := rune(int(codeBytes[0])*256 + int(codeBytes[1]))
+				if utf16.IsSurrogate(code) {
+					highSurrogate := code
+					if i+6 /*\uXXXX*/ > len(s) {
+						return "", errors.MakeStaticError("Truncated unicode surrogate pair escape sequence in string literal.", *loc)
+					}
+					if s[i:i+2] != "\\u" {
+						return "", errors.MakeStaticError("Unicode surrogate pair escape sequence missing low surrogate in string literal.", *loc)
+					}
+					i += 2
+					codeBytes, err := hex.DecodeString(s[i : i+4])
+					if err != nil {
+						return "", errors.MakeStaticError(fmt.Sprintf("Unicode low surrogate escape sequence was malformed: %s", s[0:4]), *loc)
+					}
+					i += 4
+					lowSurrogate := rune(int(codeBytes[0])*256 + int(codeBytes[1]))
+					code = utf16.DecodeRune(highSurrogate, lowSurrogate)
+				}
+				buf.WriteRune(code)
 			default:
 				return "", errors.MakeStaticError(fmt.Sprintf("Unknown escape sequence in string literal: \\%c", r2), *loc)
 			}
