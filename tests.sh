@@ -2,7 +2,7 @@
 
 set -e
 
-PYTHON_COMMAND=${PYTHON_COMMAND:=python}
+PYTHON_COMMAND=${PYTHON_COMMAND:=python3}
 JSONNET_CPP_DIR=${JSONNET_CPP_DIR:=$PWD/cpp-jsonnet}
 
 set -x
