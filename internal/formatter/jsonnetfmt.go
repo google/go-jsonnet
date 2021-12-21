@@ -134,6 +134,12 @@ func removeInitialNewlines(node ast.Node) {
 	}
 }
 
+func removeExtraTrailingNewlines(finalFodder ast.Fodder) {
+	if len(finalFodder) > 0 {
+		finalFodder[len(finalFodder)-1].Blanks = 0
+	}
+}
+
 func visitFile(p pass.ASTPass, node *ast.Node, finalFodder *ast.Fodder) {
 	p.File(p, node, finalFodder)
 }
@@ -183,10 +189,11 @@ func Format(filename string, input string, options Options) (string, error) {
 		visitor := FixIndentation{Options: options}
 		visitor.VisitFile(node, finalFodder)
 	}
+	removeExtraTrailingNewlines(finalFodder)
 
 	u := &unparser{options: options}
 	u.unparse(node, false)
-	u.fill(finalFodder, true, false)
+	u.fillFinal(finalFodder, true, false)
 	// Final whitespace is stripped at lexing time.  Add a single new line
 	// as files ought to end with a new line.
 	u.write("\n")

@@ -50,9 +50,10 @@ func (u *unparser) write(str string) {
 // creates a crowded situation where there was not one before).
 // If crowded is false and separateToken is false then no space is printed
 // after or before the fodder, even if the last fodder was an interstitial.
-func (u *unparser) fill(fodder ast.Fodder, crowded bool, separateToken bool) {
+func (u *unparser) fodderFill(fodder ast.Fodder, crowded bool, separateToken bool, final bool) {
 	var lastIndent int
-	for _, fod := range fodder {
+	for i, fod := range fodder {
+		skipTrailing := final && (i == (len(fodder) - 1))
 		switch fod.Kind {
 		case ast.FodderParagraph:
 			for i, l := range fod.Comment {
@@ -68,11 +69,13 @@ func (u *unparser) fill(fodder ast.Fodder, crowded bool, separateToken bool) {
 				}
 				u.write("\n")
 			}
-			for i := 0; i < fod.Blanks; i++ {
-				u.write("\n")
-			}
-			for i := 0; i < fod.Indent; i++ {
-				u.write(" ")
+			if !skipTrailing {
+				for i := 0; i < fod.Blanks; i++ {
+					u.write("\n")
+				}
+				for i := 0; i < fod.Indent; i++ {
+					u.write(" ")
+				}
 			}
 			lastIndent = fod.Indent
 			crowded = false
@@ -82,11 +85,13 @@ func (u *unparser) fill(fodder ast.Fodder, crowded bool, separateToken bool) {
 				u.write("  ")
 				u.write(fod.Comment[0])
 			}
-			for i := 0; i <= fod.Blanks; i++ {
-				u.write("\n")
-			}
-			for i := 0; i < fod.Indent; i++ {
-				u.write(" ")
+			if !skipTrailing {
+				for i := 0; i <= fod.Blanks; i++ {
+					u.write("\n")
+				}
+				for i := 0; i < fod.Indent; i++ {
+					u.write(" ")
+				}
 			}
 			lastIndent = fod.Indent
 			crowded = false
@@ -102,6 +107,14 @@ func (u *unparser) fill(fodder ast.Fodder, crowded bool, separateToken bool) {
 	if separateToken && crowded {
 		u.write(" ")
 	}
+}
+
+func (u *unparser) fill(fodder ast.Fodder, crowded bool, separateToken bool) {
+	u.fodderFill(fodder, crowded, separateToken, false)
+}
+
+func (u *unparser) fillFinal(fodder ast.Fodder, crowded bool, separateToken bool) {
+	u.fodderFill(fodder, crowded, separateToken, true)
 }
 
 func (u *unparser) unparseSpecs(spec *ast.ForSpec) {
