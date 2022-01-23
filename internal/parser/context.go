@@ -64,9 +64,7 @@ func DirectChildren(node ast.Node) []ast.Node {
 		return []ast.Node{node.Expr}
 	case *ast.Function:
 		return nil
-	case *ast.Import:
-		return nil
-	case *ast.ImportStr:
+	case *ast.Import, *ast.ImportStr, *ast.ImportBin:
 		return nil
 	case *ast.Index:
 		if node.Id != nil {
@@ -181,9 +179,7 @@ func thunkChildren(node ast.Node) []ast.Node {
 		return nil
 	case *ast.Function:
 		return nil
-	case *ast.Import:
-		return nil
-	case *ast.ImportStr:
+	case *ast.Import, *ast.ImportStr, *ast.ImportBin:
 		return nil
 	case *ast.Index:
 		return nil
@@ -304,9 +300,7 @@ func specialChildren(node ast.Node) []ast.Node {
 			}
 		}
 		return children
-	case *ast.Import:
-		return nil
-	case *ast.ImportStr:
+	case *ast.Import, *ast.ImportStr, *ast.ImportBin:
 		return nil
 	case *ast.Index:
 		return nil

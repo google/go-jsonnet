@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"unsafe"
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/internal/program"
@@ -58,19 +59,33 @@ type Importer interface {
 }
 
 // Contents is a representation of imported data. It is a simple
-// string wrapper, which makes it easier to enforce the caching policy.
+// byte wrapper, which makes it easier to enforce the caching policy.
 type Contents struct {
-	data *string
+	data *[]byte
 }
 
 func (c Contents) String() string {
+	// Construct string without copying underlying bytes.
+	// NB: This only works because c.data is not modified.
+	return *(*string)(unsafe.Pointer(c.data))
+}
+
+func (c Contents) Data() []byte {
 	return *c.data
 }
 
 // MakeContents creates Contents from a string.
 func MakeContents(s string) Contents {
+	data := []byte(s)
 	return Contents{
-		data: &s,
+		data: &data,
+	}
+}
+
+// MakeContentsRaw creates Contents from (possibly non-utf8) []byte data.
+func MakeContentsRaw(bytes []byte) Contents {
+	return Contents{
+		data: &bytes,
 	}
 }
 
@@ -137,6 +152,20 @@ func (cache *importCache) importString(importedFrom, importedPath string, i *int
 		return nil, i.Error(err.Error())
 	}
 	return makeValueString(data.String()), nil
+}
+
+// ImportString imports an array of bytes, caches it and then returns it.
+func (cache *importCache) importBinary(importedFrom, importedPath string, i *interpreter) (*valueArray, error) {
+	data, _, err := cache.importData(importedFrom, importedPath)
+	if err != nil {
+		return nil, i.Error(err.Error())
+	}
+	bytes := data.Data()
+	elements := make([]*cachedThunk, len(bytes))
+	for i := range bytes {
+		elements[i] = readyThunk(intToValue(int(bytes[i])))
+	}
+	return makeValueArray(elements), nil
 }
 
 func nodeToPV(i *interpreter, filename string, node ast.Node) *cachedThunk {
@@ -223,7 +252,7 @@ func (importer *FileImporter) tryPath(dir, importedPath string) (found bool, con
 		} else {
 			entry = &fsCacheEntry{
 				exists:   true,
-				contents: MakeContents(string(contentBytes)),
+				contents: MakeContentsRaw(contentBytes),
 			}
 		}
 		importer.fsCache[absPath] = entry

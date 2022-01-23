@@ -98,6 +98,7 @@ var tests = []string{
 
 	`import 'foo.jsonnet'`,
 	`importstr 'foo.text'`,
+	`importbin 'foo.bin'`,
 
 	`{a: b} + {c: d}`,
 	`{a: b}{c: d}`,
@@ -230,6 +231,8 @@ var errorTests = []testError{
 	{`import (a+b)`, `test:1:8-13 Computed imports are not allowed`},
 	{`importstr (a b)`, `test:1:14-15 Expected token ")" but got (IDENTIFIER, "b")`},
 	{`importstr (a+b)`, `test:1:11-16 Computed imports are not allowed`},
+	{`importbin (a b)`, `test:1:14-15 Expected token ")" but got (IDENTIFIER, "b")`},
+	{`importbin (a+b)`, `test:1:11-16 Computed imports are not allowed`},
 
 	{`local a = b ()`, `test:1:15 Expected , or ; but got end of file`},
 	{`local a = b; (a b)`, `test:1:17-18 Expected token ")" but got (IDENTIFIER, "b")`},
