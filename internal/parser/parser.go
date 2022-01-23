@@ -870,7 +870,7 @@ func (p *parser) parseTerminal() (ast.Node, errors.StaticError) {
 	tok := p.pop()
 	switch tok.kind {
 	case tokenAssert, tokenBraceR, tokenBracketR, tokenComma, tokenDot, tokenElse,
-		tokenError, tokenFor, tokenFunction, tokenIf, tokenIn, tokenImport, tokenImportStr,
+		tokenError, tokenFor, tokenFunction, tokenIf, tokenIn, tokenImport, tokenImportStr, tokenImportBin,
 		tokenLocal, tokenOperator, tokenParenR, tokenSemicolon, tokenTailStrict, tokenThen:
 		return nil, makeUnexpectedError(tok, "parsing terminal")
 
@@ -1116,6 +1116,23 @@ func (p *parser) parse(prec precedence) (ast.Node, errors.StaticError) {
 				return nil, errors.MakeStaticError("Block string literals not allowed in imports", *body.Loc())
 			}
 			return &ast.ImportStr{
+				NodeBase: ast.NewNodeBaseLoc(locFromTokenAST(begin, body), begin.fodder),
+				File:     lit,
+			}, nil
+		}
+		return nil, errors.MakeStaticError("Computed imports are not allowed", *body.Loc())
+
+	case tokenImportBin:
+		p.pop()
+		body, err := p.parse(maxPrecedence)
+		if err != nil {
+			return nil, err
+		}
+		if lit, ok := body.(*ast.LiteralString); ok {
+			if lit.Kind == ast.StringBlock {
+				return nil, errors.MakeStaticError("Block string literals not allowed in imports", *body.Loc())
+			}
+			return &ast.ImportBin{
 				NodeBase: ast.NewNodeBaseLoc(locFromTokenAST(begin, body), begin.fodder),
 				File:     lit,
 			}, nil

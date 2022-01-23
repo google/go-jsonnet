@@ -65,6 +65,7 @@ const (
 	tokenIf
 	tokenImport
 	tokenImportStr
+	tokenImportBin
 	tokenIn
 	tokenLocal
 	tokenNullLit
@@ -112,6 +113,7 @@ var tokenKindStrings = []string{
 	tokenIf:         "if",
 	tokenImport:     "import",
 	tokenImportStr:  "importstr",
+	tokenImportBin:  "importbin",
 	tokenIn:         "in",
 	tokenLocal:      "local",
 	tokenNullLit:    "null",
@@ -580,6 +582,8 @@ func getTokenKindFromID(str string) tokenKind {
 		return tokenImport
 	case "importstr":
 		return tokenImportStr
+	case "importbin":
+		return tokenImportBin
 	case "in":
 		return tokenIn
 	case "local":

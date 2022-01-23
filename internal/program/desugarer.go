@@ -441,6 +441,14 @@ func desugar(astPtr *ast.Node, objLevel int) (err error) {
 			return
 		}
 
+	case *ast.ImportBin:
+		// See comment in ast.Import.
+		var file ast.Node = node.File
+		err = desugar(&file, objLevel)
+		if err != nil {
+			return
+		}
+
 	case *ast.Index:
 		err = desugar(&node.Target, objLevel)
 		if err != nil {

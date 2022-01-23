@@ -124,6 +124,12 @@ func getImports(vm *jsonnet.VM, node nodeWithLocation, roots map[string]ast.Node
 		if err != nil {
 			errWriter.writeError(vm, errors.MakeStaticError(err.Error(), *node.Loc()))
 		}
+	case *ast.ImportBin:
+		p := node.File.Value
+		_, err := vm.ResolveImport(currentPath, p)
+		if err != nil {
+			errWriter.writeError(vm, errors.MakeStaticError(err.Error(), *node.Loc()))
+		}
 	default:
 		for _, c := range parser.Children(node) {
 			getImports(vm, nodeWithLocation{c, currentPath}, roots, errWriter)
