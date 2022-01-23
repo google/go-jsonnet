@@ -370,6 +370,10 @@ func (u *unparser) unparse(expr ast.Node, crowded bool) {
 		u.write("importstr")
 		u.unparse(node.File, true)
 
+	case *ast.ImportBin:
+		u.write("importbin")
+		u.unparse(node.File, true)
+
 	case *ast.Index:
 		u.unparse(node.Target, crowded)
 		u.fill(node.LeftBracketFodder, false, false) // Can also be DotFodder

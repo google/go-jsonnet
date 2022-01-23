@@ -48,6 +48,7 @@ type ASTPass interface {
 	Function(ASTPass, *ast.Function, Context)
 	Import(ASTPass, *ast.Import, Context)
 	ImportStr(ASTPass, *ast.ImportStr, Context)
+	ImportBin(ASTPass, *ast.ImportBin, Context)
 	Index(ASTPass, *ast.Index, Context)
 	Slice(ASTPass, *ast.Slice, Context)
 	Local(ASTPass, *ast.Local, Context)
@@ -282,6 +283,12 @@ func (*Base) ImportStr(p ASTPass, node *ast.ImportStr, ctx Context) {
 	p.LiteralString(p, node.File, ctx)
 }
 
+// ImportBin traverses that kind of node
+func (*Base) ImportBin(p ASTPass, node *ast.ImportBin, ctx Context) {
+	p.Fodder(p, &node.File.Fodder, ctx)
+	p.LiteralString(p, node.File, ctx)
+}
+
 // Index traverses that kind of node
 func (*Base) Index(p ASTPass, node *ast.Index, ctx Context) {
 	p.Visit(p, &node.Target, ctx)
@@ -419,6 +426,8 @@ func (*Base) Visit(p ASTPass, node *ast.Node, ctx Context) {
 		p.Import(p, node, ctx)
 	case *ast.ImportStr:
 		p.ImportStr(p, node, ctx)
+	case *ast.ImportBin:
+		p.ImportBin(p, node, ctx)
 	case *ast.Index:
 		p.Index(p, node, ctx)
 	case *ast.InSuper:
