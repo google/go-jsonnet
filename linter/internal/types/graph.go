@@ -133,6 +133,13 @@ func newTypeGraph(importFunc ImportFunc) *typeGraph {
 	})
 
 	g.newPlaceholder()
+	g._placeholders[numberArrayType] = concreteTP(TypeDesc{
+		ArrayDesc: &arrayDesc{
+			furtherContain: []placeholderID{numberType},
+		},
+	})
+
+	g.newPlaceholder()
 	g._placeholders[anyObjectType] = concreteTP(TypeDesc{
 		ObjectDesc: anyObjectDesc,
 	})

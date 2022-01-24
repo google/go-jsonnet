@@ -218,7 +218,7 @@ func calcTP(node ast.Node, varAt map[ast.Node]*common.Variable, g *typeGraph) ty
 	case *ast.ImportStr:
 		return tpRef(stringType)
 	case *ast.ImportBin:
-		return tpRef(anyArrayType)
+		return tpRef(numberArrayType)
 	case *ast.LiteralBoolean:
 		return tpRef(boolType)
 	case *ast.LiteralNull:
