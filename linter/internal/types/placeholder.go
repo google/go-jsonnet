@@ -13,6 +13,7 @@ const (
 	stringType
 	nullType
 	anyArrayType
+	numberArrayType
 	anyObjectType
 	anyFunctionType
 	stdlibType
