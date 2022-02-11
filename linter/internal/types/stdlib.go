@@ -109,6 +109,7 @@ func prepareStdlib(g *typeGraph) {
 		"manifestIni":        g.newSimpleFuncType(stringType, "ini"),
 		"manifestPython":     g.newSimpleFuncType(stringType, "v"),
 		"manifestPythonVars": g.newSimpleFuncType(stringType, "conf"),
+		"manifestTomlEx":     g.newSimpleFuncType(stringType, "value", "indent"),
 		"manifestJsonEx":     g.newSimpleFuncType(stringType, "value", "indent"),
 		"manifestYamlDoc":    g.newSimpleFuncType(stringType, "value"),
 		"manifestYamlStream": g.newSimpleFuncType(stringType, "value"),
