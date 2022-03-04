@@ -12,13 +12,20 @@ func SnippetToAST(diagnosticFilename ast.DiagnosticFileName, importedFilename, s
 	if err != nil {
 		return nil, err
 	}
-	err = desugarAST(&node)
-	if err != nil {
-		return nil, err
-	}
-	err = analyze(node)
-	if err != nil {
+	if err := PreprocessAst(&node); err != nil {
 		return nil, err
 	}
 	return node, nil
+}
+
+func PreprocessAst(node *ast.Node) error {
+	err := desugarAST(node)
+	if err != nil {
+		return err
+	}
+	err = analyze(*node)
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -4,7 +4,10 @@
 // customized using formatter.Options.
 package formatter
 
-import "github.com/google/go-jsonnet/internal/formatter"
+import (
+	"github.com/google/go-jsonnet/ast"
+	"github.com/google/go-jsonnet/internal/formatter"
+)
 
 // StringStyle controls how the reformatter rewrites string literals.
 // Strings that contain a ' or a " use the optimal syntax to avoid escaping
@@ -45,4 +48,9 @@ func DefaultOptions() Options {
 // according to the given options.
 func Format(filename string, input string, options Options) (string, error) {
 	return formatter.Format(filename, input, options)
+}
+
+// FormatAst returns code that is equivalent to its input AST.
+func FormatAst(node ast.Node, finalFodder ast.Fodder, options Options) string {
+	return formatter.FormatAst(node, finalFodder, options)
 }
