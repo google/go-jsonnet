@@ -991,6 +991,11 @@ func builtinSubstr(i *interpreter, inputStr, inputFrom, inputLen value) (value, 
 		return nil, makeRuntimeError(msg, i.getCurrentStackTrace())
 	}
 
+	if fromV.value < 0 {
+		msg := fmt.Sprintf("substr second parameter should be greater than zero, got %f", fromV.value)
+		return nil, makeRuntimeError(msg, i.getCurrentStackTrace())
+	}
+
 	lenV, err := i.getNumber(inputLen)
 	if err != nil {
 		msg := fmt.Sprintf("substr third parameter should be a number, got %s", inputLen.getType().name)
