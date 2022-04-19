@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - goVersion: "1"
+          - goVersion: "1.17"
             GOARCH: "amd64"
             SKIP_PYTHON_BINDINGS_TESTS: "0"
           # - goVersion: "1"
