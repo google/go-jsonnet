@@ -86,15 +86,17 @@ type importCache struct {
 	astCache            map[string]ast.Node
 	codeCache           map[string]potentialValue
 	importer            Importer
+	globalBinding       globalBindingMap
 }
 
 // makeImportCache creates an importCache using an Importer.
-func makeImportCache(importer Importer) *importCache {
+func makeImportCache(importer Importer, globalBinding globalBindingMap) *importCache {
 	return &importCache{
 		importer:            importer,
 		foundAtVerification: make(map[string]Contents),
 		astCache:            make(map[string]ast.Node),
 		codeCache:           make(map[string]potentialValue),
+		globalBinding:       globalBinding,
 	}
 }
 
@@ -125,7 +127,7 @@ func (cache *importCache) importAST(importedFrom, importedPath string) (ast.Node
 	if cachedNode, isCached := cache.astCache[foundAt]; isCached {
 		return cachedNode, foundAt, nil
 	}
-	node, err := program.SnippetToAST(ast.DiagnosticFileName(foundAt), foundAt, contents.String())
+	node, err := program.SnippetToAST(ast.DiagnosticFileName(foundAt), foundAt, contents.String(), cache.globalBinding.Identifiers()...)
 	cache.astCache[foundAt] = node
 	return node, foundAt, err
 }
@@ -140,7 +142,7 @@ func (cache *importCache) importString(importedFrom, importedPath string, i *int
 }
 
 func nodeToPV(i *interpreter, filename string, node ast.Node) *cachedThunk {
-	env := makeInitialEnv(filename, i.baseStd)
+	env := makeInitialEnv(filename, i.baseStd, i.globalBinding)
 	return &cachedThunk{
 		env:     &env,
 		body:    node,
@@ -170,7 +172,7 @@ func (cache *importCache) importCode(importedFrom, importedPath string, i *inter
 	var pv potentialValue
 	if cachedPV, isCached := cache.codeCache[foundAt]; !isCached {
 		// File hasn't been parsed and analyzed before, update the cache record.
-		env := makeInitialEnv(foundAt, i.baseStd)
+		env := makeInitialEnv(foundAt, i.baseStd, i.globalBinding)
 		pv = &cachedThunk{
 			env:     &env,
 			body:    node,

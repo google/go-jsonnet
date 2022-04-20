@@ -256,6 +256,8 @@ type interpreter struct {
 	// A part of std object common to all files
 	baseStd *valueObject
 
+	globalBinding globalBindingMap
+
 	// Keeps imports
 	importCache *importCache
 
@@ -1232,7 +1234,7 @@ func buildObject(hide ast.ObjectFieldHide, fields map[string]value) *valueObject
 	return makeValueSimpleObject(bindingFrame{}, fieldMap, nil, nil)
 }
 
-func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*NativeFunction, maxStack int, ic *importCache, traceOut io.Writer) (*interpreter, error) {
+func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*NativeFunction, globalBinding globalBindingMap, maxStack int, ic *importCache, traceOut io.Writer) (*interpreter, error) {
 	i := interpreter{
 		stack:       makeCallStack(maxStack),
 		importCache: ic,
@@ -1247,25 +1249,38 @@ func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*NativeFunction, maxS
 
 	i.baseStd = stdObj
 
+	i.globalBinding = globalBinding
+
 	i.extVars = prepareExtVars(&i, ext, "extvar")
 
 	return &i, nil
 }
 
-func makeInitialEnv(filename string, baseStd *valueObject) environment {
+func makeInitialEnv(filename string, baseStd *valueObject, globalBinding globalBindingMap) environment {
 	fileSpecific := buildObject(ast.ObjectFieldHidden, map[string]value{
 		"thisFile": makeValueString(filename),
 	})
 
+	// Create std binding
 	stdThunk := readyThunk(makeValueExtendedObject(baseStd, fileSpecific))
+	binding := bindingFrame{
+		"std":  stdThunk,
+		"$std": stdThunk, // Unavailable to the user. To be used with desugaring.
+	}
 
-	return makeEnvironment(
-		bindingFrame{
-			"std":  stdThunk,
-			"$std": stdThunk, // Unavailable to the user. To be used with desugaring.
-		},
+	// Create ENV
+	env := makeEnvironment(
+		binding,
 		makeUnboundSelfBinding(),
 	)
+
+	// Merge the global binding
+	for k, v := range globalBinding {
+		v.env = &env
+		binding[k] = v
+	}
+
+	return env
 }
 
 func manifestationTrace() traceElement {
@@ -1280,7 +1295,7 @@ func evaluateAux(i *interpreter, node ast.Node, tla vmExtMap) (value, error) {
 	evalTrace := traceElement{
 		loc: &evalLoc,
 	}
-	env := makeInitialEnv(node.Loc().FileName, i.baseStd)
+	env := makeInitialEnv(node.Loc().FileName, i.baseStd, i.globalBinding)
 	i.stack.setCurrentTrace(evalTrace)
 	result, err := i.EvalInCleanEnv(&env, node, false)
 	i.stack.clearCurrentTrace()
@@ -1310,9 +1325,9 @@ func evaluateAux(i *interpreter, node ast.Node, tla vmExtMap) (value, error) {
 
 // TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
 func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, ic *importCache, traceOut io.Writer, stringOutputMode bool) (string, error) {
+	globalBinding globalBindingMap, maxStack int, ic *importCache, traceOut io.Writer, stringOutputMode bool) (string, error) {
 
-	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic, traceOut)
+	i, err := buildInterpreter(ext, nativeFuncs, globalBinding, maxStack, ic, traceOut)
 	if err != nil {
 		return "", err
 	}
@@ -1339,9 +1354,9 @@ func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]
 
 // TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
 func evaluateMulti(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, ic *importCache, traceOut io.Writer, stringOutputMode bool) (map[string]string, error) {
+	globalBinding globalBindingMap, maxStack int, ic *importCache, traceOut io.Writer, stringOutputMode bool) (map[string]string, error) {
 
-	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic, traceOut)
+	i, err := buildInterpreter(ext, nativeFuncs, globalBinding, maxStack, ic, traceOut)
 	if err != nil {
 		return nil, err
 	}
@@ -1359,9 +1374,9 @@ func evaluateMulti(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[st
 
 // TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
 func evaluateStream(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, ic *importCache, traceOut io.Writer) ([]string, error) {
+	globalBinding globalBindingMap, maxStack int, ic *importCache, traceOut io.Writer) ([]string, error) {
 
-	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic, traceOut)
+	i, err := buildInterpreter(ext, nativeFuncs, globalBinding, maxStack, ic, traceOut)
 	if err != nil {
 		return nil, err
 	}

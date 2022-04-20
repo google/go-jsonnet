@@ -41,6 +41,7 @@ type VM struct {
 	ext            vmExtMap
 	tla            vmExtMap
 	nativeFuncs    map[string]*NativeFunction
+	globalBinding  globalBindingMap
 	importer       Importer
 	ErrorFormatter ErrorFormatter
 	StringOutput   bool
@@ -69,17 +70,28 @@ type vmExt struct {
 
 type vmExtMap map[string]vmExt
 
+type globalBindingMap bindingFrame
+
+func (m globalBindingMap) Identifiers() (out []ast.Identifier) {
+	for identifier := range m {
+		out = append(out, identifier)
+	}
+	return out
+}
+
 // MakeVM creates a new VM with default parameters.
 func MakeVM() *VM {
 	defaultImporter := &FileImporter{}
+	globalBinding := make(globalBindingMap)
 	return &VM{
 		MaxStack:       500,
 		ext:            make(vmExtMap),
 		tla:            make(vmExtMap),
 		nativeFuncs:    make(map[string]*NativeFunction),
+		globalBinding:  globalBinding,
 		ErrorFormatter: &termErrorFormatter{pretty: false, maxStackTraceSize: 20},
 		importer:       &FileImporter{},
-		importCache:    makeImportCache(defaultImporter),
+		importCache:    makeImportCache(defaultImporter, globalBinding),
 		traceOut:       os.Stderr,
 	}
 }
@@ -87,7 +99,7 @@ func MakeVM() *VM {
 // Fully flush cache. This should be executed when we are no longer sure that the source files
 // didn't change, for example when the importer changed.
 func (vm *VM) flushCache() {
-	vm.importCache = makeImportCache(vm.importer)
+	vm.importCache = makeImportCache(vm.importer, vm.globalBinding)
 }
 
 // Flush value cache. This should be executed when calculated values may no longer be up to date,
@@ -162,6 +174,19 @@ func (vm *VM) NativeFunction(f *NativeFunction) {
 	vm.flushValueCache()
 }
 
+// Bind registers a global identifier.
+func (vm *VM) Bind(identifier ast.Identifier, body ast.Node) {
+	vm.globalBinding[identifier] = &cachedThunk{body: body}
+	vm.flushValueCache()
+}
+
+func (vm *VM) GlobalVars() (out []ast.Identifier) {
+	for identifier := range vm.globalBinding {
+		out = append(out, identifier)
+	}
+	return out
+}
+
 type evalKind int
 
 const (
@@ -182,7 +207,7 @@ func (vm *VM) Evaluate(node ast.Node) (val string, err error) {
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	return evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
+	return evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.globalBinding, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
 }
 
 // EvaluateStream evaluates a Jsonnet program given by an Abstract Syntax Tree
@@ -193,7 +218,7 @@ func (vm *VM) EvaluateStream(node ast.Node) (output []string, err error) {
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	return evaluateStream(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut)
+	return evaluateStream(node, vm.ext, vm.tla, vm.nativeFuncs, vm.globalBinding, vm.MaxStack, vm.importCache, vm.traceOut)
 }
 
 // EvaluateMulti evaluates a Jsonnet program given by an Abstract Syntax Tree
@@ -205,7 +230,7 @@ func (vm *VM) EvaluateMulti(node ast.Node) (output map[string]string, err error)
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	return evaluateMulti(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
+	return evaluateMulti(node, vm.ext, vm.tla, vm.nativeFuncs, vm.globalBinding, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
 }
 
 func (vm *VM) evaluateSnippet(diagnosticFileName ast.DiagnosticFileName, filename string, snippet string, kind evalKind) (output interface{}, err error) {
@@ -214,17 +239,17 @@ func (vm *VM) evaluateSnippet(diagnosticFileName ast.DiagnosticFileName, filenam
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	node, err := program.SnippetToAST(diagnosticFileName, filename, snippet)
+	node, err := program.SnippetToAST(diagnosticFileName, filename, snippet, vm.GlobalVars()...)
 	if err != nil {
 		return "", err
 	}
 	switch kind {
 	case evalKindRegular:
-		output, err = evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
+		output, err = evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.globalBinding, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
 	case evalKindMulti:
-		output, err = evaluateMulti(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
+		output, err = evaluateMulti(node, vm.ext, vm.tla, vm.nativeFuncs, vm.globalBinding, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
 	case evalKindStream:
-		output, err = evaluateStream(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut)
+		output, err = evaluateStream(node, vm.ext, vm.tla, vm.nativeFuncs, vm.globalBinding, vm.MaxStack, vm.importCache, vm.traceOut)
 	}
 	if err != nil {
 		return "", err
@@ -514,8 +539,8 @@ func (vm *VM) ImportAST(importedFrom, importedPath string) (contents ast.Node, f
 }
 
 // SnippetToAST parses a snippet and returns the resulting AST.
-func SnippetToAST(filename string, snippet string) (ast.Node, error) {
-	return program.SnippetToAST(ast.DiagnosticFileName(filename), filename, snippet)
+func SnippetToAST(filename string, snippet string, globalVars ...ast.Identifier) (ast.Node, error) {
+	return program.SnippetToAST(ast.DiagnosticFileName(filename), filename, snippet, globalVars...)
 }
 
 // Version returns the Jsonnet version number.
