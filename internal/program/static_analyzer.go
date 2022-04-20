@@ -163,6 +163,12 @@ func analyzeVisit(a ast.Node, inObject bool, vars ast.IdentifierSet) error {
 // analyze checks variable references (these could be checked statically in Jsonnet).
 // It enriches the AST with additional information about free variables in every node,
 // so it is necessary to always run it before executing the AST.
-func analyze(node ast.Node) error {
-	return analyzeVisit(node, false, ast.NewIdentifierSet("std", "$std"))
+//
+// An optional list of global variables can be specified, the analyzer will consider them known.
+func analyze(node ast.Node, globalVars ...ast.Identifier) error {
+	vars := ast.NewIdentifierSet("std", "$std")
+	for _, v := range globalVars {
+		vars.Add(v)
+	}
+	return analyzeVisit(node, false, vars)
 }

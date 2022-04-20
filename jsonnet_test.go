@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/go-jsonnet/ast"
+	"github.com/google/go-jsonnet/internal/program"
 )
 
 type errorFormattingTest struct {
@@ -347,5 +348,49 @@ func TestSetTraceOut(t *testing.T) {
 	actual := removeExcessiveWhitespace(traceOut.String())
 	if actual != expected {
 		t.Errorf("Expected %q, but got %q", expected, actual)
+	}
+}
+
+func TestGlobalBinding(t *testing.T) {
+	vm := MakeVM()
+	vm.Bind("myVar", &ast.LiteralString{Value: "bar"})
+	fileName := "main.jsonnet"
+	snippet := `{foo: myVar}`
+	expected := "{\n   \"foo\": \"bar\"\n}\n"
+
+	// Analyze without global variable definition
+	_, err := program.SnippetToAST(ast.DiagnosticFileName(fileName), fileName, snippet)
+	expectedErr := "main.jsonnet:1:7-12 Unknown variable: myVar"
+	if err == nil {
+		t.Fatalf("Expected error, got nil.")
+	}
+	if err.Error() != expectedErr {
+		t.Fatalf("Unexpected error, want '%v', got '%v'.", expectedErr, err)
+	}
+
+	// Analyze with global variable definition
+	_, err = program.SnippetToAST(ast.DiagnosticFileName(fileName), fileName, snippet, "myVar")
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	// Evaluate
+	actual, err := vm.EvaluateAnonymousSnippet(fileName, snippet)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if actual != expected {
+		t.Errorf("output is not correct, want '%s' got '%s'", expected, actual)
+	}
+
+	// Evaluate with import
+	importer := &MemoryImporter{Data: map[string]Contents{"import.jsonnet": MakeContents(snippet)}}
+	vm.Importer(importer)
+	actual, err = vm.EvaluateAnonymousSnippet(fileName, `import "import.jsonnet"`)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if actual != expected {
+		t.Errorf("output is not correct, want '%s' got '%s'", expected, actual)
 	}
 }
