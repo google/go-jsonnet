@@ -1,17 +1,12 @@
 load(
-    "@io_bazel_rules_go//go:deps.bzl",
-    "go_register_toolchains",
-    "go_rules_dependencies",
-)
-load(
     "@bazel_gazelle//:deps.bzl",
     "gazelle_dependencies",
     "go_repository",
 )
+load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies")
 
-def jsonnet_go_dependencies(go_sdk_version = "host"):
+def jsonnet_go_dependencies():
     go_rules_dependencies()
-    go_register_toolchains(version = go_sdk_version)
     gazelle_dependencies()
     go_repository(
         name = "com_github_davecgh_go_spew",

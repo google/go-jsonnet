@@ -121,7 +121,7 @@ Additionally if any files were moved around, see the section [Keeping the Bazel 
 ## Building libjsonnet.wasm
 
 ```bash
-GOOS=js GOARCH=wasm go build -o libjsonnet.wasm ./cmd/wasm 
+GOOS=js GOARCH=wasm go build -o libjsonnet.wasm ./cmd/wasm
 ```
 
 Or if using bazel:
@@ -233,4 +233,38 @@ bazel run //:gazelle -- update-repos -from_file=go.mod -to_macro=bazel/deps.bzl%
 Similarly, after adding or removing Go source files, it may be necessary to synchronize the Bazel rules by running the following command:
 ```bash
 bazel run //:gazelle
+```
+
+## Using this repository from other Bazel workspaces
+
+To use `go-jsonnet` from a different Bazel workspace, add the repository
+and its dependencies to your WORKSPACE file.
+
+You will also need to register a Go toolchain.
+
+It should look like this:
+
+```
+JSONNET_VERSION = 0.18.0
+http_archive(
+	name = "jsonnet_go",
+    urls = [
+		"https://github.com/google/go-jsonnet/archive/v{version}.tar.gz".format(version = JSONNET_VERSION),
+    ],
+    strip_prefix = "go-jsonnet-{version}".format(version = JSONNET_VERSION),
+    sha256 = "369af561550ba8cff5dd7dd08a771805a38d795da3285221012cf3a2933b363e",
+)
+
+load("@jsonnet_go//bazel:repositories.bzl", "jsonnet_go_repositories")
+
+jsonnet_go_repositories()
+
+load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains")
+
+go_register_toolchains(version = "1.18")
+
+load("@jsonnet_go//bazel:deps.bzl", "jsonnet_go_dependencies")
+
+jsonnet_go_dependencies()
+
 ```
