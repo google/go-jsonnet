@@ -18,6 +18,5 @@ go_library(
         "//ast:go_default_library",
         "//internal/parser:go_default_library",
         "//linter/internal/common:go_default_library",
-        "//linter/internal/utils:go_default_library",
     ],
 )

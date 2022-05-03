@@ -28,6 +28,7 @@ go_library(
     deps = [
         "//:go_default_library",
         "//ast:go_default_library",
+        "//formatter:go_default_library",
     ],
 )
 

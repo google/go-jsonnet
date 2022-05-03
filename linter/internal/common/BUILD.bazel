@@ -5,5 +5,8 @@ go_library(
     srcs = ["common.go"],
     importpath = "github.com/google/go-jsonnet/linter/internal/common",
     visibility = ["//linter:__subpackages__"],
-    deps = ["//ast:go_default_library"],
+    deps = [
+        "//ast:go_default_library",
+        "//internal/errors:go_default_library",
+    ],
 )

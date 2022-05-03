@@ -2,15 +2,16 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "main.go",
-    ],
+    srcs = ["main.go"],
     importpath = "github.com/google/go-jsonnet/cmd/wasm",
     visibility = ["//visibility:private"],
-    deps = [
-        "//:go_default_library",
-        "//internal/formatter:go_default_library",
-    ],
+    deps = select({
+        "@io_bazel_rules_go//go/platform:js_wasm": [
+            "//:go_default_library",
+            "//internal/formatter:go_default_library",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 go_binary(
