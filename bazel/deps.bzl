@@ -7,6 +7,7 @@ load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies")
 
 def jsonnet_go_dependencies():
     go_rules_dependencies()
+    go_register_toolchains()
     gazelle_dependencies()
     go_repository(
         name = "com_github_davecgh_go_spew",
