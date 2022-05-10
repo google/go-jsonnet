@@ -240,7 +240,7 @@ bazel run //:gazelle
 To use `go-jsonnet` from a different Bazel workspace, add the repository
 and its dependencies to your WORKSPACE file.
 
-You will also need to register a Go toolchain.
+You will also need to register a Go toolchain (unless you already have one).
 
 It should look like this:
 
