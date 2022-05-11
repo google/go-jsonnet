@@ -93,6 +93,7 @@
     manifestIni: std.manifestIni(ini={main: {a: 1, b:2}, sections: {s1: {x: 1, y: 2}}}),
     manifestPython: std.manifestPython(v={a: {b: "c"}}),
     manifestPythonVars: std.manifestPythonVars(conf={a: {b: "c"}}),
+    manifestTomlEx: std.manifestTomlEx(value={a: {b: "c"}}, indent=" "),
     manifestJsonEx: std.manifestJsonEx(value={a: {b: "c"}}, indent=" "),
     manifestYamlDoc: std.manifestYamlDoc(value={a: {b: "c"}}),
     manifestYamlStream: std.manifestYamlStream(value=[42, {a: {b: "c"}}]),

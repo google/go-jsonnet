@@ -6,7 +6,6 @@ func prepareStdlib(g *typeGraph) {
 	g.newPlaceholder()
 
 	arrayOfString := anyArrayType
-	arrayOfNumber := anyArrayType
 	stringOrArray := anyType
 	stringOrNumber := anyType
 	jsonType := anyType // It actually cannot functions anywhere
@@ -75,7 +74,7 @@ func prepareStdlib(g *typeGraph) {
 		"codepoint":   g.newSimpleFuncType(numberType, "str"),
 		"char":        g.newSimpleFuncType(stringType, "n"),
 		"substr":      g.newSimpleFuncType(stringType, "str", "from", "len"),
-		"findSubstr":  g.newSimpleFuncType(arrayOfNumber, "pat", "str"),
+		"findSubstr":  g.newSimpleFuncType(numberArrayType, "pat", "str"),
 		"startsWith":  g.newSimpleFuncType(boolType, "a", "b"),
 		"endsWith":    g.newSimpleFuncType(boolType, "a", "b"),
 		"stripChars":  g.newSimpleFuncType(stringType, "str", "chars"),
@@ -101,7 +100,7 @@ func prepareStdlib(g *typeGraph) {
 		"parseHex":   g.newSimpleFuncType(numberType, "str"),
 		"parseJson":  g.newSimpleFuncType(jsonType, "str"),
 		"parseYaml":  g.newSimpleFuncType(jsonType, "str"),
-		"encodeUTF8": g.newSimpleFuncType(arrayOfNumber, "str"),
+		"encodeUTF8": g.newSimpleFuncType(numberArrayType, "str"),
 		"decodeUTF8": g.newSimpleFuncType(stringType, "arr"),
 
 		// Manifestation
@@ -109,6 +108,7 @@ func prepareStdlib(g *typeGraph) {
 		"manifestIni":        g.newSimpleFuncType(stringType, "ini"),
 		"manifestPython":     g.newSimpleFuncType(stringType, "v"),
 		"manifestPythonVars": g.newSimpleFuncType(stringType, "conf"),
+		"manifestTomlEx":     g.newSimpleFuncType(stringType, "value", "indent"),
 		"manifestJsonEx":     g.newSimpleFuncType(stringType, "value", "indent"),
 		"manifestYamlDoc":    g.newSimpleFuncType(stringType, "value"),
 		"manifestYamlStream": g.newSimpleFuncType(stringType, "value"),
@@ -119,7 +119,7 @@ func prepareStdlib(g *typeGraph) {
 		"makeArray":     g.newSimpleFuncType(anyArrayType, "sz", "func"),
 		"count":         g.newSimpleFuncType(numberType, "arr", "x"),
 		"member":        g.newSimpleFuncType(boolType, "arr", "x"),
-		"find":          g.newSimpleFuncType(arrayOfNumber, "value", "arr"),
+		"find":          g.newSimpleFuncType(numberArrayType, "value", "arr"),
 		"map":           g.newSimpleFuncType(anyArrayType, "func", "arr"),
 		"mapWithIndex":  g.newSimpleFuncType(anyArrayType, "func", "arr"),
 		"filterMap":     g.newSimpleFuncType(anyArrayType, "filter_func", "map_func", "arr"),
@@ -129,7 +129,7 @@ func prepareStdlib(g *typeGraph) {
 		"foldr":         g.newSimpleFuncType(anyType, "func", "arr", "init"),
 		"repeat":        g.newSimpleFuncType(anyArrayType, "what", "count"),
 		"slice":         g.newSimpleFuncType(arrayOfString, "indexable", "index", "end", "step"),
-		"range":         g.newSimpleFuncType(arrayOfNumber, "from", "to"),
+		"range":         g.newSimpleFuncType(numberArrayType, "from", "to"),
 		"join":          g.newSimpleFuncType(stringOrArray, "sep", "arr"),
 		"lines":         g.newSimpleFuncType(arrayOfString, "arr"),
 		"flattenArrays": g.newSimpleFuncType(anyArrayType, "arrs"),

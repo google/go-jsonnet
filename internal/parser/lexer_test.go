@@ -424,6 +424,12 @@ func TestImportstr(t *testing.T) {
 	})
 }
 
+func TestImportbin(t *testing.T) {
+	SingleTest(t, "importbin", "", Tokens{
+		{kind: tokenImportBin, data: "importbin"},
+	})
+}
+
 func TestIn(t *testing.T) {
 	SingleTest(t, "in", "", Tokens{
 		{kind: tokenIn, data: "in"},

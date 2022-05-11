@@ -110,10 +110,11 @@ func TestCustomImporter(t *testing.T) {
 		map[string]Contents{
 			"a.jsonnet": MakeContents("2 + 2"),
 			"b.jsonnet": MakeContents("3 + 3"),
+			"c.bin":     MakeContentsRaw([]byte{0xff, 0xfe, 0xfd}),
 		},
 	})
-	input := `[import "a.jsonnet", importstr "b.jsonnet"]`
-	expected := `[ 4, "3 + 3" ]`
+	input := `[import "a.jsonnet", importstr "b.jsonnet", importbin "c.bin"]`
+	expected := `[ 4, "3 + 3", [ 255, 254, 253 ] ]`
 	actual, err := vm.EvaluateSnippet("custom_import.jsonnet", input)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
@@ -160,7 +161,7 @@ func TestExtVarImportedFrom(t *testing.T) {
 	if actual != expected {
 		t.Errorf("Expected %q, but got %q", expected, actual)
 	}
-	expectedImportHistory := []importHistoryEntry{importHistoryEntry{"", "a.jsonnet"}}
+	expectedImportHistory := []importHistoryEntry{{"", "a.jsonnet"}}
 	if !reflect.DeepEqual(importer.history, expectedImportHistory) {
 		t.Errorf("Expected %q, but got %q", expectedImportHistory, importer.history)
 	}
@@ -187,7 +188,7 @@ func TestTLAImportedFrom(t *testing.T) {
 	if actual != expected {
 		t.Errorf("Expected %q, but got %q", expected, actual)
 	}
-	expectedImportHistory := []importHistoryEntry{importHistoryEntry{"", "a.jsonnet"}}
+	expectedImportHistory := []importHistoryEntry{{"", "a.jsonnet"}}
 	if !reflect.DeepEqual(importer.history, expectedImportHistory) {
 		t.Errorf("Expected %q, but got %q", expectedImportHistory, importer.history)
 	}
@@ -213,7 +214,7 @@ func TestAnonymousImportedFrom(t *testing.T) {
 	if actual != expected {
 		t.Errorf("Expected %q, but got %q", expected, actual)
 	}
-	expectedImportHistory := []importHistoryEntry{importHistoryEntry{"", "a.jsonnet"}}
+	expectedImportHistory := []importHistoryEntry{{"", "a.jsonnet"}}
 	if !reflect.DeepEqual(importer.history, expectedImportHistory) {
 		t.Errorf("Expected %q, but got %q", expectedImportHistory, importer.history)
 	}

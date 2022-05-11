@@ -317,6 +317,21 @@ func (vm *VM) findDependencies(filePath string, node *ast.Node, dependencies map
 			}
 		}
 		dependencies[cleanedAbsPath] = struct{}{}
+	case *ast.ImportBin:
+		foundAt, err := vm.ResolveImport(filePath, i.File.Value)
+		if err != nil {
+			*stackTrace = append([]traceFrame{{Loc: *i.Loc()}}, *stackTrace...)
+			return err
+		}
+		cleanedAbsPath = foundAt
+		if _, isFileImporter := vm.importer.(*FileImporter); isFileImporter {
+			cleanedAbsPath, err = getAbsPath(foundAt)
+			if err != nil {
+				*stackTrace = append([]traceFrame{{Loc: *i.Loc()}}, *stackTrace...)
+				return err
+			}
+		}
+		dependencies[cleanedAbsPath] = struct{}{}
 	default:
 		for _, node := range parser.Children(i) {
 			err = vm.findDependencies(filePath, &node, dependencies, stackTrace)
@@ -460,7 +475,7 @@ func (vm *VM) EvaluateFileMulti(filename string) (files map[string]string, forma
 	return output, nil
 }
 
-// FindDependencies returns a sorted array of unique transitive dependencies (via import or importstr)
+// FindDependencies returns a sorted array of unique transitive dependencies (via import/importstr/importbin)
 // from all the given `importedPaths` which are themselves excluded from the returned array.
 // The `importedPaths` are parsed as if they were imported from a Jsonnet file located at `importedFrom`.
 func (vm *VM) FindDependencies(importedFrom string, importedPaths []string) ([]string, error) {

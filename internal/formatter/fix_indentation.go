@@ -574,6 +574,11 @@ func (c *FixIndentation) Visit(expr ast.Node, currIndent indent, crowded bool) {
 		newIndent := c.newIndent(*openFodder(node.File), currIndent, c.column+1)
 		c.Visit(node.File, newIndent, true)
 
+	case *ast.ImportBin:
+		c.column += 9 // importbin
+		newIndent := c.newIndent(*openFodder(node.File), currIndent, c.column+1)
+		c.Visit(node.File, newIndent, true)
+
 	case *ast.InSuper:
 		c.Visit(node.Index, currIndent, crowded)
 		c.fill(node.InFodder, true, true, currIndent.lineUp)
