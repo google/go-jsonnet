@@ -47,6 +47,12 @@ type VM struct {
 	StringOutput   bool
 	importCache    *importCache
 	traceOut       io.Writer
+	notifier       Notifier
+}
+
+type Notifier interface {
+	// OnGeneratedValue notifies of each value generated using the native function, and its use.
+	OnGeneratedValue(fnName string, args []interface{}, value interface{}, steps []interface{})
 }
 
 // extKind indicates the kind of external variable that is being initialized for the VM
@@ -180,6 +186,10 @@ func (vm *VM) Bind(identifier ast.Identifier, body ast.Node) {
 	vm.flushValueCache()
 }
 
+func (vm *VM) Notifier(v Notifier) {
+	vm.notifier = v
+}
+
 func (vm *VM) GlobalVars() (out []ast.Identifier) {
 	for identifier := range vm.globalBinding {
 		out = append(out, identifier)
@@ -207,7 +217,7 @@ func (vm *VM) Evaluate(node ast.Node) (val string, err error) {
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	return evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.globalBinding, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
+	return evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.globalBinding, vm.MaxStack, vm.importCache, vm.traceOut, vm.notifier, vm.StringOutput)
 }
 
 // EvaluateStream evaluates a Jsonnet program given by an Abstract Syntax Tree
@@ -218,7 +228,7 @@ func (vm *VM) EvaluateStream(node ast.Node) (output []string, err error) {
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	return evaluateStream(node, vm.ext, vm.tla, vm.nativeFuncs, vm.globalBinding, vm.MaxStack, vm.importCache, vm.traceOut)
+	return evaluateStream(node, vm.ext, vm.tla, vm.nativeFuncs, vm.globalBinding, vm.MaxStack, vm.importCache, vm.traceOut, vm.notifier)
 }
 
 // EvaluateMulti evaluates a Jsonnet program given by an Abstract Syntax Tree
@@ -230,7 +240,7 @@ func (vm *VM) EvaluateMulti(node ast.Node) (output map[string]string, err error)
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	return evaluateMulti(node, vm.ext, vm.tla, vm.nativeFuncs, vm.globalBinding, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
+	return evaluateMulti(node, vm.ext, vm.tla, vm.nativeFuncs, vm.globalBinding, vm.MaxStack, vm.importCache, vm.traceOut, vm.notifier, vm.StringOutput)
 }
 
 func (vm *VM) evaluateSnippet(diagnosticFileName ast.DiagnosticFileName, filename string, snippet string, kind evalKind) (output interface{}, err error) {
@@ -245,11 +255,11 @@ func (vm *VM) evaluateSnippet(diagnosticFileName ast.DiagnosticFileName, filenam
 	}
 	switch kind {
 	case evalKindRegular:
-		output, err = evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.globalBinding, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
+		output, err = evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.globalBinding, vm.MaxStack, vm.importCache, vm.traceOut, vm.notifier, vm.StringOutput)
 	case evalKindMulti:
-		output, err = evaluateMulti(node, vm.ext, vm.tla, vm.nativeFuncs, vm.globalBinding, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
+		output, err = evaluateMulti(node, vm.ext, vm.tla, vm.nativeFuncs, vm.globalBinding, vm.MaxStack, vm.importCache, vm.traceOut, vm.notifier, vm.StringOutput)
 	case evalKindStream:
-		output, err = evaluateStream(node, vm.ext, vm.tla, vm.nativeFuncs, vm.globalBinding, vm.MaxStack, vm.importCache, vm.traceOut)
+		output, err = evaluateStream(node, vm.ext, vm.tla, vm.nativeFuncs, vm.globalBinding, vm.MaxStack, vm.importCache, vm.traceOut, vm.notifier)
 	}
 	if err != nil {
 		return "", err
