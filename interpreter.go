@@ -263,6 +263,8 @@ type interpreter struct {
 
 	// Output stream for trace() for
 	traceOut io.Writer
+
+	notifier Notifier
 }
 
 // Map union, b takes precedence when keys collide.
@@ -656,7 +658,7 @@ func unparseNumber(v float64) string {
 }
 
 // manifestJSON converts to standard JSON representation as in "encoding/json" package
-func (i *interpreter) manifestJSON(v value) (interface{}, error) {
+func (i *interpreter) manifestJSON(v value) (out interface{}, err error) {
 	// TODO(sbarzowski) Add nice stack traces indicating the part of the code which
 	// evaluates to non-manifestable value (that might require passing context about
 	// the root value)
@@ -665,12 +667,25 @@ func (i *interpreter) manifestJSON(v value) (interface{}, error) {
 	}
 
 	// Fresh frame for better stack traces
-	err := i.newCall(environment{}, false)
+	err = i.newCall(environment{}, false)
 	if err != nil {
 		return nil, err
 	}
 	stackSize := len(i.stack.stack)
 	defer i.stack.popIfExists(stackSize)
+	defer func() {
+		// Notify on generated value
+		if i.notifier != nil && err == nil && v.generatedByNativeFn() {
+			var steps []interface{}
+			for _, frame := range i.stack.stack {
+				// Skip pseudo-step (not ObjectFieldStep/ArrayIndexStep)
+				if frame.trace.step != nil {
+					steps = append(steps, frame.trace.step)
+				}
+			}
+			i.notifier.OnGeneratedValue(v.nativeFunction().Name, v.nativeFunctionArgs(), out, steps)
+		}
+	}()
 
 	switch v := v.(type) {
 
@@ -694,7 +709,8 @@ func (i *interpreter) manifestJSON(v value) (interface{}, error) {
 		for index, th := range v.elements {
 			msg := ast.MakeLocationRangeMessage(fmt.Sprintf("Array element %d", index))
 			i.stack.setCurrentTrace(traceElement{
-				loc: &msg,
+				loc:  &msg,
+				step: ArrayIndexStep{Index: index},
 			})
 			elVal, err := i.evaluatePV(th)
 			if err != nil {
@@ -731,7 +747,8 @@ func (i *interpreter) manifestJSON(v value) (interface{}, error) {
 		for _, fieldName := range fieldNames {
 			msg := ast.MakeLocationRangeMessage(fmt.Sprintf("Field %#v", fieldName))
 			i.stack.setCurrentTrace(traceElement{
-				loc: &msg,
+				loc:  &msg,
+				step: ObjectFieldStep{Field: fieldName},
 			})
 			fieldVal, err := v.index(i, fieldName)
 			if err != nil {
@@ -1238,12 +1255,13 @@ func buildObject(hide ast.ObjectFieldHide, fields map[string]value) *valueObject
 	return makeValueSimpleObject(bindingFrame{}, fieldMap, nil, nil)
 }
 
-func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*NativeFunction, globalBinding globalBindingMap, maxStack int, ic *importCache, traceOut io.Writer) (*interpreter, error) {
+func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*NativeFunction, globalBinding globalBindingMap, maxStack int, ic *importCache, traceOut io.Writer, notifier Notifier) (*interpreter, error) {
 	i := interpreter{
 		stack:       makeCallStack(maxStack),
 		importCache: ic,
 		traceOut:    traceOut,
 		nativeFuncs: nativeFuncs,
+		notifier:    notifier,
 	}
 
 	stdObj, err := buildStdObject(&i)
@@ -1329,9 +1347,9 @@ func evaluateAux(i *interpreter, node ast.Node, tla vmExtMap) (value, error) {
 
 // TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
 func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	globalBinding globalBindingMap, maxStack int, ic *importCache, traceOut io.Writer, stringOutputMode bool) (string, error) {
+	globalBinding globalBindingMap, maxStack int, ic *importCache, traceOut io.Writer, notifier Notifier, stringOutputMode bool) (string, error) {
 
-	i, err := buildInterpreter(ext, nativeFuncs, globalBinding, maxStack, ic, traceOut)
+	i, err := buildInterpreter(ext, nativeFuncs, globalBinding, maxStack, ic, traceOut, notifier)
 	if err != nil {
 		return "", err
 	}
@@ -1358,9 +1376,9 @@ func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]
 
 // TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
 func evaluateMulti(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	globalBinding globalBindingMap, maxStack int, ic *importCache, traceOut io.Writer, stringOutputMode bool) (map[string]string, error) {
+	globalBinding globalBindingMap, maxStack int, ic *importCache, traceOut io.Writer, notifier Notifier, stringOutputMode bool) (map[string]string, error) {
 
-	i, err := buildInterpreter(ext, nativeFuncs, globalBinding, maxStack, ic, traceOut)
+	i, err := buildInterpreter(ext, nativeFuncs, globalBinding, maxStack, ic, traceOut, notifier)
 	if err != nil {
 		return nil, err
 	}
@@ -1378,9 +1396,9 @@ func evaluateMulti(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[st
 
 // TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
 func evaluateStream(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	globalBinding globalBindingMap, maxStack int, ic *importCache, traceOut io.Writer) ([]string, error) {
+	globalBinding globalBindingMap, maxStack int, ic *importCache, traceOut io.Writer, notifier Notifier) ([]string, error) {
 
-	i, err := buildInterpreter(ext, nativeFuncs, globalBinding, maxStack, ic, traceOut)
+	i, err := buildInterpreter(ext, nativeFuncs, globalBinding, maxStack, ic, traceOut, notifier)
 	if err != nil {
 		return nil, err
 	}
@@ -1394,4 +1412,12 @@ func evaluateStream(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[s
 	manifested, err := i.manifestAndSerializeYAMLStream(result)
 	i.stack.clearCurrentTrace()
 	return manifested, err
+}
+
+type ObjectFieldStep struct {
+	Field string
+}
+
+type ArrayIndexStep struct {
+	Index int
 }

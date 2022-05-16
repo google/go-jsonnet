@@ -61,4 +61,5 @@ func traceElementToTraceFrame(trace traceElement) traceFrame {
 type traceElement struct {
 	loc     *ast.LocationRange
 	context ast.Context
+	step    interface{} // nil / ObjectFieldStep / ArrayIndexStep
 }

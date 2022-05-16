@@ -277,7 +277,11 @@ func (native *NativeFunction) evalCall(arguments callArguments, i *interpreter) 
 	if err != nil {
 		return nil, i.Error(err.Error())
 	}
-	return jsonToValue(i, resultJSON)
+	v, err := jsonToValue(i, resultJSON)
+	if err == nil {
+		v.setNativeFunction(native, nativeArgs)
+	}
+	return v, err
 }
 
 // Parameters returns a NativeFunction's parameters.
