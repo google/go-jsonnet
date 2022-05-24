@@ -60,23 +60,23 @@ func jsonnetEvaluateSnippet(this js.Value, p []js.Value) (interface{}, error) {
 	}
 	filename := p[0].String()
 	code := p[1].String()
-	files, err := processObjectParam("files", p[2].JSValue())
+	files, err := processObjectParam("files", p[2])
 	if err != nil {
 		return "", err
 	}
-	extStrs, err := processObjectParam("extStrs", p[3].JSValue())
+	extStrs, err := processObjectParam("extStrs", p[3])
 	if err != nil {
 		return "", err
 	}
-	extCodes, err := processObjectParam("extCodes", p[4].JSValue())
+	extCodes, err := processObjectParam("extCodes", p[4])
 	if err != nil {
 		return "", err
 	}
-	tlaStrs, err := processObjectParam("tlaStrs", p[5].JSValue())
+	tlaStrs, err := processObjectParam("tlaStrs", p[5])
 	if err != nil {
 		return "", err
 	}
-	tlaCodes, err := processObjectParam("tlaCodes", p[6].JSValue())
+	tlaCodes, err := processObjectParam("tlaCodes", p[6])
 	if err != nil {
 		return "", err
 	}
