@@ -952,6 +952,8 @@ func jsonToValue(i *interpreter, v interface{}) (value, error) {
 		return makeValueBoolean(v), nil
 	case float64:
 		return makeDoubleCheck(i, v)
+	case int:
+		return makeDoubleCheck(i, float64(v))
 
 	case map[string]interface{}:
 		fieldMap := map[string]value{}
