@@ -1,0 +1,14 @@
+{
+  "array": [
+    "foo",
+    "bar"
+  ],
+  "boolean": true,
+  "float": 1.2,
+  "int": 1,
+  "null": null,
+  "object": {
+    "key": "val"
+  },
+  "string": "string"
+}

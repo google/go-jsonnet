@@ -96,6 +96,22 @@ var nativeError = &NativeFunction{
 	},
 }
 
+var jsonToValueRegr = &NativeFunction{
+	Name:   "jsonToValueRegr",
+	Params: ast.Identifiers{},
+	Func: func(_ []interface{}) (interface{}, error) {
+		m := make(map[string]interface{})
+		m["null"] = nil
+		m["array"] = []interface{}{"foo", "bar"}
+		m["boolean"] = true
+		m["float"] = 1.2
+		m["int"] = 1
+		m["object"] = map[string]interface{}{"key": "val"}
+		m["string"] = "string"
+		return m, nil
+	},
+}
+
 type jsonnetInput struct {
 	name             string
 	input            []byte
@@ -136,6 +152,7 @@ func runInternalJsonnet(i jsonnetInput) jsonnetResult {
 
 	vm.NativeFunction(jsonToString)
 	vm.NativeFunction(nativeError)
+	vm.NativeFunction(jsonToValueRegr)
 
 	rawAST, _, staticErr := parser.SnippetToRawAST(ast.DiagnosticFileName(i.name), "", string(i.input))
 	if staticErr != nil {
