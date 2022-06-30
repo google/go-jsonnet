@@ -17,6 +17,7 @@ limitations under the License.
 package jsonnet
 
 import (
+	"fmt"
 	"github.com/google/go-jsonnet/ast"
 )
 
@@ -273,7 +274,15 @@ func (native *NativeFunction) evalCall(arguments callArguments, i *interpreter) 
 		}
 		nativeArgs = append(nativeArgs, json)
 	}
-	resultJSON, err := native.Func(nativeArgs)
+	call := func() (resultJSON interface{}, err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				err = fmt.Errorf("native function %#v panicked: %v", native.Name, r)
+			}
+		}()
+		return native.Func(nativeArgs)
+	}
+	resultJSON, err := call()
 	if err != nil {
 		return nil, i.Error(err.Error())
 	}
