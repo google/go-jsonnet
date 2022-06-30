@@ -96,6 +96,14 @@ var nativeError = &NativeFunction{
 	},
 }
 
+var nativePanic = &NativeFunction{
+	Name:   "nativePanic",
+	Params: ast.Identifiers{},
+	Func: func(x []interface{}) (interface{}, error) {
+		panic("native function panic")
+	},
+}
+
 type jsonnetInput struct {
 	name             string
 	input            []byte
@@ -136,6 +144,7 @@ func runInternalJsonnet(i jsonnetInput) jsonnetResult {
 
 	vm.NativeFunction(jsonToString)
 	vm.NativeFunction(nativeError)
+	vm.NativeFunction(nativePanic)
 
 	rawAST, _, staticErr := parser.SnippetToRawAST(ast.DiagnosticFileName(i.name), "", string(i.input))
 	if staticErr != nil {
