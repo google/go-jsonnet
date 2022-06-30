@@ -182,7 +182,11 @@ func (vm *VM) Evaluate(node ast.Node) (val string, err error) {
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	return evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
+	i, err := vm.buildInterpreter()
+	if err != nil {
+		return "", err
+	}
+	return evaluate(i, node, vm.tla, vm.StringOutput)
 }
 
 // EvaluateStream evaluates a Jsonnet program given by an Abstract Syntax Tree
@@ -193,7 +197,11 @@ func (vm *VM) EvaluateStream(node ast.Node) (output []string, err error) {
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	return evaluateStream(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut)
+	i, err := vm.buildInterpreter()
+	if err != nil {
+		return nil, err
+	}
+	return evaluateStream(i, node, vm.tla)
 }
 
 // EvaluateMulti evaluates a Jsonnet program given by an Abstract Syntax Tree
@@ -205,7 +213,11 @@ func (vm *VM) EvaluateMulti(node ast.Node) (output map[string]string, err error)
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	return evaluateMulti(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
+	i, err := vm.buildInterpreter()
+	if err != nil {
+		return nil, err
+	}
+	return evaluateMulti(i, node, vm.tla, vm.StringOutput)
 }
 
 func (vm *VM) evaluateSnippet(diagnosticFileName ast.DiagnosticFileName, filename string, snippet string, kind evalKind) (output interface{}, err error) {
@@ -214,17 +226,21 @@ func (vm *VM) evaluateSnippet(diagnosticFileName ast.DiagnosticFileName, filenam
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
+	i, err := vm.buildInterpreter()
+	if err != nil {
+		return "", err
+	}
 	node, err := program.SnippetToAST(diagnosticFileName, filename, snippet)
 	if err != nil {
 		return "", err
 	}
 	switch kind {
 	case evalKindRegular:
-		output, err = evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
+		output, err = evaluate(i, node, vm.tla, vm.StringOutput)
 	case evalKindMulti:
-		output, err = evaluateMulti(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput)
+		output, err = evaluateMulti(i, node, vm.tla, vm.StringOutput)
 	case evalKindStream:
-		output, err = evaluateStream(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut)
+		output, err = evaluateStream(i, node, vm.tla)
 	}
 	if err != nil {
 		return "", err
@@ -526,6 +542,26 @@ func (vm *VM) ImportData(importedFrom, importedPath string) (contents string, fo
 // It shares the cache with the actual evaluation.
 func (vm *VM) ImportAST(importedFrom, importedPath string) (contents ast.Node, foundAt string, err error) {
 	return vm.importCache.importAST(importedFrom, importedPath)
+}
+
+func (vm *VM) buildInterpreter() (*interpreter, error) {
+	i := interpreter{
+		stack:       makeCallStack(vm.MaxStack),
+		importCache: vm.importCache,
+		traceOut:    vm.traceOut,
+		nativeFuncs: vm.nativeFuncs,
+	}
+
+	stdObj, err := buildStdObject(&i)
+	if err != nil {
+		return nil, err
+	}
+
+	i.baseStd = stdObj
+
+	i.extVars = prepareExtVars(&i, vm.ext, "extvar")
+
+	return &i, nil
 }
 
 // SnippetToAST parses a snippet and returns the resulting AST.

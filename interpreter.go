@@ -1237,26 +1237,6 @@ func buildObject(hide ast.ObjectFieldHide, fields map[string]value) *valueObject
 	return makeValueSimpleObject(bindingFrame{}, fieldMap, nil, nil)
 }
 
-func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*NativeFunction, maxStack int, ic *importCache, traceOut io.Writer) (*interpreter, error) {
-	i := interpreter{
-		stack:       makeCallStack(maxStack),
-		importCache: ic,
-		traceOut:    traceOut,
-		nativeFuncs: nativeFuncs,
-	}
-
-	stdObj, err := buildStdObject(&i)
-	if err != nil {
-		return nil, err
-	}
-
-	i.baseStd = stdObj
-
-	i.extVars = prepareExtVars(&i, ext, "extvar")
-
-	return &i, nil
-}
-
 func makeInitialEnv(filename string, baseStd *valueObject) environment {
 	fileSpecific := buildObject(ast.ObjectFieldHidden, map[string]value{
 		"thisFile": makeValueString(filename),
@@ -1313,15 +1293,7 @@ func evaluateAux(i *interpreter, node ast.Node, tla vmExtMap) (value, error) {
 	return result, nil
 }
 
-// TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
-func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, ic *importCache, traceOut io.Writer, stringOutputMode bool) (string, error) {
-
-	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic, traceOut)
-	if err != nil {
-		return "", err
-	}
-
+func evaluate(i *interpreter, node ast.Node, tla vmExtMap, stringOutputMode bool) (string, error) {
 	result, err := evaluateAux(i, node, tla)
 	if err != nil {
 		return "", err
@@ -1342,15 +1314,7 @@ func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]
 	return buf.String(), nil
 }
 
-// TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
-func evaluateMulti(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, ic *importCache, traceOut io.Writer, stringOutputMode bool) (map[string]string, error) {
-
-	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic, traceOut)
-	if err != nil {
-		return nil, err
-	}
-
+func evaluateMulti(i *interpreter, node ast.Node, tla vmExtMap, stringOutputMode bool) (map[string]string, error) {
 	result, err := evaluateAux(i, node, tla)
 	if err != nil {
 		return nil, err
@@ -1362,15 +1326,7 @@ func evaluateMulti(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[st
 	return manifested, err
 }
 
-// TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
-func evaluateStream(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, ic *importCache, traceOut io.Writer) ([]string, error) {
-
-	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic, traceOut)
-	if err != nil {
-		return nil, err
-	}
-
+func evaluateStream(i *interpreter, node ast.Node, tla vmExtMap) ([]string, error) {
 	result, err := evaluateAux(i, node, tla)
 	if err != nil {
 		return nil, err
