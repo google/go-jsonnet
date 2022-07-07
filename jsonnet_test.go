@@ -2,6 +2,7 @@ package jsonnet
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -21,7 +22,7 @@ type errorFormattingTest struct {
 func genericTestErrorMessage(t *testing.T, tests []errorFormattingTest, format func(RuntimeError) string) {
 	for _, test := range tests {
 		vm := MakeVM()
-		rawOutput, err := vm.evaluateSnippet(ast.DiagnosticFileName(test.name), "", test.input, evalKindRegular)
+		rawOutput, err := vm.evaluateSnippet(context.Background(), ast.DiagnosticFileName(test.name), "", test.input, evalKindRegular)
 		var errString string
 		if err != nil {
 			switch typedErr := err.(type) {
@@ -348,5 +349,25 @@ func TestSetTraceOut(t *testing.T) {
 	actual := removeExcessiveWhitespace(traceOut.String())
 	if actual != expected {
 		t.Errorf("Expected %q, but got %q", expected, actual)
+	}
+}
+
+func TestContextCanceled(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	callback := &NativeFunction{
+		Name: "callback",
+		Func: func(_ []interface{}) (interface{}, error) {
+			cancel()
+			return "bar", nil
+		},
+	}
+
+	vm := MakeVM()
+	vm.NativeFunction(callback)
+
+	_, err := vm.EvaluateAnonymousSnippetContext(
+		ctx, "foo.jsonnet", `{"a": std.native("callback")(), "b": 1}`)
+	if err == nil || err.Error() != context.Canceled.Error() {
+		t.Errorf("Unexpected error: %v", err)
 	}
 }

@@ -18,6 +18,7 @@ package jsonnet
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 
@@ -27,7 +28,7 @@ import (
 
 // An ErrorFormatter formats errors with stacktraces and color.
 type ErrorFormatter interface {
-	// Format static, runtime, and unexpected errors prior to printing them.
+	// Format static, runtime, context, and unexpected errors prior to printing them.
 	Format(err error) string
 
 	// Set the the maximum length of stack trace before cropping.
@@ -63,6 +64,10 @@ func (ef *termErrorFormatter) SetColorFormatter(color ColorFormatter) {
 }
 
 func (ef *termErrorFormatter) Format(err error) string {
+	switch err {
+	case context.Canceled, context.DeadlineExceeded:
+		return err.Error()
+	}
 	switch err := err.(type) {
 	case RuntimeError:
 		return ef.formatRuntime(&err)

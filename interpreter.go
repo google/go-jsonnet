@@ -18,6 +18,7 @@ package jsonnet
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"math"
@@ -260,6 +261,9 @@ type interpreter struct {
 	// 1) Keeping environment (object we're in, variables)
 	// 2) Diagnostic information in case of failure
 	stack callStack
+
+	// Golang context, checked during evaluation and manifestation.
+	ctx context.Context
 }
 
 // Map union, b takes precedence when keys collide.
@@ -287,6 +291,10 @@ func (i *interpreter) newCall(env environment, trimmable bool) error {
 }
 
 func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
+	if err := i.ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	trace := traceElement{
 		loc:     a.Loc(),
 		context: a.Context(),
@@ -654,6 +662,10 @@ func unparseNumber(v float64) string {
 
 // manifestJSON converts to standard JSON representation as in "encoding/json" package
 func (i *interpreter) manifestJSON(v value) (interface{}, error) {
+	if err := i.ctx.Err(); err != nil {
+		return nil, err
+	}
+
 	// TODO(sbarzowski) Add nice stack traces indicating the part of the code which
 	// evaluates to non-manifestable value (that might require passing context about
 	// the root value)

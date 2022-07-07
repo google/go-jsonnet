@@ -18,6 +18,7 @@ package jsonnet
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -165,7 +166,7 @@ func runInternalJsonnet(i jsonnetInput) jsonnetResult {
 	testChildren(desugaredAST)
 
 	// TODO(sbarzowski) We should treat the tests as anonymous snippets or import them with an importer.
-	rawOutput, err := vm.evaluateSnippet(ast.DiagnosticFileName(i.name), i.name, string(i.input), i.eKind)
+	rawOutput, err := vm.evaluateSnippet(context.Background(), ast.DiagnosticFileName(i.name), i.name, string(i.input), i.eKind)
 	switch {
 	case err != nil:
 		// TODO(sbarzowski) perhaps somehow mark that we are processing

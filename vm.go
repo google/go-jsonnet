@@ -17,6 +17,7 @@ limitations under the License.
 package jsonnet
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -177,12 +178,17 @@ const version = "v0.20.0"
 // and returns serialized JSON as string.
 // TODO(sbarzowski) perhaps is should return JSON in standard Go representation
 func (vm *VM) Evaluate(node ast.Node) (val string, err error) {
+	return vm.EvaluateContext(context.Background(), node)
+}
+
+// EvaluateContext is like Evaluate, but also takes a context.
+func (vm *VM) EvaluateContext(ctx context.Context, node ast.Node) (val string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	i, err := vm.buildInterpreter()
+	i, err := vm.buildInterpreter(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -192,12 +198,17 @@ func (vm *VM) Evaluate(node ast.Node) (val string, err error) {
 // EvaluateStream evaluates a Jsonnet program given by an Abstract Syntax Tree
 // and returns an array of JSON strings.
 func (vm *VM) EvaluateStream(node ast.Node) (output []string, err error) {
+	return vm.EvaluateStreamContext(context.Background(), node)
+}
+
+// EvaluateStreamContext is like EvaluateStream, but also takes a context.
+func (vm *VM) EvaluateStreamContext(ctx context.Context, node ast.Node) (output []string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	i, err := vm.buildInterpreter()
+	i, err := vm.buildInterpreter(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -208,25 +219,30 @@ func (vm *VM) EvaluateStream(node ast.Node) (output []string, err error) {
 // and returns key-value pairs.
 // The keys are strings and the values are JSON strigns (serialized JSON).
 func (vm *VM) EvaluateMulti(node ast.Node) (output map[string]string, err error) {
+	return vm.EvaluateMultiContext(context.Background(), node)
+}
+
+// EvaluateMultiContext is like EvaluateMulti, but also takes a context.
+func (vm *VM) EvaluateMultiContext(ctx context.Context, node ast.Node) (output map[string]string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	i, err := vm.buildInterpreter()
+	i, err := vm.buildInterpreter(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return evaluateMulti(i, node, vm.tla, vm.StringOutput)
 }
 
-func (vm *VM) evaluateSnippet(diagnosticFileName ast.DiagnosticFileName, filename string, snippet string, kind evalKind) (output interface{}, err error) {
+func (vm *VM) evaluateSnippet(ctx context.Context, diagnosticFileName ast.DiagnosticFileName, filename string, snippet string, kind evalKind) (output interface{}, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	i, err := vm.buildInterpreter()
+	i, err := vm.buildInterpreter(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -341,7 +357,7 @@ func (vm *VM) findDependencies(filePath string, node *ast.Node, dependencies map
 //
 // Deprecated: Use EvaluateFile or EvaluateAnonymousSnippet instead.
 func (vm *VM) EvaluateSnippet(filename string, snippet string) (json string, formattedErr error) {
-	output, err := vm.evaluateSnippet(ast.DiagnosticFileName(filename), filename, snippet, evalKindRegular)
+	output, err := vm.evaluateSnippet(context.Background(), ast.DiagnosticFileName(filename), filename, snippet, evalKindRegular)
 	if err != nil {
 		return "", errors.New(vm.ErrorFormatter.Format(err))
 	}
@@ -356,7 +372,7 @@ func (vm *VM) EvaluateSnippet(filename string, snippet string) (json string, for
 //
 // Deprecated: Use EvaluateFileStream or EvaluateAnonymousSnippetStream instead.
 func (vm *VM) EvaluateSnippetStream(filename string, snippet string) (docs []string, formattedErr error) {
-	output, err := vm.evaluateSnippet(ast.DiagnosticFileName(filename), filename, snippet, evalKindStream)
+	output, err := vm.evaluateSnippet(context.Background(), ast.DiagnosticFileName(filename), filename, snippet, evalKindStream)
 	if err != nil {
 		return nil, errors.New(vm.ErrorFormatter.Format(err))
 	}
@@ -371,7 +387,7 @@ func (vm *VM) EvaluateSnippetStream(filename string, snippet string) (docs []str
 //
 // Deprecated: Use EvaluateFileMulti or EvaluateAnonymousSnippetMulti instead.
 func (vm *VM) EvaluateSnippetMulti(filename string, snippet string) (files map[string]string, formattedErr error) {
-	output, err := vm.evaluateSnippet(ast.DiagnosticFileName(filename), filename, snippet, evalKindMulti)
+	output, err := vm.evaluateSnippet(context.Background(), ast.DiagnosticFileName(filename), filename, snippet, evalKindMulti)
 	if err != nil {
 		return nil, errors.New(vm.ErrorFormatter.Format(err))
 	}
@@ -384,7 +400,12 @@ func (vm *VM) EvaluateSnippetMulti(filename string, snippet string) (files map[s
 //
 // The filename parameter is only used for error messages.
 func (vm *VM) EvaluateAnonymousSnippet(filename string, snippet string) (json string, formattedErr error) {
-	output, err := vm.evaluateSnippet(ast.DiagnosticFileName(filename), "", snippet, evalKindRegular)
+	return vm.EvaluateAnonymousSnippetContext(context.Background(), filename, snippet)
+}
+
+// EvaluateAnonymousSnippetContext is like EvaluateAnonymousSnippet, but also takes a context.
+func (vm *VM) EvaluateAnonymousSnippetContext(ctx context.Context, filename string, snippet string) (json string, formattedErr error) {
+	output, err := vm.evaluateSnippet(ctx, ast.DiagnosticFileName(filename), "", snippet, evalKindRegular)
 	if err != nil {
 		return "", errors.New(vm.ErrorFormatter.Format(err))
 	}
@@ -397,7 +418,12 @@ func (vm *VM) EvaluateAnonymousSnippet(filename string, snippet string) (json st
 //
 // The filename parameter is only used for error messages.
 func (vm *VM) EvaluateAnonymousSnippetStream(filename string, snippet string) (docs []string, formattedErr error) {
-	output, err := vm.evaluateSnippet(ast.DiagnosticFileName(filename), "", snippet, evalKindStream)
+	return vm.EvaluateAnonymousSnippetStreamContext(context.Background(), filename, snippet)
+}
+
+// EvaluateAnonymousSnippetStream is like EvaluateAnonymousSnippetStreamContext, but also takes a context.
+func (vm *VM) EvaluateAnonymousSnippetStreamContext(ctx context.Context, filename string, snippet string) (docs []string, formattedErr error) {
+	output, err := vm.evaluateSnippet(ctx, ast.DiagnosticFileName(filename), "", snippet, evalKindStream)
 	if err != nil {
 		return nil, errors.New(vm.ErrorFormatter.Format(err))
 	}
@@ -410,7 +436,12 @@ func (vm *VM) EvaluateAnonymousSnippetStream(filename string, snippet string) (d
 //
 // The filename parameter is only used for error messages.
 func (vm *VM) EvaluateAnonymousSnippetMulti(filename string, snippet string) (files map[string]string, formattedErr error) {
-	output, err := vm.evaluateSnippet(ast.DiagnosticFileName(filename), "", snippet, evalKindMulti)
+	return vm.EvaluateAnonymousSnippetMultiContext(context.Background(), filename, snippet)
+}
+
+// EvaluateAnonymousSnippetMultiContext is like EvaluateAnonymousSnippetMulti, but also takes a context.
+func (vm *VM) EvaluateAnonymousSnippetMultiContext(ctx context.Context, filename string, snippet string) (files map[string]string, formattedErr error) {
+	output, err := vm.evaluateSnippet(ctx, ast.DiagnosticFileName(filename), "", snippet, evalKindMulti)
 	if err != nil {
 		return nil, errors.New(vm.ErrorFormatter.Format(err))
 	}
@@ -423,11 +454,16 @@ func (vm *VM) EvaluateAnonymousSnippetMulti(filename string, snippet string) (fi
 //
 // The importer is used to fetch the contents of the file.
 func (vm *VM) EvaluateFile(filename string) (json string, formattedErr error) {
+	return vm.EvaluateFileContext(context.Background(), filename)
+}
+
+// EvaluateFileContext is like EvaluateFile, but also takes a context.
+func (vm *VM) EvaluateFileContext(ctx context.Context, filename string) (json string, formattedErr error) {
 	node, _, err := vm.ImportAST("", filename)
 	if err != nil {
 		return "", errors.New(vm.ErrorFormatter.Format(err))
 	}
-	output, err := vm.Evaluate(node)
+	output, err := vm.EvaluateContext(ctx, node)
 	if err != nil {
 		return "", errors.New(vm.ErrorFormatter.Format(err))
 	}
@@ -439,11 +475,16 @@ func (vm *VM) EvaluateFile(filename string) (json string, formattedErr error) {
 //
 // The importer is used to fetch the contents of the file.
 func (vm *VM) EvaluateFileStream(filename string) (docs []string, formattedErr error) {
+	return vm.EvaluateFileStreamContext(context.Background(), filename)
+}
+
+// EvaluateFileStreamContext is like EvaluateFileStream, but also takes a context.
+func (vm *VM) EvaluateFileStreamContext(ctx context.Context, filename string) (docs []string, formattedErr error) {
 	node, _, err := vm.ImportAST("", filename)
 	if err != nil {
 		return nil, errors.New(vm.ErrorFormatter.Format(err))
 	}
-	output, err := vm.EvaluateStream(node)
+	output, err := vm.EvaluateStreamContext(ctx, node)
 	if err != nil {
 		return nil, errors.New(vm.ErrorFormatter.Format(err))
 	}
@@ -455,11 +496,16 @@ func (vm *VM) EvaluateFileStream(filename string) (docs []string, formattedErr e
 //
 // The importer is used to fetch the contents of the file.
 func (vm *VM) EvaluateFileMulti(filename string) (files map[string]string, formattedErr error) {
+	return vm.EvaluateFileMultiContext(context.Background(), filename)
+}
+
+// EvaluateFileMultiContext is like EvaluateFileMulti, but also takes a context.
+func (vm *VM) EvaluateFileMultiContext(ctx context.Context, filename string) (files map[string]string, formattedErr error) {
 	node, _, err := vm.ImportAST("", filename)
 	if err != nil {
 		return nil, errors.New(vm.ErrorFormatter.Format(err))
 	}
-	output, err := vm.EvaluateMulti(node)
+	output, err := vm.EvaluateMultiContext(ctx, node)
 	if err != nil {
 		return nil, errors.New(vm.ErrorFormatter.Format(err))
 	}
@@ -544,12 +590,13 @@ func (vm *VM) ImportAST(importedFrom, importedPath string) (contents ast.Node, f
 	return vm.importCache.importAST(importedFrom, importedPath)
 }
 
-func (vm *VM) buildInterpreter() (*interpreter, error) {
+func (vm *VM) buildInterpreter(ctx context.Context) (*interpreter, error) {
 	i := interpreter{
 		stack:       makeCallStack(vm.MaxStack),
 		importCache: vm.importCache,
 		traceOut:    vm.traceOut,
 		nativeFuncs: vm.nativeFuncs,
+		ctx:         ctx,
 	}
 
 	stdObj, err := buildStdObject(&i)
