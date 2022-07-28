@@ -95,6 +95,7 @@
     manifestPythonVars: std.manifestPythonVars(conf={a: {b: "c"}}),
     manifestTomlEx: std.manifestTomlEx(value={a: {b: "c"}}, indent=" "),
     manifestJsonEx: std.manifestJsonEx(value={a: {b: "c"}}, indent=" "),
+    manifestJsonMinified: std.manifestJsonMinified(value={a: {b: "c"}}),
     manifestYamlDoc: std.manifestYamlDoc(value={a: {b: "c"}}),
     manifestYamlStream: std.manifestYamlStream(value=[42, {a: {b: "c"}}]),
     manifestXmlJsonml:  std.manifestXmlJsonml(value=["blah", {a: 42}]),
