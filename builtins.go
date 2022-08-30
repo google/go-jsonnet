@@ -1613,6 +1613,18 @@ func buildBuiltinMap(builtins []builtin) map[string]evalCallable {
 	return result
 }
 
+func builtinParseInt(i *interpreter, x value) (value, error) {
+	str, err := i.getString(x)
+	if err != nil {
+		return nil, err
+	}
+	res, err := strconv.ParseInt(str.getGoString(), 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	return makeValueNumber(float64(res)), nil
+}
+
 var funcBuiltins = buildBuiltinMap([]builtin{
 	builtinID,
 	&unaryBuiltin{name: "extVar", function: builtinExtVar, params: ast.Identifiers{"x"}},
@@ -1653,6 +1665,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&ternaryBuiltin{name: "strReplace", function: builtinStrReplace, params: ast.Identifiers{"str", "from", "to"}},
 	&unaryBuiltin{name: "base64Decode", function: builtinBase64Decode, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "base64DecodeBytes", function: builtinBase64DecodeBytes, params: ast.Identifiers{"str"}},
+	&unaryBuiltin{name: "parseInt", function: builtinParseInt, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseJson", function: builtinParseJSON, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseYaml", function: builtinParseYAML, params: ast.Identifiers{"str"}},
 	&generalBuiltin{name: "manifestJsonEx", function: builtinManifestJSONEx, params: []generalBuiltinParameter{{name: "value"}, {name: "indent"},
