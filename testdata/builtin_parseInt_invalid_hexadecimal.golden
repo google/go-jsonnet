@@ -1,0 +1,10 @@
+RUNTIME ERROR: 7B316 is not a base 10 integer
+-------------------------------------------------
+	testdata/builtin_parseInt_invalid_hexadecimal:1:1-22	$
+
+std.parseInt("7B316")
+
+-------------------------------------------------
+	During evaluation	
+
+

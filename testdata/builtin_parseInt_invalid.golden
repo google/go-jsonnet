@@ -1,0 +1,10 @@
+RUNTIME ERROR: hello is not a base 10 integer
+-------------------------------------------------
+	testdata/builtin_parseInt_invalid:1:1-22	$
+
+std.parseInt("hello")
+
+-------------------------------------------------
+	During evaluation	
+
+

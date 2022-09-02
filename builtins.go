@@ -1620,7 +1620,7 @@ func builtinParseInt(i *interpreter, x value) (value, error) {
 	}
 	res, err := strconv.ParseInt(str.getGoString(), 10, 64)
 	if err != nil {
-		return nil, err
+		return nil, i.Error(fmt.Sprintf("%s is not a base 10 integer", str.getGoString()))
 	}
 	return makeValueNumber(float64(res)), nil
 }
