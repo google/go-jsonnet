@@ -86,6 +86,10 @@
       4
    ],
    "format": "test blah 42",
+   "get": [
+      17,
+      42
+   ],
    "isArray": true,
    "isBoolean": true,
    "isFunction": true,
