@@ -226,7 +226,7 @@ func (s *callStack) getCurrentEnv(ast ast.Node) environment {
 
 // Build a binding frame containing specified variables.
 func (s *callStack) capture(freeVars ast.Identifiers) bindingFrame {
-	env := make(bindingFrame)
+	env := make(bindingFrame, len(freeVars))
 	for _, fv := range freeVars {
 		env[fv] = s.lookUpVarOrPanic(fv)
 	}
@@ -265,7 +265,7 @@ type interpreter struct {
 
 // Map union, b takes precedence when keys collide.
 func addBindings(a, b bindingFrame) bindingFrame {
-	result := make(bindingFrame)
+	result := make(bindingFrame, len(a))
 
 	for k, v := range a {
 		result[k] = v
@@ -390,7 +390,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 
 	case *ast.DesugaredObject:
 		// Evaluate all the field names.  Check for null, dups, etc.
-		fields := make(simpleObjectFieldMap)
+		fields := make(simpleObjectFieldMap, len(node.Fields))
 		for _, field := range node.Fields {
 			fieldNameValue, err := i.evaluate(field.Name, nonTailCall)
 			if err != nil {
@@ -512,7 +512,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		return makeValueString(node.Value), nil
 
 	case *ast.Local:
-		vars := make(bindingFrame)
+		vars := make(bindingFrame, len(node.Binds))
 		bindEnv := i.stack.getCurrentEnv(a)
 		for _, bind := range node.Binds {
 			th := cachedThunk{env: &bindEnv, body: bind.Body}
@@ -724,7 +724,7 @@ func (i *interpreter) manifestJSON(v value) (interface{}, error) {
 		}
 		i.stack.clearCurrentTrace()
 
-		result := make(map[string]interface{})
+		result := make(map[string]interface{}, len(fieldNames))
 
 		for _, fieldName := range fieldNames {
 			msg := ast.MakeLocationRangeMessage(fmt.Sprintf("Field %#v", fieldName))

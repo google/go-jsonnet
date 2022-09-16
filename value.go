@@ -354,22 +354,22 @@ func (f *valueFunction) parameters() []namedParameter {
 }
 
 func checkArguments(i *interpreter, args callArguments, params []namedParameter) error {
-
-	numPassed := len(args.positional)
+	numPositional := len(args.positional)
+	numNamed := len(args.named)
 	maxExpected := len(params)
 
-	if numPassed > maxExpected {
-		return i.Error(fmt.Sprintf("function expected %v positional argument(s), but got %v", maxExpected, numPassed))
+	if numPositional > maxExpected {
+		return i.Error(fmt.Sprintf("function expected %v positional argument(s), but got %v", maxExpected, numPositional))
 	}
 
 	// Parameter names the function will accept.
-	accepted := make(map[ast.Identifier]bool)
+	accepted := make(map[ast.Identifier]bool, maxExpected)
 	for _, param := range params {
 		accepted[param.name] = true
 	}
 
 	// Parameter names the call will bind.
-	received := make(map[ast.Identifier]bool)
+	received := make(map[ast.Identifier]bool, numPositional+numNamed)
 	for i := range args.positional {
 		received[params[i].name] = true
 	}
@@ -681,7 +681,7 @@ func findField(curr uncachedObject, minSuperDepth int, f string) (bool, simpleOb
 }
 
 func prepareFieldUpvalues(sb selfBinding, upValues bindingFrame, locals []objectLocal) bindingFrame {
-	newUpValues := make(bindingFrame)
+	newUpValues := make(bindingFrame, len(upValues))
 	for k, v := range upValues {
 		newUpValues[k] = v
 	}
