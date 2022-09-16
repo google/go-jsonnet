@@ -13,7 +13,7 @@ type IdentifierSet map[Identifier]struct{}
 
 // NewIdentifierSet creates and returns a reference to an empty set.
 func NewIdentifierSet(a ...Identifier) IdentifierSet {
-	s := make(IdentifierSet)
+	s := make(IdentifierSet, len(a))
 	for _, i := range a {
 		s.Add(i)
 	}

@@ -1386,7 +1386,7 @@ type builtin interface {
 }
 
 func flattenArgs(args callArguments, params []namedParameter, defaults []value) []*cachedThunk {
-	positions := make(map[ast.Identifier]int)
+	positions := make(map[ast.Identifier]int, len(params))
 	for i, param := range params {
 		positions[param.name] = i
 	}
@@ -1606,7 +1606,7 @@ var uopBuiltins = []*unaryBuiltin{
 }
 
 func buildBuiltinMap(builtins []builtin) map[string]evalCallable {
-	result := make(map[string]evalCallable)
+	result := make(map[string]evalCallable, len(builtins))
 	for _, b := range builtins {
 		result[string(b.Name())] = b
 	}
