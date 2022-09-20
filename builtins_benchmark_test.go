@@ -67,3 +67,7 @@ func Benchmark_Builtin_comparison(b *testing.B) {
 func Benchmark_Builtin_comparison2(b *testing.B) {
 	RunBenchmark(b, "comparison2")
 }
+
+func Benchmark_Builtin_foldl(b *testing.B) {
+	RunBenchmark(b, "foldl")
+}
