@@ -396,6 +396,68 @@ func builtinJoin(i *interpreter, sep, arrv value) (value, error) {
 	}
 }
 
+func builtinFoldl(i *interpreter, funcv, arrv, initv value) (value, error) {
+	fun, err := i.getFunction(funcv)
+	if err != nil {
+		return nil, err
+	}
+	var len int
+	var elements []*cachedThunk
+	switch arrType := arrv.(type) {
+	case valueString:
+		len = arrType.length()
+		for _, item := range arrType.getRunes() {
+			elements = append(elements, readyThunk(makeStringFromRunes([]rune{item})))
+		}
+	case *valueArray:
+		len = arrType.length()
+		elements = arrType.elements
+	default:
+		return nil, i.Error("foldl second parameter should be string or array, got " + arrType.getType().name)
+	}
+
+	accValue := initv
+	for counter := 0; counter < len; counter++ {
+		accValue, err = fun.call(i, args([]*cachedThunk{readyThunk(accValue), elements[counter]}...))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return accValue, nil
+}
+
+func builtinFoldr(i *interpreter, funcv, arrv, initv value) (value, error) {
+	fun, err := i.getFunction(funcv)
+	if err != nil {
+		return nil, err
+	}
+	var len int
+	var elements []*cachedThunk
+	switch arrType := arrv.(type) {
+	case valueString:
+		len = arrType.length()
+		for _, item := range arrType.getRunes() {
+			elements = append(elements, readyThunk(makeStringFromRunes([]rune{item})))
+		}
+	case *valueArray:
+		len = arrType.length()
+		elements = arrType.elements
+	default:
+		return nil, i.Error("foldr second parameter should be string or array, got " + arrType.getType().name)
+	}
+
+	accValue := initv
+	for counter := len - 1; counter >= 0; counter-- {
+		accValue, err = fun.call(i, args([]*cachedThunk{elements[counter], readyThunk(accValue)}...))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return accValue, nil
+}
+
 func builtinReverse(i *interpreter, arrv value) (value, error) {
 	arr, err := i.getArray(arrv)
 	if err != nil {
@@ -1636,6 +1698,8 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&binaryBuiltin{name: "join", function: builtinJoin, params: ast.Identifiers{"sep", "arr"}},
 	&unaryBuiltin{name: "reverse", function: builtinReverse, params: ast.Identifiers{"arr"}},
 	&binaryBuiltin{name: "filter", function: builtinFilter, params: ast.Identifiers{"func", "arr"}},
+	&ternaryBuiltin{name: "foldl", function: builtinFoldl, params: ast.Identifiers{"func", "arr", "init"}},
+	&ternaryBuiltin{name: "foldr", function: builtinFoldr, params: ast.Identifiers{"func", "arr", "init"}},
 	&binaryBuiltin{name: "range", function: builtinRange, params: ast.Identifiers{"from", "to"}},
 	&binaryBuiltin{name: "primitiveEquals", function: primitiveEquals, params: ast.Identifiers{"x", "y"}},
 	&binaryBuiltin{name: "equals", function: builtinEquals, params: ast.Identifiers{"x", "y"}},
