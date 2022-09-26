@@ -401,23 +401,23 @@ func builtinFoldl(i *interpreter, funcv, arrv, initv value) (value, error) {
 	if err != nil {
 		return nil, err
 	}
-	var len int
+	var numElements int
 	var elements []*cachedThunk
 	switch arrType := arrv.(type) {
 	case valueString:
-		len = arrType.length()
 		for _, item := range arrType.getRunes() {
 			elements = append(elements, readyThunk(makeStringFromRunes([]rune{item})))
 		}
+		numElements = len(elements)
 	case *valueArray:
-		len = arrType.length()
+		numElements = arrType.length()
 		elements = arrType.elements
 	default:
 		return nil, i.Error("foldl second parameter should be string or array, got " + arrType.getType().name)
 	}
 
 	accValue := initv
-	for counter := 0; counter < len; counter++ {
+	for counter := 0; counter < numElements; counter++ {
 		accValue, err = fun.call(i, args([]*cachedThunk{readyThunk(accValue), elements[counter]}...))
 		if err != nil {
 			return nil, err
@@ -432,23 +432,23 @@ func builtinFoldr(i *interpreter, funcv, arrv, initv value) (value, error) {
 	if err != nil {
 		return nil, err
 	}
-	var len int
+	var numElements int
 	var elements []*cachedThunk
 	switch arrType := arrv.(type) {
 	case valueString:
-		len = arrType.length()
 		for _, item := range arrType.getRunes() {
 			elements = append(elements, readyThunk(makeStringFromRunes([]rune{item})))
 		}
+		numElements = len(elements)
 	case *valueArray:
-		len = arrType.length()
+		numElements = arrType.length()
 		elements = arrType.elements
 	default:
 		return nil, i.Error("foldr second parameter should be string or array, got " + arrType.getType().name)
 	}
 
 	accValue := initv
-	for counter := len - 1; counter >= 0; counter-- {
+	for counter := numElements - 1; counter >= 0; counter-- {
 		accValue, err = fun.call(i, args([]*cachedThunk{elements[counter], readyThunk(accValue)}...))
 		if err != nil {
 			return nil, err
