@@ -620,11 +620,11 @@ type unboundField interface {
 // Example:
 // (A + B) + C
 //
-//        +
-//       / \
-//      +   C
-//     / \
-//    A   B
+//	    +
+//	   / \
+//	  +   C
+//	 / \
+//	A   B
 //
 // It is possible to create an arbitrary binary tree.
 // Note however, that because + is associative the only thing that matters
@@ -632,7 +632,6 @@ type unboundField interface {
 //
 // This represenation allows us to implement "+" in O(1),
 // but requires going through the tree and trying subsequent leafs for field access.
-//
 type extendedObject struct {
 	left, right          uncachedObject
 	totalInheritanceSize int

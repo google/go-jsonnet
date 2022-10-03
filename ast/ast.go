@@ -136,10 +136,11 @@ type IfSpec struct {
 //
 // It desugares to:
 // flatMap(\x ->
-//         flatMap(\y ->
-//                 flatMap(\z -> [expr], arr3)
-//                 arr2)
-//         arr3)
+//
+//	flatMap(\y ->
+//	        flatMap(\z -> [expr], arr3)
+//	        arr2)
+//	arr3)
 type ForSpec struct {
 	ForFodder  Fodder
 	VarFodder  Fodder
@@ -662,7 +663,8 @@ type DesugaredObject struct {
 // ---------------------------------------------------------------------------
 
 // ObjectComp represents object comprehension
-//   { [e]: e for x in e for.. if... }.
+//
+//	{ [e]: e for x in e for.. if... }.
 type ObjectComp struct {
 	NodeBase
 	Fields              ObjectFields
@@ -675,7 +677,8 @@ type ObjectComp struct {
 // ---------------------------------------------------------------------------
 
 // Parens represents parentheses
-//   ( e )
+//
+//	( e )
 type Parens struct {
 	NodeBase
 	Inner       Node
