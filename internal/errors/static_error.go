@@ -38,8 +38,8 @@ type StaticError interface {
 }
 
 type staticError struct {
-	loc ast.LocationRange
 	msg string
+	loc ast.LocationRange
 }
 
 func (err staticError) WithContext(context string) StaticError {

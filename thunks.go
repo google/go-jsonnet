@@ -18,6 +18,7 @@ package jsonnet
 
 import (
 	"fmt"
+
 	"github.com/google/go-jsonnet/ast"
 )
 
@@ -254,9 +255,9 @@ func makeClosure(env environment, function *ast.Function) *closure {
 
 // NativeFunction represents a function implemented in Go.
 type NativeFunction struct {
+	Name   string
 	Func   func([]interface{}) (interface{}, error)
 	Params ast.Identifiers
-	Name   string
 }
 
 // evalCall evaluates a call to a NativeFunction and returns the result.

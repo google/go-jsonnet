@@ -32,15 +32,14 @@ import (
 // TODO(sbarzowski) use it as a pointer in most places b/c it can sometimes be shared
 // for example it can be shared between array elements and function arguments
 type environment struct {
-	selfBinding selfBinding
-
 	// Bindings introduced in this frame. The way previous bindings are treated
 	// depends on the type of a frame.
 	// If cleanEnv == true then previous bindings are ignored (it's a clean
 	// environment with just the variables we have here).
 	// If cleanEnv == false then if this frame doesn't contain a binding
 	// previous bindings will be used.
-	upValues bindingFrame
+	upValues    bindingFrame
+	selfBinding selfBinding
 }
 
 func makeEnvironment(upValues bindingFrame, sb selfBinding) environment {
@@ -64,20 +63,20 @@ func (i *interpreter) getCurrentStackTrace() []traceFrame {
 }
 
 type callFrame struct {
+	// Tracing information about the place where it was called from.
+	trace traceElement
+
+	env environment
+
 	// True if it switches to a clean environment (function call or array element)
 	// False otherwise, e.g. for local
 	cleanEnv bool
-
-	// Tracing information about the place where it was called from.
-	trace traceElement
 
 	// Whether this frame can be removed from the stack when it doesn't affect
 	// the evaluation result, but in case of an error, it won't appear on the
 	// stack trace.
 	// It's used for tail call optimization.
 	trimmable bool
-
-	env environment
 }
 
 func dumpCallFrame(c *callFrame) string {
@@ -95,10 +94,10 @@ func dumpCallFrame(c *callFrame) string {
 }
 
 type callStack struct {
+	currentTrace traceElement
+	stack        []*callFrame
 	calls        int
 	limit        int
-	stack        []*callFrame
-	currentTrace traceElement
 }
 
 func dumpCallStack(c *callStack) string {
@@ -242,10 +241,8 @@ func makeCallStack(limit int) callStack {
 
 // Keeps current execution context and evaluates things
 type interpreter struct {
-	// Current stack. It is used for:
-	// 1) Keeping environment (object we're in, variables)
-	// 2) Diagnostic information in case of failure
-	stack callStack
+	// Output stream for trace() for
+	traceOut io.Writer
 
 	// External variables
 	extVars map[string]*cachedThunk
@@ -259,8 +256,10 @@ type interpreter struct {
 	// Keeps imports
 	importCache *importCache
 
-	// Output stream for trace() for
-	traceOut io.Writer
+	// Current stack. It is used for:
+	// 1) Keeping environment (object we're in, variables)
+	// 2) Diagnostic information in case of failure
+	stack callStack
 }
 
 // Map union, b takes precedence when keys collide.
@@ -414,7 +413,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 			if field.PlusSuper {
 				f = &plusSuperUnboundField{f}
 			}
-			fields[fieldName] = simpleObjectField{field.Hide, f}
+			fields[fieldName] = simpleObjectField{f, field.Hide}
 		}
 		var asserts []unboundField
 		for _, assert := range node.Asserts {
@@ -1181,7 +1180,7 @@ func buildStdObject(i *interpreter) (*valueObject, error) {
 	}
 
 	for name, value := range builtinFields {
-		obj.fields[name] = simpleObjectField{ast.ObjectFieldHidden, value}
+		obj.fields[name] = simpleObjectField{value, ast.ObjectFieldHidden}
 	}
 	return objVal.(*valueObject), nil
 }
@@ -1231,7 +1230,7 @@ func prepareExtVars(i *interpreter, ext vmExtMap, kind string) map[string]*cache
 func buildObject(hide ast.ObjectFieldHide, fields map[string]value) *valueObject {
 	fieldMap := simpleObjectFieldMap{}
 	for name, v := range fields {
-		fieldMap[name] = simpleObjectField{hide, &readyValue{v}}
+		fieldMap[name] = simpleObjectField{&readyValue{v}, hide}
 	}
 	return makeValueSimpleObject(bindingFrame{}, fieldMap, nil, nil)
 }

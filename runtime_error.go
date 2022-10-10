@@ -20,8 +20,8 @@ import "github.com/google/go-jsonnet/ast"
 
 // RuntimeError is an error discovered during evaluation of the program
 type RuntimeError struct {
-	StackTrace []traceFrame
 	Msg        string
+	StackTrace []traceFrame
 }
 
 func makeRuntimeError(msg string, stackTrace []traceFrame) RuntimeError {
@@ -40,8 +40,8 @@ func (err RuntimeError) Error() string {
 // traceFrame is tracing information about a single frame of the call stack.
 // TODO(sbarzowski) the difference from traceElement. Do we even need this?
 type traceFrame struct {
-	Loc  ast.LocationRange
 	Name string
+	Loc  ast.LocationRange
 }
 
 func traceElementToTraceFrame(trace traceElement) traceFrame {

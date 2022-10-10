@@ -23,8 +23,8 @@ import (
 )
 
 type importElem struct {
-	key            string
 	adjacentFodder ast.Fodder
+	key            string
 	bind           ast.LocalBind
 }
 
@@ -123,7 +123,7 @@ func extractImportElems(binds ast.LocalBinds, after ast.Fodder) []importElem {
 		newBind.VarFodder = before
 		theImport := bind.Body.(*ast.Import)
 		result = append(result,
-			importElem{theImport.File.Value, adjacent, newBind})
+			importElem{key: theImport.File.Value, adjacentFodder: adjacent, bind: newBind})
 		before = beforeNext
 	}
 	return result

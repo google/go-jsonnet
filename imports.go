@@ -218,13 +218,13 @@ func (cache *importCache) importCode(importedFrom, importedPath string, i *inter
 
 // FileImporter imports data from the filesystem.
 type FileImporter struct {
-	JPaths  []string
 	fsCache map[string]*fsCacheEntry
+	JPaths  []string
 }
 
 type fsCacheEntry struct {
-	exists   bool
 	contents Contents
+	exists   bool
 }
 
 func (importer *FileImporter) tryPath(dir, importedPath string) (found bool, contents Contents, foundHere string, err error) {

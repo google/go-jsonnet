@@ -33,11 +33,11 @@ var packageNameStripperRegexp = regexp.MustCompile(`\b[a-zA-Z_]+[a-zA-Z_0-9]+\.`
 
 // Options represents configuration option
 type Options struct {
-	StripPackageNames   bool
-	HidePrivateFields   bool
 	HomePackage         string
 	VariableName        string
 	VariableDescription string
+	StripPackageNames   bool
+	HidePrivateFields   bool
 }
 
 // Config is the default config used when calling Dump
@@ -48,7 +48,7 @@ var Config = Options{
 	VariableDescription: "",
 }
 
-type dumpState struct {
+type dumpState struct { // nolint:govet
 	w      io.Writer
 	depth  int
 	config *Options

@@ -71,13 +71,13 @@ func usage(o io.Writer) {
 }
 
 type config struct {
+	outputFile           string
+	inputFiles           []string
 	evalCreateOutputDirs bool
 	filenameIsCode       bool
 	inPlace              bool
-	inputFiles           []string
-	options              formatter.Options
-	outputFile           string
 	test                 bool
+	options              formatter.Options
 }
 
 func makeConfig() config {

@@ -28,10 +28,10 @@ type DiagnosticFileName string
 
 // Source represents a source file.
 type Source struct {
-	Lines []string
 	// DiagnosticFileName is the imported path or a special string
 	// for indicating stdin, extvars and other non-imported sources.
 	DiagnosticFileName DiagnosticFileName
+	Lines              []string
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -68,11 +68,11 @@ func LocationBefore(a Location, b Location) bool {
 
 // LocationRange represents a range of a source file.
 type LocationRange struct {
+	File *Source
 	// FileName should be the imported path or "" for snippets etc.
 	FileName string
 	Begin    Location
 	End      Location // TODO(sbarzowski) inclusive? exclusive? a gap?
-	File     *Source
 }
 
 // LocationRangeBetween returns a LocationRange containing both a and b.
@@ -164,7 +164,7 @@ func BuildSource(dFilename DiagnosticFileName, s string) *Source {
 	rest := lineBuf.String()
 	// Stuff after last end-of-line (EOF or some more code)
 	result = append(result, rest+"\n")
-	return &Source{result, dFilename}
+	return &Source{dFilename, result}
 }
 
 func trimToLine(loc LocationRange, line int) LocationRange {
@@ -188,7 +188,9 @@ func trimToLine(loc LocationRange, line int) LocationRange {
 // LineBeginning returns the part of a line directly before LocationRange
 // for example:
 // local x = foo()
-//           ^^^^^ <- LocationRange loc
+//
+//	^^^^^ <- LocationRange loc
+//
 // then
 // local x = foo()
 // ^^^^^^^^^^ <- lineBeginning(loc)
@@ -204,10 +206,13 @@ func LineBeginning(loc *LocationRange) LocationRange {
 // LineEnding returns the part of a line directly after LocationRange
 // for example:
 // local x = foo() + test
-//           ^^^^^ <- LocationRange loc
+//
+//	^^^^^ <- LocationRange loc
+//
 // then
 // local x = foo() + test
-//                ^^^^^^^ <- lineEnding(loc)
+//
+//	^^^^^^^ <- lineEnding(loc)
 func LineEnding(loc *LocationRange) LocationRange {
 	return LocationRange{
 		Begin:    loc.End,

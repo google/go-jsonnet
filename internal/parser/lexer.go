@@ -147,15 +147,13 @@ func (tk tokenKind) String() string {
 }
 
 type token struct {
-	kind   tokenKind  // The type of the token
 	fodder ast.Fodder // Any fodder that occurs before this token
 	data   string     // Content of the token if it is not a keyword
-
 	// Extra info for when kind == tokenStringBlock
 	stringBlockIndent     string // The sequence of whitespace that indented the block.
 	stringBlockTermIndent string // This is always fewer whitespace characters than in stringBlockIndent.
-
-	loc ast.LocationRange
+	loc                   ast.LocationRange
+	kind                  tokenKind // The type of the token
 }
 
 // Tokens is a slice of token structs.
@@ -283,8 +281,6 @@ type lexer struct {
 	input              string                 // The input string
 	source             *ast.Source
 
-	pos position // Current position in input
-
 	tokens Tokens // The tokens that we've generated so far
 
 	// Information about the token we are working on right now
@@ -294,6 +290,8 @@ type lexer struct {
 
 	// Was the last rune the first rune on a line (ignoring initial whitespace).
 	freshLine bool
+
+	pos position // Current position in input
 }
 
 const lexEOF = -1

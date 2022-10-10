@@ -66,10 +66,10 @@ const (
 
 // FodderElement is a single piece of fodder.
 type FodderElement struct {
+	Comment []string
 	Kind    FodderKind
 	Blanks  int
 	Indent  int
-	Comment []string
 }
 
 // MakeFodderElement is a helper function that checks some preconditions.
