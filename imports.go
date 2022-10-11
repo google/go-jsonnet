@@ -70,6 +70,7 @@ func (c Contents) String() string {
 	return *(*string)(unsafe.Pointer(c.data))
 }
 
+// Data returns content bytes
 func (c Contents) Data() []byte {
 	return *c.data
 }
