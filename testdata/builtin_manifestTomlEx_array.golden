@@ -1,0 +1,13 @@
+RUNTIME ERROR: TOML body must be an object. Got array
+-------------------------------------------------
+	testdata/builtin_manifestTomlEx_array:11:10-41	object <anonymous>
+
+  array: std.manifestTomlEx(array, '  '),
+
+-------------------------------------------------
+	Field "array"	
+
+-------------------------------------------------
+	During manifestation	
+
+
