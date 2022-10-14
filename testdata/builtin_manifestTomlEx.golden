@@ -1,0 +1,4 @@
+{
+   "object": "abc = \"def\"\nbam = true\nbar = \"baz\"\nbaz = 1\nbazel = 1.4199999999999999\nbim = false\nboom = -1\nfoo = \"baz\"\n\n[blamo]\n  cereal = [\n    \"<>& fizbuzz\",\n    [ \"a\", [ \"b\" ] ]\n  ]\n\n  [[blamo.treats]]\n    name = \"chocolate\"",
+   "object2": "\"\\\"\" = 4\narray = [\n  \"s\",\n  1,\n  [ 2, 3 ],\n  { a = [ \"0\", \"z\" ], r = 6 }\n]\nbool = true\nemptyArray = []\nkey = \"value\"\nnotBool = false\nnumber = 7\n\n[[arraySection]]\n  q = 1\n\n[[arraySection]]\n  w = 2\n\n[[emptyArraySection]]\n\n[emptySection]\n\n[\"escaped\\\"Section\"]\n  z = \"q\"\n\n[section]\n  a = 1\n\n  [[section.array]]\n    c = 3\n\n  [[section.array]]\n    d = 4\n\n  [section.\"e$caped\"]\n    q = \"t\"\n\n  [section.nested]\n    b = 2\n\n  [[section.nestedArray]]\n    k = \"v\"\n\n    [section.nestedArray.nested]\n      e = 5\n\n[simple]\n  t = 5"
+}

@@ -60,6 +60,10 @@ func Benchmark_Builtin_manifestJsonEx(b *testing.B) {
 	RunBenchmark(b, "manifestJsonEx")
 }
 
+func Benchmark_Builtin_manifestTomlEx(b *testing.B) {
+	RunBenchmark(b, "manifestTomlEx")
+}
+
 func Benchmark_Builtin_comparison(b *testing.B) {
 	RunBenchmark(b, "comparison")
 }
