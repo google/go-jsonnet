@@ -187,13 +187,12 @@ func trimToLine(loc LocationRange, line int) LocationRange {
 
 // LineBeginning returns the part of a line directly before LocationRange
 // for example:
-// local x = foo()
 //
-//	^^^^^ <- LocationRange loc
-//
-// then
-// local x = foo()
-// ^^^^^^^^^^ <- lineBeginning(loc)
+//	local x = foo()
+//	          ^^^^^ <- LocationRange loc
+//	then
+//	local x = foo()
+//	^^^^^^^^^^ <- lineBeginning(loc)
 func LineBeginning(loc *LocationRange) LocationRange {
 	return LocationRange{
 		Begin:    Location{Line: loc.Begin.Line, Column: 1},
@@ -205,14 +204,12 @@ func LineBeginning(loc *LocationRange) LocationRange {
 
 // LineEnding returns the part of a line directly after LocationRange
 // for example:
-// local x = foo() + test
 //
-//	^^^^^ <- LocationRange loc
-//
-// then
-// local x = foo() + test
-//
-//	^^^^^^^ <- lineEnding(loc)
+//	local x = foo() + test
+//	          ^^^^^ <- LocationRange loc
+//	then
+//	local x = foo() + test
+//	               ^^^^^^^ <- lineEnding(loc)
 func LineEnding(loc *LocationRange) LocationRange {
 	return LocationRange{
 		Begin:    loc.End,

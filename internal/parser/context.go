@@ -144,8 +144,7 @@ func DirectChildren(node ast.Node) []ast.Node {
 // It supports ASTs before and after desugaring.
 //
 // TODO(sbarzowski) Make sure it works well with boundary cases like tailstrict arguments,
-//
-//	make it more precise.
+// make it more precise.
 //
 // Rules:
 // * (same-environment) They must be evaluated in the same environment as their parent

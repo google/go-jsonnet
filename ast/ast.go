@@ -135,12 +135,12 @@ type IfSpec struct {
 // The if is attached to the y forspec.
 //
 // It desugares to:
-// flatMap(\x ->
 //
-//	flatMap(\y ->
-//	        flatMap(\z -> [expr], arr3)
-//	        arr2)
-//	arr3)
+//	flatMap(\x ->
+//	        flatMap(\y ->
+//	                flatMap(\z -> [expr], arr3)
+//	                arr2)
+//	        arr3)
 type ForSpec struct {
 	ForFodder  Fodder
 	VarFodder  Fodder
