@@ -75,3 +75,19 @@ func Benchmark_Builtin_comparison2(b *testing.B) {
 func Benchmark_Builtin_foldl(b *testing.B) {
 	RunBenchmark(b, "foldl")
 }
+
+func Benchmark_Builtin_member(b *testing.B) {
+	RunBenchmark(b, "member")
+}
+
+func Benchmark_Builtin_lstripChars(b *testing.B) {
+	RunBenchmark(b, "lstripChars")
+}
+
+func Benchmark_Builtin_rstripChars(b *testing.B) {
+	RunBenchmark(b, "rstripChars")
+}
+
+func Benchmark_Builtin_stripChars(b *testing.B) {
+	RunBenchmark(b, "stripChars")
+}
