@@ -529,6 +529,31 @@ func builtinLstripChars(i *interpreter, str, chars value) (value, error) {
 	}
 }
 
+func builtinRstripChars(i *interpreter, str, chars value) (value, error) {
+	switch strType := str.(type) {
+	case valueString:
+		if strType.length() > 0 {
+			index, err := strType.index(i, strType.length()-1)
+			if err != nil {
+				return nil, err
+			}
+			member, err := rawMember(i, chars, index)
+			if err != nil {
+				return nil, err
+			}
+			if member {
+				s := strType.getGoString()[:strType.length()-1]
+				return builtinRstripChars(i, makeValueString(s), chars)
+			} else {
+				return str, nil
+			}
+		}
+		return str, nil
+	default:
+		return nil, i.Error(fmt.Sprintf("Unexpected type %s, expected string", strType.getType().name))
+	}
+}
+
 func rawMember(i *interpreter, arrv, value value) (bool, error) {
 	switch arrType := arrv.(type) {
 	case valueString:
@@ -2133,6 +2158,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&binaryBuiltin{name: "modulo", function: builtinModulo, params: ast.Identifiers{"x", "y"}},
 	&unaryBuiltin{name: "md5", function: builtinMd5, params: ast.Identifiers{"s"}},
 	&binaryBuiltin{name: "lstripChars", function: builtinLstripChars, params: ast.Identifiers{"str", "chars"}},
+	&binaryBuiltin{name: "rstripChars", function: builtinRstripChars, params: ast.Identifiers{"str", "chars"}},
 	&ternaryBuiltin{name: "substr", function: builtinSubstr, params: ast.Identifiers{"str", "from", "len"}},
 	&ternaryBuiltin{name: "splitLimit", function: builtinSplitLimit, params: ast.Identifiers{"str", "c", "maxsplits"}},
 	&ternaryBuiltin{name: "strReplace", function: builtinStrReplace, params: ast.Identifiers{"str", "from", "to"}},
