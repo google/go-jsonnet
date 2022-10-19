@@ -505,6 +505,47 @@ func builtinFilter(i *interpreter, funcv, arrv value) (value, error) {
 	return makeValueArray(elems), nil
 }
 
+func rawMember(i *interpreter, arrv, value value) (bool, error) {
+	switch arrType := arrv.(type) {
+	case valueString:
+		valString, err := i.getString(value)
+		if err != nil {
+			return false, err
+		}
+		for _, char := range arrType.getRunes() {
+			if string(char) == valString.getGoString() {
+				return true, nil
+			}
+		}
+		return false, nil
+	case *valueArray:
+		for _, elem := range arrType.elements {
+			cachedThunkValue, err := elem.getValue(i)
+			if err != nil {
+				return false, err
+			}
+			equal, err := rawEquals(i, cachedThunkValue, value)
+			if err != nil {
+				return false, err
+			}
+			if equal {
+				return true, nil
+			}
+		}
+	default:
+		return false, i.Error("std.member first argument must be an array or a string")
+	}
+	return false, nil
+}
+
+func builtinMember(i *interpreter, arrv, value value) (value, error) {
+	eq, err := rawMember(i, arrv, value)
+	if err != nil {
+		return nil, err
+	}
+	return makeValueBoolean(eq), nil
+}
+
 type sortData struct {
 	err    error
 	i      *interpreter
@@ -2042,6 +2083,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&binaryBuiltin{name: "filter", function: builtinFilter, params: ast.Identifiers{"func", "arr"}},
 	&ternaryBuiltin{name: "foldl", function: builtinFoldl, params: ast.Identifiers{"func", "arr", "init"}},
 	&ternaryBuiltin{name: "foldr", function: builtinFoldr, params: ast.Identifiers{"func", "arr", "init"}},
+	&binaryBuiltin{name: "member", function: builtinMember, params: ast.Identifiers{"arr", "x"}},
 	&binaryBuiltin{name: "range", function: builtinRange, params: ast.Identifiers{"from", "to"}},
 	&binaryBuiltin{name: "primitiveEquals", function: primitiveEquals, params: ast.Identifiers{"x", "y"}},
 	&binaryBuiltin{name: "equals", function: builtinEquals, params: ast.Identifiers{"x", "y"}},
