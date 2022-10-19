@@ -36,6 +36,7 @@ func prepareStdlib(g *typeGraph) {
 		"objectValuesAll": g.newSimpleFuncType(anyArrayType, "o"),
 		"prune":           g.newSimpleFuncType(anyObjectType, "a"),
 		"mapWithKey":      g.newSimpleFuncType(anyObjectType, "func", "obj"),
+		"get":             g.newFuncType(anyType, []ast.Parameter{required("o"), required("f"), optional("default"), optional("inc_hidden")}),
 
 		// isSomething
 		"isArray":    g.newSimpleFuncType(boolType, "v"),
