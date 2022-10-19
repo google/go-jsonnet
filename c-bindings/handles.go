@@ -16,8 +16,8 @@ import (
 
 // handlesTable is the set of active, valid Jsonnet allocated handles
 type handlesTable struct {
-	mu      sync.Mutex
 	handles map[uintptr]*handle
+	mu      sync.Mutex
 }
 
 type handle struct {

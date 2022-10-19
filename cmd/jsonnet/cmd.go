@@ -93,15 +93,14 @@ func usage(o io.Writer) {
 }
 
 type config struct {
-	inputFiles     []string
-	outputFile     string
-	filenameIsCode bool
-
+	outputFile           string
+	evalMultiOutputDir   string
+	inputFiles           []string
+	evalJpath            []string
+	filenameIsCode       bool
 	evalMulti            bool
 	evalStream           bool
-	evalMultiOutputDir   string
 	evalCreateOutputDirs bool
-	evalJpath            []string
 }
 
 func makeConfig() config {

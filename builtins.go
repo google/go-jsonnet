@@ -260,9 +260,9 @@ func builtinTrace(i *interpreter, x value, y value) (value, error) {
 // time.  It is equivalent to `local i = 42; func(i)`.  It therefore has no
 // free variables and needs only an empty environment to execute.
 type astMakeArrayElement struct {
-	ast.NodeBase
 	function *valueFunction
-	index    int
+	ast.NodeBase
+	index int
 }
 
 func builtinMakeArray(i *interpreter, szv, funcv value) (value, error) {
@@ -506,10 +506,10 @@ func builtinFilter(i *interpreter, funcv, arrv value) (value, error) {
 }
 
 type sortData struct {
+	err    error
 	i      *interpreter
 	thunks []*cachedThunk
 	keys   []value
-	err    error
 }
 
 func (d *sortData) Len() int {
@@ -1917,10 +1917,10 @@ func (b *ternaryBuiltin) Name() ast.Identifier {
 type generalBuiltinFunc func(*interpreter, []value) (value, error)
 
 type generalBuiltinParameter struct {
-	name ast.Identifier
 	// Note that the defaults are passed as values rather than AST nodes like in Parameters.
 	// This spares us unnecessary evaluation.
 	defaultValue value
+	name         ast.Identifier
 }
 
 // generalBuiltin covers cases that other builtin structures do not,
@@ -1929,8 +1929,8 @@ type generalBuiltinParameter struct {
 // at the same index.
 type generalBuiltin struct {
 	name     ast.Identifier
-	params   []generalBuiltinParameter
 	function generalBuiltinFunc
+	params   []generalBuiltinParameter
 }
 
 func (b *generalBuiltin) parameters() []namedParameter {

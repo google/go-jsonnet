@@ -43,17 +43,15 @@ type ColorFormatter func(w io.Writer, f string, a ...interface{}) (n int, err er
 var _ ErrorFormatter = &termErrorFormatter{}
 
 type termErrorFormatter struct {
-	// maxStackTraceSize  is the maximum length of stack trace before cropping
-	maxStackTraceSize int
-
 	// Examples of current state of the art.
 	// http://elm-lang.org/blog/compiler-errors-for-humans
 	// https://clang.llvm.org/diagnostics.html
-	color  ColorFormatter
-	pretty bool
-
+	color ColorFormatter
 	// sp is currently never set, but is used to format locations.
 	sp *ast.SourceProvider
+	// maxStackTraceSize  is the maximum length of stack trace before cropping
+	maxStackTraceSize int
+	pretty            bool
 }
 
 func (ef *termErrorFormatter) SetMaxStackTraceSize(size int) {

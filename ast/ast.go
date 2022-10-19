@@ -22,7 +22,7 @@ import (
 )
 
 // Identifier represents a variable / parameter / field name.
-//+gen set
+// +gen set
 type Identifier string
 
 // Identifiers represents an Identifier slice.
@@ -59,13 +59,13 @@ type Nodes []Node
 
 // NodeBase holds fields common to all node types.
 type NodeBase struct {
-	LocRange LocationRange
 	// This is the fodder that precedes the first token of the node.
 	// If the node is left-recursive, i.e. the first token is actually
 	// a token of a sub-expression, then Fodder is nil.
 	Fodder   Fodder
 	Ctx      Context
 	FreeVars Identifiers
+	LocRange LocationRange
 }
 
 // NewNodeBase creates a new NodeBase from initial LocationRange and
@@ -117,8 +117,8 @@ func (n *NodeBase) SetContext(context Context) {
 
 // IfSpec represents an if-specification in a comprehension.
 type IfSpec struct {
-	IfFodder Fodder
 	Expr     Node
+	IfFodder Fodder
 }
 
 // ForSpec represents a for-specification in a comprehension.
@@ -135,34 +135,35 @@ type IfSpec struct {
 // The if is attached to the y forspec.
 //
 // It desugares to:
-// flatMap(\x ->
-//         flatMap(\y ->
-//                 flatMap(\z -> [expr], arr3)
-//                 arr2)
-//         arr3)
+//
+//	flatMap(\x ->
+//	        flatMap(\y ->
+//	                flatMap(\z -> [expr], arr3)
+//	                arr2)
+//	        arr3)
 type ForSpec struct {
 	ForFodder  Fodder
 	VarFodder  Fodder
-	VarName    Identifier
-	InFodder   Fodder
-	Expr       Node
 	Conditions []IfSpec
 	Outer      *ForSpec
+	Expr       Node
+	VarName    Identifier
+	InFodder   Fodder
 }
 
 // ---------------------------------------------------------------------------
 
 // Apply represents a function call
 type Apply struct {
-	NodeBase
-	Target     Node
-	FodderLeft Fodder
-	Arguments  Arguments
-	// Always false if there were no arguments.
-	TrailingComma    bool
-	TailStrict       bool
+	Target           Node
+	FodderLeft       Fodder
+	Arguments        Arguments
 	FodderRight      Fodder
 	TailStrictFodder Fodder
+	NodeBase
+	// Always false if there were no arguments.
+	TrailingComma bool
+	TailStrict    bool
 }
 
 // NamedArgument represents a named argument to function call x=1.
@@ -193,20 +194,20 @@ type Arguments struct {
 
 // ApplyBrace represents e { }.  Desugared to e + { }.
 type ApplyBrace struct {
-	NodeBase
 	Left  Node
 	Right Node
+	NodeBase
 }
 
 // ---------------------------------------------------------------------------
 
 // Array represents array constructors [1, 2, 3].
 type Array struct {
+	Elements    []CommaSeparatedExpr
+	CloseFodder Fodder
 	NodeBase
-	Elements []CommaSeparatedExpr
 	// Always false if there were no elements.
 	TrailingComma bool
-	CloseFodder   Fodder
 }
 
 // ---------------------------------------------------------------------------
@@ -214,12 +215,12 @@ type Array struct {
 // ArrayComp represents array comprehensions (which are like Python list
 // comprehensions)
 type ArrayComp struct {
-	NodeBase
 	Body                Node
-	TrailingComma       bool
 	TrailingCommaFodder Fodder
 	Spec                ForSpec
 	CloseFodder         Fodder
+	NodeBase
+	TrailingComma bool
 }
 
 // ---------------------------------------------------------------------------
@@ -229,12 +230,12 @@ type ArrayComp struct {
 // After parsing, message can be nil indicating that no message was
 // specified. This AST is elimiated by desugaring.
 type Assert struct {
-	NodeBase
 	Cond            Node
-	ColonFodder     Fodder
 	Message         Node
-	SemicolonFodder Fodder
 	Rest            Node
+	ColonFodder     Fodder
+	SemicolonFodder Fodder
+	NodeBase
 }
 
 // ---------------------------------------------------------------------------
@@ -337,11 +338,11 @@ func (b BinaryOp) String() string {
 
 // Binary represents binary operators.
 type Binary struct {
-	NodeBase
+	Right    Node
 	Left     Node
 	OpFodder Fodder
-	Op       BinaryOp
-	Right    Node
+	NodeBase
+	Op BinaryOp
 }
 
 // ---------------------------------------------------------------------------
@@ -351,12 +352,12 @@ type Binary struct {
 // After parsing, branchFalse can be nil indicating that no else branch
 // was specified.  The desugarer fills this in with a LiteralNull
 type Conditional struct {
-	NodeBase
 	Cond        Node
-	ThenFodder  Fodder
 	BranchTrue  Node
-	ElseFodder  Fodder
 	BranchFalse Node
+	ThenFodder  Fodder
+	ElseFodder  Fodder
+	NodeBase
 }
 
 // ---------------------------------------------------------------------------
@@ -368,21 +369,21 @@ type Dollar struct{ NodeBase }
 
 // Error represents the error e.
 type Error struct {
-	NodeBase
 	Expr Node
+	NodeBase
 }
 
 // ---------------------------------------------------------------------------
 
 // Function represents a function definition
 type Function struct {
-	NodeBase
-	ParenLeftFodder Fodder
-	Parameters      []Parameter
-	// Always false if there were no parameters.
-	TrailingComma    bool
+	ParenLeftFodder  Fodder
 	ParenRightFodder Fodder
 	Body             Node
+	Parameters       []Parameter
+	NodeBase
+	// Always false if there were no parameters.
+	TrailingComma bool
 }
 
 // Parameter represents a parameter of function.
@@ -391,9 +392,9 @@ type Function struct {
 type Parameter struct {
 	NameFodder  Fodder
 	Name        Identifier
+	CommaFodder Fodder
 	EqFodder    Fodder
 	DefaultArg  Node
-	CommaFodder Fodder
 	LocRange    LocationRange
 }
 
@@ -409,24 +410,24 @@ type CommaSeparatedID struct {
 
 // Import represents import "file".
 type Import struct {
-	NodeBase
 	File *LiteralString
+	NodeBase
 }
 
 // ---------------------------------------------------------------------------
 
 // ImportStr represents importstr "file".
 type ImportStr struct {
-	NodeBase
 	File *LiteralString
+	NodeBase
 }
 
 // ---------------------------------------------------------------------------
 
 // ImportBin represents importbin "file".
 type ImportBin struct {
-	NodeBase
 	File *LiteralString
+	NodeBase
 }
 
 // ---------------------------------------------------------------------------
@@ -436,24 +437,22 @@ type ImportBin struct {
 // One of index and id will be nil before desugaring.  After desugaring id
 // will be nil.
 type Index struct {
-	NodeBase
 	Target Node
-	// When Index is being used, this is the fodder before the '['.
-	// When Id is being used, this is the fodder before the '.'.
-	LeftBracketFodder Fodder
-	Index             Node
+	Index  Node
 	// When Index is being used, this is the fodder before the ']'.
 	// When Id is being used, this is the fodder before the id.
 	RightBracketFodder Fodder
+	// When Index is being used, this is the fodder before the '['.
+	// When Id is being used, this is the fodder before the '.'.
+	LeftBracketFodder Fodder
 	//nolint: golint,stylecheck // keeping Id instead of ID for now to avoid breaking 3rd parties
 	Id *Identifier
+	NodeBase
 }
 
 // Slice represents an array slice a[begin:end:step].
 type Slice struct {
-	NodeBase
-	Target Node
-
+	Target            Node
 	LeftBracketFodder Fodder
 	// Each of these can be nil
 	BeginIndex         Node
@@ -462,6 +461,7 @@ type Slice struct {
 	StepColonFodder    Fodder
 	Step               Node
 	RightBracketFodder Fodder
+	NodeBase
 }
 
 // ---------------------------------------------------------------------------
@@ -469,15 +469,14 @@ type Slice struct {
 // LocalBind is a helper struct for astLocal
 type LocalBind struct {
 	VarFodder Fodder
-	Variable  Identifier
-	EqFodder  Fodder
 	// If Fun is set then its body == Body.
-	Body Node
-	// There is no base fodder in Fun because there was no `function` keyword.
-	Fun *Function
+	Body     Node
+	EqFodder Fodder
+	Variable Identifier
 	// The fodder before the closing ',' or ';' (whichever it is)
 	CloseFodder Fodder
-
+	// There is no base fodder in Fun because there was no `function` keyword.
+	Fun      *Function
 	LocRange LocationRange
 }
 
@@ -486,9 +485,9 @@ type LocalBinds []LocalBind
 
 // Local represents local x = e; e.  After desugaring, functionSugar is false.
 type Local struct {
-	NodeBase
 	Binds LocalBinds
 	Body  Node
+	NodeBase
 }
 
 // ---------------------------------------------------------------------------
@@ -508,8 +507,8 @@ type LiteralNull struct{ NodeBase }
 
 // LiteralNumber represents a JSON number
 type LiteralNumber struct {
-	NodeBase
 	OriginalString string
+	NodeBase
 }
 
 // ---------------------------------------------------------------------------
@@ -540,11 +539,11 @@ func (k LiteralStringKind) FullyEscaped() bool {
 
 // LiteralString represents a JSON string
 type LiteralString struct {
-	NodeBase
 	Value           string
-	Kind            LiteralStringKind
 	BlockIndent     string
 	BlockTermIndent string
+	NodeBase
+	Kind LiteralStringKind
 }
 
 // ---------------------------------------------------------------------------
@@ -588,24 +587,23 @@ const (
 // ObjectField represents a field of an object or object comprehension.
 // TODO(sbarzowski) consider having separate types for various kinds
 type ObjectField struct {
-	Kind       ObjectFieldKind
-	Hide       ObjectFieldHide // (ignore if kind != astObjectFieldID/Expr/Str)
-	SuperSugar bool            // +:  (ignore if kind != astObjectFieldID/Expr/Str)
-
 	// f(x, y, z): ...  (ignore if kind  == astObjectAssert)
 	// If Method is set then Expr2 == Method.Body.
 	// There is no base fodder in Method because there was no `function`
 	// keyword.
-	Method  *Function
-	Fodder1 Fodder
-	Expr1   Node // Not in scope of the object
+	Method *Function
 	//nolint: golint,stylecheck // keeping Id instead of ID for now to avoid breaking 3rd parties
 	Id           *Identifier
 	Fodder2      Fodder
+	Fodder1      Fodder
 	OpFodder     Fodder
-	Expr2, Expr3 Node // In scope of the object (can see self).
 	CommaFodder  Fodder
+	Expr1        Node // Not in scope of the object
+	Expr2, Expr3 Node // In scope of the object (can see self).
 	LocRange     LocationRange
+	Kind         ObjectFieldKind
+	Hide         ObjectFieldHide // (ignore if kind != astObjectFieldID/Expr/Str)
+	SuperSugar   bool            // +:  (ignore if kind != astObjectFieldID/Expr/Str)
 }
 
 // ObjectFieldLocalNoMethod creates a non-method local object field.
@@ -627,22 +625,21 @@ type ObjectFields []ObjectField
 // The trailing comma is only allowed if len(fields) > 0.  Converted to
 // DesugaredObject during desugaring.
 type Object struct {
+	Fields      ObjectFields
+	CloseFodder Fodder
 	NodeBase
-	Fields        ObjectFields
 	TrailingComma bool
-	CloseFodder   Fodder
 }
 
 // ---------------------------------------------------------------------------
 
 // DesugaredObjectField represents a desugared object field.
 type DesugaredObjectField struct {
-	Hide      ObjectFieldHide
 	Name      Node
 	Body      Node
+	LocRange  LocationRange
+	Hide      ObjectFieldHide
 	PlusSuper bool
-
-	LocRange LocationRange
 }
 
 // DesugaredObjectFields represents a DesugaredObjectField slice.
@@ -653,33 +650,35 @@ type DesugaredObjectFields []DesugaredObjectField
 //
 // The assertions either return true or raise an error.
 type DesugaredObject struct {
-	NodeBase
 	Asserts Nodes
 	Fields  DesugaredObjectFields
 	Locals  LocalBinds
+	NodeBase
 }
 
 // ---------------------------------------------------------------------------
 
 // ObjectComp represents object comprehension
-//   { [e]: e for x in e for.. if... }.
+//
+//	{ [e]: e for x in e for.. if... }.
 type ObjectComp struct {
-	NodeBase
 	Fields              ObjectFields
 	TrailingCommaFodder Fodder
-	TrailingComma       bool
-	Spec                ForSpec
 	CloseFodder         Fodder
+	Spec                ForSpec
+	NodeBase
+	TrailingComma bool
 }
 
 // ---------------------------------------------------------------------------
 
 // Parens represents parentheses
-//   ( e )
+//
+//	( e )
 type Parens struct {
-	NodeBase
 	Inner       Node
 	CloseFodder Fodder
+	NodeBase
 }
 
 // ---------------------------------------------------------------------------
@@ -694,24 +693,24 @@ type Self struct{ NodeBase }
 // Either index or identifier will be set before desugaring.  After desugaring, id will be
 // nil.
 type SuperIndex struct {
-	NodeBase
-	// If super.f, the fodder before the '.'
-	// If super[e], the fodder before the '['.
-	DotFodder Fodder
-	Index     Node
 	// If super.f, the fodder before the 'f'
 	// If super[e], the fodder before the ']'.
 	IDFodder Fodder
+	Index    Node
+	// If super.f, the fodder before the '.'
+	// If super[e], the fodder before the '['.
+	DotFodder Fodder
 	//nolint: golint,stylecheck // keeping Id instead of ID for now to avoid breaking 3rd parties
 	Id *Identifier
+	NodeBase
 }
 
 // InSuper represents the e in super construct.
 type InSuper struct {
-	NodeBase
 	Index       Node
 	InFodder    Fodder
 	SuperFodder Fodder
+	NodeBase
 }
 
 // ---------------------------------------------------------------------------
@@ -751,18 +750,18 @@ func (u UnaryOp) String() string {
 
 // Unary represents unary operators.
 type Unary struct {
-	NodeBase
-	Op   UnaryOp
 	Expr Node
+	NodeBase
+	Op UnaryOp
 }
 
 // ---------------------------------------------------------------------------
 
 // Var represents variables.
 type Var struct {
-	NodeBase
 	//nolint: golint,stylecheck // keeping Id instead of ID for now to avoid breaking 3rd parties
 	Id Identifier
+	NodeBase
 }
 
 // ---------------------------------------------------------------------------

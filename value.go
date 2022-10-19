@@ -397,8 +397,8 @@ func (f *valueFunction) getType() *valueType {
 }
 
 type namedParameter struct {
-	name       ast.Identifier
 	defaultArg ast.Node
+	name       ast.Identifier
 }
 
 type callArguments struct {
@@ -408,8 +408,8 @@ type callArguments struct {
 }
 
 type namedCallArgument struct {
-	name ast.Identifier
 	pv   *cachedThunk
+	name ast.Identifier
 }
 
 func args(xs ...*cachedThunk) callArguments {
@@ -525,9 +525,9 @@ type uncachedObject interface {
 }
 
 type objectLocal struct {
-	name ast.Identifier
 	// Locals may depend on self and super so they are unbound fields and not simply thunks
 	node ast.Node
+	name ast.Identifier
 }
 
 // simpleObject represents a flat object (no inheritance).
@@ -605,8 +605,8 @@ func makeValueSimpleObject(b bindingFrame, fields simpleObjectFieldMap, asserts 
 type simpleObjectFieldMap map[string]simpleObjectField
 
 type simpleObjectField struct {
-	hide  ast.ObjectFieldHide
 	field unboundField
+	hide  ast.ObjectFieldHide
 }
 
 // unboundField is a field that doesn't know yet in which object it is.
@@ -620,11 +620,11 @@ type unboundField interface {
 // Example:
 // (A + B) + C
 //
-//        +
-//       / \
-//      +   C
-//     / \
-//    A   B
+//	    +
+//	   / \
+//	  +   C
+//	 / \
+//	A   B
 //
 // It is possible to create an arbitrary binary tree.
 // Note however, that because + is associative the only thing that matters
@@ -632,7 +632,6 @@ type unboundField interface {
 //
 // This represenation allows us to implement "+" in O(1),
 // but requires going through the tree and trying subsequent leafs for field access.
-//
 type extendedObject struct {
 	left, right          uncachedObject
 	totalInheritanceSize int
