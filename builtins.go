@@ -554,6 +554,18 @@ func builtinRstripChars(i *interpreter, str, chars value) (value, error) {
 	}
 }
 
+func builtinStripChars(i *interpreter, str, chars value) (value, error) {
+	lstripChars, err := builtinLstripChars(i, str, chars)
+	if err != nil {
+		return nil, err
+	}
+	rstripChars, err := builtinRstripChars(i, lstripChars, chars)
+	if err != nil {
+		return nil, err
+	}
+	return rstripChars, nil
+}
+
 func rawMember(i *interpreter, arrv, value value) (bool, error) {
 	switch arrType := arrv.(type) {
 	case valueString:
@@ -2159,6 +2171,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "md5", function: builtinMd5, params: ast.Identifiers{"s"}},
 	&binaryBuiltin{name: "lstripChars", function: builtinLstripChars, params: ast.Identifiers{"str", "chars"}},
 	&binaryBuiltin{name: "rstripChars", function: builtinRstripChars, params: ast.Identifiers{"str", "chars"}},
+	&binaryBuiltin{name: "stripChars", function: builtinStripChars, params: ast.Identifiers{"str", "chars"}},
 	&ternaryBuiltin{name: "substr", function: builtinSubstr, params: ast.Identifiers{"str", "from", "len"}},
 	&ternaryBuiltin{name: "splitLimit", function: builtinSplitLimit, params: ast.Identifiers{"str", "c", "maxsplits"}},
 	&ternaryBuiltin{name: "strReplace", function: builtinStrReplace, params: ast.Identifiers{"str", "from", "to"}},
