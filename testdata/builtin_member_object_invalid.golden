@@ -1,0 +1,10 @@
+RUNTIME ERROR: std.member first argument must be an array or a string
+-------------------------------------------------
+	testdata/builtin_member_object_invalid:1:1-31	$
+
+std.member({foo:'bar'}, 'foo')
+
+-------------------------------------------------
+	During evaluation	
+
+

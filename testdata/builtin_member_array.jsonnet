@@ -1,0 +1,1 @@
+std.member(['foo', 'bar'], 'foo')
