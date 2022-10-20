@@ -46,3 +46,5 @@ int jsonnet_internal_execute_writer(JsonnetIoWriterCallback *cb,
                                     int *success);
 
 void jsonnet_internal_free_string(char *str);
+
+char* jsonnet_internal_realloc(struct JsonnetVm *vm, char *str, size_t sz);

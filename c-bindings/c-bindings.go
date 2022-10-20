@@ -663,5 +663,11 @@ func jsonnet_set_trace_out_callback(vmRef *C.struct_JsonnetVm, cb *C.JsonnetIoWr
 	vm.SetTraceOut(&traceOut{cb})
 }
 
+//export jsonnet_realloc
+func jsonnet_realloc(vmRef *C.struct_JsonnetVm, buf *C.char, sz C.size_t) *C.char {
+	return C.jsonnet_internal_realloc(vmRef, buf, sz)
+}
+
+
 func main() {
 }
