@@ -72,7 +72,7 @@ static void memory_panic(void)
     abort();
 }
 
-char *jsonnet_realloc(JsonnetVm *vm, char *str, size_t sz)
+char *jsonnet_internal_realloc(JsonnetVm *vm, char *str, size_t sz)
 {
     (void)vm;
     if (str == nullptr) {
