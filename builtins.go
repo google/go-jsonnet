@@ -1077,7 +1077,7 @@ func builtinSubstr(i *interpreter, inputStr, inputFrom, inputLen value) (value, 
 	}
 
 	fromInt := int(fromV.value)
-	strStr := strV.getGoString()
+	strStr := strV.getRunes()
 
 	endIndex := fromInt + lenInt
 
@@ -1088,9 +1088,7 @@ func builtinSubstr(i *interpreter, inputStr, inputFrom, inputLen value) (value, 
 	if fromInt > len(strStr) {
 		return makeValueString(""), nil
 	}
-
-	runes := []rune(strStr)
-	return makeValueString(string(runes[fromInt:endIndex])), nil
+	return makeValueString(string(strStr[fromInt:endIndex])), nil
 }
 
 func builtinSplitLimit(i *interpreter, strv, cv, maxSplitsV value) (value, error) {
