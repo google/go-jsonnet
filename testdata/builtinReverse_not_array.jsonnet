@@ -1,1 +1,1 @@
-std.reverse("asdf")
+std.reverse(false)

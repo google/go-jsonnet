@@ -1211,8 +1211,8 @@ func builtinSplitLimit(i *interpreter, strv, cv, maxSplitsV value) (value, error
 	}
 	sStr := str.getGoString()
 	sC := c.getGoString()
-	if len(sC) != 1 {
-		return nil, i.Error(fmt.Sprintf("std.splitLimit second parameter should have length 1, got %v", len(sC)))
+	if len(sC) < 1 {
+		return nil, i.Error(fmt.Sprintf("std.splitLimit second parameter should have length 1 or greater, got %v", len(sC)))
 	}
 
 	// the convention is slightly different from strings.splitN in Go (the meaning of non-negative values is shifted by one)

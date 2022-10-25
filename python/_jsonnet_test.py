@@ -36,7 +36,7 @@ def try_path_cached(cache, dir, rel):
             cache[full_path] = None
         else:
             with open(full_path) as f:
-                cache[full_path] = f.read()
+                cache[full_path] = f.read().encode()
     return full_path, cache[full_path]
 
 

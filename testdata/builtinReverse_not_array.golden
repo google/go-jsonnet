@@ -1,8 +1,8 @@
-RUNTIME ERROR: Unexpected type string, expected array
+RUNTIME ERROR: Unexpected type boolean, expected array
 -------------------------------------------------
-	testdata/builtinReverse_not_array:1:1-20	$
+	testdata/builtinReverse_not_array:1:1-19	$
 
-std.reverse("asdf")
+std.reverse(false)
 
 -------------------------------------------------
 	During evaluation	

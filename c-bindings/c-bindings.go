@@ -60,7 +60,9 @@ type importer struct {
 // Import fetches data from a given path by using c.JsonnetImportCallback
 func (i *importer) Import(importedFrom, importedPath string) (contents jsonnet.Contents, foundAt string, err error) {
 	var (
-		success    = C.int(0)
+		buflen     = C.size_t(0)
+		msgC       *C.char
+		bufPtr       unsafe.Pointer
 		dir, _     = path.Split(importedFrom)
 		foundHereC *C.char
 	)
@@ -71,19 +73,22 @@ func (i *importer) Import(importedFrom, importedPath string) (contents jsonnet.C
 	// returning nothing (NULL), if they know that we have the contents
 	// cached anyway.
 
-	resultC := C.jsonnet_internal_execute_import(i.cb, i.ctx, C.CString(dir), C.CString(importedPath), &foundHereC, &success)
-	result := C.GoString(resultC)
-	C.jsonnet_internal_free_string(resultC)
+	success := C.jsonnet_internal_execute_import(i.cb, i.ctx, C.CString(dir), C.CString(importedPath), &foundHereC, &msgC, &bufPtr, &buflen)
+	if success != 0 {
+		// Failure
+		msg := C.GoString(msgC)
+		C.jsonnet_internal_free_string(msgC)
+		return jsonnet.Contents{}, "", errors.New("importer error: " + msg)
+	}
+	result := C.GoBytes(bufPtr, C.int(buflen))
+	C.jsonnet_internal_free_pointer(bufPtr)
 
 	foundHere := C.GoString(foundHereC)
 	C.jsonnet_internal_free_string(foundHereC)
 
-	if success != 1 {
-		return jsonnet.Contents{}, "", errors.New("importer error: " + result)
-	}
 
 	if _, isCached := i.contentCache[foundHere]; !isCached {
-		i.contentCache[foundHere] = jsonnet.MakeContents(result)
+		i.contentCache[foundHere] = jsonnet.MakeContentsRaw(result)
 	}
 	return i.contentCache[foundHere], foundHere, nil
 }
