@@ -113,13 +113,13 @@ lib.jsonnet_native_callback.argtypes = [
 lib.jsonnet_native_callback.restype = None
 
 IMPORT_CALLBACK = ctypes.CFUNCTYPE(
-    ctypes.c_char_p,
+    ctypes.c_int,
     ctypes.c_void_p,
     ctypes.POINTER(ctypes.c_char),
     ctypes.POINTER(ctypes.c_char),
-    # we use *int instead of **char to pass the real C allocated pointer, that we have to free
-    ctypes.POINTER(ctypes.c_uint64),
-    ctypes.POINTER(ctypes.c_int)
+    ctypes.POINTER(ctypes.c_char_p),
+    ctypes.POINTER(ctypes.c_void_p),
+    ctypes.POINTER(ctypes.c_uint64)
 )
 
 lib.jsonnet_import_callback.argtypes = [
@@ -338,20 +338,21 @@ def build_native(ctx, argv, success):
     return res
 
 @IMPORT_CALLBACK
-def import_callback(ctx, dir, rel, found_here, success):
+def import_callback(ctx, dir, rel, found_here, buf_ptr, size_ptr):
     full_path, content = jsonnet_try_path(b"jsonnet_import_test/", to_bytes(rel))
 
     bcontent = content.encode()
-    dst = lib.jsonnet_realloc(ctx, None, len(bcontent) + 1)
-    ctypes.memmove(ctypes.addressof(dst.contents), bcontent, len(bcontent) + 1)
+    dst = lib.jsonnet_realloc(ctx, None, len(bcontent))
+    ctypes.memmove(ctypes.addressof(dst.contents), bcontent, len(bcontent))
 
     fdst = lib.jsonnet_realloc(ctx, None, len(full_path) + 1)
     ctypes.memmove(ctypes.addressof(fdst.contents), full_path, len(full_path) + 1)
     found_here[0] = ctypes.addressof(fdst.contents)
 
-    success[0] = ctypes.c_int(1)
-
-    return ctypes.addressof(dst.contents)
+    buf_ptr[0] = ctypes.addressof(dst.contents)
+    size_ptr[0] = len(bcontent)
+    
+    return 0
 
 io_writer_buf = None
 

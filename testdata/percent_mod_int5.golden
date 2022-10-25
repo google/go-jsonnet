@@ -1,6 +1,6 @@
 RUNTIME ERROR: Division by zero.
 -------------------------------------------------
-	<std>:235:7-23	function <anonymous>
+	<std>:247:7-23	function <anonymous>
 
       std.modulo(a, b)
 

@@ -34,14 +34,24 @@ struct JsonnetJsonValue* jsonnet_internal_execute_native(JsonnetNativeCallback *
     return (cb)(ctx, argv, success);
 }
 
-char* jsonnet_internal_execute_import(JsonnetImportCallback *cb,
-                                      void *ctx,
-                                      const char *base,
-                                      const char *rel,
-                                      char **found_here,
-                                      int *success)
+int jsonnet_internal_execute_import(JsonnetImportCallback *cb,
+                                    void *ctx,
+                                    const char *base,
+                                    const char *rel,
+                                    char **found_here,
+                                    char **msg,
+                                    void **buf, size_t *buflen)
 {
-    return (cb)(ctx, base, rel, found_here, success);
+    char *char_buf;
+    int success = (cb)(ctx, base, rel, found_here, &char_buf, buflen);
+    if (success == 0) {
+		// Success
+        *buf = char_buf;
+    } else {
+		// Fail
+        *msg = char_buf;
+    }
+    return success;
 }
 
 int jsonnet_internal_execute_writer(JsonnetIoWriterCallback *cb,
@@ -53,9 +63,11 @@ int jsonnet_internal_execute_writer(JsonnetIoWriterCallback *cb,
 }
 
 void jsonnet_internal_free_string(char *str) {
-    if (str != nullptr) {
-        ::free(str);
-    }
+    ::free(str);
+}
+
+void jsonnet_internal_free_pointer(void *ptr) {
+    ::free(ptr);
 }
 
 void jsonnet_gc_min_objects(struct JsonnetVm *vm, unsigned v) {
