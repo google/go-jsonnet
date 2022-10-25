@@ -9,12 +9,9 @@ load(
     "go_repository",
 )
 
-def jsonnet_go_dependencies(go_sdk_version = None):
+def jsonnet_go_dependencies(go_sdk_version = "host"):
     go_rules_dependencies()
-    if go_sdk_version != None:
-        go_register_toolchains(version = go_sdk_version)
-    else:
-        go_register_toolchains()
+    go_register_toolchains(version = go_sdk_version)
     gazelle_dependencies()
     go_repository(
         name = "com_github_davecgh_go_spew",
