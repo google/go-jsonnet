@@ -3,6 +3,10 @@ load(
     "http_archive",
 )
 
+# NB: update_cpp_jsonnet.sh looks for these.
+CPP_JSONNET_SHA256 = "82d3cd35de8ef230d094b60a30e7659f415c350b0aa2bd62162cf2afdf163959"
+CPP_JSONNET_GITHASH = "90cad75dcc2eafdcf059c901169d36539dc8a699"
+
 def jsonnet_go_repositories():
     http_archive(
         name = "io_bazel_rules_go",
@@ -23,7 +27,7 @@ def jsonnet_go_repositories():
     )
     http_archive(
         name = "cpp_jsonnet",
-        sha256 = "82d3cd35de8ef230d094b60a30e7659f415c350b0aa2bd62162cf2afdf163959",
-        strip_prefix = "jsonnet-90cad75dcc2eafdcf059c901169d36539dc8a699",
-        urls = ["https://github.com/google/jsonnet/archive/90cad75dcc2eafdcf059c901169d36539dc8a699.tar.gz"],
+        sha256 = CPP_JSONNET_SHA256,
+        strip_prefix = "jsonnet-%s" % CPP_JSONNET_GITHASH,
+        urls = ["https://github.com/google/jsonnet/archive/%s.tar.gz" % CPP_JSONNET_GITHASH],
     )
