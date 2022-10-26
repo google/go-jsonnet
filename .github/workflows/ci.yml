@@ -50,6 +50,20 @@ jobs:
           CGO_ENABLED: "1"
           SKIP_PYTHON_BINDINGS_TESTS: ${{ matrix.SKIP_PYTHON_BINDINGS_TESTS }}
 
+  bazel:
+    name: bazel test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/bazel
+            ~/.cache/bazelisk
+          key: ${{ runner.os }}-bazel-cache
+      - run: bazel build //...
+      - run: bazel test //...
+
   all:
     name: Check all
     runs-on: ubuntu-latest
