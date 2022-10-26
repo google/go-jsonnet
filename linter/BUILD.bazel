@@ -13,7 +13,6 @@ go_library(
         "//linter/internal/common:go_default_library",
         "//linter/internal/traversal:go_default_library",
         "//linter/internal/types:go_default_library",
-        "//linter/internal/utils:go_default_library",
         "//linter/internal/variables:go_default_library",
     ],
 )
