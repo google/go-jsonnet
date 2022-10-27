@@ -13,9 +13,11 @@
 # limitations under the License.
 
 import os
+import sys
 import unittest
 
 import _gojsonnet
+
 
 # Returns (full_path, contents) if the file was successfully retrieved,
 # (full_path, None) if file not found, or throws an exception when the path
@@ -39,13 +41,15 @@ def try_path_cached(cache, dir, rel):
                 cache[full_path] = f.read().encode()
     return full_path, cache[full_path]
 
-
-def import_callback(dir, rel):
+def import_callback_encode(dir, rel):
     cache = {}
     full_path, content = try_path_cached(cache, dir, rel)
     if content:
         return full_path, content
     raise RuntimeError('File not found')
+
+def import_callback_empty_file_encode(dir, rel):
+    return dir, b''
 
 
 # Test native extensions
@@ -81,31 +85,88 @@ class JsonnetTests(unittest.TestCase):
         with open(self.input_filename, "r") as infile:
             self.input_snippet = infile.read()
 
-    def test_evaluate_file(self):
+    def test_version(self):
+        self.assertEqual(type(_gojsonnet.version), str)
+
+    def test_evaluate_file_encode(self):
         json_str = _gojsonnet.evaluate_file(
             self.input_filename,
-            import_callback=import_callback,
+            import_callback=import_callback_encode,
             native_callbacks=native_callbacks,
         )
         self.assertEqual(json_str, "true\n")
 
-    def test_evaluate_snippet(self):
+    def test_evaluate_snippet_encode(self):
         json_str = _gojsonnet.evaluate_snippet(
             self.test_filename,
             self.input_snippet,
-            import_callback=import_callback,
+            import_callback=import_callback_encode,
             native_callbacks=native_callbacks,
         )
         self.assertEqual(json_str, "true\n")
 
-    def test_import(self):
+    def test_evaluate_snippet_encode(self):
+        json_str = _gojsonnet.evaluate_snippet(
+            self.test_filename,
+            self.input_snippet,
+            import_callback=import_callback_encode,
+            native_callbacks=native_callbacks,
+        )
+        self.assertEqual(json_str, "true\n")
+
+    def test_import_encode(self):
         json_str = _gojsonnet.evaluate_snippet(
             self.test_filename,
             "import 'trivial.jsonnet'",
-            import_callback=import_callback,
+            import_callback=import_callback_encode,
             native_callbacks=native_callbacks,
         )
         self.assertEqual(json_str, "42\n")
+
+    def test_import_no_eol_encode(self):
+        json_str = _gojsonnet.evaluate_snippet(
+            self.test_filename,
+            "import 'trivial_no_eol.jsonnet'",
+            import_callback=import_callback_encode,
+            native_callbacks=native_callbacks,
+        )
+        self.assertEqual(json_str, "42\n")
+
+    def test_import_binary_encode(self):
+        json_str = _gojsonnet.evaluate_snippet(
+            self.test_filename,
+            "importbin 'binary123.bin'",
+            import_callback=import_callback_encode,
+            native_callbacks=native_callbacks,
+        )
+        self.assertEqual(json_str, "[\n   1,\n   2,\n   3\n]\n")
+
+    def test_import_binary_sentinel_encode(self):
+        json_str = _gojsonnet.evaluate_snippet(
+            self.test_filename,
+            "importbin 'binary1230123.bin'",
+            import_callback=import_callback_encode,
+            native_callbacks=native_callbacks,
+        )
+        self.assertEqual(json_str, "[\n   1,\n   2,\n   3,\n   0,\n   1,\n   2,\n   3\n]\n")
+
+    def test_import_str_empty_file_encode(self):
+        json_str = _gojsonnet.evaluate_snippet(
+            self.test_filename,
+            "importstr 'binary123.bin'",
+            import_callback=import_callback_empty_file_encode,
+            native_callbacks=native_callbacks,
+        )
+        self.assertEqual(json_str, "\"\"\n")
+
+    def test_import_binary_empty_file_encode(self):
+        json_str = _gojsonnet.evaluate_snippet(
+            self.test_filename,
+            "importbin 'binary123.bin'",
+            import_callback=import_callback_empty_file_encode,
+            native_callbacks=native_callbacks,
+        )
+        self.assertEqual(json_str, "[ ]\n")
 
     def test_double_import(self):
         json_str = _gojsonnet.evaluate_snippet(
@@ -113,7 +174,7 @@ class JsonnetTests(unittest.TestCase):
             "local x = import 'trivial.jsonnet';\n" +
             "local y = import 'trivial.jsonnet';\n" +
             "x + y",
-            import_callback=import_callback,
+            import_callback=import_callback_encode,
             native_callbacks=native_callbacks,
         )
         self.assertEqual(json_str, "84\n")
