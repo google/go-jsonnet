@@ -171,7 +171,7 @@ const (
 )
 
 // version is the current gojsonnet's version
-const version = "v0.19.0"
+const version = "v0.19.1"
 
 // Evaluate evaluates a Jsonnet program given by an Abstract Syntax Tree
 // and returns serialized JSON as string.
