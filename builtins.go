@@ -573,12 +573,13 @@ func rawMember(i *interpreter, arrv, value value) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		for _, char := range arrType.getRunes() {
-			if string(char) == valString.getGoString() {
-				return true, nil
-			}
+
+		arrString, err := i.getString(arrv)
+		if err != nil {
+			return false, err
 		}
-		return false, nil
+
+		return strings.Contains(arrString.getGoString(), valString.getGoString()), nil
 	case *valueArray:
 		for _, elem := range arrType.elements {
 			cachedThunkValue, err := elem.getValue(i)
