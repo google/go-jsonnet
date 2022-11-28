@@ -21,6 +21,9 @@ This code is known to work on Go 1.12 and above. We recommend always using the n
 # The version suffix is mandatory.
 go install github.com/google/go-jsonnet/cmd/jsonnet@latest
 
+# Or other tools in the 'cmd' directory
+go install github.com/google/go-jsonnet/cmd/jsonnet-lint@latest
+
 # go < 1.17
 go get github.com/google/go-jsonnet/cmd/jsonnet
 ```
