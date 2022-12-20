@@ -517,7 +517,8 @@ func builtinLstripChars(i *interpreter, str, chars value) (value, error) {
 				return nil, err
 			}
 			if member {
-				s := strType.getGoString()[1:]
+				runes := strType.getRunes()
+				s := string(runes[1:])
 				return builtinLstripChars(i, makeValueString(s), chars)
 			} else {
 				return str, nil
@@ -542,7 +543,8 @@ func builtinRstripChars(i *interpreter, str, chars value) (value, error) {
 				return nil, err
 			}
 			if member {
-				s := strType.getGoString()[:strType.length()-1]
+				runes := strType.getRunes()
+				s := string(runes[:len(runes)-1])
 				return builtinRstripChars(i, makeValueString(s), chars)
 			} else {
 				return str, nil
