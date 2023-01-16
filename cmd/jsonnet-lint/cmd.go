@@ -42,7 +42,7 @@ func usage(o io.Writer) {
 	fmt.Fprintln(o, "  Multichar options are expanded e.g. -abc becomes -a -b -c.")
 	fmt.Fprintln(o, "  The -- option suppresses option processing for subsequent arguments.")
 	fmt.Fprintln(o, "  Note that since filenames and jsonnet programs can begin with -, it is")
-	fmt.Fprintln(o, "  advised to use -- if the argument is unknown, e.g. jsonnetfmt -- \"$FILENAME\".")
+	fmt.Fprintln(o, "  advised to use -- if the argument is unknown, e.g. jsonnet-lint -- \"$FILENAME\".")
 	fmt.Fprintln(o)
 	fmt.Fprintln(o, "Exit code:")
 	fmt.Fprintln(o, "  0 – If the file was checked no problems were found.")
