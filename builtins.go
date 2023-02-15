@@ -1885,6 +1885,22 @@ func builtinNative(i *interpreter, name value) (value, error) {
 	return &valueNull{}, nil
 }
 
+func builtinSum(i *interpreter, arrv value) (value, error) {
+	arr, err := i.getArray(arrv)
+	if err != nil {
+		return nil, err
+	}
+	sum := 0.0
+	for _, elem := range arr.elements {
+		elemValue, err := i.evaluateNumber(elem)
+		if err != nil {
+			return nil, err
+		}
+		sum += elemValue.value
+	}
+	return makeValueNumber(sum), nil
+}
+
 // Utils for builtins - TODO(sbarzowski) move to a separate file in another commit
 
 type builtin interface {
@@ -2190,6 +2206,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "decodeUTF8", function: builtinDecodeUTF8, params: ast.Identifiers{"arr"}},
 	&generalBuiltin{name: "sort", function: builtinSort, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}}},
 	&unaryBuiltin{name: "native", function: builtinNative, params: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "sum", function: builtinSum, params: ast.Identifiers{"arr"}},
 
 	// internal
 	&unaryBuiltin{name: "$objectFlatMerge", function: builtinUglyObjectFlatMerge, params: ast.Identifiers{"x"}},
