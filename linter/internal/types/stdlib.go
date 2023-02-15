@@ -137,6 +137,7 @@ func prepareStdlib(g *typeGraph) {
 		"flattenArrays": g.newSimpleFuncType(anyArrayType, "arrs"),
 		"sort":          g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"uniq":          g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
+		"sum":           g.newSimpleFuncType(numberType, "arr"),
 
 		// Sets
 
