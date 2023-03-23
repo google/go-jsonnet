@@ -1,0 +1,1 @@
+std.xor("true", false)
