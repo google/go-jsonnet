@@ -704,6 +704,18 @@ func builtinNegation(i *interpreter, x value) (value, error) {
 	return makeValueBoolean(!b.value), nil
 }
 
+func builtinXor(i *interpreter, xv, yv value) (value, error) {
+	p, err := i.getBoolean(xv)
+	if err != nil {
+		return nil, err
+	}
+	q, err := i.getBoolean(yv)
+	if err != nil {
+		return nil, err
+	}
+	return makeValueBoolean(p.value != q.value), nil
+}
+
 func builtinBitNeg(i *interpreter, x value) (value, error) {
 	n, err := i.getNumber(x)
 	if err != nil {
@@ -2186,6 +2198,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&binaryBuiltin{name: "pow", function: builtinPow, params: ast.Identifiers{"x", "n"}},
 	&binaryBuiltin{name: "modulo", function: builtinModulo, params: ast.Identifiers{"x", "y"}},
 	&unaryBuiltin{name: "md5", function: builtinMd5, params: ast.Identifiers{"s"}},
+	&binaryBuiltin{name: "xor", function: builtinXor, params: ast.Identifiers{"x", "y"}},
 	&binaryBuiltin{name: "lstripChars", function: builtinLstripChars, params: ast.Identifiers{"str", "chars"}},
 	&binaryBuiltin{name: "rstripChars", function: builtinRstripChars, params: ast.Identifiers{"str", "chars"}},
 	&binaryBuiltin{name: "stripChars", function: builtinStripChars, params: ast.Identifiers{"str", "chars"}},
