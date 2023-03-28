@@ -173,8 +173,8 @@ func prepareStdlib(g *typeGraph) {
 		"$objectFlatMerge": g.newSimpleFuncType(anyObjectType, "x"),
 
 		// Boolean
-		
-		"xor":           g.newSimpleFuncType(boolType, "x", "y"),
+
+		"xor":	g.newSimpleFuncType(boolType, "x", "y"),
 	}
 
 	fieldContains := map[string][]placeholderID{}

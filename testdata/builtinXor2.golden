@@ -1,0 +1,10 @@
+RUNTIME ERROR: Unexpected type string, expected boolean
+-------------------------------------------------
+	testdata/builtinXor2:1:1-23	$
+
+std.xor("true", false)
+
+-------------------------------------------------
+	During evaluation	
+
+
