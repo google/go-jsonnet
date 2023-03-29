@@ -5,27 +5,12 @@ import (
 	"bytes"
 	"io/ioutil"
 	"os"
-	"bufio"
-	"fmt"
+
 	"github.com/sergi/go-diff/diffmatchpatch"
 )
-func check(err error) {
-    if err != nil {
-        panic(err)
-    }
-}
 
 // Diff produces a pretty diff of two files
 func Diff(a, b string) string {
-	f, err := os.Create("/Users/salonijuneja/yourfile11.txt")
-    check(err)
-    defer f.Close()
-
-    w := bufio.NewWriter(f)
-
-    _, err = fmt.Fprintf(w, "%v\n", a)
-    check(err)
-    w.Flush()
 	dmp := diffmatchpatch.New()
 	diffs := dmp.DiffMain(a, b, false)
 	return dmp.DiffPrettyText(diffs)
