@@ -1,0 +1,10 @@
+RUNTIME ERROR: Unexpected type string, expected boolean
+-------------------------------------------------
+	testdata/builtinXnor2:1:1-24	$
+
+std.xnor("true", false)
+
+-------------------------------------------------
+	During evaluation	
+
+

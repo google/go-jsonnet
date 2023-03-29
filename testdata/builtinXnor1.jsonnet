@@ -1,0 +1,1 @@
+std.xnor(true, false)
