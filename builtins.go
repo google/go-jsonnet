@@ -1267,6 +1267,15 @@ func builtinStrReplace(i *interpreter, strv, fromv, tov value) (value, error) {
 	return makeValueString(strings.Replace(sStr, sFrom, sTo, -1)), nil
 }
 
+func builtinIsEmpty(i *interpreter, strv value) (value, error) {
+	str, err := i.getString(strv)
+	if err != nil {
+		return nil, err
+	}
+	sStr := str.getGoString()
+	return makeValueBoolean(len(sStr) == 0), nil
+}
+
 func base64DecodeGoBytes(i *interpreter, str string) ([]byte, error) {
 	strLen := len(str)
 	if strLen%4 != 0 {
@@ -1483,7 +1492,7 @@ func tomlEncodeString(s string) string {
 }
 
 // tomlEncodeKey encodes a key - returning same string if it does not need quoting,
-// otherwise return it quoted; returns empty key as ''
+// otherwise return it quoted; returns empty key as ”
 func tomlEncodeKey(s string) string {
 	bareAllowed := true
 
@@ -2205,6 +2214,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&ternaryBuiltin{name: "substr", function: builtinSubstr, params: ast.Identifiers{"str", "from", "len"}},
 	&ternaryBuiltin{name: "splitLimit", function: builtinSplitLimit, params: ast.Identifiers{"str", "c", "maxsplits"}},
 	&ternaryBuiltin{name: "strReplace", function: builtinStrReplace, params: ast.Identifiers{"str", "from", "to"}},
+	&unaryBuiltin{name: "isEmpty", function: builtinIsEmpty, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "base64Decode", function: builtinBase64Decode, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "base64DecodeBytes", function: builtinBase64DecodeBytes, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseInt", function: builtinParseInt, params: ast.Identifiers{"str"}},

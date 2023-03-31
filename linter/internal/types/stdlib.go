@@ -88,6 +88,7 @@ func prepareStdlib(g *typeGraph) {
 		"asciiLower":  g.newSimpleFuncType(stringType, "str"),
 		"stringChars": g.newSimpleFuncType(stringType, "str"),
 		"format":      g.newSimpleFuncType(stringType, "str", "vals"),
+		"isEmpty":     g.newSimpleFuncType(boolType, "str"),
 		// TODO(sbarzowski) Fix when they match the documentation
 		"escapeStringBash":    g.newSimpleFuncType(stringType, "str_"),
 		"escapeStringDollars": g.newSimpleFuncType(stringType, "str_"),
@@ -174,7 +175,7 @@ func prepareStdlib(g *typeGraph) {
 
 		// Boolean
 
-		"xor":	g.newSimpleFuncType(boolType, "x", "y"),
+		"xor": g.newSimpleFuncType(boolType, "x", "y"),
 	}
 
 	fieldContains := map[string][]placeholderID{}
