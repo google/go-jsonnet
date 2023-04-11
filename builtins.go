@@ -1072,6 +1072,7 @@ var builtinExponent = liftNumeric(func(f float64) float64 {
 	_, exponent := math.Frexp(f)
 	return float64(exponent)
 })
+var builtinRound = liftNumeric(math.Round)
 
 func liftBitwise(f func(int64, int64) int64, positiveRightArg bool) func(*interpreter, value, value) (value, error) {
 	return func(i *interpreter, xv, yv value) (value, error) {
@@ -2195,6 +2196,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "exp", function: builtinExp, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "mantissa", function: builtinMantissa, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "exponent", function: builtinExponent, params: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "round", function: builtinRound, params: ast.Identifiers{"x"}},
 	&binaryBuiltin{name: "pow", function: builtinPow, params: ast.Identifiers{"x", "n"}},
 	&binaryBuiltin{name: "modulo", function: builtinModulo, params: ast.Identifiers{"x", "y"}},
 	&unaryBuiltin{name: "md5", function: builtinMd5, params: ast.Identifiers{"s"}},
