@@ -65,6 +65,7 @@ func prepareStdlib(g *typeGraph) {
 		"asin":     g.newSimpleFuncType(numberType, "x"),
 		"acos":     g.newSimpleFuncType(numberType, "x"),
 		"atan":     g.newSimpleFuncType(numberType, "x"),
+		"round":    g.newSimpleFuncType(numberType, "x"),
 
 		// Assertions and debugging
 		"assertEqual": g.newSimpleFuncType(boolType, "a", "b"),
