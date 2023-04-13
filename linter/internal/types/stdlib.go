@@ -175,7 +175,8 @@ func prepareStdlib(g *typeGraph) {
 
 		// Boolean
 
-		"xor": g.newSimpleFuncType(boolType, "x", "y"),
+		"xor":	g.newSimpleFuncType(boolType, "x", "y"),
+		"xnor":	g.newSimpleFuncType(boolType, "x", "y"),
 	}
 
 	fieldContains := map[string][]placeholderID{}
