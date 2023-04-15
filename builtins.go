@@ -1907,6 +1907,31 @@ func builtinExtVar(i *interpreter, name value) (value, error) {
 	return nil, i.Error("Undefined external variable: " + string(index))
 }
 
+func builtinMinArray(i *interpreter, arrv value) (value, error) {
+	arr, err := i.getArray(arrv)
+	if err != nil {
+		return nil, err
+	}
+	minVal, err := arr.index(i, 0)
+	if err != nil {
+		return nil, err
+	}
+	for index := 1; index < arr.length(); index++ {
+		current, err := arr.index(i, index)
+		if err != nil {
+			return nil, err
+		}
+		cmp, err := valueCmp(i, minVal, current)
+		if err != nil {
+			return nil, err
+		}
+		if cmp > 0 {
+			minVal = current
+		}
+	}
+	return minVal, nil
+}
+
 func builtinNative(i *interpreter, name value) (value, error) {
 	str, err := i.getString(name)
 	if err != nil {
@@ -2243,6 +2268,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "encodeUTF8", function: builtinEncodeUTF8, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "decodeUTF8", function: builtinDecodeUTF8, params: ast.Identifiers{"arr"}},
 	&generalBuiltin{name: "sort", function: builtinSort, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}}},
+	&unaryBuiltin{name: "minArray", function: builtinMinArray, params: ast.Identifiers{"arr"}},
 	&unaryBuiltin{name: "native", function: builtinNative, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "sum", function: builtinSum, params: ast.Identifiers{"arr"}},
 

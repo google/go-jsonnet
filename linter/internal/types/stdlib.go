@@ -140,6 +140,7 @@ func prepareStdlib(g *typeGraph) {
 		"sort":          g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"uniq":          g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"sum":           g.newSimpleFuncType(numberType, "arr"),
+		"minArray":      g.newSimpleFuncType(anyType, "arr"),
 
 		// Sets
 
@@ -176,8 +177,8 @@ func prepareStdlib(g *typeGraph) {
 
 		// Boolean
 
-		"xor":	g.newSimpleFuncType(boolType, "x", "y"),
-		"xnor":	g.newSimpleFuncType(boolType, "x", "y"),
+		"xor":  g.newSimpleFuncType(boolType, "x", "y"),
+		"xnor": g.newSimpleFuncType(boolType, "x", "y"),
 	}
 
 	fieldContains := map[string][]placeholderID{}
