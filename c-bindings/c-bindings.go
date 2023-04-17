@@ -11,7 +11,7 @@ import (
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/formatter"
 
-	// #cgo CXXFLAGS: -std=c++11 -Wall -I../cpp-jsonnet/include
+	// #cgo CXXFLAGS: -std=c++11 -Wall
 	// #include "internal.h"
 	"C"
 )
