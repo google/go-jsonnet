@@ -1990,6 +1990,41 @@ func builtinContains(i *interpreter, arrv value, ev value) (value, error) {
 	return makeValueBoolean(false), nil
 }
 
+func builtinRemove(i *interpreter, arrv value, ev value) (value, error) {
+	arr, err := i.getArray(arrv)
+	if err != nil {
+		return nil, err
+	}
+	for idx, elem := range arr.elements {
+		val, err := elem.getValue(i)
+		if err != nil {
+			return nil, err
+		}
+		eq, err := rawEquals(i, val, ev)
+		if err != nil {
+			return nil, err
+		}
+		if eq {
+			return builtinRemoveAt(i, arrv, intToValue(idx))
+		}
+	}
+	return arr, nil
+}
+
+func builtinRemoveAt(i *interpreter, arrv value, idxv value) (value, error) {
+	arr, err := i.getArray(arrv)
+	if err != nil {
+		return nil, err
+	}
+	idx, err := i.getInt(idxv)
+	if err != nil {
+		return nil, err
+	}
+
+	newArr := append(arr.elements[:idx], arr.elements[idx+1:]...)
+	return makeValueArray(newArr), nil
+}
+
 // Utils for builtins - TODO(sbarzowski) move to a separate file in another commit
 
 type builtin interface {
@@ -2251,6 +2286,8 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&ternaryBuiltin{name: "foldl", function: builtinFoldl, params: ast.Identifiers{"func", "arr", "init"}},
 	&ternaryBuiltin{name: "foldr", function: builtinFoldr, params: ast.Identifiers{"func", "arr", "init"}},
 	&binaryBuiltin{name: "member", function: builtinMember, params: ast.Identifiers{"arr", "x"}},
+	&binaryBuiltin{name: "remove", function: builtinRemove, params: ast.Identifiers{"arr", "elem"}},
+	&binaryBuiltin{name: "removeAt", function: builtinRemoveAt, params: ast.Identifiers{"arr", "i"}},
 	&binaryBuiltin{name: "range", function: builtinRange, params: ast.Identifiers{"from", "to"}},
 	&binaryBuiltin{name: "primitiveEquals", function: primitiveEquals, params: ast.Identifiers{"x", "y"}},
 	&binaryBuiltin{name: "equals", function: builtinEquals, params: ast.Identifiers{"x", "y"}},
