@@ -1912,6 +1912,9 @@ func builtinMinArray(i *interpreter, arrv value) (value, error) {
 	if err != nil {
 		return nil, err
 	}
+	if arr.length() == 0 {
+		return nil, i.Error("Expected array with elements. Got emtpy array")
+	}
 	minVal, err := arr.index(i, 0)
 	if err != nil {
 		return nil, err
