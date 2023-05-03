@@ -1921,7 +1921,7 @@ func builtinMinArray(i *interpreter, arguments []value) (value, error) {
 	}
 	num := arr.length()
 	if num == 0 {
-		return nil, i.Error("Expected atleast one element in array. Got none")
+		return nil, i.Error("Expected at least one element in array. Got none")
 	}
 	minVal, err := keyF.call(i, args(arr.elements[0]))
 	if err != nil {
