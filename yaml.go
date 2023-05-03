@@ -32,7 +32,7 @@ const separator = "---"
 // separating individual documents. It first converts the YAML
 // body to JSON, then unmarshals the JSON.
 type YAMLToJSONDecoder struct {
-	reader Reader
+	reader *YAMLReader
 }
 
 // NewYAMLToJSONDecoder decodes YAML documents from the provided
@@ -50,7 +50,7 @@ func NewYAMLToJSONDecoder(r io.Reader) *YAMLToJSONDecoder {
 // an error. The decoding rules match json.Unmarshal, not
 // yaml.Unmarshal.
 func (d *YAMLToJSONDecoder) Decode(into interface{}) error {
-	bytes, err := d.reader.Read()
+	bytes, err := d.reader.read()
 	if err != nil && err != io.EOF {
 		return err
 	}
@@ -64,6 +64,10 @@ func (d *YAMLToJSONDecoder) Decode(into interface{}) error {
 	return err
 }
 
+func (d *YAMLToJSONDecoder) IsStream() bool {
+	return d.reader.isStream()
+}
+
 // Reader reads bytes
 type Reader interface {
 	Read() ([]byte, error)
@@ -72,6 +76,7 @@ type Reader interface {
 // YAMLReader reads YAML
 type YAMLReader struct {
 	reader Reader
+	stream bool
 }
 
 // NewYAMLReader creates a new YAMLReader
@@ -82,7 +87,7 @@ func NewYAMLReader(r *bufio.Reader) *YAMLReader {
 }
 
 // Read returns a full YAML document.
-func (r *YAMLReader) Read() ([]byte, error) {
+func (r *YAMLReader) read() ([]byte, error) {
 	var buffer bytes.Buffer
 	for {
 		line, err := r.reader.Read()
@@ -96,6 +101,7 @@ func (r *YAMLReader) Read() ([]byte, error) {
 			i += sep
 			after := line[i:]
 			if len(strings.TrimRightFunc(string(after), unicode.IsSpace)) == 0 {
+				r.stream = true
 				if buffer.Len() != 0 {
 					return buffer.Bytes(), nil
 				}
@@ -113,6 +119,10 @@ func (r *YAMLReader) Read() ([]byte, error) {
 		}
 		buffer.Write(line)
 	}
+}
+
+func (r *YAMLReader) isStream() bool {
+	return r.stream
 }
 
 // LineReader reads single lines.
