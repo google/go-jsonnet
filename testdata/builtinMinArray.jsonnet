@@ -1,0 +1,1 @@
+std.minArray([1,-1,0])
