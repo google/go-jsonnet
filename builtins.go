@@ -1935,6 +1935,27 @@ func builtinSum(i *interpreter, arrv value) (value, error) {
 	return makeValueNumber(sum), nil
 }
 
+func builtinContains(i *interpreter, arrv value, ev value) (value, error) {
+	arr, err := i.getArray(arrv)
+	if err != nil {
+		return nil, err
+	}
+	for _, elem := range arr.elements {
+		val, err := elem.getValue(i)
+		if err != nil {
+			return nil, err
+		}
+		eq, err := rawEquals(i, val, ev)
+		if err != nil {
+			return nil, err
+		}
+		if eq {
+			return makeValueBoolean(true), nil
+		}
+	}
+	return makeValueBoolean(false), nil
+}
+
 // Utils for builtins - TODO(sbarzowski) move to a separate file in another commit
 
 type builtin interface {
@@ -2245,6 +2266,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&generalBuiltin{name: "sort", function: builtinSort, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}}},
 	&unaryBuiltin{name: "native", function: builtinNative, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "sum", function: builtinSum, params: ast.Identifiers{"arr"}},
+	&binaryBuiltin{name: "contains", function: builtinContains, params: ast.Identifiers{"arr", "elem"}},
 
 	// internal
 	&unaryBuiltin{name: "$objectFlatMerge", function: builtinUglyObjectFlatMerge, params: ast.Identifiers{"x"}},
