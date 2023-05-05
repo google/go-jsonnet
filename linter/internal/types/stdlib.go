@@ -142,6 +142,9 @@ func prepareStdlib(g *typeGraph) {
 		"sum":           g.newSimpleFuncType(numberType, "arr"),
 		"minArray":      g.newSimpleFuncType(anyType, "arr"),
 		"contains":      g.newSimpleFuncType(boolType, "arr", "elem"),
+		// TODO these need test cases written by someone who understands how to make them
+		"all": g.newSimpleFuncType(boolArrayType, "arr"),
+		"any": g.newSimpleFuncType(boolArrayType, "arr"),
 
 		// Sets
 
