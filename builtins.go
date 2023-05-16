@@ -1415,8 +1415,6 @@ func builtinParseYAML(i *interpreter, str value) (value, error) {
 	}
 	s := sval.getGoString()
 
-	isYamlStream := strings.Contains(s, "---")
-
 	elems := []interface{}{}
 	d := NewYAMLToJSONDecoder(strings.NewReader(s))
 	for {
@@ -1430,7 +1428,7 @@ func builtinParseYAML(i *interpreter, str value) (value, error) {
 		elems = append(elems, elem)
 	}
 
-	if isYamlStream {
+	if d.IsStream() {
 		return jsonToValue(i, elems)
 	}
 	return jsonToValue(i, elems[0])
@@ -1916,6 +1914,42 @@ func builtinExtVar(i *interpreter, name value) (value, error) {
 	return nil, i.Error("Undefined external variable: " + string(index))
 }
 
+func builtinMinArray(i *interpreter, arguments []value) (value, error) {
+	arrv := arguments[0]
+	keyFv := arguments[1]
+
+	arr, err := i.getArray(arrv)
+	if err != nil {
+		return nil, err
+	}
+	keyF, err := i.getFunction(keyFv)
+	if err != nil {
+		return nil, err
+	}
+	num := arr.length()
+	if num == 0 {
+		return nil, i.Error("Expected at least one element in array. Got none")
+	}
+	minVal, err := keyF.call(i, args(arr.elements[0]))
+	if err != nil {
+		return nil, err
+	}
+	for index := 1; index < num; index++ {
+		current, err := keyF.call(i, args(arr.elements[index]))
+		if err != nil {
+			return nil, err
+		}
+		cmp, err := valueCmp(i, minVal, current)
+		if err != nil {
+			return nil, err
+		}
+		if cmp > 0 {
+			minVal = current
+		}
+	}
+	return minVal, nil
+}
+
 func builtinNative(i *interpreter, name value) (value, error) {
 	str, err := i.getString(name)
 	if err != nil {
@@ -1942,6 +1976,27 @@ func builtinSum(i *interpreter, arrv value) (value, error) {
 		sum += elemValue.value
 	}
 	return makeValueNumber(sum), nil
+}
+
+func builtinContains(i *interpreter, arrv value, ev value) (value, error) {
+	arr, err := i.getArray(arrv)
+	if err != nil {
+		return nil, err
+	}
+	for _, elem := range arr.elements {
+		val, err := elem.getValue(i)
+		if err != nil {
+			return nil, err
+		}
+		eq, err := rawEquals(i, val, ev)
+		if err != nil {
+			return nil, err
+		}
+		if eq {
+			return makeValueBoolean(true), nil
+		}
+	}
+	return makeValueBoolean(false), nil
 }
 
 // Utils for builtins - TODO(sbarzowski) move to a separate file in another commit
@@ -2253,8 +2308,10 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "encodeUTF8", function: builtinEncodeUTF8, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "decodeUTF8", function: builtinDecodeUTF8, params: ast.Identifiers{"arr"}},
 	&generalBuiltin{name: "sort", function: builtinSort, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}}},
+	&generalBuiltin{name: "minArray", function: builtinMinArray, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}}},
 	&unaryBuiltin{name: "native", function: builtinNative, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "sum", function: builtinSum, params: ast.Identifiers{"arr"}},
+	&binaryBuiltin{name: "contains", function: builtinContains, params: ast.Identifiers{"arr", "elem"}},
 
 	// internal
 	&unaryBuiltin{name: "$objectFlatMerge", function: builtinUglyObjectFlatMerge, params: ast.Identifiers{"x"}},

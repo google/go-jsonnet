@@ -1,0 +1,1 @@
+std.contains([1, 2, 3], "foo")

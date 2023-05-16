@@ -141,6 +141,8 @@ func prepareStdlib(g *typeGraph) {
 		"sort":          g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"uniq":          g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"sum":           g.newSimpleFuncType(numberType, "arr"),
+		"minArray":      g.newSimpleFuncType(anyType, "arr"),
+		"contains":      g.newSimpleFuncType(boolType, "arr", "elem"),
 
 		// Sets
 
