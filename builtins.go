@@ -19,6 +19,9 @@ package jsonnet
 import (
 	"bytes"
 	"crypto/md5"
+	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -31,6 +34,7 @@ import (
 	"strings"
 
 	"github.com/google/go-jsonnet/ast"
+	"golang.org/x/crypto/sha3"
 )
 
 func builtinPlus(i *interpreter, x, y value) (value, error) {
@@ -913,6 +917,42 @@ func builtinMd5(i *interpreter, x value) (value, error) {
 		return nil, err
 	}
 	hash := md5.Sum([]byte(str.getGoString()))
+	return makeValueString(hex.EncodeToString(hash[:])), nil
+}
+
+func builtinSha1(i *interpreter, x value) (value, error) {
+	str, err := i.getString(x)
+	if err != nil {
+		return nil, err
+	}
+	hash := sha1.Sum([]byte(str.getGoString()))
+	return makeValueString(hex.EncodeToString(hash[:])), nil
+}
+
+func builtinSha256(i *interpreter, x value) (value, error) {
+	str, err := i.getString(x)
+	if err != nil {
+		return nil, err
+	}
+	hash := sha256.Sum256([]byte(str.getGoString()))
+	return makeValueString(hex.EncodeToString(hash[:])), nil
+}
+
+func builtinSha512(i *interpreter, x value) (value, error) {
+	str, err := i.getString(x)
+	if err != nil {
+		return nil, err
+	}
+	hash := sha512.Sum512([]byte(str.getGoString()))
+	return makeValueString(hex.EncodeToString(hash[:])), nil
+}
+
+func builtinSha3(i *interpreter, x value) (value, error) {
+	str, err := i.getString(x)
+	if err != nil {
+		return nil, err
+	}
+	hash := sha3.Sum512([]byte(str.getGoString()))
 	return makeValueString(hex.EncodeToString(hash[:])), nil
 }
 
@@ -2276,6 +2316,10 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&binaryBuiltin{name: "pow", function: builtinPow, params: ast.Identifiers{"x", "n"}},
 	&binaryBuiltin{name: "modulo", function: builtinModulo, params: ast.Identifiers{"x", "y"}},
 	&unaryBuiltin{name: "md5", function: builtinMd5, params: ast.Identifiers{"s"}},
+	&unaryBuiltin{name: "sha1", function: builtinSha1, params: ast.Identifiers{"s"}},
+	&unaryBuiltin{name: "sha256", function: builtinSha256, params: ast.Identifiers{"s"}},
+	&unaryBuiltin{name: "sha512", function: builtinSha512, params: ast.Identifiers{"s"}},
+	&unaryBuiltin{name: "sha3", function: builtinSha3, params: ast.Identifiers{"s"}},
 	&binaryBuiltin{name: "xnor", function: builtinXnor, params: ast.Identifiers{"x", "y"}},
 	&binaryBuiltin{name: "xor", function: builtinXor, params: ast.Identifiers{"x", "y"}},
 	&binaryBuiltin{name: "lstripChars", function: builtinLstripChars, params: ast.Identifiers{"str", "chars"}},

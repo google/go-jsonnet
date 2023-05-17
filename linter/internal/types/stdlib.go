@@ -157,6 +157,10 @@ func prepareStdlib(g *typeGraph) {
 		"base64DecodeBytes": g.newSimpleFuncType(numberType, "str"),
 		"base64Decode":      g.newSimpleFuncType(stringType, "str"),
 		"md5":               g.newSimpleFuncType(stringType, "s"),
+		"sha1":              g.newSimpleFuncType(stringType, "s"),
+		"sha256":            g.newSimpleFuncType(stringType, "s"),
+		"sha512":            g.newSimpleFuncType(stringType, "s"),
+		"sha3":              g.newSimpleFuncType(stringType, "s"),
 
 		// JSON Merge Patch
 
