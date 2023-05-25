@@ -144,6 +144,9 @@ func prepareStdlib(g *typeGraph) {
 		"minArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"maxArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"contains":      g.newSimpleFuncType(boolType, "arr", "elem"),
+		// TODO these need test cases written by someone who understands how to make them
+		"all":           g.newSimpleFuncType(boolArrayType, "arr"),
+		"any":           g.newSimpleFuncType(boolArrayType, "arr"),
 		"remove":        g.newSimpleFuncType(anyArrayType, "arr", "elem"),
 		"removeAt":      g.newSimpleFuncType(anyArrayType, "arr", "i"),
 
