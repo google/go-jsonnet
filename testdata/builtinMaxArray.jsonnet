@@ -1,0 +1,1 @@
+std.maxArray([1,-1,0])
