@@ -2023,6 +2023,40 @@ func builtinRemoveAt(i *interpreter, arrv value, idxv value) (value, error) {
 
 	newArr := append(arr.elements[:idx], arr.elements[idx+1:]...)
 	return makeValueArray(newArr), nil
+
+func builtInObjectRemoveKey(i *interpreter, objv value, keyv value) (value, error) {
+	obj, err := i.getObject(objv)
+	if err != nil {
+		return nil, err
+	}
+	key, err := i.getString(keyv)
+	if err != nil {
+		return nil, err
+	}
+
+	newFields := make(simpleObjectFieldMap)
+	simpleObj := obj.uncached.(*simpleObject)
+	for fieldName, fieldVal := range simpleObj.fields {
+		if fieldName == key.getGoString() {
+			// skip the field which needs to be deleted
+			continue
+		}
+
+		newFields[fieldName] = simpleObjectField{
+			hide: fieldVal.hide,
+			field: &bindingsUnboundField{
+				inner:    fieldVal.field,
+				bindings: simpleObj.upValues,
+			},
+		}
+	}
+
+	return makeValueSimpleObject(
+		nil,
+		newFields,
+		[]unboundField{}, // No asserts allowed
+		nil,
+	), nil
 }
 
 // Utils for builtins - TODO(sbarzowski) move to a separate file in another commit
@@ -2293,6 +2327,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&binaryBuiltin{name: "equals", function: builtinEquals, params: ast.Identifiers{"x", "y"}},
 	&binaryBuiltin{name: "objectFieldsEx", function: builtinObjectFieldsEx, params: ast.Identifiers{"obj", "hidden"}},
 	&ternaryBuiltin{name: "objectHasEx", function: builtinObjectHasEx, params: ast.Identifiers{"obj", "fname", "hidden"}},
+	&binaryBuiltin{name: "objectRemoveKey", function: builtInObjectRemoveKey, params: ast.Identifiers{"obj", "key"}},
 	&unaryBuiltin{name: "type", function: builtinType, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "char", function: builtinChar, params: ast.Identifiers{"n"}},
 	&unaryBuiltin{name: "codepoint", function: builtinCodepoint, params: ast.Identifiers{"str"}},
