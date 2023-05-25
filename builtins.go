@@ -23,6 +23,7 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/base64"
+	"encoding/csv"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -1512,6 +1513,170 @@ func builtinParseYAML(i *interpreter, str value) (value, error) {
 	return jsonToValue(i, elems[0])
 }
 
+func builtinParseCSVWithHeader(i *interpreter, arguments []value) (value, error) {
+	strv := arguments[0]
+	dv := arguments[1]
+
+	sval, err := i.getString(strv)
+	if err != nil {
+		return nil, err
+	}
+	s := sval.getGoString()
+
+	d := ',' // default delimiter
+	if dv.getType() != nullType {
+		dval, err := i.getString(dv)
+		if err != nil {
+			return nil, err
+		}
+		ds := dval.getGoString()
+		if len(ds) != 1 {
+			return nil, i.Error(fmt.Sprintf("Delimiter %s is invalid", ds))
+		}
+		d = rune(ds[0]) // conversion to rune
+	}
+
+	json := make([]interface{}, 0)
+	var keys []string
+
+	reader := csv.NewReader(strings.NewReader(s))
+	reader.Comma = d
+
+	for row := 0; ; row++ {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, i.Error(fmt.Sprintf("failed to parse CSV: %s", err.Error()))
+		}
+
+		if row == 0 { // consider first row as header
+			// detect and handle duplicate headers
+			keyCount := map[string]int{}
+			for _, k := range record {
+				keyCount[k]++
+				if c := keyCount[k]; c > 1 {
+					keys = append(keys, fmt.Sprintf("%s__%d", k, c-1))
+				} else {
+					keys = append(keys, k)
+				}
+			}
+		} else {
+			j := make(map[string]interface{})
+			for i, k := range keys {
+				j[k] = record[i]
+			}
+			json = append(json, j)
+		}
+	}
+	return jsonToValue(i, json)
+}
+
+func builtinManifestCsv(i *interpreter, arguments []value) (value, error) {
+	arrv := arguments[0]
+	hv := arguments[1]
+
+	arr, err := i.getArray(arrv)
+	if err != nil {
+		return nil, err
+	}
+
+	var headers []string
+	if hv.getType() == nullType {
+		if len(arr.elements) == 0 { // no elements to select headers
+			return makeValueString(""), nil
+		}
+
+		// default to all headers
+		obj, err := i.evaluateObject(arr.elements[0])
+		if err != nil {
+			return nil, err
+		}
+
+		simpleObj := obj.uncached.(*simpleObject)
+		for fieldName := range simpleObj.fields {
+			headers = append(headers, fieldName)
+		}
+	} else {
+		// headers are provided
+		ha, err := i.getArray(hv)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, elem := range ha.elements {
+			header, err := i.evaluateString(elem)
+			if err != nil {
+				return nil, err
+			}
+			headers = append(headers, header.getGoString())
+		}
+	}
+
+	var buf bytes.Buffer
+	w := csv.NewWriter(&buf)
+
+	// Write headers
+	w.Write(headers)
+
+	// Write rest of the rows
+	for _, elem := range arr.elements {
+		obj, err := i.evaluateObject(elem)
+		if err != nil {
+			return nil, err
+		}
+
+		record := make([]string, len(headers))
+		for c, h := range headers {
+			val, err := obj.index(i, h)
+			if err != nil { // no corresponding column
+				// skip to next column
+				continue
+			}
+
+			s, err := stringFromValue(i, val)
+			if err != nil {
+				return nil, err
+			}
+			record[c] = s
+		}
+		w.Write(record)
+	}
+
+	w.Flush()
+
+	return makeValueString(buf.String()), nil
+}
+
+func stringFromValue(i *interpreter, v value) (string, error) {
+	switch v.getType() {
+	case stringType:
+		s, err := i.getString(v)
+		if err != nil {
+			return "", err
+		}
+		return s.getGoString(), nil
+	case numberType:
+		n, err := i.getNumber(v)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprint(n.value), nil
+	case booleanType:
+		b, err := i.getBoolean(v)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprint(b.value), nil
+	case nullType:
+		return "", nil
+	default:
+		// for functionType, objectType and arrayType
+		return "", i.Error("invalid string conversion")
+	}
+}
+
 func jsonEncode(v interface{}) (string, error) {
 	buf := new(bytes.Buffer)
 	enc := json.NewEncoder(buf)
@@ -2520,6 +2685,8 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "parseInt", function: builtinParseInt, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseJson", function: builtinParseJSON, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseYaml", function: builtinParseYAML, params: ast.Identifiers{"str"}},
+	&generalBuiltin{name: "parseCsvWithHeader", function: builtinParseCSVWithHeader, params: []generalBuiltinParameter{{name: "str"}, {name: "delimiter", defaultValue: &nullValue}}},
+	&generalBuiltin{name: "manifestCsv", function: builtinManifestCsv, params: []generalBuiltinParameter{{name: "json"}, {name: "headers", defaultValue: &nullValue}}},
 	&generalBuiltin{name: "manifestJsonEx", function: builtinManifestJSONEx, params: []generalBuiltinParameter{{name: "value"}, {name: "indent"},
 		{name: "newline", defaultValue: &valueFlatString{value: []rune("\n")}},
 		{name: "key_val_sep", defaultValue: &valueFlatString{value: []rune(": ")}}}},
