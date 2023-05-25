@@ -2023,6 +2023,7 @@ func builtinRemoveAt(i *interpreter, arrv value, idxv value) (value, error) {
 
 	newArr := append(arr.elements[:idx], arr.elements[idx+1:]...)
 	return makeValueArray(newArr), nil
+}
 
 func builtInObjectRemoveKey(i *interpreter, objv value, keyv value) (value, error) {
 	obj, err := i.getObject(objv)
