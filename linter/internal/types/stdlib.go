@@ -72,24 +72,25 @@ func prepareStdlib(g *typeGraph) {
 
 		// String Manipulation
 
-		"toString":    g.newSimpleFuncType(stringType, "a"),
-		"codepoint":   g.newSimpleFuncType(numberType, "str"),
-		"char":        g.newSimpleFuncType(stringType, "n"),
-		"substr":      g.newSimpleFuncType(stringType, "str", "from", "len"),
-		"findSubstr":  g.newSimpleFuncType(numberArrayType, "pat", "str"),
-		"startsWith":  g.newSimpleFuncType(boolType, "a", "b"),
-		"endsWith":    g.newSimpleFuncType(boolType, "a", "b"),
-		"stripChars":  g.newSimpleFuncType(stringType, "str", "chars"),
-		"lstripChars": g.newSimpleFuncType(stringType, "str", "chars"),
-		"rstripChars": g.newSimpleFuncType(stringType, "str", "chars"),
-		"split":       g.newSimpleFuncType(arrayOfString, "str", "c"),
-		"splitLimit":  g.newSimpleFuncType(arrayOfString, "str", "c", "maxsplits"),
-		"strReplace":  g.newSimpleFuncType(stringType, "str", "from", "to"),
-		"asciiUpper":  g.newSimpleFuncType(stringType, "str"),
-		"asciiLower":  g.newSimpleFuncType(stringType, "str"),
-		"stringChars": g.newSimpleFuncType(stringType, "str"),
-		"format":      g.newSimpleFuncType(stringType, "str", "vals"),
-		"isEmpty":     g.newSimpleFuncType(boolType, "str"),
+		"toString":         g.newSimpleFuncType(stringType, "a"),
+		"codepoint":        g.newSimpleFuncType(numberType, "str"),
+		"char":             g.newSimpleFuncType(stringType, "n"),
+		"substr":           g.newSimpleFuncType(stringType, "str", "from", "len"),
+		"findSubstr":       g.newSimpleFuncType(numberArrayType, "pat", "str"),
+		"startsWith":       g.newSimpleFuncType(boolType, "a", "b"),
+		"endsWith":         g.newSimpleFuncType(boolType, "a", "b"),
+		"stripChars":       g.newSimpleFuncType(stringType, "str", "chars"),
+		"lstripChars":      g.newSimpleFuncType(stringType, "str", "chars"),
+		"rstripChars":      g.newSimpleFuncType(stringType, "str", "chars"),
+		"split":            g.newSimpleFuncType(arrayOfString, "str", "c"),
+		"splitLimit":       g.newSimpleFuncType(arrayOfString, "str", "c", "maxsplits"),
+		"strReplace":       g.newSimpleFuncType(stringType, "str", "from", "to"),
+		"asciiUpper":       g.newSimpleFuncType(stringType, "str"),
+		"asciiLower":       g.newSimpleFuncType(stringType, "str"),
+		"stringChars":      g.newSimpleFuncType(stringType, "str"),
+		"format":           g.newSimpleFuncType(stringType, "str", "vals"),
+		"isEmpty":          g.newSimpleFuncType(boolType, "str"),
+		"equalsIgnoreCase": g.newSimpleFuncType(boolType, "str1", "str2"),
 		// TODO(sbarzowski) Fix when they match the documentation
 		"escapeStringBash":    g.newSimpleFuncType(stringType, "str_"),
 		"escapeStringDollars": g.newSimpleFuncType(stringType, "str_"),
@@ -140,9 +141,14 @@ func prepareStdlib(g *typeGraph) {
 		"sort":          g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"uniq":          g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"sum":           g.newSimpleFuncType(numberType, "arr"),
-		"minArray":      g.newSimpleFuncType(anyType, "arr"),
+		"minArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
+		"maxArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"contains":      g.newSimpleFuncType(boolType, "arr", "elem"),
-		"avg":			 g.newSimpleFuncType(numberType, "arr"),	
+		"avg":		    	 g.newSimpleFuncType(numberType, "arr"),	
+		"all":           g.newSimpleFuncType(boolArrayType, "arr"),
+		"any":           g.newSimpleFuncType(boolArrayType, "arr"),
+		"remove":        g.newSimpleFuncType(anyArrayType, "arr", "elem"),
+		"removeAt":      g.newSimpleFuncType(anyArrayType, "arr", "i"),
 
 		// Sets
 
@@ -151,6 +157,10 @@ func prepareStdlib(g *typeGraph) {
 		"setUnion":  g.newFuncType(anyArrayType, []ast.Parameter{required("a"), required("b"), optional("keyF")}),
 		"setDiff":   g.newFuncType(anyArrayType, []ast.Parameter{required("a"), required("b"), optional("keyF")}),
 		"setMember": g.newFuncType(boolType, []ast.Parameter{required("x"), required("arr"), optional("keyF")}),
+
+		// Objects
+
+		"objectRemoveKey": g.newSimpleFuncType(anyObjectType, "obj", "key"),
 
 		// Encoding
 

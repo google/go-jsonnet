@@ -140,6 +140,13 @@ func newTypeGraph(importFunc ImportFunc) *typeGraph {
 	})
 
 	g.newPlaceholder()
+	g._placeholders[boolArrayType] = concreteTP(TypeDesc{
+		ArrayDesc: &arrayDesc{
+			furtherContain: []placeholderID{boolType},
+		},
+	})
+
+	g.newPlaceholder()
 	g._placeholders[anyObjectType] = concreteTP(TypeDesc{
 		ObjectDesc: anyObjectDesc,
 	})

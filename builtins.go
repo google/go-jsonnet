@@ -1289,6 +1289,18 @@ func builtinIsEmpty(i *interpreter, strv value) (value, error) {
 	return makeValueBoolean(len(sStr) == 0), nil
 }
 
+func builtinEqualsIgnoreCase(i *interpreter, sv1, sv2 value) (value, error) {
+	s1, err := i.getString(sv1)
+	if err != nil {
+		return nil, err
+	}
+	s2, err := i.getString(sv2)
+	if err != nil {
+		return nil, err
+	}
+	return makeValueBoolean(strings.EqualFold(s1.getGoString(), s2.getGoString())), nil
+}
+
 func base64DecodeGoBytes(i *interpreter, str string) ([]byte, error) {
 	strLen := len(str)
 	if strLen%4 != 0 {
@@ -1941,6 +1953,42 @@ func builtinMinArray(i *interpreter, arguments []value) (value, error) {
 	return minVal, nil
 }
 
+func builtinMaxArray(i *interpreter, arguments []value) (value, error) {
+	arrv := arguments[0]
+	keyFv := arguments[1]
+
+	arr, err := i.getArray(arrv)
+	if err != nil {
+		return nil, err
+	}
+	keyF, err := i.getFunction(keyFv)
+	if err != nil {
+		return nil, err
+	}
+	num := arr.length()
+	if num == 0 {
+		return nil, i.Error("Expected at least one element in array. Got none")
+	}
+	maxVal, err := keyF.call(i, args(arr.elements[0]))
+	if err != nil {
+		return nil, err
+	}
+	for index := 1; index < num; index++ {
+		current, err := keyF.call(i, args(arr.elements[index]))
+		if err != nil {
+			return nil, err
+		}
+		cmp, err := valueCmp(i, maxVal, current)
+		if err != nil {
+			return nil, err
+		}
+		if cmp < 0 {
+			maxVal = current
+		}
+	}
+	return maxVal, nil
+}
+
 func builtinNative(i *interpreter, name value) (value, error) {
 	str, err := i.getString(name)
 	if err != nil {
@@ -2012,6 +2060,76 @@ func builtinContains(i *interpreter, arrv value, ev value) (value, error) {
 		}
 	}
 	return makeValueBoolean(false), nil
+}
+
+func builtinRemove(i *interpreter, arrv value, ev value) (value, error) {
+	arr, err := i.getArray(arrv)
+	if err != nil {
+		return nil, err
+	}
+	for idx, elem := range arr.elements {
+		val, err := elem.getValue(i)
+		if err != nil {
+			return nil, err
+		}
+		eq, err := rawEquals(i, val, ev)
+		if err != nil {
+			return nil, err
+		}
+		if eq {
+			return builtinRemoveAt(i, arrv, intToValue(idx))
+		}
+	}
+	return arr, nil
+}
+
+func builtinRemoveAt(i *interpreter, arrv value, idxv value) (value, error) {
+	arr, err := i.getArray(arrv)
+	if err != nil {
+		return nil, err
+	}
+	idx, err := i.getInt(idxv)
+	if err != nil {
+		return nil, err
+	}
+
+	newArr := append(arr.elements[:idx], arr.elements[idx+1:]...)
+	return makeValueArray(newArr), nil
+}
+
+func builtInObjectRemoveKey(i *interpreter, objv value, keyv value) (value, error) {
+	obj, err := i.getObject(objv)
+	if err != nil {
+		return nil, err
+	}
+	key, err := i.getString(keyv)
+	if err != nil {
+		return nil, err
+	}
+
+	newFields := make(simpleObjectFieldMap)
+	simpleObj := obj.uncached.(*simpleObject)
+	for fieldName, fieldVal := range simpleObj.fields {
+		if fieldName == key.getGoString() {
+			// skip the field which needs to be deleted
+			continue
+		}
+
+		newFields[fieldName] = simpleObjectField{
+			hide: fieldVal.hide,
+			field: &bindingsUnboundField{
+				inner:    fieldVal.field,
+				bindings: simpleObj.upValues,
+			},
+		}
+	}
+
+	return makeValueSimpleObject(
+		nil,
+		newFields,
+		[]unboundField{}, // No asserts allowed
+		nil,
+	), nil
 }
 
 // Utils for builtins - TODO(sbarzowski) move to a separate file in another commit
@@ -2275,11 +2393,14 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&ternaryBuiltin{name: "foldl", function: builtinFoldl, params: ast.Identifiers{"func", "arr", "init"}},
 	&ternaryBuiltin{name: "foldr", function: builtinFoldr, params: ast.Identifiers{"func", "arr", "init"}},
 	&binaryBuiltin{name: "member", function: builtinMember, params: ast.Identifiers{"arr", "x"}},
+	&binaryBuiltin{name: "remove", function: builtinRemove, params: ast.Identifiers{"arr", "elem"}},
+	&binaryBuiltin{name: "removeAt", function: builtinRemoveAt, params: ast.Identifiers{"arr", "i"}},
 	&binaryBuiltin{name: "range", function: builtinRange, params: ast.Identifiers{"from", "to"}},
 	&binaryBuiltin{name: "primitiveEquals", function: primitiveEquals, params: ast.Identifiers{"x", "y"}},
 	&binaryBuiltin{name: "equals", function: builtinEquals, params: ast.Identifiers{"x", "y"}},
 	&binaryBuiltin{name: "objectFieldsEx", function: builtinObjectFieldsEx, params: ast.Identifiers{"obj", "hidden"}},
 	&ternaryBuiltin{name: "objectHasEx", function: builtinObjectHasEx, params: ast.Identifiers{"obj", "fname", "hidden"}},
+	&binaryBuiltin{name: "objectRemoveKey", function: builtInObjectRemoveKey, params: ast.Identifiers{"obj", "key"}},
 	&unaryBuiltin{name: "type", function: builtinType, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "char", function: builtinChar, params: ast.Identifiers{"n"}},
 	&unaryBuiltin{name: "codepoint", function: builtinCodepoint, params: ast.Identifiers{"str"}},
@@ -2309,6 +2430,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&ternaryBuiltin{name: "splitLimit", function: builtinSplitLimit, params: ast.Identifiers{"str", "c", "maxsplits"}},
 	&ternaryBuiltin{name: "strReplace", function: builtinStrReplace, params: ast.Identifiers{"str", "from", "to"}},
 	&unaryBuiltin{name: "isEmpty", function: builtinIsEmpty, params: ast.Identifiers{"str"}},
+	&binaryBuiltin{name: "equalsIgnoreCase", function: builtinEqualsIgnoreCase, params: ast.Identifiers{"str1", "str2"}},
 	&unaryBuiltin{name: "base64Decode", function: builtinBase64Decode, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "base64DecodeBytes", function: builtinBase64DecodeBytes, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseInt", function: builtinParseInt, params: ast.Identifiers{"str"}},
@@ -2323,6 +2445,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "decodeUTF8", function: builtinDecodeUTF8, params: ast.Identifiers{"arr"}},
 	&generalBuiltin{name: "sort", function: builtinSort, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}}},
 	&generalBuiltin{name: "minArray", function: builtinMinArray, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}}},
+	&generalBuiltin{name: "maxArray", function: builtinMaxArray, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}}},
 	&unaryBuiltin{name: "native", function: builtinNative, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "sum", function: builtinSum, params: ast.Identifiers{"arr"}},
 	&unaryBuiltin{name: "avg", function: builtinAvg, params: ast.Identifiers{"arr"}},
