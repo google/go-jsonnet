@@ -1,0 +1,2 @@
+build --registry=https://raw.githubusercontent.com/mortenmj/bazel-central-registry/jsonnet-0.20.0/
+build --enable_bzlmod
