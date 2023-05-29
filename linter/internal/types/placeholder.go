@@ -14,6 +14,7 @@ const (
 	nullType
 	anyArrayType
 	numberArrayType
+	boolArrayType
 	anyObjectType
 	anyFunctionType
 	stdlibType
