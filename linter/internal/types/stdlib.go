@@ -45,6 +45,10 @@ func prepareStdlib(g *typeGraph) {
 		"isNumber":   g.newSimpleFuncType(boolType, "v"),
 		"isObject":   g.newSimpleFuncType(boolType, "v"),
 		"isString":   g.newSimpleFuncType(boolType, "v"),
+		"isEven":     g.newSimpleFuncType(boolType, "x"),
+		"isOdd":      g.newSimpleFuncType(boolType, "x"),
+		"isInteger":  g.newSimpleFuncType(boolType, "x"),
+		"isDecimal":  g.newSimpleFuncType(boolType, "x"),
 
 		// Mathematical utilities
 		"abs":      g.newSimpleFuncType(numberType, "n"),
@@ -145,10 +149,10 @@ func prepareStdlib(g *typeGraph) {
 		"maxArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"contains":      g.newSimpleFuncType(boolType, "arr", "elem"),
 		// TODO these need test cases written by someone who understands how to make them
-		"all":           g.newSimpleFuncType(boolArrayType, "arr"),
-		"any":           g.newSimpleFuncType(boolArrayType, "arr"),
-		"remove":        g.newSimpleFuncType(anyArrayType, "arr", "elem"),
-		"removeAt":      g.newSimpleFuncType(anyArrayType, "arr", "i"),
+		"all":      g.newSimpleFuncType(boolArrayType, "arr"),
+		"any":      g.newSimpleFuncType(boolArrayType, "arr"),
+		"remove":   g.newSimpleFuncType(anyArrayType, "arr", "elem"),
+		"removeAt": g.newSimpleFuncType(anyArrayType, "arr", "i"),
 
 		// Sets
 

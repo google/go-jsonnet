@@ -1059,6 +1059,16 @@ func liftNumeric(f func(float64) float64) func(*interpreter, value) (value, erro
 	}
 }
 
+func liftNumericToBoolean(f func(float64) bool) func(*interpreter, value) (value, error) {
+	return func(i *interpreter, x value) (value, error) {
+		n, err := i.getNumber(x)
+		if err != nil {
+			return nil, err
+		}
+		return makeValueBoolean(f(n.value)), nil
+	}
+}
+
 var builtinSqrt = liftNumeric(math.Sqrt)
 var builtinCeil = liftNumeric(math.Ceil)
 var builtinFloor = liftNumeric(math.Floor)
@@ -1085,6 +1095,22 @@ var builtinExponent = liftNumeric(func(f float64) float64 {
 	return float64(exponent)
 })
 var builtinRound = liftNumeric(math.Round)
+var builtinIsEven = liftNumericToBoolean(func(f float64) bool {
+	i, _ := math.Modf(f) // Get the integral part of the float
+	return math.Mod(i, 2) == 0
+})
+var builtinIsOdd = liftNumericToBoolean(func(f float64) bool {
+	i, _ := math.Modf(f) // Get the integral part of the float
+	return math.Mod(i, 2) != 0
+})
+var builtinIsInteger = liftNumericToBoolean(func(f float64) bool {
+	_, frac := math.Modf(f) // Get the fraction part of the float
+	return frac == 0
+})
+var builtinIsDecimal = liftNumericToBoolean(func(f float64) bool {
+	_, frac := math.Modf(f) // Get the fraction part of the float
+	return frac != 0
+})
 
 func liftBitwise(f func(int64, int64) int64, positiveRightArg bool) func(*interpreter, value, value) (value, error) {
 	return func(i *interpreter, xv, yv value) (value, error) {
@@ -2394,6 +2420,10 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "mantissa", function: builtinMantissa, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "exponent", function: builtinExponent, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "round", function: builtinRound, params: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "isEven", function: builtinIsEven, params: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "isOdd", function: builtinIsOdd, params: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "isInteger", function: builtinIsInteger, params: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "isDecimal", function: builtinIsDecimal, params: ast.Identifiers{"x"}},
 	&binaryBuiltin{name: "pow", function: builtinPow, params: ast.Identifiers{"x", "n"}},
 	&binaryBuiltin{name: "modulo", function: builtinModulo, params: ast.Identifiers{"x", "y"}},
 	&unaryBuiltin{name: "md5", function: builtinMd5, params: ast.Identifiers{"s"}},
