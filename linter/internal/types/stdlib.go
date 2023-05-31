@@ -106,13 +106,14 @@ func prepareStdlib(g *typeGraph) {
 
 		// Parsing
 
-		"parseInt":   g.newSimpleFuncType(numberType, "str"),
-		"parseOctal": g.newSimpleFuncType(numberType, "str"),
-		"parseHex":   g.newSimpleFuncType(numberType, "str"),
-		"parseJson":  g.newSimpleFuncType(jsonType, "str"),
-		"parseYaml":  g.newSimpleFuncType(jsonType, "str"),
-		"encodeUTF8": g.newSimpleFuncType(numberArrayType, "str"),
-		"decodeUTF8": g.newSimpleFuncType(stringType, "arr"),
+		"parseInt":       g.newSimpleFuncType(numberType, "str"),
+		"parseOctal":     g.newSimpleFuncType(numberType, "str"),
+		"parseHex":       g.newSimpleFuncType(numberType, "str"),
+		"parseJson":      g.newSimpleFuncType(jsonType, "str"),
+		"parseYaml":      g.newSimpleFuncType(jsonType, "str"),
+		"parseXmlJsonml": g.newSimpleFuncType(jsonType, "str"),
+		"encodeUTF8":     g.newSimpleFuncType(numberArrayType, "str"),
+		"decodeUTF8":     g.newSimpleFuncType(stringType, "arr"),
 
 		// Manifestation
 
@@ -152,7 +153,7 @@ func prepareStdlib(g *typeGraph) {
 		"minArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"maxArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"contains":      g.newSimpleFuncType(boolType, "arr", "elem"),
-		"avg":		    	 g.newSimpleFuncType(numberType, "arr"),	
+		"avg":           g.newSimpleFuncType(numberType, "arr"),
 		"all":           g.newSimpleFuncType(boolArrayType, "arr"),
 		"any":           g.newSimpleFuncType(boolArrayType, "arr"),
 		"remove":        g.newSimpleFuncType(anyArrayType, "arr", "elem"),
