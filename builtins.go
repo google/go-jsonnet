@@ -2025,7 +2025,7 @@ func builtinAvg(i *interpreter, arrv value) (value, error) {
 	
 	len := float64(arr.length())
 	if len == 0 {
-		return makeValueNumber(0), nil
+		return nil, i.Error("Cannot calculate average of an empty array.")
 	}
 	
 	sumValue, err := builtinSum(i, arrv)
