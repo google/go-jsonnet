@@ -1,0 +1,10 @@
+RUNTIME ERROR: Unexpected type number, expected string
+-------------------------------------------------
+	testdata/builtinTrim4:1:1-13	$
+
+std.trim(10)
+
+-------------------------------------------------
+	During evaluation	
+
+

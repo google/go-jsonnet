@@ -95,6 +95,7 @@ func prepareStdlib(g *typeGraph) {
 		"format":           g.newSimpleFuncType(stringType, "str", "vals"),
 		"isEmpty":          g.newSimpleFuncType(boolType, "str"),
 		"equalsIgnoreCase": g.newSimpleFuncType(boolType, "str1", "str2"),
+		"trim":             g.newSimpleFuncType(stringType, "str"),
 		// TODO(sbarzowski) Fix when they match the documentation
 		"escapeStringBash":    g.newSimpleFuncType(stringType, "str_"),
 		"escapeStringDollars": g.newSimpleFuncType(stringType, "str_"),
@@ -148,11 +149,11 @@ func prepareStdlib(g *typeGraph) {
 		"minArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"maxArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"contains":      g.newSimpleFuncType(boolType, "arr", "elem"),
-		// TODO these need test cases written by someone who understands how to make them
-		"all":      g.newSimpleFuncType(boolArrayType, "arr"),
-		"any":      g.newSimpleFuncType(boolArrayType, "arr"),
-		"remove":   g.newSimpleFuncType(anyArrayType, "arr", "elem"),
-		"removeAt": g.newSimpleFuncType(anyArrayType, "arr", "i"),
+		"avg":		    	 g.newSimpleFuncType(numberType, "arr"),	
+		"all":           g.newSimpleFuncType(boolArrayType, "arr"),
+		"any":           g.newSimpleFuncType(boolArrayType, "arr"),
+		"remove":        g.newSimpleFuncType(anyArrayType, "arr", "elem"),
+		"removeAt":      g.newSimpleFuncType(anyArrayType, "arr", "i"),
 
 		// Sets
 
@@ -172,6 +173,10 @@ func prepareStdlib(g *typeGraph) {
 		"base64DecodeBytes": g.newSimpleFuncType(numberType, "str"),
 		"base64Decode":      g.newSimpleFuncType(stringType, "str"),
 		"md5":               g.newSimpleFuncType(stringType, "s"),
+		"sha1":              g.newSimpleFuncType(stringType, "s"),
+		"sha256":            g.newSimpleFuncType(stringType, "s"),
+		"sha512":            g.newSimpleFuncType(stringType, "s"),
+		"sha3":              g.newSimpleFuncType(stringType, "s"),
 
 		// JSON Merge Patch
 
