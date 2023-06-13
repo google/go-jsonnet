@@ -1301,6 +1301,15 @@ func builtinEqualsIgnoreCase(i *interpreter, sv1, sv2 value) (value, error) {
 	return makeValueBoolean(strings.EqualFold(s1.getGoString(), s2.getGoString())), nil
 }
 
+func builtinTrim(i *interpreter, strv value) (value, error) {
+	str, err := i.getString(strv)
+	if err != nil {
+		return nil, err
+	}
+	sStr := str.getGoString()
+	return makeValueString(strings.TrimSpace(sStr)), nil
+}
+
 func base64DecodeGoBytes(i *interpreter, str string) ([]byte, error) {
 	strLen := len(str)
 	if strLen%4 != 0 {
@@ -2407,6 +2416,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&ternaryBuiltin{name: "strReplace", function: builtinStrReplace, params: ast.Identifiers{"str", "from", "to"}},
 	&unaryBuiltin{name: "isEmpty", function: builtinIsEmpty, params: ast.Identifiers{"str"}},
 	&binaryBuiltin{name: "equalsIgnoreCase", function: builtinEqualsIgnoreCase, params: ast.Identifiers{"str1", "str2"}},
+	&unaryBuiltin{name: "trim", function: builtinTrim, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "base64Decode", function: builtinBase64Decode, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "base64DecodeBytes", function: builtinBase64DecodeBytes, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseInt", function: builtinParseInt, params: ast.Identifiers{"str"}},
