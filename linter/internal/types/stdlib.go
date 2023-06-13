@@ -91,6 +91,7 @@ func prepareStdlib(g *typeGraph) {
 		"format":           g.newSimpleFuncType(stringType, "str", "vals"),
 		"isEmpty":          g.newSimpleFuncType(boolType, "str"),
 		"equalsIgnoreCase": g.newSimpleFuncType(boolType, "str1", "str2"),
+		"trim":             g.newSimpleFuncType(stringType, "str"),
 		// TODO(sbarzowski) Fix when they match the documentation
 		"escapeStringBash":    g.newSimpleFuncType(stringType, "str_"),
 		"escapeStringDollars": g.newSimpleFuncType(stringType, "str_"),
