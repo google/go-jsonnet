@@ -2066,6 +2066,30 @@ func builtinSum(i *interpreter, arrv value) (value, error) {
 	return makeValueNumber(sum), nil
 }
 
+func builtinAvg(i *interpreter, arrv value) (value, error) {
+	arr, err := i.getArray(arrv)
+	if err != nil {
+		return nil, err
+	}
+	
+	len := float64(arr.length())
+	if len == 0 {
+		return nil, i.Error("Cannot calculate average of an empty array.")
+	}
+	
+	sumValue, err := builtinSum(i, arrv)
+	if err != nil {
+		return nil, err
+	}
+	sum, err := i.getNumber(sumValue)
+	if err != nil {
+		return nil, err
+	}
+
+	avg := sum.value/len
+	return makeValueNumber(avg), nil
+}
+
 func builtinContains(i *interpreter, arrv value, ev value) (value, error) {
 	arr, err := i.getArray(arrv)
 	if err != nil {
@@ -2478,6 +2502,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&generalBuiltin{name: "maxArray", function: builtinMaxArray, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}}},
 	&unaryBuiltin{name: "native", function: builtinNative, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "sum", function: builtinSum, params: ast.Identifiers{"arr"}},
+	&unaryBuiltin{name: "avg", function: builtinAvg, params: ast.Identifiers{"arr"}},
 	&binaryBuiltin{name: "contains", function: builtinContains, params: ast.Identifiers{"arr", "elem"}},
 
 	// internal
