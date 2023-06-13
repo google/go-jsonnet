@@ -143,6 +143,7 @@ func prepareStdlib(g *typeGraph) {
 		"join":          g.newSimpleFuncType(stringOrArray, "sep", "arr"),
 		"lines":         g.newSimpleFuncType(arrayOfString, "arr"),
 		"flattenArrays": g.newSimpleFuncType(anyArrayType, "arrs"),
+		"reverse":       g.newSimpleFuncType(anyArrayType, "arrs"),
 		"sort":          g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"uniq":          g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"sum":           g.newSimpleFuncType(numberType, "arr"),
