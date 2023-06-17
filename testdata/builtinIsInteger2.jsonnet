@@ -1,0 +1,1 @@
+std.isInteger(1.1)

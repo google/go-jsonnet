@@ -21,10 +21,10 @@ def jsonnet_go_dependencies(go_sdk_version = "host"):
     )
     go_repository(
         name = "com_github_fatih_color",
+        build_external = "external",
         importpath = "github.com/fatih/color",
         sum = "h1:mRhaKNwANqRgUBGKmnI5ZxEk7QXmjQeCcuYFMX2bfcc=",
         version = "v1.12.0",
-        build_external = "external",
     )
 
     go_repository(
@@ -47,17 +47,17 @@ def jsonnet_go_dependencies(go_sdk_version = "host"):
     )
     go_repository(
         name = "com_github_mattn_go_colorable",
+        build_external = "external",
         importpath = "github.com/mattn/go-colorable",
         sum = "h1:c1ghPdyEDarC70ftn0y+A/Ee++9zz8ljHG1b13eJ0s8=",
         version = "v0.1.8",
-        build_external = "external",
     )
     go_repository(
         name = "com_github_mattn_go_isatty",
+        build_external = "external",
         importpath = "github.com/mattn/go-isatty",
         sum = "h1:wuysRhFDzyxgEmMf5xjvJ2M9dZoWAXNNr5LSBS7uHXY=",
         version = "v0.0.12",
-        build_external = "external",
     )
     go_repository(
         name = "com_github_pmezard_go_difflib",
@@ -102,8 +102,33 @@ def jsonnet_go_dependencies(go_sdk_version = "host"):
         version = "v1.1.0",
     )
     go_repository(
+        name = "org_golang_x_crypto",
+        importpath = "golang.org/x/crypto",
+        sum = "h1:LF6fAI+IutBocDJ2OT0Q1g8plpYljMZ4+lty+dsqw3g=",
+        version = "v0.9.0",
+    )
+    go_repository(
+        name = "org_golang_x_net",
+        importpath = "golang.org/x/net",
+        sum = "h1:X2//UzNDwYmtCLn7To6G58Wr6f5ahEAQgKNzv9Y951M=",
+        version = "v0.10.0",
+    )
+
+    go_repository(
         name = "org_golang_x_sys",
         importpath = "golang.org/x/sys",
-        sum = "h1:kunALQeHf1/185U1i0GOB/fy1IPRDDpuoOOqRReG57U=",
-        version = "v0.1.0",
+        sum = "h1:EBmGv8NaZBZTWvrbjNoL6HVt+IVy3QDQpJs7VRIw3tU=",
+        version = "v0.8.0",
+    )
+    go_repository(
+        name = "org_golang_x_term",
+        importpath = "golang.org/x/term",
+        sum = "h1:n5xxQn2i3PC0yLAbjTpNT85q/Kgzcr2gIoX9OrJUols=",
+        version = "v0.8.0",
+    )
+    go_repository(
+        name = "org_golang_x_text",
+        importpath = "golang.org/x/text",
+        sum = "h1:2sjJmO8cDvYveuX97RDLsxlyUxLl+GHoLxBiRdHllBE=",
+        version = "v0.9.0",
     )

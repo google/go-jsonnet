@@ -19,6 +19,9 @@ package jsonnet
 import (
 	"bytes"
 	"crypto/md5"
+	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -31,6 +34,7 @@ import (
 	"strings"
 
 	"github.com/google/go-jsonnet/ast"
+	"golang.org/x/crypto/sha3"
 )
 
 func builtinPlus(i *interpreter, x, y value) (value, error) {
@@ -916,6 +920,42 @@ func builtinMd5(i *interpreter, x value) (value, error) {
 	return makeValueString(hex.EncodeToString(hash[:])), nil
 }
 
+func builtinSha1(i *interpreter, x value) (value, error) {
+	str, err := i.getString(x)
+	if err != nil {
+		return nil, err
+	}
+	hash := sha1.Sum([]byte(str.getGoString()))
+	return makeValueString(hex.EncodeToString(hash[:])), nil
+}
+
+func builtinSha256(i *interpreter, x value) (value, error) {
+	str, err := i.getString(x)
+	if err != nil {
+		return nil, err
+	}
+	hash := sha256.Sum256([]byte(str.getGoString()))
+	return makeValueString(hex.EncodeToString(hash[:])), nil
+}
+
+func builtinSha512(i *interpreter, x value) (value, error) {
+	str, err := i.getString(x)
+	if err != nil {
+		return nil, err
+	}
+	hash := sha512.Sum512([]byte(str.getGoString()))
+	return makeValueString(hex.EncodeToString(hash[:])), nil
+}
+
+func builtinSha3(i *interpreter, x value) (value, error) {
+	str, err := i.getString(x)
+	if err != nil {
+		return nil, err
+	}
+	hash := sha3.Sum512([]byte(str.getGoString()))
+	return makeValueString(hex.EncodeToString(hash[:])), nil
+}
+
 func builtinBase64(i *interpreter, input value) (value, error) {
 	var byteArr []byte
 
@@ -1059,6 +1099,16 @@ func liftNumeric(f func(float64) float64) func(*interpreter, value) (value, erro
 	}
 }
 
+func liftNumericToBoolean(f func(float64) bool) func(*interpreter, value) (value, error) {
+	return func(i *interpreter, x value) (value, error) {
+		n, err := i.getNumber(x)
+		if err != nil {
+			return nil, err
+		}
+		return makeValueBoolean(f(n.value)), nil
+	}
+}
+
 var builtinSqrt = liftNumeric(math.Sqrt)
 var builtinCeil = liftNumeric(math.Ceil)
 var builtinFloor = liftNumeric(math.Floor)
@@ -1085,6 +1135,22 @@ var builtinExponent = liftNumeric(func(f float64) float64 {
 	return float64(exponent)
 })
 var builtinRound = liftNumeric(math.Round)
+var builtinIsEven = liftNumericToBoolean(func(f float64) bool {
+	i, _ := math.Modf(f) // Get the integral part of the float
+	return math.Mod(i, 2) == 0
+})
+var builtinIsOdd = liftNumericToBoolean(func(f float64) bool {
+	i, _ := math.Modf(f) // Get the integral part of the float
+	return math.Mod(i, 2) != 0
+})
+var builtinIsInteger = liftNumericToBoolean(func(f float64) bool {
+	_, frac := math.Modf(f) // Get the fraction part of the float
+	return frac == 0
+})
+var builtinIsDecimal = liftNumericToBoolean(func(f float64) bool {
+	_, frac := math.Modf(f) // Get the fraction part of the float
+	return frac != 0
+})
 
 func liftBitwise(f func(int64, int64) int64, positiveRightArg bool) func(*interpreter, value, value) (value, error) {
 	return func(i *interpreter, xv, yv value) (value, error) {
@@ -1299,6 +1365,15 @@ func builtinEqualsIgnoreCase(i *interpreter, sv1, sv2 value) (value, error) {
 		return nil, err
 	}
 	return makeValueBoolean(strings.EqualFold(s1.getGoString(), s2.getGoString())), nil
+}
+
+func builtinTrim(i *interpreter, strv value) (value, error) {
+	str, err := i.getString(strv)
+	if err != nil {
+		return nil, err
+	}
+	sStr := str.getGoString()
+	return makeValueString(strings.TrimSpace(sStr)), nil
 }
 
 func base64DecodeGoBytes(i *interpreter, str string) ([]byte, error) {
@@ -2017,6 +2092,30 @@ func builtinSum(i *interpreter, arrv value) (value, error) {
 	return makeValueNumber(sum), nil
 }
 
+func builtinAvg(i *interpreter, arrv value) (value, error) {
+	arr, err := i.getArray(arrv)
+	if err != nil {
+		return nil, err
+	}
+	
+	len := float64(arr.length())
+	if len == 0 {
+		return nil, i.Error("Cannot calculate average of an empty array.")
+	}
+	
+	sumValue, err := builtinSum(i, arrv)
+	if err != nil {
+		return nil, err
+	}
+	sum, err := i.getNumber(sumValue)
+	if err != nil {
+		return nil, err
+	}
+
+	avg := sum.value/len
+	return makeValueNumber(avg), nil
+}
+
 func builtinContains(i *interpreter, arrv value, ev value) (value, error) {
 	arr, err := i.getArray(arrv)
 	if err != nil {
@@ -2394,9 +2493,17 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "mantissa", function: builtinMantissa, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "exponent", function: builtinExponent, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "round", function: builtinRound, params: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "isEven", function: builtinIsEven, params: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "isOdd", function: builtinIsOdd, params: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "isInteger", function: builtinIsInteger, params: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "isDecimal", function: builtinIsDecimal, params: ast.Identifiers{"x"}},
 	&binaryBuiltin{name: "pow", function: builtinPow, params: ast.Identifiers{"x", "n"}},
 	&binaryBuiltin{name: "modulo", function: builtinModulo, params: ast.Identifiers{"x", "y"}},
 	&unaryBuiltin{name: "md5", function: builtinMd5, params: ast.Identifiers{"s"}},
+	&unaryBuiltin{name: "sha1", function: builtinSha1, params: ast.Identifiers{"s"}},
+	&unaryBuiltin{name: "sha256", function: builtinSha256, params: ast.Identifiers{"s"}},
+	&unaryBuiltin{name: "sha512", function: builtinSha512, params: ast.Identifiers{"s"}},
+	&unaryBuiltin{name: "sha3", function: builtinSha3, params: ast.Identifiers{"s"}},
 	&binaryBuiltin{name: "xnor", function: builtinXnor, params: ast.Identifiers{"x", "y"}},
 	&binaryBuiltin{name: "xor", function: builtinXor, params: ast.Identifiers{"x", "y"}},
 	&binaryBuiltin{name: "lstripChars", function: builtinLstripChars, params: ast.Identifiers{"str", "chars"}},
@@ -2407,6 +2514,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&ternaryBuiltin{name: "strReplace", function: builtinStrReplace, params: ast.Identifiers{"str", "from", "to"}},
 	&unaryBuiltin{name: "isEmpty", function: builtinIsEmpty, params: ast.Identifiers{"str"}},
 	&binaryBuiltin{name: "equalsIgnoreCase", function: builtinEqualsIgnoreCase, params: ast.Identifiers{"str1", "str2"}},
+	&unaryBuiltin{name: "trim", function: builtinTrim, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "base64Decode", function: builtinBase64Decode, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "base64DecodeBytes", function: builtinBase64DecodeBytes, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseInt", function: builtinParseInt, params: ast.Identifiers{"str"}},
@@ -2424,6 +2532,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&generalBuiltin{name: "maxArray", function: builtinMaxArray, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}}},
 	&unaryBuiltin{name: "native", function: builtinNative, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "sum", function: builtinSum, params: ast.Identifiers{"arr"}},
+	&unaryBuiltin{name: "avg", function: builtinAvg, params: ast.Identifiers{"arr"}},
 	&binaryBuiltin{name: "contains", function: builtinContains, params: ast.Identifiers{"arr", "elem"}},
 
 	// internal

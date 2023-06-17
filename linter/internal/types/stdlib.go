@@ -47,6 +47,10 @@ func prepareStdlib(g *typeGraph) {
 		"isNumber":   g.newSimpleFuncType(boolType, "v"),
 		"isObject":   g.newSimpleFuncType(boolType, "v"),
 		"isString":   g.newSimpleFuncType(boolType, "v"),
+		"isEven":     g.newSimpleFuncType(boolType, "x"),
+		"isOdd":      g.newSimpleFuncType(boolType, "x"),
+		"isInteger":  g.newSimpleFuncType(boolType, "x"),
+		"isDecimal":  g.newSimpleFuncType(boolType, "x"),
 
 		// Mathematical utilities
 		"abs":      g.newSimpleFuncType(numberType, "n"),
@@ -93,6 +97,7 @@ func prepareStdlib(g *typeGraph) {
 		"format":           g.newSimpleFuncType(stringType, "str", "vals"),
 		"isEmpty":          g.newSimpleFuncType(boolType, "str"),
 		"equalsIgnoreCase": g.newSimpleFuncType(boolType, "str1", "str2"),
+		"trim":             g.newSimpleFuncType(stringType, "str"),
 		// TODO(sbarzowski) Fix when they match the documentation
 		"escapeStringBash":    g.newSimpleFuncType(stringType, "str_"),
 		"escapeStringDollars": g.newSimpleFuncType(stringType, "str_"),
@@ -117,7 +122,7 @@ func prepareStdlib(g *typeGraph) {
 		"manifestTomlEx":       g.newSimpleFuncType(stringType, "value", "indent"),
 		"manifestJsonEx":       g.newSimpleFuncType(stringType, "value", "indent"),
 		"manifestJsonMinified": g.newSimpleFuncType(stringType, "value"),
-		"manifestYamlDoc":      g.newSimpleFuncType(stringType, "value"),
+		"manifestYamlDoc":      g.newFuncType(stringType, []ast.Parameter{required("value"), optional("indent_array_in_object"), optional("quote_keys")}),
 		"manifestYamlStream":   g.newSimpleFuncType(stringType, "value"),
 		"manifestXmlJsonml":    g.newSimpleFuncType(stringType, "value"),
 
@@ -140,13 +145,14 @@ func prepareStdlib(g *typeGraph) {
 		"join":          g.newSimpleFuncType(stringOrArray, "sep", "arr"),
 		"lines":         g.newSimpleFuncType(arrayOfString, "arr"),
 		"flattenArrays": g.newSimpleFuncType(anyArrayType, "arrs"),
+		"reverse":       g.newSimpleFuncType(anyArrayType, "arrs"),
 		"sort":          g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"uniq":          g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"sum":           g.newSimpleFuncType(numberType, "arr"),
 		"minArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"maxArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"contains":      g.newSimpleFuncType(boolType, "arr", "elem"),
-		// TODO these need test cases written by someone who understands how to make them
+		"avg":		    	 g.newSimpleFuncType(numberType, "arr"),	
 		"all":           g.newSimpleFuncType(boolArrayType, "arr"),
 		"any":           g.newSimpleFuncType(boolArrayType, "arr"),
 		"remove":        g.newSimpleFuncType(anyArrayType, "arr", "elem"),
@@ -170,6 +176,10 @@ func prepareStdlib(g *typeGraph) {
 		"base64DecodeBytes": g.newSimpleFuncType(numberType, "str"),
 		"base64Decode":      g.newSimpleFuncType(stringType, "str"),
 		"md5":               g.newSimpleFuncType(stringType, "s"),
+		"sha1":              g.newSimpleFuncType(stringType, "s"),
+		"sha256":            g.newSimpleFuncType(stringType, "s"),
+		"sha512":            g.newSimpleFuncType(stringType, "s"),
+		"sha3":              g.newSimpleFuncType(stringType, "s"),
 
 		// JSON Merge Patch
 

@@ -1,0 +1,1 @@
+std.sha1("foo")

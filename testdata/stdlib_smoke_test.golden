@@ -164,6 +164,10 @@
       5
    ],
    "repeat": "foofoofoo",
+   "reverse": [
+      "a",
+      "b"
+   ],
    "rstripChars": "aaabbbb",
    "set": [
       [

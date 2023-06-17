@@ -126,6 +126,7 @@
     join:  std.join(sep=",", arr=["a", "b", "c"]),
     lines: std.lines(arr=["a", "b", "c"]),
     flattenArrays: std.flattenArrays([[1], [2, 3], [4, 5, [6, 7]]]),
+    reverse: std.reverse(["b", "a"]),
     sort: [
         std.sort([2, 3, 1]),
         std.sort(arr=[2, 3, 1], keyF=function(x) -x),

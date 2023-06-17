@@ -1,0 +1,1 @@
+std.isOdd(5)
