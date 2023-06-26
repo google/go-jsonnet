@@ -16,9 +16,11 @@
     objectHas: std.objectHas(o={}, f="fieldname"),
     objectFields: std.objectFields(o={}),
     objectValues: std.objectValues(o={}),
+    objectKeysValues: std.objectKeysValues(o={}),
     objectHasAll: std.objectHasAll(o={}, f="fieldname"),
     objectFieldsAll: std.objectFieldsAll(o={}),
     objectValuesAll: std.objectValuesAll(o={}),
+    objectKeysValuesAll: std.objectKeysValuesAll(o={}),
     prune: std.prune(a={x: null, y: [null, "42"]}),
     mapWithKey: std.mapWithKey(func=function(key, value) 42, obj={a: 17}),
     get: [
