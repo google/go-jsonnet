@@ -29,6 +29,7 @@ import (
 	"io"
 	"math"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -257,6 +258,29 @@ func builtinTrace(i *interpreter, x value, y value) (value, error) {
 	fmt.Fprintf(
 		i.traceOut, "TRACE: %s:%d %s\n", filename, line, xStr.getGoString())
 	return y, nil
+}
+
+func builtinMatch(i *interpreter, strv value, patv value) (value, error) {
+	str, err := i.getString(strv)
+	if err != nil {
+		return nil, err
+	}
+	pat, err := i.getString(patv)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := regexp.Compile(pat.getGoString())
+	if err != nil {
+		return nil, i.Error(fmt.Sprintf("Pattern %s is not valid", pat.getGoString()))
+	}
+
+	matches := []*cachedThunk{} // to return empty array
+	for _, a := range r.FindAllString(str.getGoString(), -1) {
+		matches = append(matches, readyThunk(makeValueString(a)))
+	}
+
+	return makeValueArray(matches), nil
 }
 
 // astMakeArrayElement wraps the function argument of std.makeArray so that
@@ -2097,12 +2121,12 @@ func builtinAvg(i *interpreter, arrv value) (value, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	len := float64(arr.length())
 	if len == 0 {
 		return nil, i.Error("Cannot calculate average of an empty array.")
 	}
-	
+
 	sumValue, err := builtinSum(i, arrv)
 	if err != nil {
 		return nil, err
@@ -2112,7 +2136,7 @@ func builtinAvg(i *interpreter, arrv value) (value, error) {
 		return nil, err
 	}
 
-	avg := sum.value/len
+	avg := sum.value / len
 	return makeValueNumber(avg), nil
 }
 
@@ -2515,6 +2539,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "isEmpty", function: builtinIsEmpty, params: ast.Identifiers{"str"}},
 	&binaryBuiltin{name: "equalsIgnoreCase", function: builtinEqualsIgnoreCase, params: ast.Identifiers{"str1", "str2"}},
 	&unaryBuiltin{name: "trim", function: builtinTrim, params: ast.Identifiers{"str"}},
+	&binaryBuiltin{name: "match", function: builtinMatch, params: ast.Identifiers{"str", "pat"}},
 	&unaryBuiltin{name: "base64Decode", function: builtinBase64Decode, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "base64DecodeBytes", function: builtinBase64DecodeBytes, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseInt", function: builtinParseInt, params: ast.Identifiers{"str"}},

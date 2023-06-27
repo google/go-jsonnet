@@ -1,0 +1,1 @@
+std.match("peach punch pinch", "p([a-z]+)ch")

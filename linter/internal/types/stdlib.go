@@ -98,6 +98,7 @@ func prepareStdlib(g *typeGraph) {
 		"isEmpty":          g.newSimpleFuncType(boolType, "str"),
 		"equalsIgnoreCase": g.newSimpleFuncType(boolType, "str1", "str2"),
 		"trim":             g.newSimpleFuncType(stringType, "str"),
+		"match":            g.newSimpleFuncType(stringType, "str", "pat"),
 		// TODO(sbarzowski) Fix when they match the documentation
 		"escapeStringBash":    g.newSimpleFuncType(stringType, "str_"),
 		"escapeStringDollars": g.newSimpleFuncType(stringType, "str_"),
@@ -152,7 +153,7 @@ func prepareStdlib(g *typeGraph) {
 		"minArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"maxArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"contains":      g.newSimpleFuncType(boolType, "arr", "elem"),
-		"avg":		    	 g.newSimpleFuncType(numberType, "arr"),	
+		"avg":           g.newSimpleFuncType(numberType, "arr"),
 		"all":           g.newSimpleFuncType(boolArrayType, "arr"),
 		"any":           g.newSimpleFuncType(boolArrayType, "arr"),
 		"remove":        g.newSimpleFuncType(anyArrayType, "arr", "elem"),
