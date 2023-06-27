@@ -1516,6 +1516,7 @@ func builtinParseYAML(i *interpreter, str value) (value, error) {
 func builtinParseCSVWithHeader(i *interpreter, arguments []value) (value, error) {
 	strv := arguments[0]
 	dv := arguments[1]
+	odhv := arguments[2]
 
 	sval, err := i.getString(strv)
 	if err != nil {
@@ -1536,6 +1537,15 @@ func builtinParseCSVWithHeader(i *interpreter, arguments []value) (value, error)
 		d = rune(ds[0]) // conversion to rune
 	}
 
+	odh := true // default value for overwrite_duplicate_headers
+	if odhv.getType() != nullType {
+		odhval, err := i.getBoolean(odhv)
+		if err != nil {
+			return nil, err
+		}
+		odh = odhval.value
+	}
+
 	json := make([]interface{}, 0)
 	var keys []string
 
@@ -1552,14 +1562,19 @@ func builtinParseCSVWithHeader(i *interpreter, arguments []value) (value, error)
 		}
 
 		if row == 0 { // consider first row as header
-			// detect and handle duplicate headers
-			keyCount := map[string]int{}
-			for _, k := range record {
-				keyCount[k]++
-				if c := keyCount[k]; c > 1 {
-					keys = append(keys, fmt.Sprintf("%s__%d", k, c-1))
-				} else {
-					keys = append(keys, k)
+			if odh {
+				// Overwrite duplicate headers
+				keys = record
+			} else {
+				// detect and handle duplicate headers
+				keyCount := map[string]int{}
+				for _, k := range record {
+					keyCount[k]++
+					if c := keyCount[k]; c > 1 {
+						keys = append(keys, fmt.Sprintf("%s__%d", k, c-1))
+					} else {
+						keys = append(keys, k)
+					}
 				}
 			}
 		} else {
@@ -2262,12 +2277,12 @@ func builtinAvg(i *interpreter, arrv value) (value, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	len := float64(arr.length())
 	if len == 0 {
 		return nil, i.Error("Cannot calculate average of an empty array.")
 	}
-	
+
 	sumValue, err := builtinSum(i, arrv)
 	if err != nil {
 		return nil, err
@@ -2277,7 +2292,7 @@ func builtinAvg(i *interpreter, arrv value) (value, error) {
 		return nil, err
 	}
 
-	avg := sum.value/len
+	avg := sum.value / len
 	return makeValueNumber(avg), nil
 }
 
@@ -2685,7 +2700,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "parseInt", function: builtinParseInt, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseJson", function: builtinParseJSON, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseYaml", function: builtinParseYAML, params: ast.Identifiers{"str"}},
-	&generalBuiltin{name: "parseCsvWithHeader", function: builtinParseCSVWithHeader, params: []generalBuiltinParameter{{name: "str"}, {name: "delimiter", defaultValue: &nullValue}}},
+	&generalBuiltin{name: "parseCsvWithHeader", function: builtinParseCSVWithHeader, params: []generalBuiltinParameter{{name: "str"}, {name: "delimiter", defaultValue: &nullValue}, {name: "overwrite_duplicate_headers", defaultValue: &nullValue}}},
 	&generalBuiltin{name: "manifestCsv", function: builtinManifestCsv, params: []generalBuiltinParameter{{name: "json"}, {name: "headers", defaultValue: &nullValue}}},
 	&generalBuiltin{name: "manifestJsonEx", function: builtinManifestJSONEx, params: []generalBuiltinParameter{{name: "value"}, {name: "indent"},
 		{name: "newline", defaultValue: &valueFlatString{value: []rune("\n")}},

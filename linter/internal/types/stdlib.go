@@ -111,7 +111,7 @@ func prepareStdlib(g *typeGraph) {
 		"parseHex":           g.newSimpleFuncType(numberType, "str"),
 		"parseJson":          g.newSimpleFuncType(jsonType, "str"),
 		"parseYaml":          g.newSimpleFuncType(jsonType, "str"),
-		"parseCsvWithHeader": g.newFuncType(jsonType, []ast.Parameter{required("str"), optional("delimiter")}),
+		"parseCsvWithHeader": g.newFuncType(jsonType, []ast.Parameter{required("str"), optional("delimiter"), optional("overwrite_duplicate_headers")}),
 		"encodeUTF8":         g.newSimpleFuncType(numberArrayType, "str"),
 		"decodeUTF8":         g.newSimpleFuncType(stringType, "arr"),
 
@@ -154,7 +154,7 @@ func prepareStdlib(g *typeGraph) {
 		"minArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"maxArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"contains":      g.newSimpleFuncType(boolType, "arr", "elem"),
-		"avg":		    	 g.newSimpleFuncType(numberType, "arr"),	
+		"avg":           g.newSimpleFuncType(numberType, "arr"),
 		"all":           g.newSimpleFuncType(boolArrayType, "arr"),
 		"any":           g.newSimpleFuncType(boolArrayType, "arr"),
 		"remove":        g.newSimpleFuncType(anyArrayType, "arr", "elem"),
