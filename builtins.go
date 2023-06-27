@@ -1512,14 +1512,26 @@ func builtinParseYAML(i *interpreter, str value) (value, error) {
 	return jsonToValue(i, elems[0])
 }
 
-func builtinParseXmlJsonml(i *interpreter, str value) (value, error) {
-	sval, err := i.getString(str)
+func builtinParseXmlJsonml(i *interpreter, arguments []value) (value, error) {
+	strv := arguments[0]
+	pwsv := arguments[1]
+
+	sval, err := i.getString(strv)
 	if err != nil {
 		return nil, err
 	}
 	s := sval.getGoString()
 
-	json, err := BuildJsonmlFromString(s)
+	pws := false
+	if pwsv.getType() != nullType {
+		pwsval, err := i.getBoolean(pwsv)
+		if err != nil {
+			return nil, err
+		}
+		pws = pwsval.value
+	}
+
+	json, err := BuildJsonmlFromString(s, pws)
 	if err != nil {
 		return nil, i.Error(fmt.Sprintf("failed to parse XML: %v", err.Error()))
 	}
@@ -2143,12 +2155,12 @@ func builtinAvg(i *interpreter, arrv value) (value, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	len := float64(arr.length())
 	if len == 0 {
 		return nil, i.Error("Cannot calculate average of an empty array.")
 	}
-	
+
 	sumValue, err := builtinSum(i, arrv)
 	if err != nil {
 		return nil, err
@@ -2158,7 +2170,7 @@ func builtinAvg(i *interpreter, arrv value) (value, error) {
 		return nil, err
 	}
 
-	avg := sum.value/len
+	avg := sum.value / len
 	return makeValueNumber(avg), nil
 }
 
@@ -2566,7 +2578,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "parseInt", function: builtinParseInt, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseJson", function: builtinParseJSON, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseYaml", function: builtinParseYAML, params: ast.Identifiers{"str"}},
-	&unaryBuiltin{name: "parseXmlJsonml", function: builtinParseXmlJsonml, params: ast.Identifiers{"str"}},
+	&generalBuiltin{name: "parseXmlJsonml", function: builtinParseXmlJsonml, params: []generalBuiltinParameter{{name: "str"}, {name: "preserveWhitespace", defaultValue: &nullValue}}},
 	&generalBuiltin{name: "manifestJsonEx", function: builtinManifestJSONEx, params: []generalBuiltinParameter{{name: "value"}, {name: "indent"},
 		{name: "newline", defaultValue: &valueFlatString{value: []rune("\n")}},
 		{name: "key_val_sep", defaultValue: &valueFlatString{value: []rune(": ")}}}},

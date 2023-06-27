@@ -47,13 +47,14 @@ func (s *stack) Size() int {
 }
 
 type jsonMLBuilder struct {
-	stack     *stack
-	currDepth int
+	stack              *stack
+	preserveWhitespace bool
+	currDepth          int
 }
 
 // BuildJsonmlFromString returns a jsomML form of given xml string.
-func BuildJsonmlFromString(s string) ([]interface{}, error) {
-	b := newBuilder()
+func BuildJsonmlFromString(s string, preserveWhitespace bool) ([]interface{}, error) {
+	b := newBuilder(preserveWhitespace)
 	d := xml.NewDecoder(strings.NewReader(s))
 
 	for {
@@ -79,9 +80,10 @@ func BuildJsonmlFromString(s string) ([]interface{}, error) {
 	return b.build(), nil
 }
 
-func newBuilder() *jsonMLBuilder {
+func newBuilder(preserveWhitespace bool) *jsonMLBuilder {
 	return &jsonMLBuilder{
-		stack: &stack{},
+		stack:              &stack{},
+		preserveWhitespace: preserveWhitespace,
 	}
 }
 
@@ -108,9 +110,11 @@ func (b *jsonMLBuilder) addToken(token xml.Token) error {
 		b.currDepth++
 	case xml.CharData:
 		t := token.(xml.CharData)
-		s := strings.TrimSpace(string(t))
-		if len(s) > 0 {
-			// Skip whitespace only string
+		s := string(t)
+		if !b.preserveWhitespace {
+			s = strings.TrimSpace(s)
+		}
+		if len(s) > 0 { // Skip empty strings
 			b.appendToLastNode(string(t))
 		}
 	case xml.EndElement:
