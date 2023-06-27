@@ -106,13 +106,14 @@ func prepareStdlib(g *typeGraph) {
 
 		// Parsing
 
-		"parseInt":   g.newSimpleFuncType(numberType, "str"),
-		"parseOctal": g.newSimpleFuncType(numberType, "str"),
-		"parseHex":   g.newSimpleFuncType(numberType, "str"),
-		"parseJson":  g.newSimpleFuncType(jsonType, "str"),
-		"parseYaml":  g.newSimpleFuncType(jsonType, "str"),
-		"encodeUTF8": g.newSimpleFuncType(numberArrayType, "str"),
-		"decodeUTF8": g.newSimpleFuncType(stringType, "arr"),
+		"parseInt":           g.newSimpleFuncType(numberType, "str"),
+		"parseOctal":         g.newSimpleFuncType(numberType, "str"),
+		"parseHex":           g.newSimpleFuncType(numberType, "str"),
+		"parseJson":          g.newSimpleFuncType(jsonType, "str"),
+		"parseYaml":          g.newSimpleFuncType(jsonType, "str"),
+		"parseCsvWithHeader": g.newFuncType(jsonType, []ast.Parameter{required("str"), optional("delimiter"), optional("overwrite_duplicate_headers")}),
+		"encodeUTF8":         g.newSimpleFuncType(numberArrayType, "str"),
+		"decodeUTF8":         g.newSimpleFuncType(stringType, "arr"),
 
 		// Manifestation
 
@@ -124,6 +125,7 @@ func prepareStdlib(g *typeGraph) {
 		"manifestJsonMinified": g.newSimpleFuncType(stringType, "value"),
 		"manifestYamlDoc":      g.newFuncType(stringType, []ast.Parameter{required("value"), optional("indent_array_in_object"), optional("quote_keys")}),
 		"manifestYamlStream":   g.newSimpleFuncType(stringType, "value"),
+		"manifestCsv":          g.newFuncType(stringType, []ast.Parameter{required("json"), optional("headers")}),
 		"manifestXmlJsonml":    g.newSimpleFuncType(stringType, "value"),
 
 		// Arrays
@@ -152,7 +154,7 @@ func prepareStdlib(g *typeGraph) {
 		"minArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"maxArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"contains":      g.newSimpleFuncType(boolType, "arr", "elem"),
-		"avg":		    	 g.newSimpleFuncType(numberType, "arr"),	
+		"avg":           g.newSimpleFuncType(numberType, "arr"),
 		"all":           g.newSimpleFuncType(boolArrayType, "arr"),
 		"any":           g.newSimpleFuncType(boolArrayType, "arr"),
 		"remove":        g.newSimpleFuncType(anyArrayType, "arr", "elem"),
