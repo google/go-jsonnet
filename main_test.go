@@ -22,7 +22,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -229,7 +228,7 @@ func compareSingleGolden(path string, result jsonnetResult) []error {
 	if result.outputMulti != nil {
 		return []error{fmt.Errorf("outputMulti is populated in a single-file test for %v", path)}
 	}
-	golden, err := ioutil.ReadFile(path)
+	golden, err := os.ReadFile(path)
 	if err != nil {
 		return []error{fmt.Errorf("reading file %s: %v", path, err)}
 	}
@@ -254,14 +253,14 @@ func updateSingleGolden(path string, result jsonnetResult) (updated []string, er
 }
 
 func compareMultifileGolden(path string, result jsonnetResult) []error {
-	expectFiles, err := ioutil.ReadDir(path)
+	expectFiles, err := os.ReadDir(path)
 	if err != nil {
 		return []error{fmt.Errorf("reading golden dir %v: %v", path, err)}
 	}
 	goldenContent := map[string][]byte{}
 	var errs []error
 	for _, f := range expectFiles {
-		golden, err := ioutil.ReadFile(filepath.Join(path, f.Name()))
+		golden, err := os.ReadFile(filepath.Join(path, f.Name()))
 		if err != nil {
 			return []error{fmt.Errorf("reading file %s: %v", f.Name(), err)}
 		}
@@ -284,7 +283,7 @@ func compareMultifileGolden(path string, result jsonnetResult) []error {
 }
 
 func updateMultifileGolden(path string, result jsonnetResult) ([]string, error) {
-	expectFiles, err := ioutil.ReadDir(path)
+	expectFiles, err := os.ReadDir(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading golden directory %v: %v", path, err)
 	}
@@ -312,7 +311,7 @@ func updateMultifileGolden(path string, result jsonnetResult) ([]string, error) 
 
 func runTest(t *testing.T, test *mainTest) {
 	read := func(file string) []byte {
-		bytz, err := ioutil.ReadFile(file)
+		bytz, err := os.ReadFile(file)
 		if err != nil {
 			t.Fatalf("reading file: %s: %v", file, err)
 		}
@@ -413,7 +412,7 @@ func TestEvalUnusualFilenames(t *testing.T) {
 	dir := os.Getenv("TEST_TMPDIR")
 	if len(dir) == 0 {
 		var err error
-		if dir, err = ioutil.TempDir("", "jsonnet"); err != nil {
+		if dir, err = os.MkdirTemp("", "jsonnet"); err != nil {
 			t.Fatal(err)
 		}
 		defer func() {
@@ -425,11 +424,11 @@ func TestEvalUnusualFilenames(t *testing.T) {
 	}
 
 	copySmallFile := func(t *testing.T, dst, src string) {
-		b, err := ioutil.ReadFile(src)
+		b, err := os.ReadFile(src)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := ioutil.WriteFile(dst, b, 0444); err != nil {
+		if err := os.WriteFile(dst, b, 0444); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -502,10 +501,10 @@ func TestEvalUnusualFilenames(t *testing.T) {
 `),
 		},
 	} {
-		if err := ioutil.WriteFile(f.name+".jsonnet", f.content, 0444); err != nil {
+		if err := os.WriteFile(f.name+".jsonnet", f.content, 0444); err != nil {
 			t.Fatal(err)
 		}
-		if err := ioutil.WriteFile(f.name+".golden", f.golden, 0444); err != nil {
+		if err := os.WriteFile(f.name+".golden", f.golden, 0444); err != nil {
 			t.Fatal(err)
 		}
 		t.Run(f.name, func(t *testing.T) {
