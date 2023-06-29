@@ -18,7 +18,6 @@ package jsonnet
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"unsafe"
@@ -241,7 +240,7 @@ func (importer *FileImporter) tryPath(dir, importedPath string) (found bool, con
 	if cacheEntry, isCached := importer.fsCache[absPath]; isCached {
 		entry = cacheEntry
 	} else {
-		contentBytes, err := ioutil.ReadFile(absPath)
+		contentBytes, err := os.ReadFile(absPath)
 		if err != nil {
 			if os.IsNotExist(err) {
 				entry = &fsCacheEntry{

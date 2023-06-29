@@ -3,7 +3,7 @@ package linter
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -27,7 +27,7 @@ type ChangedGoldensList struct {
 
 func runTest(t *testing.T, test *linterTest, changedGoldensList *ChangedGoldensList) {
 	read := func(file string) []byte {
-		bytz, err := ioutil.ReadFile(file)
+		bytz, err := os.ReadFile(file)
 		if err != nil {
 			t.Fatalf("reading file: %s: %v", file, err)
 		}
@@ -61,7 +61,7 @@ func runTest(t *testing.T, test *linterTest, changedGoldensList *ChangedGoldensL
 			changedGoldensList.changedGoldens = append(changedGoldensList.changedGoldens, test.output)
 		}
 	} else {
-		golden, err := ioutil.ReadFile(test.output)
+		golden, err := os.ReadFile(test.output)
 		if err != nil {
 			t.Error(err)
 			return
@@ -74,7 +74,7 @@ func runTest(t *testing.T, test *linterTest, changedGoldensList *ChangedGoldensL
 
 func runTests(t *testing.T, tests []*linterTest) {
 	read := func(file string) []byte {
-		bytz, err := ioutil.ReadFile(file)
+		bytz, err := os.ReadFile(file)
 		if err != nil {
 			t.Fatalf("reading file: %s: %v", file, err)
 		}

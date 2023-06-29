@@ -15,7 +15,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -29,7 +28,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "usage: %s <file>\n", filepath.Base(os.Args[0]))
 		os.Exit(2)
 	}
-	buf, err := ioutil.ReadFile(os.Args[1])
+	buf, err := os.ReadFile(os.Args[1])
 	if err != nil {
 		panic(err)
 	}

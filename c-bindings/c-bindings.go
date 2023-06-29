@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"unsafe"
@@ -238,7 +237,7 @@ func jsonnet_evaluate_snippet_multi(vmRef *C.struct_JsonnetVm, filename *C.char,
 //export jsonnet_evaluate_file
 func jsonnet_evaluate_file(vmRef *C.struct_JsonnetVm, filename *C.char, e *C.int) *C.char {
 	f := C.GoString(filename)
-	data, err := ioutil.ReadFile(f)
+	data, err := os.ReadFile(f)
 	if err != nil {
 		*e = 1
 		return C.CString(fmt.Sprintf("Failed to read input file: %s: %s", f, err.Error()))
@@ -249,7 +248,7 @@ func jsonnet_evaluate_file(vmRef *C.struct_JsonnetVm, filename *C.char, e *C.int
 //export jsonnet_evaluate_file_stream
 func jsonnet_evaluate_file_stream(vmRef *C.struct_JsonnetVm, filename *C.char, e *C.int) *C.char {
 	f := C.GoString(filename)
-	data, err := ioutil.ReadFile(f)
+	data, err := os.ReadFile(f)
 	if err != nil {
 		*e = 1
 		return C.CString(fmt.Sprintf("Failed to read input file: %s: %s", f, err.Error()))
@@ -260,7 +259,7 @@ func jsonnet_evaluate_file_stream(vmRef *C.struct_JsonnetVm, filename *C.char, e
 //export jsonnet_evaluate_file_multi
 func jsonnet_evaluate_file_multi(vmRef *C.struct_JsonnetVm, filename *C.char, e *C.int) *C.char {
 	f := C.GoString(filename)
-	data, err := ioutil.ReadFile(f)
+	data, err := os.ReadFile(f)
 	if err != nil {
 		*e = 1
 		return C.CString(fmt.Sprintf("Failed to read input file: %s: %s", f, err.Error()))
@@ -622,7 +621,7 @@ func jsonnet_fmt_snippet(vmRef *C.struct_JsonnetVm, filename *C.char, code *C.ch
 //export jsonnet_fmt_file
 func jsonnet_fmt_file(vmRef *C.struct_JsonnetVm, filename *C.char, e *C.int) *C.char {
 	f := C.GoString(filename)
-	data, err := ioutil.ReadFile(f)
+	data, err := os.ReadFile(f)
 	if err != nil {
 		*e = 1
 		return C.CString(fmt.Sprintf("Failed to read input file: %s: %s", f, err.Error()))
