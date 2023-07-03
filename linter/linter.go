@@ -146,7 +146,7 @@ func LintSnippet(vm *jsonnet.VM, output io.Writer, snippets []Snippet) bool {
 
 	var nodes []nodeWithLocation
 	for _, snippet := range snippets {
-		node, err := jsonnet.SnippetToAST(snippet.FileName, snippet.Code)
+		node, err := vm.SnippetToAST(snippet.FileName, snippet.Code)
 
 		if err != nil {
 			errWriter.writeError(vm, err.(errors.StaticError)) // ugly but true

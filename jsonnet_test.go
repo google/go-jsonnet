@@ -291,11 +291,11 @@ func assertVarOutput(t *testing.T, jsonStr string) {
 }
 
 func TestExtTypes(t *testing.T) {
-	node, err := SnippetToAST("var.jsonnet", `{ node: 'node' }`)
+	vm := MakeVM()
+	node, err := vm.SnippetToAST("var.jsonnet", `{ node: 'node' }`)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
-	vm := MakeVM()
 	vm.ExtVar("var", "var")
 	vm.ExtCode("code", `{ code: 'code'}`)
 	vm.ExtNode("node", node)
@@ -311,11 +311,11 @@ func TestExtTypes(t *testing.T) {
 }
 
 func TestTLATypes(t *testing.T) {
-	node, err := SnippetToAST("var.jsonnet", `{ node: 'node' }`)
+	vm := MakeVM()
+	node, err := vm.SnippetToAST("var.jsonnet", `{ node: 'node' }`)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
-	vm := MakeVM()
 	vm.TLAVar("var", "var")
 	vm.TLACode("code", `{ code: 'code'}`)
 	vm.TLANode("node", node)
