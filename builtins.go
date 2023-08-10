@@ -2097,12 +2097,12 @@ func builtinAvg(i *interpreter, arrv value) (value, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	len := float64(arr.length())
 	if len == 0 {
 		return nil, i.Error("Cannot calculate average of an empty array.")
 	}
-	
+
 	sumValue, err := builtinSum(i, arrv)
 	if err != nil {
 		return nil, err
@@ -2112,7 +2112,7 @@ func builtinAvg(i *interpreter, arrv value) (value, error) {
 		return nil, err
 	}
 
-	avg := sum.value/len
+	avg := sum.value / len
 	return makeValueNumber(avg), nil
 }
 
@@ -2135,6 +2135,50 @@ func builtinContains(i *interpreter, arrv value, ev value) (value, error) {
 		}
 	}
 	return makeValueBoolean(false), nil
+}
+
+func builtinFormat(i *interpreter, str value, vals value) (value, error) {
+	s, err := i.getString(str)
+	if err != nil {
+		return nil, err
+	}
+	valArray, err := i.getArray(vals)
+	if err != nil {
+		return nil, err
+	}
+	goValues := make([]interface{}, valArray.length())
+	for idx, elem := range valArray.elements {
+		val, err := elem.getValue(i)
+		if err != nil {
+			return nil, err
+		}
+		switch val.(type) {
+		case *valueNumber:
+			numVal, err := i.getNumber(val)
+			if err != nil {
+				return nil, err
+			}
+			goValues[idx] = numVal.value
+		case valueString:
+			strVal, err := i.getString(val)
+			if err != nil {
+				return nil, err
+			}
+			goValues[idx] = strVal.getGoString()
+		case *valueBoolean:
+			boolVal, err := i.getBoolean(val)
+			if err != nil {
+				return nil, err
+			}
+			goValues[idx] = boolVal.value
+		case *valueNull:
+			goValues[idx] = nil
+		default:
+			return nil, fmt.Errorf("unsupported type for format: %s", val.getType().name)
+		}
+	}
+
+	return makeValueString(fmt.Sprintf(s.getGoString(), goValues...)), nil
 }
 
 func builtinRemove(i *interpreter, arrv value, ev value) (value, error) {
@@ -2534,6 +2578,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "sum", function: builtinSum, params: ast.Identifiers{"arr"}},
 	&unaryBuiltin{name: "avg", function: builtinAvg, params: ast.Identifiers{"arr"}},
 	&binaryBuiltin{name: "contains", function: builtinContains, params: ast.Identifiers{"arr", "elem"}},
+	&binaryBuiltin{name: "goFormat", function: builtinFormat, params: ast.Identifiers{"str", "vals"}},
 
 	// internal
 	&unaryBuiltin{name: "$objectFlatMerge", function: builtinUglyObjectFlatMerge, params: ast.Identifiers{"x"}},

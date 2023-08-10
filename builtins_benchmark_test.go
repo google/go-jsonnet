@@ -91,3 +91,7 @@ func Benchmark_Builtin_rstripChars(b *testing.B) {
 func Benchmark_Builtin_stripChars(b *testing.B) {
 	RunBenchmark(b, "stripChars")
 }
+
+func Benchmark_Builtin_goFormat(b *testing.B) {
+	RunBenchmark(b, "goFormat")
+}
