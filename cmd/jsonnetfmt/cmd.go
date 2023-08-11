@@ -60,6 +60,7 @@ func usage(o io.Writer) {
 	fmt.Fprintln(o, "  --[no-]sort-imports        Sorting of imports (on by default)")
 	fmt.Fprintln(o, "  --[no-]use-implicit-plus   Remove plus signs where they are not required")
 	fmt.Fprintln(o, "                             (on by default)")
+	fmt.Fprintln(o, "  --canonicalize             Generate a canonical output")
 	fmt.Fprintln(o, "  --version                  Print version")
 	fmt.Fprintln(o)
 	fmt.Fprintln(o, "In all cases:")
@@ -181,6 +182,8 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 			config.options.PadObjects = false
 		} else if arg == "--sort-imports" {
 			config.options.SortImports = true
+		} else if arg == "--canonicalize" {
+			config.options.Canonicalize = true
 		} else if arg == "--no-sort-imports" {
 			config.options.SortImports = false
 		} else if arg == "-c" || arg == "--create-output-dirs" {

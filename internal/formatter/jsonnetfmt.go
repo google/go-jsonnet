@@ -74,6 +74,8 @@ type Options struct {
 	StripEverything     bool
 	StripComments       bool
 	StripAllButComments bool
+
+	Canonicalize bool
 }
 
 // DefaultOptions returns the recommended formatter behaviour.
@@ -88,6 +90,7 @@ func DefaultOptions() Options {
 		PadArrays:        false,
 		PadObjects:       true,
 		SortImports:      true,
+		Canonicalize:     false,
 	}
 }
 
@@ -195,6 +198,10 @@ func FormatNode(node ast.Node, finalFodder ast.Fodder, options Options) (string,
 		visitor := FixIndentation{Options: options}
 		visitor.VisitFile(node, finalFodder)
 	}
+	if options.Canonicalize {
+		visitFile(&Canonicalize{}, &node, &finalFodder)
+	}
+
 	removeExtraTrailingNewlines(finalFodder)
 
 	u := &unparser{options: options}
