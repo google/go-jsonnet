@@ -67,6 +67,9 @@ func findVariablesInObject(node *ast.DesugaredObject, info *common.VariableInfo,
 	for _, local := range node.Locals {
 		findVariables(local.Body, info, scopeInside)
 	}
+	for _, assert := range node.Asserts {
+		findVariables(assert, info, scopeInside)
+	}
 	for _, field := range node.Fields {
 		findVariables(field.Body, info, scopeInside)
 		findVariables(field.Name, info, scopeOutside)
