@@ -857,6 +857,7 @@ func tokenStringToAst(tok *token) (*ast.LiteralString, errors.StaticError) {
 			BlockIndent:     tok.stringBlockIndent,
 			BlockTermIndent: tok.stringBlockTermIndent,
 		}
+		validate = false
 	case tokenVerbatimStringDouble:
 		node = &ast.LiteralString{
 			NodeBase: ast.NewNodeBaseLoc(tok.loc, tok.fodder),
