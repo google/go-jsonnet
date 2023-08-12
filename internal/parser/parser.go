@@ -834,6 +834,7 @@ func (p *parser) parseArray(tok *token) (ast.Node, errors.StaticError) {
 
 func tokenStringToAst(tok *token) (*ast.LiteralString, errors.StaticError) {
 	var node *ast.LiteralString
+	var validate bool = true
 
 	switch tok.kind {
 	case tokenStringSingle:
@@ -862,22 +863,26 @@ func tokenStringToAst(tok *token) (*ast.LiteralString, errors.StaticError) {
 			Value:    tok.data,
 			Kind:     ast.VerbatimStringDouble,
 		}
+		validate = false
 	case tokenVerbatimStringSingle:
 		node = &ast.LiteralString{
 			NodeBase: ast.NewNodeBaseLoc(tok.loc, tok.fodder),
 			Value:    tok.data,
 			Kind:     ast.VerbatimStringSingle,
 		}
+		validate = false
 	default:
 		panic(fmt.Sprintf("Not a string token %#+v", tok))
 	}
 
-	_, err := StringUnescape((*node).Loc(), (*node).Value)
-	if err != nil {
-		return node, errors.MakeStaticError(err.Error(), tok.loc)
-	} else {
-		return node, nil
+	if validate {
+		_, err := StringUnescape((*node).Loc(), (*node).Value)
+		if err != nil {
+			return node, errors.MakeStaticError(err.Error(), tok.loc)
+		}
 	}
+
+	return node, nil
 }
 
 func (p *parser) parseTerminal() (ast.Node, errors.StaticError) {
