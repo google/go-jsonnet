@@ -97,7 +97,7 @@ func TestFormatter(t *testing.T) {
 			continue
 		}
 		name := jsonnetExtRE.ReplaceAllString(input, "")
-		golden := jsonnetExtRE.ReplaceAllString(input, ".formatter.golden")
+		golden := jsonnetExtRE.ReplaceAllString(input, ".fmt.golden")
 		tests = append(tests, &formatterTest{
 			name:   name,
 			input:  input,
