@@ -51,6 +51,9 @@ func (u *unparser) write(str string) {
 // If crowded is false and separateToken is false then no space is printed
 // after or before the fodder, even if the last fodder was an interstitial.
 func (u *unparser) fodderFill(fodder ast.Fodder, crowded bool, separateToken bool, final bool) {
+	if u.options.StripEverything {
+		return
+	}
 	var lastIndent int
 	for i, fod := range fodder {
 		skipTrailing := final && (i == (len(fodder) - 1))
