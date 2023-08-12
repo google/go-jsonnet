@@ -420,6 +420,8 @@ func (p *parser) parseObjectRemainderField(literalFields *LiteralFieldSet, tok *
 	var expr1 ast.Node
 	var id *ast.Identifier
 	var fodder2 ast.Fodder
+	var err errors.StaticError
+
 	switch next.kind {
 	case tokenIdentifier:
 		kind = ast.ObjectFieldID
@@ -428,7 +430,10 @@ func (p *parser) parseObjectRemainderField(literalFields *LiteralFieldSet, tok *
 	case tokenStringDouble, tokenStringSingle,
 		tokenStringBlock, tokenVerbatimStringDouble, tokenVerbatimStringSingle:
 		kind = ast.ObjectFieldStr
-		expr1 = tokenStringToAst(next)
+		expr1, err = tokenStringToAst(next)
+		if err != nil {
+			return nil, err
+		}
 	default:
 		fodder1 = next.fodder
 		kind = ast.ObjectFieldExpr
@@ -827,43 +832,58 @@ func (p *parser) parseArray(tok *token) (ast.Node, errors.StaticError) {
 	}, nil
 }
 
-func tokenStringToAst(tok *token) *ast.LiteralString {
+func tokenStringToAst(tok *token) (*ast.LiteralString, errors.StaticError) {
+	var node *ast.LiteralString
+	var validate bool = true
+
 	switch tok.kind {
 	case tokenStringSingle:
-		return &ast.LiteralString{
+		node = &ast.LiteralString{
 			NodeBase: ast.NewNodeBaseLoc(tok.loc, tok.fodder),
 			Value:    tok.data,
 			Kind:     ast.StringSingle,
 		}
 	case tokenStringDouble:
-		return &ast.LiteralString{
+		node = &ast.LiteralString{
 			NodeBase: ast.NewNodeBaseLoc(tok.loc, tok.fodder),
 			Value:    tok.data,
 			Kind:     ast.StringDouble,
 		}
 	case tokenStringBlock:
-		return &ast.LiteralString{
+		node = &ast.LiteralString{
 			NodeBase:        ast.NewNodeBaseLoc(tok.loc, tok.fodder),
 			Value:           tok.data,
 			Kind:            ast.StringBlock,
 			BlockIndent:     tok.stringBlockIndent,
 			BlockTermIndent: tok.stringBlockTermIndent,
 		}
+		validate = false
 	case tokenVerbatimStringDouble:
-		return &ast.LiteralString{
+		node = &ast.LiteralString{
 			NodeBase: ast.NewNodeBaseLoc(tok.loc, tok.fodder),
 			Value:    tok.data,
 			Kind:     ast.VerbatimStringDouble,
 		}
+		validate = false
 	case tokenVerbatimStringSingle:
-		return &ast.LiteralString{
+		node = &ast.LiteralString{
 			NodeBase: ast.NewNodeBaseLoc(tok.loc, tok.fodder),
 			Value:    tok.data,
 			Kind:     ast.VerbatimStringSingle,
 		}
+		validate = false
 	default:
 		panic(fmt.Sprintf("Not a string token %#+v", tok))
 	}
+
+	if validate {
+		_, err := StringUnescape((*node).Loc(), (*node).Value)
+		if err != nil {
+			return node, errors.MakeStaticError(err.Error(), tok.loc)
+		}
+	}
+
+	return node, nil
 }
 
 func (p *parser) parseTerminal() (ast.Node, errors.StaticError) {
@@ -907,7 +927,7 @@ func (p *parser) parseTerminal() (ast.Node, errors.StaticError) {
 		}, nil
 	case tokenStringDouble, tokenStringSingle,
 		tokenStringBlock, tokenVerbatimStringDouble, tokenVerbatimStringSingle:
-		return tokenStringToAst(tok), nil
+		return tokenStringToAst(tok)
 	case tokenFalse:
 		return &ast.LiteralBoolean{
 			NodeBase: ast.NewNodeBaseLoc(tok.loc, tok.fodder),
