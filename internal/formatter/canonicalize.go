@@ -32,7 +32,7 @@ func (c *Canonicalize) sortFields(fields ast.ObjectFields) {
 
 		switch field.Kind {
 		case ast.ObjectAssert:
-			kind = 0
+			kind = 1
 		case ast.ObjectFieldID:
 			kind = 2
 		case ast.ObjectFieldExpr:
@@ -40,7 +40,7 @@ func (c *Canonicalize) sortFields(fields ast.ObjectFields) {
 		case ast.ObjectFieldStr:
 			kind = 2
 		case ast.ObjectLocal:
-			kind = 1
+			kind = 0
 		}
 
 		// generate a string representation of each field
