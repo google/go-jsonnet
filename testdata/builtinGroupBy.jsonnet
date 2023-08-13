@@ -1,0 +1,1 @@
+std.groupBy([1, 1.5, 2, 3], std.floor)

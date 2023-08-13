@@ -968,6 +968,9 @@ func jsonToValue(i *interpreter, v interface{}) (value, error) {
 	case string:
 		return makeValueString(v), nil
 
+	case value:
+		return v, nil
+
 	default:
 		return nil, i.Error(fmt.Sprintf("Not a json type: %#+v", v))
 	}
