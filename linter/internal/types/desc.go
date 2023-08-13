@@ -20,6 +20,17 @@ type arrayDesc struct {
 	elementContains [][]placeholderID
 }
 
+func (a *arrayDesc) copy() *arrayDesc {
+	elementContains := make([][]placeholderID, len(a.elementContains))
+	for i, placeholders := range a.elementContains {
+		elementContains[i] = append([]placeholderID{}, placeholders...)
+	}
+	return &arrayDesc{
+		furtherContain:  append([]placeholderID{}, a.furtherContain...),
+		elementContains: elementContains,
+	}
+}
+
 func (a *arrayDesc) widen(other *arrayDesc) {
 	if other == nil {
 		return
@@ -47,6 +58,18 @@ type objectDesc struct {
 	unknownContain []placeholderID
 	fieldContains  map[string][]placeholderID
 	allFieldsKnown bool
+}
+
+func (o *objectDesc) copy() *objectDesc {
+	fieldContains := make(map[string][]placeholderID)
+	for k, v := range o.fieldContains {
+		fieldContains[k] = append([]placeholderID(nil), v...)
+	}
+	return &objectDesc{
+		unknownContain: append([]placeholderID(nil), o.unknownContain...),
+		fieldContains:  fieldContains,
+		allFieldsKnown: o.allFieldsKnown,
+	}
 }
 
 func (o *objectDesc) widen(other *objectDesc) {
@@ -77,12 +100,22 @@ func (o *objectDesc) normalize() {
 type functionDesc struct {
 	resultContains []placeholderID
 
+	// Read-only
 	// TODO(sbarzowski) instead of keeping "real" parameters here,
 	// maybe keep only what we care about in the linter desc
 	// (names and required-or-not).
 	params []ast.Parameter
 
 	minArity, maxArity int
+}
+
+func (f *functionDesc) copy() *functionDesc {
+	return &functionDesc{
+		resultContains: append([]placeholderID{}, f.resultContains...),
+		params:         f.params, // this is read-only, so we can just copy the pointer
+		minArity:       f.minArity,
+		maxArity:       f.maxArity,
+	}
 }
 
 func sameParameters(a, b []ast.Parameter) bool {
@@ -255,7 +288,44 @@ func Describe(t *TypeDesc) string {
 	return strings.Join(parts, " or ")
 }
 
+// An intuitive notion of the size of type description. For performance tuning.
+func (t *TypeDesc) size() int64 {
+	res := 0
+	if t.Bool {
+		res += 1
+	}
+	if t.Number {
+		res += 1
+	}
+	if t.String {
+		res += 1
+	}
+	if t.Null {
+		res += 1
+	}
+	if t.Function() {
+		res += len(t.FunctionDesc.resultContains)
+		res += len(t.FunctionDesc.params)
+	}
+	if t.Array() {
+		res += len(t.ArrayDesc.furtherContain)
+		for _, elem := range t.ArrayDesc.elementContains {
+			res += len(elem)
+		}
+	}
+	if t.Object() {
+		res += len(t.ObjectDesc.unknownContain)
+		for _, elem := range t.ObjectDesc.fieldContains {
+			res += len(elem)
+		}
+	}
+	return int64(res)
+}
+
 func (t *TypeDesc) widen(b *TypeDesc) {
+	if t == b {
+		panic("BUG: widening the type with itself")
+	}
 	t.Bool = t.Bool || b.Bool
 	t.Number = t.Number || b.Number
 	t.String = t.String || b.String
@@ -264,22 +334,24 @@ func (t *TypeDesc) widen(b *TypeDesc) {
 	if t.FunctionDesc != nil {
 		t.FunctionDesc.widen(b.FunctionDesc)
 	} else if t.FunctionDesc == nil && b.FunctionDesc != nil {
-		copy := *b.FunctionDesc
-		t.FunctionDesc = &copy
+		// copy := *b.FunctionDesc
+		// t.FunctionDesc = &copy
+		t.FunctionDesc = b.FunctionDesc.copy()
 	}
 
 	if t.ObjectDesc != nil {
 		t.ObjectDesc.widen(b.ObjectDesc)
 	} else if t.ObjectDesc == nil && b.ObjectDesc != nil {
-		copy := *b.ObjectDesc
-		t.ObjectDesc = &copy
+		// TODO(sbarzowski) Maybe we want copy on write?
+		// So that it actually aliases underneath (with a bool marker)
+		// which is resolved when widened.
+		t.ObjectDesc = b.ObjectDesc.copy()
 	}
 
 	if t.ArrayDesc != nil {
 		t.ArrayDesc.widen(b.ArrayDesc)
 	} else if t.ArrayDesc == nil && b.ArrayDesc != nil {
-		copy := *b.ArrayDesc
-		t.ArrayDesc = &copy
+		t.ArrayDesc = b.ArrayDesc.copy()
 	}
 }
 

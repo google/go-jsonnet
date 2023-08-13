@@ -192,6 +192,9 @@ func calcTP(node ast.Node, varAt map[ast.Node]*common.Variable, g *typeGraph) ty
 	case *ast.Error:
 		return concreteTP(voidTypeDesc())
 	case *ast.Index:
+		// TODO(sbarzowski) It appears we create a separate index node each time.
+		// Perhaps we could de-duplicate (cache) index placeholders to save processing
+		// later?
 		switch index := node.Index.(type) {
 		case *ast.LiteralString:
 			return tpIndex(knownObjectIndex(g.getExprPlaceholder(node.Target), index.Value))
