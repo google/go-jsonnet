@@ -1992,6 +1992,47 @@ func builtinExtVar(i *interpreter, name value) (value, error) {
 	return nil, i.Error("Undefined external variable: " + string(index))
 }
 
+func builtinGroupBy(i *interpreter, arguments []value) (value, error) {
+	arrv := arguments[0]
+	keyFv := arguments[1]
+
+	arr, err := i.getArray(arrv)
+	if err != nil {
+		return nil, err
+	}
+	keyF, err := i.getFunction(keyFv)
+	if err != nil {
+		return nil, err
+	}
+	json := make(map[string]interface{})
+	for _, thunk := range arr.elements {
+		currentValue, err := keyF.call(i, args(thunk))
+		if err != nil {
+			return nil, err
+		}
+		toStrVal, err := builtinToString(i, currentValue)
+		if err != nil {
+			return nil, err
+		}
+		strVal, err := i.getString(toStrVal)
+		if err != nil {
+			return nil, err
+		}
+		thunkValue, err := thunk.getValue(i)
+		if err != nil {
+			return nil, err
+		}
+
+		if json[strVal.getGoString()] == nil {
+			json[strVal.getGoString()] = []interface{}{thunkValue}
+		} else {
+			temp := json[strVal.getGoString()].([]interface{})
+			json[strVal.getGoString()] = append(temp, thunkValue)
+		}
+	}
+	return jsonToValue(i, json)
+}
+
 func builtinMinArray(i *interpreter, arguments []value) (value, error) {
 	arrv := arguments[0]
 	keyFv := arguments[1]
@@ -2530,6 +2571,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&generalBuiltin{name: "sort", function: builtinSort, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}}},
 	&generalBuiltin{name: "minArray", function: builtinMinArray, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}}},
 	&generalBuiltin{name: "maxArray", function: builtinMaxArray, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}}},
+	&generalBuiltin{name: "groupBy", function: builtinGroupBy, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}}},
 	&unaryBuiltin{name: "native", function: builtinNative, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "sum", function: builtinSum, params: ast.Identifiers{"arr"}},
 	&unaryBuiltin{name: "avg", function: builtinAvg, params: ast.Identifiers{"arr"}},
