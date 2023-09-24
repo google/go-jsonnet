@@ -232,8 +232,11 @@ func (vm *VM) evaluateSnippet(diagnosticFileName ast.DiagnosticFileName, filenam
 	return output, nil
 }
 
-func getAbsPath(path string) (string, error) {
+func getAbsPath(path string, followSymlinks bool) (string, error) {
 	var absPath string
+
+	var err error
+
 	if filepath.IsAbs(path) {
 		absPath = path
 	} else {
@@ -243,14 +246,18 @@ func getAbsPath(path string) (string, error) {
 		}
 		absPath = strings.Join([]string{wd, path}, string(filepath.Separator))
 	}
-	cleanedAbsPath, err := filepath.EvalSymlinks(absPath)
-	if err != nil {
-		return "", err
+
+	if followSymlinks {
+		absPath, err = filepath.EvalSymlinks(absPath)
+		if err != nil {
+			return "", err
+		}
 	}
-	return cleanedAbsPath, nil
+
+	return absPath, nil
 }
 
-func (vm *VM) findDependencies(filePath string, node *ast.Node, dependencies map[string]struct{}, stackTrace *[]traceFrame) (err error) {
+func (vm *VM) findDependencies(filePath string, node *ast.Node, dependencies map[string]struct{}, stackTrace *[]traceFrame, followSymlinks bool) (err error) {
 	var cleanedAbsPath string
 	switch i := (*node).(type) {
 	case *ast.Import:
@@ -261,7 +268,7 @@ func (vm *VM) findDependencies(filePath string, node *ast.Node, dependencies map
 		}
 		cleanedAbsPath = foundAt
 		if _, isFileImporter := vm.importer.(*FileImporter); isFileImporter {
-			cleanedAbsPath, err = getAbsPath(foundAt)
+			cleanedAbsPath, err = getAbsPath(foundAt, followSymlinks)
 			if err != nil {
 				*stackTrace = append([]traceFrame{{Loc: *i.Loc()}}, *stackTrace...)
 				return err
@@ -272,7 +279,7 @@ func (vm *VM) findDependencies(filePath string, node *ast.Node, dependencies map
 			return nil
 		}
 		dependencies[cleanedAbsPath] = struct{}{}
-		err = vm.findDependencies(foundAt, &node, dependencies, stackTrace)
+		err = vm.findDependencies(foundAt, &node, dependencies, stackTrace, followSymlinks)
 		if err != nil {
 			*stackTrace = append([]traceFrame{{Loc: *i.Loc()}}, *stackTrace...)
 			return err
@@ -285,7 +292,7 @@ func (vm *VM) findDependencies(filePath string, node *ast.Node, dependencies map
 		}
 		cleanedAbsPath = foundAt
 		if _, isFileImporter := vm.importer.(*FileImporter); isFileImporter {
-			cleanedAbsPath, err = getAbsPath(foundAt)
+			cleanedAbsPath, err = getAbsPath(foundAt, followSymlinks)
 			if err != nil {
 				*stackTrace = append([]traceFrame{{Loc: *i.Loc()}}, *stackTrace...)
 				return err
@@ -300,7 +307,7 @@ func (vm *VM) findDependencies(filePath string, node *ast.Node, dependencies map
 		}
 		cleanedAbsPath = foundAt
 		if _, isFileImporter := vm.importer.(*FileImporter); isFileImporter {
-			cleanedAbsPath, err = getAbsPath(foundAt)
+			cleanedAbsPath, err = getAbsPath(foundAt, followSymlinks)
 			if err != nil {
 				*stackTrace = append([]traceFrame{{Loc: *i.Loc()}}, *stackTrace...)
 				return err
@@ -309,7 +316,7 @@ func (vm *VM) findDependencies(filePath string, node *ast.Node, dependencies map
 		dependencies[cleanedAbsPath] = struct{}{}
 	default:
 		for _, node := range parser.Children(i) {
-			err = vm.findDependencies(filePath, &node, dependencies, stackTrace)
+			err = vm.findDependencies(filePath, &node, dependencies, stackTrace, followSymlinks)
 			if err != nil {
 				return err
 			}
@@ -453,7 +460,7 @@ func (vm *VM) EvaluateFileMulti(filename string) (files map[string]string, forma
 // FindDependencies returns a sorted array of unique transitive dependencies (via import/importstr/importbin)
 // from all the given `importedPaths` which are themselves excluded from the returned array.
 // The `importedPaths` are parsed as if they were imported from a Jsonnet file located at `importedFrom`.
-func (vm *VM) FindDependencies(importedFrom string, importedPaths []string) ([]string, error) {
+func (vm *VM) FindDependencies(importedFrom string, importedPaths []string, followSymlinks bool) ([]string, error) {
 	var nodes []*ast.Node
 	var stackTrace []traceFrame
 	filePaths := make([]string, len(importedPaths))
@@ -467,7 +474,7 @@ func (vm *VM) FindDependencies(importedFrom string, importedPaths []string) ([]s
 		}
 		cleanedAbsPath := foundAt
 		if _, isFileImporter := vm.importer.(*FileImporter); isFileImporter {
-			cleanedAbsPath, err = getAbsPath(foundAt)
+			cleanedAbsPath, err = getAbsPath(foundAt, followSymlinks)
 			if err != nil {
 				return nil, err
 			}
@@ -482,7 +489,7 @@ func (vm *VM) FindDependencies(importedFrom string, importedPaths []string) ([]s
 	}
 
 	for i, filePath := range filePaths {
-		err := vm.findDependencies(filePath, nodes[i], deps, &stackTrace)
+		err := vm.findDependencies(filePath, nodes[i], deps, &stackTrace, followSymlinks)
 		if err != nil {
 			err = makeRuntimeError(err.Error(), stackTrace)
 			return nil, errors.New(vm.ErrorFormatter.Format(err))

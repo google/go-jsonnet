@@ -193,7 +193,7 @@ func main() {
 		}
 	}
 
-	dependencies, err := vm.FindDependencies("", conf.inputFiles)
+	dependencies, err := vm.FindDependencies("", conf.inputFiles, true)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(1)
