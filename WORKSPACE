@@ -12,6 +12,6 @@ load(
     "jsonnet_go_dependencies",
 )
 
-jsonnet_go_dependencies()
+jsonnet_go_dependencies("1.21.1")
 
 #gazelle:repository_macro bazel/deps.bzl%jsonnet_go_dependencies
