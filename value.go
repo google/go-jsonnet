@@ -730,12 +730,9 @@ func objectIndex(i *interpreter, sb selfBinding, fieldName string) (value, error
 	return val, err
 }
 
-func objectHasField(sb selfBinding, fieldName string, h hidden) bool {
-	found, field, _, _, _ := findField(sb.self.uncached, sb.superDepth, fieldName)
-	if !found || (h == withoutHidden && field.hide == ast.ObjectFieldHidden) {
-		return false
-	}
-	return true
+func objectHasField(sb selfBinding, fieldName string) bool {
+	found, _, _, _, _ := findField(sb.self.uncached, sb.superDepth, fieldName)
+	return found
 }
 
 type fieldHideMap map[string]ast.ObjectFieldHide
