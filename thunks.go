@@ -150,7 +150,7 @@ func (f *plusSuperUnboundField) evaluate(i *interpreter, sb selfBinding, origBin
 		return nil, err
 	}
 
-	if !objectHasField(sb.super(), fieldName, withHidden) {
+	if !objectHasField(sb.super(), fieldName) {
 		return right, nil
 	}
 

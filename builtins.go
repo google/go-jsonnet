@@ -1215,7 +1215,10 @@ func builtinObjectHasEx(i *interpreter, objv value, fnamev value, includeHiddenV
 		return nil, err
 	}
 	h := withHiddenFromBool(includeHidden.value)
-	hasField := objectHasField(objectBinding(obj), string(fname.getRunes()), h)
+
+	hide, hasField := objectFieldsVisibility(obj)[string(fname.getRunes())]
+	hasField = hasField && (h == withHidden || hide != ast.ObjectFieldHidden)
+
 	return makeValueBoolean(hasField), nil
 }
 
@@ -2097,12 +2100,12 @@ func builtinAvg(i *interpreter, arrv value) (value, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	len := float64(arr.length())
 	if len == 0 {
 		return nil, i.Error("Cannot calculate average of an empty array.")
 	}
-	
+
 	sumValue, err := builtinSum(i, arrv)
 	if err != nil {
 		return nil, err
@@ -2112,7 +2115,7 @@ func builtinAvg(i *interpreter, arrv value) (value, error) {
 		return nil, err
 	}
 
-	avg := sum.value/len
+	avg := sum.value / len
 	return makeValueNumber(avg), nil
 }
 

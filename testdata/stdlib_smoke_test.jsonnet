@@ -26,6 +26,8 @@
     get: [
         std.get(o={a:: 17}, f="a"),
         std.get(o={a:: 17}, f="a", default=42, inc_hidden=false),
+        std.get(o={a:: 17} + {a: 18}, f="a", default=42),
+        std.get(o={a:: 17} + {a: 18}, f="a", default=42, inc_hidden=false),
     ],
 
     // isSomething

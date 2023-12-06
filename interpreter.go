@@ -557,7 +557,7 @@ func (i *interpreter) evaluate(a ast.Node, tc tailCallStatus) (value, error) {
 		if err != nil {
 			return nil, err
 		}
-		hasField := objectHasField(i.stack.getSelfBinding().super(), indexStr.getGoString(), withHidden)
+		hasField := objectHasField(i.stack.getSelfBinding().super(), indexStr.getGoString())
 		return makeValueBoolean(hasField), nil
 
 	case *ast.Function:

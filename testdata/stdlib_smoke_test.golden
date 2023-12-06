@@ -88,6 +88,8 @@
    "format": "test blah 42",
    "get": [
       17,
+      42,
+      18,
       42
    ],
    "isArray": true,
