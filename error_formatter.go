@@ -110,7 +110,7 @@ func (ef *termErrorFormatter) showCode(buf *bytes.Buffer, loc ast.LocationRange)
 	fmt.Fprintf(buf, "\n")
 }
 
-func (ef *termErrorFormatter) frame(frame *traceFrame, buf *bytes.Buffer) {
+func (ef *termErrorFormatter) frame(frame *TraceFrame, buf *bytes.Buffer) {
 	// TODO(sbarzowski) tabs are probably a bad idea
 	fmt.Fprintf(buf, "\t%v\t%v\n", frame.Loc.String(), frame.Name)
 	if ef.pretty {
@@ -118,7 +118,7 @@ func (ef *termErrorFormatter) frame(frame *traceFrame, buf *bytes.Buffer) {
 	}
 }
 
-func (ef *termErrorFormatter) buildStackTrace(frames []traceFrame) string {
+func (ef *termErrorFormatter) buildStackTrace(frames []TraceFrame) string {
 	// https://github.com/google/jsonnet/blob/master/core/libjsonnet.cpp#L594
 	maxAbove := ef.maxStackTraceSize / 2
 	maxBelow := ef.maxStackTraceSize - maxAbove
