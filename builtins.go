@@ -29,6 +29,7 @@ import (
 	"io"
 	"math"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -233,17 +234,25 @@ func builtinLength(i *interpreter, x value) (value, error) {
 	return makeValueNumber(float64(num)), nil
 }
 
-func builtinToString(i *interpreter, x value) (value, error) {
+func valueToString(i *interpreter, x value) (string, error) {
 	switch x := x.(type) {
 	case valueString:
-		return x, nil
+		return x.getGoString(), nil
 	}
+
 	var buf bytes.Buffer
-	err := i.manifestAndSerializeJSON(&buf, x, false, "")
+	if err := i.manifestAndSerializeJSON(&buf, x, false, ""); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+func builtinToString(i *interpreter, x value) (value, error) {
+	s, err := valueToString(i, x)
 	if err != nil {
 		return nil, err
 	}
-	return makeValueString(buf.String()), nil
+	return makeValueString(s), nil
 }
 
 func builtinTrace(i *interpreter, x value, y value) (value, error) {
@@ -1556,8 +1565,16 @@ func tomlIsSection(i *interpreter, val value) (bool, error) {
 	}
 }
 
-// tomlEncodeString encodes a string as quoted TOML string
-func tomlEncodeString(s string) string {
+func builtinEscapeStringJson(i *interpreter, v value) (value, error) {
+	s, err := valueToString(i, v)
+	if err != nil {
+		return nil, err
+	}
+
+	return makeValueString(escapeStringJson(s)), nil
+}
+
+func escapeStringJson(s string) string {
 	res := "\""
 
 	for _, c := range s {
@@ -1587,6 +1604,11 @@ func tomlEncodeString(s string) string {
 	res = res + "\""
 
 	return res
+}
+
+// tomlEncodeString encodes a string as quoted TOML string
+func tomlEncodeString(s string) string {
+	return escapeStringJson(s)
 }
 
 // tomlEncodeKey encodes a key - returning same string if it does not need quoting,
@@ -1980,6 +2002,226 @@ func builtinManifestJSONEx(i *interpreter, arguments []value) (value, error) {
 	return makeValueString(finalString), nil
 }
 
+const (
+	yamlIndent = "  "
+)
+
+var (
+	yamlReserved = []string{
+		// Boolean types taken from https://yaml.org/type/bool.html
+		"true", "false", "yes", "no", "on", "off", "y", "n",
+		// Numerical words taken from https://yaml.org/type/float.html
+		".nan", "-.inf", "+.inf", ".inf", "null",
+		// Invalid keys that contain no invalid characters
+		"-", "---", "''",
+	}
+	yamlTimestampPattern = regexp.MustCompile(`^(?:[0-9]*-){2}[0-9]*$`)
+	yamlBinaryPattern    = regexp.MustCompile(`^[-+]?0b[0-1_]+$`)
+	yamlHexPattern       = regexp.MustCompile(`[-+]?0x[0-9a-fA-F_]+`)
+)
+
+func yamlIsReserved(s string) bool {
+	for _, r := range yamlReserved {
+		if strings.EqualFold(s, r) {
+			return true
+		}
+	}
+	return false
+}
+
+func yamlBareSafe(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+
+	// Starts with unsafe char
+	if strings.ContainsRune("&*?|<>=!%@", rune(s[0])) {
+		return false
+	}
+
+	// String contains unsafe char
+	for _, c := range s {
+		if c == ':' || c == '{' || c == '}' || c == '[' || c == ']' || c == ',' ||
+			c == '#' || c == '`' || c == '"' || c == '\'' || c == '\\' || c == '~' ||
+			(c >= '\x00' && c <= '\x06') || c == '\t' || c == '\n' || c == '\r' ||
+			(c >= '\x0e' && c <= '\x1a') || (c >= '\x1c' && c <= '\x1f') {
+			return false
+		}
+	}
+
+	if yamlIsReserved(s) {
+		return false
+	}
+
+	if yamlTimestampPattern.MatchString(s) {
+		return false
+	}
+
+	// Check binary /
+	if yamlBinaryPattern.MatchString(s) || yamlHexPattern.MatchString(s) {
+		return false
+	}
+
+	// Is integer
+	if _, err := strconv.Atoi(s); err == nil {
+		return false
+	}
+	// Is float
+	if _, err := strconv.ParseFloat(s, 64); err == nil {
+		return false
+	}
+
+	return true
+}
+
+func builtinManifestYamlDoc(i *interpreter, arguments []value) (value, error) {
+	val := arguments[0]
+	vindentArrInObj, err := i.getBoolean(arguments[1])
+	if err != nil {
+		return nil, err
+	}
+	vQuoteKeys, err := i.getBoolean(arguments[2])
+	if err != nil {
+		return nil, err
+	}
+
+	var buf strings.Builder
+
+	var aux func(ov value, buf *strings.Builder, cindent string) error
+	aux = func(ov value, buf *strings.Builder, cindent string) error {
+		switch v := ov.(type) {
+		case *valueNull:
+			buf.WriteString("null")
+		case *valueBoolean:
+			if v.value {
+				buf.WriteString("true")
+			} else {
+				buf.WriteString("false")
+			}
+		case valueString:
+			s := v.getGoString()
+			if s == "" {
+				buf.WriteString(`""`)
+			} else if strings.HasSuffix(s, "\n") {
+				s := strings.TrimSuffix(s, "\n")
+				buf.WriteString("|")
+				for _, line := range strings.Split(s, "\n") {
+					buf.WriteByte('\n')
+					buf.WriteString(cindent)
+					buf.WriteString(yamlIndent)
+					buf.WriteString(line)
+				}
+			} else if strings.Contains(s, "\n") {
+				buf.WriteString("|-")
+				for _, line := range strings.Split(s, "\n") {
+					buf.WriteByte('\n')
+					buf.WriteString(cindent)
+					buf.WriteString(yamlIndent)
+					buf.WriteString(line)
+				}
+			} else {
+				buf.WriteString(escapeStringJson(s))
+			}
+		case *valueNumber:
+			buf.WriteString(strconv.FormatFloat(v.value, 'f', -1, 64))
+		case *valueArray:
+			if v.length() == 0 {
+				buf.WriteString("[]")
+			} else {
+				for ix, elem := range v.elements {
+					if ix != 0 {
+						buf.WriteByte('\n')
+						buf.WriteString(cindent)
+					}
+					thunkValue, err := elem.getValue(i)
+					if err != nil {
+						return err
+					}
+					buf.WriteByte('-')
+
+					if v, isArr := thunkValue.(*valueArray); isArr && v.length() > 0 {
+						buf.WriteByte('\n')
+						buf.WriteString(cindent)
+						buf.WriteString(yamlIndent)
+					} else {
+						buf.WriteByte(' ')
+					}
+
+					prevIndent := cindent
+					addIndent := false
+					switch thunkValue.(type) {
+					case *valueArray, *valueObject:
+						addIndent = true
+					}
+					if addIndent {
+						cindent = cindent + yamlIndent
+					}
+
+					if err := aux(thunkValue, buf, cindent); err != nil {
+						return err
+					}
+					cindent = prevIndent
+				}
+			}
+		case *valueObject:
+			fields := objectFields(v, withoutHidden)
+			if len(fields) == 0 {
+				buf.WriteString("{}")
+			} else {
+				sort.Strings(fields)
+				for ix, fieldName := range fields {
+					fieldValue, err := v.index(i, fieldName)
+					if err != nil {
+						return err
+					}
+
+					if ix != 0 {
+						buf.WriteByte('\n')
+						buf.WriteString(cindent)
+					}
+
+					keyStr := fieldName
+					if vQuoteKeys.value || !yamlBareSafe(fieldName) {
+						keyStr = escapeStringJson(fieldName)
+					}
+					buf.WriteString(keyStr)
+					buf.WriteByte(':')
+
+					prevIndent := cindent
+					if v, isArr := fieldValue.(*valueArray); isArr && v.length() > 0 {
+						buf.WriteByte('\n')
+						buf.WriteString(cindent)
+						if vindentArrInObj.value {
+							buf.WriteString(yamlIndent)
+							cindent = cindent + yamlIndent
+						}
+					} else if v, isObj := fieldValue.(*valueObject); isObj {
+						if len(objectFields(v, withoutHidden)) > 0 {
+							buf.WriteByte('\n')
+							buf.WriteString(cindent)
+							buf.WriteString(yamlIndent)
+							cindent = cindent + yamlIndent
+						} else {
+							buf.WriteByte(' ')
+						}
+					} else {
+						buf.WriteByte(' ')
+					}
+					aux(fieldValue, buf, cindent)
+					cindent = prevIndent
+				}
+			}
+		}
+		return nil
+	}
+
+	if err := aux(val, &buf, ""); err != nil {
+		return nil, err
+	}
+
+	return makeValueString(buf.String()), nil
+}
+
 func builtinExtVar(i *interpreter, name value) (value, error) {
 	str, err := i.getString(name)
 	if err != nil {
@@ -2097,12 +2339,12 @@ func builtinAvg(i *interpreter, arrv value) (value, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	len := float64(arr.length())
 	if len == 0 {
 		return nil, i.Error("Cannot calculate average of an empty array.")
 	}
-	
+
 	sumValue, err := builtinSum(i, arrv)
 	if err != nil {
 		return nil, err
@@ -2112,7 +2354,7 @@ func builtinAvg(i *interpreter, arrv value) (value, error) {
 		return nil, err
 	}
 
-	avg := sum.value/len
+	avg := sum.value / len
 	return makeValueNumber(avg), nil
 }
 
@@ -2459,6 +2701,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "extVar", function: builtinExtVar, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "length", function: builtinLength, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "toString", function: builtinToString, params: ast.Identifiers{"a"}},
+	&unaryBuiltin{name: "escapeStringJson", function: builtinEscapeStringJson, params: ast.Identifiers{"str_"}},
 	&binaryBuiltin{name: "trace", function: builtinTrace, params: ast.Identifiers{"str", "rest"}},
 	&binaryBuiltin{name: "makeArray", function: builtinMakeArray, params: ast.Identifiers{"sz", "func"}},
 	&binaryBuiltin{name: "flatMap", function: builtinFlatMap, params: ast.Identifiers{"func", "arr"}},
@@ -2524,6 +2767,11 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 		{name: "newline", defaultValue: &valueFlatString{value: []rune("\n")}},
 		{name: "key_val_sep", defaultValue: &valueFlatString{value: []rune(": ")}}}},
 	&generalBuiltin{name: "manifestTomlEx", function: builtinManifestTomlEx, params: []generalBuiltinParameter{{name: "value"}, {name: "indent"}}},
+	&generalBuiltin{name: "manifestYamlDoc", function: builtinManifestYamlDoc, params: []generalBuiltinParameter{
+		{name: "value"},
+		{name: "indent_array_in_object", defaultValue: &valueBoolean{value: false}},
+		{name: "quote_keys", defaultValue: &valueBoolean{value: true}},
+	}},
 	&unaryBuiltin{name: "base64", function: builtinBase64, params: ast.Identifiers{"input"}},
 	&unaryBuiltin{name: "encodeUTF8", function: builtinEncodeUTF8, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "decodeUTF8", function: builtinDecodeUTF8, params: ast.Identifiers{"arr"}},
