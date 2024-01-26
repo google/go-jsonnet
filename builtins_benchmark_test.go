@@ -56,12 +56,20 @@ func Benchmark_Builtin_base64_byte_array(b *testing.B) {
 	RunBenchmark(b, "base64_byte_array")
 }
 
+func Benchmark_Builtin_escapeStringJson(b *testing.B) {
+	RunBenchmark(b, "escapeStringJson")
+}
+
 func Benchmark_Builtin_manifestJsonEx(b *testing.B) {
 	RunBenchmark(b, "manifestJsonEx")
 }
 
 func Benchmark_Builtin_manifestTomlEx(b *testing.B) {
 	RunBenchmark(b, "manifestTomlEx")
+}
+
+func Benchmark_Builtin_manifestYamlDoc(b *testing.B) {
+	RunBenchmark(b, "manifestYamlDoc")
 }
 
 func Benchmark_Builtin_comparison(b *testing.B) {
