@@ -1571,7 +1571,7 @@ func builtinEscapeStringJson(i *interpreter, v value) (value, error) {
 		return nil, err
 	}
 
-	return makeValueString(escapeStringJson(s)), nil
+	return makeValueString(unparseString(s)), nil
 }
 
 func escapeStringJson(s string) string {
@@ -1608,7 +1608,7 @@ func escapeStringJson(s string) string {
 
 // tomlEncodeString encodes a string as quoted TOML string
 func tomlEncodeString(s string) string {
-	return escapeStringJson(s)
+	return unparseString(s)
 }
 
 // tomlEncodeKey encodes a key - returning same string if it does not need quoting,
@@ -2020,7 +2020,7 @@ var (
 	yamlHexPattern       = regexp.MustCompile(`[-+]?0x[0-9a-fA-F_]+`)
 )
 
-func yamlIsReserved(s string) bool {
+func yamlReservedString(s string) bool {
 	for _, r := range yamlReserved {
 		if strings.EqualFold(s, r) {
 			return true
@@ -2034,22 +2034,17 @@ func yamlBareSafe(s string) bool {
 		return false
 	}
 
-	// Starts with unsafe char
-	if strings.ContainsRune("&*?|<>=!%@", rune(s[0])) {
-		return false
-	}
-
 	// String contains unsafe char
 	for _, c := range s {
-		if c == ':' || c == '{' || c == '}' || c == '[' || c == ']' || c == ',' ||
-			c == '#' || c == '`' || c == '"' || c == '\'' || c == '\\' || c == '~' ||
-			(c >= '\x00' && c <= '\x06') || c == '\t' || c == '\n' || c == '\r' ||
-			(c >= '\x0e' && c <= '\x1a') || (c >= '\x1c' && c <= '\x1f') {
+		isAlpha := (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+		isDigit := c >= '0' && c <= '9'
+
+		if !isAlpha && !isDigit && c != '_' && c != '-' && c != '/' && c != '.' {
 			return false
 		}
 	}
 
-	if yamlIsReserved(s) {
+	if yamlReservedString(s) {
 		return false
 	}
 
@@ -2085,10 +2080,10 @@ func builtinManifestYamlDoc(i *interpreter, arguments []value) (value, error) {
 		return nil, err
 	}
 
-	var buf strings.Builder
+	var buf bytes.Buffer
 
-	var aux func(ov value, buf *strings.Builder, cindent string) error
-	aux = func(ov value, buf *strings.Builder, cindent string) error {
+	var aux func(ov value, buf *bytes.Buffer, cindent string) error
+	aux = func(ov value, buf *bytes.Buffer, cindent string) error {
 		switch v := ov.(type) {
 		case *valueNull:
 			buf.WriteString("null")
@@ -2111,105 +2106,93 @@ func builtinManifestYamlDoc(i *interpreter, arguments []value) (value, error) {
 					buf.WriteString(yamlIndent)
 					buf.WriteString(line)
 				}
-			} else if strings.Contains(s, "\n") {
-				buf.WriteString("|-")
-				for _, line := range strings.Split(s, "\n") {
-					buf.WriteByte('\n')
-					buf.WriteString(cindent)
-					buf.WriteString(yamlIndent)
-					buf.WriteString(line)
-				}
 			} else {
-				buf.WriteString(escapeStringJson(s))
+				buf.WriteString(unparseString(s))
 			}
 		case *valueNumber:
 			buf.WriteString(strconv.FormatFloat(v.value, 'f', -1, 64))
 		case *valueArray:
 			if v.length() == 0 {
 				buf.WriteString("[]")
-			} else {
-				for ix, elem := range v.elements {
-					if ix != 0 {
-						buf.WriteByte('\n')
-						buf.WriteString(cindent)
-					}
-					thunkValue, err := elem.getValue(i)
-					if err != nil {
-						return err
-					}
-					buf.WriteByte('-')
-
-					if v, isArr := thunkValue.(*valueArray); isArr && v.length() > 0 {
-						buf.WriteByte('\n')
-						buf.WriteString(cindent)
-						buf.WriteString(yamlIndent)
-					} else {
-						buf.WriteByte(' ')
-					}
-
-					prevIndent := cindent
-					addIndent := false
-					switch thunkValue.(type) {
-					case *valueArray, *valueObject:
-						addIndent = true
-					}
-					if addIndent {
-						cindent = cindent + yamlIndent
-					}
-
-					if err := aux(thunkValue, buf, cindent); err != nil {
-						return err
-					}
-					cindent = prevIndent
+				return nil
+			}
+			for ix, elem := range v.elements {
+				if ix != 0 {
+					buf.WriteByte('\n')
+					buf.WriteString(cindent)
 				}
+				thunkValue, err := elem.getValue(i)
+				if err != nil {
+					return err
+				}
+				buf.WriteByte('-')
+
+				if v, isArr := thunkValue.(*valueArray); isArr && v.length() > 0 {
+					buf.WriteByte('\n')
+					buf.WriteString(cindent)
+					buf.WriteString(yamlIndent)
+				} else {
+					buf.WriteByte(' ')
+				}
+
+				prevIndent := cindent
+				switch thunkValue.(type) {
+				case *valueArray, *valueObject:
+					cindent = cindent + yamlIndent
+				}
+
+				if err := aux(thunkValue, buf, cindent); err != nil {
+					return err
+				}
+				cindent = prevIndent
 			}
 		case *valueObject:
 			fields := objectFields(v, withoutHidden)
 			if len(fields) == 0 {
 				buf.WriteString("{}")
-			} else {
-				sort.Strings(fields)
-				for ix, fieldName := range fields {
-					fieldValue, err := v.index(i, fieldName)
-					if err != nil {
-						return err
-					}
+				return nil
+			}
+			sort.Strings(fields)
+			for ix, fieldName := range fields {
+				fieldValue, err := v.index(i, fieldName)
+				if err != nil {
+					return err
+				}
 
-					if ix != 0 {
+				if ix != 0 {
+					buf.WriteByte('\n')
+					buf.WriteString(cindent)
+				}
+
+				keyStr := fieldName
+				if vQuoteKeys.value || !yamlBareSafe(fieldName) {
+					keyStr = escapeStringJson(fieldName)
+				}
+				buf.WriteString(keyStr)
+				buf.WriteByte(':')
+
+				prevIndent := cindent
+				if v, isArr := fieldValue.(*valueArray); isArr && v.length() > 0 {
+					buf.WriteByte('\n')
+					buf.WriteString(cindent)
+					if vindentArrInObj.value {
+						buf.WriteString(yamlIndent)
+						cindent = cindent + yamlIndent
+					}
+				} else if v, isObj := fieldValue.(*valueObject); isObj {
+					if len(objectFields(v, withoutHidden)) > 0 {
 						buf.WriteByte('\n')
 						buf.WriteString(cindent)
-					}
-
-					keyStr := fieldName
-					if vQuoteKeys.value || !yamlBareSafe(fieldName) {
-						keyStr = escapeStringJson(fieldName)
-					}
-					buf.WriteString(keyStr)
-					buf.WriteByte(':')
-
-					prevIndent := cindent
-					if v, isArr := fieldValue.(*valueArray); isArr && v.length() > 0 {
-						buf.WriteByte('\n')
-						buf.WriteString(cindent)
-						if vindentArrInObj.value {
-							buf.WriteString(yamlIndent)
-							cindent = cindent + yamlIndent
-						}
-					} else if v, isObj := fieldValue.(*valueObject); isObj {
-						if len(objectFields(v, withoutHidden)) > 0 {
-							buf.WriteByte('\n')
-							buf.WriteString(cindent)
-							buf.WriteString(yamlIndent)
-							cindent = cindent + yamlIndent
-						} else {
-							buf.WriteByte(' ')
-						}
+						buf.WriteString(yamlIndent)
+						cindent = cindent + yamlIndent
 					} else {
 						buf.WriteByte(' ')
 					}
-					aux(fieldValue, buf, cindent)
-					cindent = prevIndent
+				} else {
+					buf.WriteByte(' ')
 				}
+				aux(fieldValue, buf, cindent)
+				cindent = prevIndent
 			}
 		}
 		return nil
