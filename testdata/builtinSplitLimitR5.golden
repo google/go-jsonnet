@@ -1,0 +1,10 @@
+RUNTIME ERROR: std.splitLimitR third parameter should be -1 or non-negative, got -2
+-------------------------------------------------
+	testdata/builtinSplitLimitR5:1:1-44	$
+
+std.splitLimitR('foo,bar,baz,qux', ',', -2)
+
+-------------------------------------------------
+	During evaluation	
+
+

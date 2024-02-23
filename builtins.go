@@ -1324,6 +1324,47 @@ func builtinSplitLimit(i *interpreter, strv, cv, maxSplitsV value) (value, error
 	return makeValueArray(res), nil
 }
 
+func builtinSplitLimitR(i *interpreter, strv, cv, maxSplitsV value) (value, error) {
+	str, err := i.getString(strv)
+	if err != nil {
+		return nil, err
+	}
+	c, err := i.getString(cv)
+	if err != nil {
+		return nil, err
+	}
+	maxSplits, err := i.getInt(maxSplitsV)
+	if err != nil {
+		return nil, err
+	}
+	if maxSplits < -1 {
+		return nil, i.Error(fmt.Sprintf("std.splitLimitR third parameter should be -1 or non-negative, got %v", maxSplits))
+	}
+	sStr := str.getGoString()
+	sC := c.getGoString()
+	if len(sC) < 1 {
+		return nil, i.Error(fmt.Sprintf("std.splitLimitR second parameter should have length 1 or greater, got %v", len(sC)))
+	}
+
+	count := strings.Count(sStr, sC)
+	if maxSplits > -1 && count > maxSplits {
+		count = maxSplits
+	}
+	strs := make([]string, count+1)
+	for i := count; i > 0; i-- {
+		index := strings.LastIndex(sStr, sC)
+		strs[i] = sStr[index+len(sC):]
+		sStr = sStr[:index]
+	}
+	strs[0] = sStr
+	res := make([]*cachedThunk, len(strs))
+	for i := range strs {
+		res[i] = readyThunk(makeValueString(strs[i]))
+	}
+
+	return makeValueArray(res), nil
+}
+
 func builtinStrReplace(i *interpreter, strv, fromv, tov value) (value, error) {
 	str, err := i.getString(strv)
 	if err != nil {
@@ -2511,6 +2552,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&binaryBuiltin{name: "stripChars", function: builtinStripChars, params: ast.Identifiers{"str", "chars"}},
 	&ternaryBuiltin{name: "substr", function: builtinSubstr, params: ast.Identifiers{"str", "from", "len"}},
 	&ternaryBuiltin{name: "splitLimit", function: builtinSplitLimit, params: ast.Identifiers{"str", "c", "maxsplits"}},
+	&ternaryBuiltin{name: "splitLimitR", function: builtinSplitLimitR, params: ast.Identifiers{"str", "c", "maxsplits"}},
 	&ternaryBuiltin{name: "strReplace", function: builtinStrReplace, params: ast.Identifiers{"str", "from", "to"}},
 	&unaryBuiltin{name: "isEmpty", function: builtinIsEmpty, params: ast.Identifiers{"str"}},
 	&binaryBuiltin{name: "equalsIgnoreCase", function: builtinEqualsIgnoreCase, params: ast.Identifiers{"str1", "str2"}},
