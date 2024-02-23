@@ -90,6 +90,7 @@ func prepareStdlib(g *typeGraph) {
 		"rstripChars":      g.newSimpleFuncType(stringType, "str", "chars"),
 		"split":            g.newSimpleFuncType(arrayOfString, "str", "c"),
 		"splitLimit":       g.newSimpleFuncType(arrayOfString, "str", "c", "maxsplits"),
+		"splitLimitR":      g.newSimpleFuncType(arrayOfString, "str", "c", "maxsplits"),
 		"strReplace":       g.newSimpleFuncType(stringType, "str", "from", "to"),
 		"asciiUpper":       g.newSimpleFuncType(stringType, "str"),
 		"asciiLower":       g.newSimpleFuncType(stringType, "str"),

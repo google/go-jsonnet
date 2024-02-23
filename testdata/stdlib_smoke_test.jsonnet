@@ -72,6 +72,7 @@
     rstripChars: std.rstripChars(str="aaabbbbcccc", chars="c"),
     split: std.split(str="a,b,c", c=","),
     splitLimit: std.splitLimit(str="a,b,c", c=",", maxsplits=1),
+    splitLimitR: std.splitLimitR(str="a,b,c", c=",", maxsplits=1),
     strReplace: std.strReplace(str="aaa", from="aa", to="bb"),
     asciiUpper: std.asciiUpper(str="Blah"),
     asciiLower: std.asciiLower(str="Blah"),
