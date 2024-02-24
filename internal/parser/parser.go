@@ -369,9 +369,18 @@ func (p *parser) parseObjectAssignmentOp() (opFodder ast.Fodder, plusSugar bool,
 	return
 }
 
-// A LiteralField is a field of an object or object comprehension.
-// +gen set
-type LiteralField string
+// A literalField is a field of an object or object comprehension.
+type literalField string
+
+type literalFieldSet map[literalField]struct{}
+
+func (set literalFieldSet) add(f literalField) bool {
+	if _, ok := set[f]; ok {
+		return false
+	}
+	set[f] = struct{}{}
+	return true
+}
 
 func (p *parser) parseObjectRemainderComp(fields ast.ObjectFields, gotComma bool, tok *token, next *token) (ast.Node, *token, errors.StaticError) {
 	numFields := 0
@@ -414,7 +423,7 @@ func (p *parser) parseObjectRemainderComp(fields ast.ObjectFields, gotComma bool
 	}, last, nil
 }
 
-func (p *parser) parseObjectRemainderField(literalFields *LiteralFieldSet, tok *token, next *token) (*ast.ObjectField, errors.StaticError) {
+func (p *parser) parseObjectRemainderField(literalFields *literalFieldSet, tok *token, next *token) (*ast.ObjectField, errors.StaticError) {
 	var kind ast.ObjectFieldKind
 	var fodder1 ast.Fodder
 	var expr1 ast.Node
@@ -470,7 +479,7 @@ func (p *parser) parseObjectRemainderField(literalFields *LiteralFieldSet, tok *
 	}
 
 	if kind != ast.ObjectFieldExpr {
-		if !literalFields.Add(LiteralField(next.data)) {
+		if !literalFields.add(literalField(next.data)) {
 			return nil, errors.MakeStaticError(
 				fmt.Sprintf("Duplicate field: %v", next.data), next.loc)
 		}
@@ -622,7 +631,7 @@ func (p *parser) parseObjectRemainderAssert(tok *token, next *token) (*ast.Objec
 // Parse object or object comprehension without leading brace
 func (p *parser) parseObjectRemainder(tok *token) (ast.Node, *token, errors.StaticError) {
 	var fields ast.ObjectFields
-	literalFields := make(LiteralFieldSet)
+	literalFields := make(literalFieldSet)
 	binds := make(ast.IdentifierSet)
 
 	gotComma := false
