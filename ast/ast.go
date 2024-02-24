@@ -21,13 +21,6 @@ import (
 	"fmt"
 )
 
-// Identifier represents a variable / parameter / field name.
-// +gen set
-type Identifier string
-
-// Identifiers represents an Identifier slice.
-type Identifiers []Identifier
-
 // TODO(jbeda) implement interning of identifiers if necessary.  The C++
 // version does so.
 
@@ -80,7 +73,7 @@ func NewNodeBase(loc LocationRange, fodder Fodder, freeVariables Identifiers) No
 
 // NewNodeBaseLoc creates a new NodeBase from an initial LocationRange.
 func NewNodeBaseLoc(loc LocationRange, fodder Fodder) NodeBase {
-	return NewNodeBase(loc, fodder, []Identifier{})
+	return NewNodeBase(loc, fodder, Identifiers{})
 }
 
 // Loc returns a NodeBase's loc.

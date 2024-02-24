@@ -1,15 +1,9 @@
 all: install.dependencies generate generate.stdlib build.bazel test tidy
 .PHONY: all
 
-# https://github.com/golang/go/issues/30515
-# We temporarily set GO111MODULE=off here to avoid adding these binaries to the go.mod|sum files
-# As they are not needed during runtime
-install.dependencies : export GO111MODULE=off
 install.dependencies:
 	git submodule init
 	git submodule update
-	go get github.com/clipperhouse/gen
-	go get github.com/clipperhouse/set
 .PHONY: install.dependencies
 
 build.bazel:

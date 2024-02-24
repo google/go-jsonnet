@@ -1,5 +1,3 @@
-run:
-  skip-files: ast/identifier_set.go
 linters:
   enable:
     - stylecheck

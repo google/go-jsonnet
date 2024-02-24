@@ -5,7 +5,6 @@ go_library(
     srcs = [
         "context.go",
         "lexer.go",
-        "literalfield_set.go",
         "parser.go",
         "string_util.go",
     ],
