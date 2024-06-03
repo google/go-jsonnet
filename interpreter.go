@@ -950,7 +950,7 @@ func jsonToValue(i *interpreter, v interface{}) (value, error) {
 	case bool:
 		return makeValueBoolean(v), nil
 	case int, int8, int16, int32, int64:
-		return makeDoubleCheck(i, v.(float64))
+		return makeDoubleCheck(i, float64(v))
 	case float64:
 		return makeDoubleCheck(i, v)
 
