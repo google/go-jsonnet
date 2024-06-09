@@ -243,6 +243,10 @@
       "a",
       "b,c"
    ],
+   "splitLimitR": [
+      "a,b",
+      "c"
+   ],
    "sqrt": 2.2360679774997898,
    "startsWith": true,
    "strReplace": "bba",
