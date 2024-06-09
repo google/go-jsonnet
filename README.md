@@ -188,17 +188,6 @@ _replace the FILTER with the name of the test you are working on_
 FILTER=Builtin_manifestJsonEx make benchmark
 ```
 
-## Implementation Notes
-
-We are generating some helper classes on types by using http://clipperhouse.github.io/gen/.  Do the following to regenerate these if necessary:
-
-```bash
-go get github.com/clipperhouse/gen
-go get github.com/clipperhouse/set
-export PATH=$PATH:$GOPATH/bin  # If you haven't already
-go generate
-```
-
 ## Update cpp-jsonnet sub-repo
 
 This repo depends on [the original Jsonnet repo](https://github.com/google/jsonnet). Shared parts include the standard library, headers files for C API and some tests.
