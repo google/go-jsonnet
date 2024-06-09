@@ -180,7 +180,10 @@ func (d *Debugger) preHook(i *interpreter, n ast.Node) {
 	if l.File == nil {
 		return
 	}
-	vs := valueToString(d.lastEvaluation)
+	vs, err := valueToString(d.interpreter, d.lastEvaluation)
+	if err != nil {
+		return
+	}
 	if d.singleStep {
 		d.singleStep = false
 		d.events <- &DebugEventStop{
@@ -206,61 +209,6 @@ func (d *Debugger) preHook(i *interpreter, n ast.Node) {
 		d.waitForContinuation()
 	}
 	return
-}
-
-func valueToString(v value) string {
-	switch i := v.(type) {
-	case *valueFlatString:
-		return "\"" + i.getGoString() + "\""
-	case *valueObject:
-		if i == nil {
-			return "{}"
-		}
-		var sb strings.Builder
-		sb.WriteString("{")
-		firstLine := true
-		for k, v := range i.cache {
-			if k.depth != 0 {
-				continue
-			}
-			if !firstLine {
-				sb.WriteString(", ")
-				firstLine = true
-			}
-			sb.WriteString(k.field)
-			sb.WriteString(": ")
-			sb.WriteString(valueToString(v))
-		}
-		sb.WriteString("}")
-		return sb.String()
-	case *valueArray:
-		var sb strings.Builder
-		sb.WriteString("[")
-		for i, e := range i.elements {
-			if i > 0 {
-				sb.WriteString(", ")
-			}
-			sb.WriteString(valueToString(e.content))
-		}
-		sb.WriteString("]")
-		return sb.String()
-	case *valueNumber:
-		return fmt.Sprintf("%f", i.value)
-	case *valueBoolean:
-		return fmt.Sprintf("%t", i.value)
-	case *valueFunction:
-		var sb strings.Builder
-		sb.WriteString("function(")
-		for i, p := range i.parameters() {
-			if i > 0 {
-				sb.WriteString(", ")
-			}
-			sb.WriteString(string(p.name))
-		}
-		sb.WriteString(")")
-		return sb.String()
-	}
-	return fmt.Sprintf("%T%+v", v, v)
 }
 
 func (d *Debugger) ActiveBreakpoints() []string {
@@ -334,9 +282,9 @@ func (d *Debugger) ClearBreakpoints(file string) {
 func (d *Debugger) LookupValue(val string) (string, error) {
 	switch val {
 	case "self":
-		return valueToString(d.interpreter.stack.getSelfBinding().self), nil
+		return valueToString(d.interpreter, d.interpreter.stack.getSelfBinding().self)
 	case "super":
-		return valueToString(d.interpreter.stack.getSelfBinding().super().self), nil
+		return valueToString(d.interpreter, d.interpreter.stack.getSelfBinding().super().self)
 	default:
 		v := d.interpreter.stack.lookUpVar(ast.Identifier(val))
 		if v != nil {
@@ -357,7 +305,7 @@ func (d *Debugger) LookupValue(val string) (string, error) {
 				}
 				v.content = e
 			}
-			return valueToString(v.content), nil
+			return valueToString(d.interpreter, v.content)
 		}
 	}
 	return "", fmt.Errorf("invalid identifier %s", val)
