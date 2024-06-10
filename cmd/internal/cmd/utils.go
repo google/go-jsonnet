@@ -20,7 +20,7 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -81,12 +81,12 @@ func ReadInput(filenameIsCode bool, filename *string) (input string, err error) 
 		*filename = "<cmdline>"
 	} else if *filename == "-" {
 		var bytes []byte
-		bytes, err = ioutil.ReadAll(os.Stdin)
+		bytes, err = io.ReadAll(os.Stdin)
 		input = string(bytes)
 		*filename = "<stdin>"
 	} else {
 		var bytes []byte
-		bytes, err = ioutil.ReadFile(*filename)
+		bytes, err = os.ReadFile(*filename)
 		input = string(bytes)
 	}
 	return
