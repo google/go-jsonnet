@@ -16,16 +16,12 @@ This code is known to work on Go 1.12 and above. We recommend always using the n
 ## Installation instructions
 
 ```shell
-# go >= 1.17
 # Using `go get` to install binaries is deprecated.
 # The version suffix is mandatory.
 go install github.com/google/go-jsonnet/cmd/jsonnet@latest
 
 # Or other tools in the 'cmd' directory
 go install github.com/google/go-jsonnet/cmd/jsonnet-lint@latest
-
-# go < 1.17
-go get github.com/google/go-jsonnet/cmd/jsonnet
 ```
 
 It's also available on Homebrew:
