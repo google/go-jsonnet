@@ -124,7 +124,7 @@ func prepareStdlib(g *typeGraph) {
 		"manifestJsonEx":       g.newSimpleFuncType(stringType, "value", "indent"),
 		"manifestJsonMinified": g.newSimpleFuncType(stringType, "value"),
 		"manifestYamlDoc":      g.newFuncType(stringType, []ast.Parameter{required("value"), optional("indent_array_in_object"), optional("quote_keys")}),
-		"manifestYamlStream":   g.newSimpleFuncType(stringType, "value"),
+		"manifestYamlStream":   g.newFuncType(anyArrayType, []ast.Parameter{required("value"), optional("indent_array_in_object"), optional("c_document_end"), optional("quote_keys")}),
 		"manifestXmlJsonml":    g.newSimpleFuncType(stringType, "value"),
 
 		// Arrays
@@ -153,7 +153,7 @@ func prepareStdlib(g *typeGraph) {
 		"minArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"maxArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"contains":      g.newSimpleFuncType(boolType, "arr", "elem"),
-		"avg":		    	 g.newSimpleFuncType(numberType, "arr"),	
+		"avg":           g.newSimpleFuncType(numberType, "arr"),
 		"all":           g.newSimpleFuncType(boolArrayType, "arr"),
 		"any":           g.newSimpleFuncType(boolArrayType, "arr"),
 		"remove":        g.newSimpleFuncType(anyArrayType, "arr", "elem"),
