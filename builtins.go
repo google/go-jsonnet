@@ -1224,7 +1224,10 @@ func builtinObjectHasEx(i *interpreter, objv value, fnamev value, includeHiddenV
 		return nil, err
 	}
 	h := withHiddenFromBool(includeHidden.value)
-	hasField := objectHasField(objectBinding(obj), string(fname.getRunes()), h)
+
+	hide, hasField := objectFieldsVisibility(obj)[string(fname.getRunes())]
+	hasField = hasField && (h == withHidden || hide != ast.ObjectFieldHidden)
+
 	return makeValueBoolean(hasField), nil
 }
 
