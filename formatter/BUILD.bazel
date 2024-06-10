@@ -5,5 +5,9 @@ go_library(
     srcs = ["formatter.go"],
     importpath = "github.com/google/go-jsonnet/formatter",
     visibility = ["//visibility:public"],
-    deps = ["//internal/formatter:go_default_library"],
+    deps = [
+        "//ast:go_default_library",
+        "//internal/parser:go_default_library",
+        "//internal/formatter:go_default_library",
+    ],
 )
