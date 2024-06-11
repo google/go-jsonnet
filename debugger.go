@@ -180,10 +180,7 @@ func (d *Debugger) preHook(i *interpreter, n ast.Node) {
 	if l.File == nil {
 		return
 	}
-	vs, err := valueToString(d.interpreter, d.lastEvaluation)
-	if err != nil {
-		return
-	}
+	vs := debugValueToString(d.lastEvaluation)
 	if d.singleStep {
 		d.singleStep = false
 		d.events <- &DebugEventStop{
@@ -282,9 +279,9 @@ func (d *Debugger) ClearBreakpoints(file string) {
 func (d *Debugger) LookupValue(val string) (string, error) {
 	switch val {
 	case "self":
-		return valueToString(d.interpreter, d.interpreter.stack.getSelfBinding().self)
+		return debugValueToString(d.interpreter.stack.getSelfBinding().self), nil
 	case "super":
-		return valueToString(d.interpreter, d.interpreter.stack.getSelfBinding().super().self)
+		return debugValueToString(d.interpreter.stack.getSelfBinding().super().self), nil
 	default:
 		v := d.interpreter.stack.lookUpVar(ast.Identifier(val))
 		if v != nil {
@@ -305,7 +302,7 @@ func (d *Debugger) LookupValue(val string) (string, error) {
 				}
 				v.content = e
 			}
-			return valueToString(d.interpreter, v.content)
+			return debugValueToString(v.content), nil
 		}
 	}
 	return "", fmt.Errorf("invalid identifier %s", val)
@@ -346,4 +343,59 @@ func (d *Debugger) StackTrace() []TraceFrame {
 	}
 	trace[len(trace)-1].Loc = *d.current.Loc()
 	return trace
+}
+
+func debugValueToString(v value) string {
+	switch i := v.(type) {
+	case *valueFlatString:
+		return "\"" + i.getGoString() + "\""
+	case *valueObject:
+		if i == nil {
+			return "{}"
+		}
+		var sb strings.Builder
+		sb.WriteString("{")
+		firstLine := true
+		for k, v := range i.cache {
+			if k.depth != 0 {
+				continue
+			}
+			if !firstLine {
+				sb.WriteString(", ")
+				firstLine = true
+			}
+			sb.WriteString(k.field)
+			sb.WriteString(": ")
+			sb.WriteString(debugValueToString(v))
+		}
+		sb.WriteString("}")
+		return sb.String()
+	case *valueArray:
+		var sb strings.Builder
+		sb.WriteString("[")
+		for i, e := range i.elements {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString(debugValueToString(e.content))
+		}
+		sb.WriteString("]")
+		return sb.String()
+	case *valueNumber:
+		return fmt.Sprintf("%f", i.value)
+	case *valueBoolean:
+		return fmt.Sprintf("%t", i.value)
+	case *valueFunction:
+		var sb strings.Builder
+		sb.WriteString("function(")
+		for i, p := range i.parameters() {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString(string(p.name))
+		}
+		sb.WriteString(")")
+		return sb.String()
+	}
+	return fmt.Sprintf("%T%+v", v, v)
 }
