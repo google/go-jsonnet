@@ -1,0 +1,10 @@
+RUNTIME ERROR: Pattern (a] is not valid
+-------------------------------------------------
+	testdata/builtinMatch2:1:1-24	$
+
+std.match("foo", "(a]")
+
+-------------------------------------------------
+	During evaluation	
+
+
