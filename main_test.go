@@ -154,7 +154,7 @@ func runInternalJsonnet(i jsonnetInput) jsonnetResult {
 	}
 	testChildren(rawAST)
 
-	desugaredAST, err := SnippetToAST(i.name, string(i.input))
+	desugaredAST, err := vm.SnippetToAST(i.name, string(i.input))
 	if err != nil {
 		return jsonnetResult{
 			output:  errFormatter.Format(err) + "\n",
