@@ -1,6 +1,8 @@
 package types
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type stronglyConnectedComponentID int
 
@@ -288,6 +290,7 @@ func (g *typeGraph) findTypes() {
 			sccID++
 		}
 	}
+	g.counters.sccCount = len(stronglyConnectedComponents)
 
 	for i := len(stronglyConnectedComponents) - 1; i >= 0; i-- {
 		scc := stronglyConnectedComponents[i]
@@ -301,11 +304,18 @@ func (g *typeGraph) resolveTypesInSCC(scc []placeholderID) {
 	common := voidTypeDesc()
 
 	for _, p := range scc {
+		// Add types from contained SCCs. These are fully calculated
+		// because we are going in topo order
 		for _, contained := range g.placeholder(p).contains {
+			// TODO(sbarzowski) Is it possible that we are adding multiple times from the same placeholder?
+			// Each `p` is normalized, but different placeholders in scc may still contain the same thing.
 			if g.sccOf[contained] != sccID {
 				common.widen(&g.upperBound[contained])
+				g.counters.containWidenCount += 1
 			}
 		}
+
+		// Handle builtins (e.g)
 		builtinOp := g.placeholder(p).builtinOp
 		if builtinOp != nil {
 			concreteArgs := []*TypeDesc{}
@@ -318,9 +328,11 @@ func (g *typeGraph) resolveTypesInSCC(scc []placeholderID) {
 			}
 			res := builtinOp.f(concreteArgs, builtinOp.args)
 			common.widen(&res.concrete)
+			g.counters.builtinWidenConcreteCount += 1
 			for _, contained := range res.contained {
 				if g.sccOf[contained] != sccID {
 					common.widen(&g.upperBound[contained])
+					g.counters.builtinWidenContainedCount += 1
 				}
 			}
 		}
@@ -333,7 +345,11 @@ func (g *typeGraph) resolveTypesInSCC(scc []placeholderID) {
 		}
 	}
 
+	g.counters.preNormalizationSumSize += common.size()
+
 	common.normalize()
+
+	g.counters.postNormalizationSumSize += common.size()
 
 	for _, p := range scc {
 		g.upperBound[p] = common
