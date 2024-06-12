@@ -107,13 +107,14 @@ func prepareStdlib(g *typeGraph) {
 
 		// Parsing
 
-		"parseInt":   g.newSimpleFuncType(numberType, "str"),
-		"parseOctal": g.newSimpleFuncType(numberType, "str"),
-		"parseHex":   g.newSimpleFuncType(numberType, "str"),
-		"parseJson":  g.newSimpleFuncType(jsonType, "str"),
-		"parseYaml":  g.newSimpleFuncType(jsonType, "str"),
-		"encodeUTF8": g.newSimpleFuncType(numberArrayType, "str"),
-		"decodeUTF8": g.newSimpleFuncType(stringType, "arr"),
+		"parseInt":       g.newSimpleFuncType(numberType, "str"),
+		"parseOctal":     g.newSimpleFuncType(numberType, "str"),
+		"parseHex":       g.newSimpleFuncType(numberType, "str"),
+		"parseJson":      g.newSimpleFuncType(jsonType, "str"),
+		"parseYaml":      g.newSimpleFuncType(jsonType, "str"),
+		"parseXmlJsonml": g.newFuncType(jsonType, []ast.Parameter{required("str"), optional("preserveWhitespace")}),
+		"encodeUTF8":     g.newSimpleFuncType(numberArrayType, "str"),
+		"decodeUTF8":     g.newSimpleFuncType(stringType, "arr"),
 
 		// Manifestation
 
