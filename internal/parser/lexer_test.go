@@ -16,6 +16,7 @@ limitations under the License.
 package parser
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-jsonnet/ast"
@@ -315,23 +316,81 @@ func TestNumber1epExc(t *testing.T) {
 }
 
 func TestNumberSeparators(t *testing.T) {
+	cases := [...]struct {
+		input  string
+		err    string
+		tokens Tokens
+	}{
+		{
+			input:  "123_456",
+			err:    "",
+			tokens: Tokens{{kind: tokenNumber, data: "123456"}},
+		},
+		{
+			input:  "1_750_000",
+			err:    "",
+			tokens: Tokens{{kind: tokenNumber, data: "1750000"}},
+		},
+		{
+			input:  "1_2_3",
+			err:    "",
+			tokens: Tokens{{kind: tokenNumber, data: "123"}},
+		},
+		{
+			input:  "3.141_592",
+			err:    "",
+			tokens: Tokens{{kind: tokenNumber, data: "3.141592"}},
+		},
+		{
+			input: "01_100",
+			err:   "",
+			tokens: Tokens{
+				{kind: tokenNumber, data: "0"},
+				{kind: tokenNumber, data: "1100"},
+			},
+		},
+		{
+			input:  "1_200.0",
+			err:    "",
+			tokens: Tokens{{kind: tokenNumber, data: "1200.0"}},
+		},
+		{
+			input:  "0e1_01",
+			err:    "",
+			tokens: Tokens{{kind: tokenNumber, data: "0e101"}},
+		},
+		{
+			input:  "10_10e3",
+			err:    "",
+			tokens: Tokens{{kind: tokenNumber, data: "1010e3"}},
+		},
+		{
+			input:  "2_3e1_2",
+			err:    "",
+			tokens: Tokens{{kind: tokenNumber, data: "23e12"}},
+		},
+		{
+			input:  "1.1_2e100",
+			err:    "",
+			tokens: Tokens{{kind: tokenNumber, data: "1.12e100"}},
+		},
+		{
+			input:  "1.1e-10_1",
+			err:    "",
+			tokens: Tokens{{kind: tokenNumber, data: "1.1e-101"}},
+		},
+		{
+			input:  "9.109_383_56e-31",
+			err:    "",
+			tokens: Tokens{{kind: tokenNumber, data: "9.10938356e-31"}},
+		},
+	}
 
-	SingleTest(t, "123_456", "", Tokens{{kind: tokenNumber, data: "123456"}})
-
-	/*
-			testLex("number 123_456", "123_456", {Token(Token::Kind::NUMBER, "123456")}, "");
-		    testLex("number 1_750_000", "1_750_000", {Token(Token::Kind::NUMBER, "1750000")}, "");
-		    testLex("number 1_2_3", "1_2_3", {Token(Token::Kind::NUMBER, "123")}, "");
-		    testLex("number 3.141_592", "3.141_592", {Token(Token::Kind::NUMBER, "3.141592")}, "");
-		    testLex("number 01_100", "01_100", {Token(Token::Kind::NUMBER, "0"), Token(Token::Kind::NUMBER, "1100")}, "");
-		    testLex("number 1_200.0", "1_200.0", {Token(Token::Kind::NUMBER, "1200.0")}, "");
-		    testLex("number 0e1_01", "0e1_01", {Token(Token::Kind::NUMBER, "0e101")}, "");
-		    testLex("number 10_10e3", "10_10e3", {Token(Token::Kind::NUMBER, "1010e3")}, "");
-		    testLex("number 2_3e1_2", "2_3e1_2", {Token(Token::Kind::NUMBER, "23e12")}, "");
-		    testLex("number 1.1_2e100", "1.1_2e100", {Token(Token::Kind::NUMBER, "1.12e100")}, "");
-		    testLex("number 1.1e-10_1", "1.1e-10_1", {Token(Token::Kind::NUMBER, "1.1e-101")}, "");
-		    testLex("number 9.109_383_56e-31", "9.109_383_56e-31", {Token(Token::Kind::NUMBER, "9.10938356e-31")}, "");
-	*/
+	for _, c := range cases {
+		t.Run(fmt.Sprintf("number %s", c.input), func(t *testing.T) {
+			SingleTest(t, c.input, c.err, c.tokens)
+		})
+	}
 }
 
 func TestDoublestring1(t *testing.T) {
