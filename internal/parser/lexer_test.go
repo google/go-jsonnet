@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -312,6 +312,26 @@ func TestNumber1eExc(t *testing.T) {
 
 func TestNumber1epExc(t *testing.T) {
 	SingleTest(t, "1e+!", "snippet:1:4 Couldn't lex number, junk after exponent sign: '!'", Tokens{})
+}
+
+func TestNumberSeparators(t *testing.T) {
+
+	SingleTest(t, "123_456", "", Tokens{{kind: tokenNumber, data: "123456"}})
+
+	/*
+			testLex("number 123_456", "123_456", {Token(Token::Kind::NUMBER, "123456")}, "");
+		    testLex("number 1_750_000", "1_750_000", {Token(Token::Kind::NUMBER, "1750000")}, "");
+		    testLex("number 1_2_3", "1_2_3", {Token(Token::Kind::NUMBER, "123")}, "");
+		    testLex("number 3.141_592", "3.141_592", {Token(Token::Kind::NUMBER, "3.141592")}, "");
+		    testLex("number 01_100", "01_100", {Token(Token::Kind::NUMBER, "0"), Token(Token::Kind::NUMBER, "1100")}, "");
+		    testLex("number 1_200.0", "1_200.0", {Token(Token::Kind::NUMBER, "1200.0")}, "");
+		    testLex("number 0e1_01", "0e1_01", {Token(Token::Kind::NUMBER, "0e101")}, "");
+		    testLex("number 10_10e3", "10_10e3", {Token(Token::Kind::NUMBER, "1010e3")}, "");
+		    testLex("number 2_3e1_2", "2_3e1_2", {Token(Token::Kind::NUMBER, "23e12")}, "");
+		    testLex("number 1.1_2e100", "1.1_2e100", {Token(Token::Kind::NUMBER, "1.12e100")}, "");
+		    testLex("number 1.1e-10_1", "1.1e-10_1", {Token(Token::Kind::NUMBER, "1.1e-101")}, "");
+		    testLex("number 9.109_383_56e-31", "9.109_383_56e-31", {Token(Token::Kind::NUMBER, "9.10938356e-31")}, "");
+	*/
 }
 
 func TestDoublestring1(t *testing.T) {
