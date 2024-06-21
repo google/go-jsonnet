@@ -316,38 +316,31 @@ func TestNumber1epExc(t *testing.T) {
 }
 
 func TestNumberSeparators(t *testing.T) {
-	type numcase struct {
+	for _, c := range []struct {
 		input  string
 		err    string
 		tokens Tokens
-	}
-	mknumcase := func(input string, err string, tokens Tokens) numcase {
-		return numcase{input, err, tokens}
-	}
-	for _, c := range [...]numcase{
-		mknumcase("123_456", "", Tokens{{kind: tokenNumber, data: "123456"}}),
-		mknumcase("1_750_000", "", Tokens{{kind: tokenNumber, data: "1750000"}}),
-		mknumcase("1_2_3", "", Tokens{{kind: tokenNumber, data: "123"}}),
-		mknumcase("3.141_592", "", Tokens{{kind: tokenNumber, data: "3.141592"}}),
-		mknumcase("01_100", "", Tokens{
-			{kind: tokenNumber, data: "0"},
-			{kind: tokenNumber, data: "1100"},
-		}),
-		mknumcase("1_200.0", "", Tokens{{kind: tokenNumber, data: "1200.0"}}),
-		mknumcase("0e1_01", "", Tokens{{kind: tokenNumber, data: "0e101"}}),
-		mknumcase("10_10e3", "", Tokens{{kind: tokenNumber, data: "1010e3"}}),
-		mknumcase("2_3e1_2", "", Tokens{{kind: tokenNumber, data: "23e12"}}),
-		mknumcase("1.1_2e100", "", Tokens{{kind: tokenNumber, data: "1.12e100"}}),
-		mknumcase("1.1e-10_1", "", Tokens{{kind: tokenNumber, data: "1.1e-101"}}),
-		mknumcase("9.109_383_56e-31", "", Tokens{{kind: tokenNumber, data: "9.10938356e-31"}}),
-		mknumcase("123456_!", "snippet:1:8 Couldn't lex number, junk after '_': '!'", Tokens{}),
-		mknumcase("123__456", "snippet:1:5 Couldn't lex number, multiple consecutive _'s", Tokens{}),
-		mknumcase("1_200_.0", "snippet:1:7 Couldn't lex number, junk after '_': '.'", Tokens{}),
-		mknumcase("1_200._0", "snippet:1:7 Couldn't lex number, junk after decimal point: '_'", Tokens{}),
-		mknumcase("1_200_e2", "snippet:1:7 Couldn't lex number, junk after '_': 'e'", Tokens{}),
-		mknumcase("1_200e_2", "snippet:1:7 Couldn't lex number, junk after 'E': '_'", Tokens{}),
-		mknumcase("200e-_2", "snippet:1:6 Couldn't lex number, junk after exponent sign: '_'", Tokens{}),
-		mknumcase("200e+_2", "snippet:1:6 Couldn't lex number, junk after exponent sign: '_'", Tokens{}),
+	}{
+		{"123_456", "", Tokens{{kind: tokenNumber, data: "123456"}}},
+		{"1_750_000", "", Tokens{{kind: tokenNumber, data: "1750000"}}},
+		{"1_2_3", "", Tokens{{kind: tokenNumber, data: "123"}}},
+		{"3.141_592", "", Tokens{{kind: tokenNumber, data: "3.141592"}}},
+		{"01_100", "", Tokens{{kind: tokenNumber, data: "0"}, {kind: tokenNumber, data: "1100"}}},
+		{"1_200.0", "", Tokens{{kind: tokenNumber, data: "1200.0"}}},
+		{"0e1_01", "", Tokens{{kind: tokenNumber, data: "0e101"}}},
+		{"10_10e3", "", Tokens{{kind: tokenNumber, data: "1010e3"}}},
+		{"2_3e1_2", "", Tokens{{kind: tokenNumber, data: "23e12"}}},
+		{"1.1_2e100", "", Tokens{{kind: tokenNumber, data: "1.12e100"}}},
+		{"1.1e-10_1", "", Tokens{{kind: tokenNumber, data: "1.1e-101"}}},
+		{"9.109_383_56e-31", "", Tokens{{kind: tokenNumber, data: "9.10938356e-31"}}},
+		{"123456_!", "snippet:1:8 Couldn't lex number, junk after '_': '!'", Tokens{}},
+		{"123__456", "snippet:1:5 Couldn't lex number, multiple consecutive _'s", Tokens{}},
+		{"1_200_.0", "snippet:1:7 Couldn't lex number, junk after '_': '.'", Tokens{}},
+		{"1_200._0", "snippet:1:7 Couldn't lex number, junk after decimal point: '_'", Tokens{}},
+		{"1_200_e2", "snippet:1:7 Couldn't lex number, junk after '_': 'e'", Tokens{}},
+		{"1_200e_2", "snippet:1:7 Couldn't lex number, junk after 'E': '_'", Tokens{}},
+		{"200e-_2", "snippet:1:6 Couldn't lex number, junk after exponent sign: '_'", Tokens{}},
+		{"200e+_2", "snippet:1:6 Couldn't lex number, junk after exponent sign: '_'", Tokens{}},
 	} {
 		t.Run(fmt.Sprintf("number %s", c.input), func(t *testing.T) {
 			SingleTest(t, c.input, c.err, c.tokens)
