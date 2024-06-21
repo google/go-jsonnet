@@ -557,7 +557,7 @@ outerLoop:
 					l.location())
 
 			case r >= '0' && r <= '9':
-				state = numAfterExpDigit
+				state = numAfterOneToNine
 
 			default:
 				return l.makeStaticErrorPoint(
@@ -589,11 +589,29 @@ outerLoop:
 			case r >= '0' && r <= '9':
 				state = numAfterExpDigit
 			case r == '_':
-				state = numAfterUnderscore
+				state = numAfterExpUnderscore
 			default:
 				break outerLoop
 			}
+
+		case numAfterExpUnderscore:
+			// The only valid transition out of _ is to a digit.
+			switch {
+			case r == '_':
+				return l.makeStaticErrorPoint(
+					"Couldn't lex number, multiple consecutive _'s",
+					l.location())
+
+			case r >= '0' && r <= '9':
+				state = numAfterExpDigit
+
+			default:
+				return l.makeStaticErrorPoint(
+					fmt.Sprintf("Couldn't lex number, junk after '_': %v", strconv.QuoteRuneToASCII(r)),
+					l.location())
+			}
 		}
+
 		l.next()
 	}
 
