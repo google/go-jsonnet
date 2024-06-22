@@ -525,6 +525,12 @@ func TestIdentifiers(t *testing.T) {
 	})
 }
 
+func TestIdentifierUnderscore(t *testing.T) {
+	SingleTest(t, "_123", "", Tokens{
+		{kind: tokenIdentifier, data: "_123"},
+	})
+}
+
 func TestCppComment(t *testing.T) {
 	SingleTest(t, "// hi", "", Tokens{
 		{kind: tokenEndOfFile, fodder: ast.Fodder{{Kind: ast.FodderParagraph, Comment: []string{"// hi"}}}},
