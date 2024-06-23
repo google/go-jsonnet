@@ -334,7 +334,7 @@ func TestNumberSeparators(t *testing.T) {
 		{"1.1e-10_1", "", Tokens{{kind: tokenNumber, data: "1.1e-101"}}},
 		{"9.109_383_56e-31", "", Tokens{{kind: tokenNumber, data: "9.10938356e-31"}}},
 		{"123456_!", "snippet:1:8 Couldn't lex number, junk after '_': '!'", Tokens{}},
-		{"123__456", "snippet:1:5 Couldn't lex number, multiple consecutive _'s", Tokens{}},
+		{"123__456", "snippet:1:5 Couldn't lex number, junk after '_': '_'", Tokens{}},
 		{"1_200_.0", "snippet:1:7 Couldn't lex number, junk after '_': '.'", Tokens{}},
 		{"1_200._0", "snippet:1:7 Couldn't lex number, junk after decimal point: '_'", Tokens{}},
 		{"1_200_e2", "snippet:1:7 Couldn't lex number, junk after '_': 'e'", Tokens{}},
