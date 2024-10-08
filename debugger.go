@@ -345,6 +345,16 @@ func (d *Debugger) StackTrace() []TraceFrame {
 	return trace
 }
 
+func (d *Debugger) SetVM(vm *VM) {
+	if vm != nil {
+		d.vm = vm
+	}
+}
+
+func (d *Debugger) GetVM() *VM {
+	return d.vm
+}
+
 func debugValueToString(v value) string {
 	switch i := v.(type) {
 	case *valueFlatString:
