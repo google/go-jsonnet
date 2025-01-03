@@ -74,7 +74,13 @@ func runTest(t *testing.T, test *formatterTest, changedGoldensList *ChangedGolde
 			return
 		}
 		if diff, hasDiff := testutils.CompareWithGolden(outData, golden); hasDiff {
-			t.Error(fmt.Errorf("golden file %v has diff:\n%v", test.input, diff))
+			if strings.HasPrefix(outData, string(golden)) ||
+				strings.HasPrefix(string(golden), outData) {
+				// The difference can be a trailing newline, invisible in text format.
+				fmt.Printf("actual:\n%v\n", []byte(outData))
+				fmt.Printf("expected:\n%v\n", golden)
+			}
+			t.Error(fmt.Errorf("golden file for %v has diff:\n%v", test.input, diff))
 		}
 	}
 }

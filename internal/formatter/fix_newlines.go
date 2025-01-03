@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Google Inc. All rights reserved.
+Copyright 2019,2024 Google LLC. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -30,10 +30,12 @@ import (
 //
 // It only looks shallowly at the AST nodes, so there may be some newlines deeper that
 // don't affect expanding. For example:
-// [{
-//     'a': 'b',
-//     'c': 'd',
-// }]
+//
+//	[{
+//		    'a': 'b',
+//		    'c': 'd',
+//	}]
+//
 // The outer array can stay unexpanded, because there are no newlines between
 // the square brackets and the braces.
 type FixNewlines struct {
@@ -197,19 +199,26 @@ func (c *FixNewlines) Parens(p pass.ASTPass, parens *ast.Parens, ctx pass.Contex
 
 // Parameters handles parameters
 // Example2:
-//   f(1, 2,
-//     3)
+//
+//	f(1, 2,
+//	  3)
+//
 // Should be expanded to:
-//   f(1,
-//     2,
-//     3)
+//
+//	f(1,
+//	  2,
+//	  3)
+//
 // And:
-//   foo(
-//       1, 2, 3)
+//
+//	foo(
+//	    1, 2, 3)
+//
 // Should be expanded to:
-//   foo(
-//       1, 2, 3
-//   )
+//
+//	foo(
+//	    1, 2, 3
+//	)
 func (c *FixNewlines) Parameters(p pass.ASTPass, l *ast.Fodder, params *[]ast.Parameter, r *ast.Fodder, ctx pass.Context) {
 	shouldExpandBetween := false
 	shouldExpandNearParens := false
@@ -243,19 +252,26 @@ func (c *FixNewlines) Parameters(p pass.ASTPass, l *ast.Fodder, params *[]ast.Pa
 
 // Arguments handles parameters
 // Example2:
-//   f(1, 2,
-//     3)
+//
+//	f(1, 2,
+//	  3)
+//
 // Should be expanded to:
-//   f(1,
-//     2,
-//     3)
+//
+//	f(1,
+//	  2,
+//	  3)
+//
 // And:
-//   foo(
-//       1, 2, 3)
+//
+//	foo(
+//	    1, 2, 3)
+//
 // Should be expanded to:
-//   foo(
-//       1, 2, 3
-//   )
+//
+//	foo(
+//	    1, 2, 3
+//	)
 func (c *FixNewlines) Arguments(p pass.ASTPass, l *ast.Fodder, args *ast.Arguments, r *ast.Fodder, ctx pass.Context) {
 	shouldExpandBetween := false
 	shouldExpandNearParens := false
@@ -302,4 +318,40 @@ func (c *FixNewlines) Arguments(p pass.ASTPass, l *ast.Fodder, args *ast.Argumen
 		ast.FodderEnsureCleanNewline(r)
 	}
 	c.Base.Arguments(p, l, args, r, ctx)
+}
+
+// ObjectField eliminates newlines after the colon, before the expression
+//
+// Example:
+//
+//	local d = {
+//	  name:
+//
+//	    "foo",
+//	  children:
+//	 ["bar", "bam"],
+//	};
+//
+// should be formatted as:
+//
+//	local d = {
+//	  name: "foo",
+//	  children: ["bar", "bam"],
+//	};
+func (c *FixNewlines) ObjectField(p pass.ASTPass, field *ast.ObjectField, ctx pass.Context) {
+
+	switch field.Kind {
+	case ast.ObjectLocal:
+
+	case ast.ObjectFieldID:
+		removeInitialNewlines(field.Expr2)
+
+	case ast.ObjectFieldStr:
+
+	case ast.ObjectFieldExpr:
+
+	case ast.ObjectAssert:
+	}
+
+	c.Base.ObjectField(p, field, ctx)
 }
