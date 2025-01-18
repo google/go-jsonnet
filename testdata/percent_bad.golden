@@ -1,6 +1,6 @@
 RUNTIME ERROR: Operator % cannot be used on types number and string.
 -------------------------------------------------
-	<std>:251:7-94	function <anonymous>
+	<std>:262:7-94	function <anonymous>
 
       error 'Operator % cannot be used on types ' + std.type(a) + ' and ' + std.type(b) + '.',
 

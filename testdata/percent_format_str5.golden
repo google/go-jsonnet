@@ -1,38 +1,38 @@
 RUNTIME ERROR: Not enough values to format: 1, expected more than 1
 -------------------------------------------------
-	<std>:729:15-103	thunk <val> from <function <format_codes_arr>>
+	<std>:749:15-103	thunk <val> from <function <format_codes_arr>>
 
               error ('Not enough values to format: ' + std.length(arr) + ', expected more than ' + j2);
 
 -------------------------------------------------
-	<std>:734:27-30	thunk from <thunk <s> from <function <format_codes_arr>>>
+	<std>:754:27-30	thunk from <thunk <s> from <function <format_codes_arr>>>
 
               format_code(val, code, tmp.fw, tmp2.prec, j2);
 
 -------------------------------------------------
-	<std>:604:22-25	thunk from <function <format_code>>
+	<std>:624:22-25	thunk from <function <format_code>>
 
         std.toString(val)
 
 -------------------------------------------------
-	<std>:604:9-26	function <format_code>
+	<std>:624:9-26	function <format_code>
 
         std.toString(val)
 
 -------------------------------------------------
 	... (skipped 10 frames)
 -------------------------------------------------
-	<std>:745:11-64	function <format_codes_arr>
+	<std>:765:11-64	function <format_codes_arr>
 
           format_codes_arr(codes, arr, i + 1, j3, v + s_padded) tailstrict;
 
 -------------------------------------------------
-	<std>:789:7-46	function <anonymous>
+	<std>:809:7-46	function <anonymous>
 
       format_codes_arr(codes, vals, 0, 0, '')
 
 -------------------------------------------------
-	<std>:249:7-23	function <anonymous>
+	<std>:260:7-23	function <anonymous>
 
       std.format(a, b)
 

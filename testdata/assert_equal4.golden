@@ -1,8 +1,8 @@
 RUNTIME ERROR: Assertion failed. {"x": 1} != {"x": 2}
 -------------------------------------------------
-	<std>:826:7-50	function <anonymous>
+	<std>:850:7-56	function <anonymous>
 
-      error 'Assertion failed. ' + a + ' != ' + b,
+      error 'Assertion failed. ' + astr + ' != ' + bstr,
 
 -------------------------------------------------
 	testdata/assert_equal4:1:1-32	$
