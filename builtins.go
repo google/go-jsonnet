@@ -1108,6 +1108,20 @@ func liftNumeric(f func(float64) float64) func(*interpreter, value) (value, erro
 	}
 }
 
+func liftNumeric2(f func(float64, float64) float64) func(*interpreter, value, value) (value, error) {
+	return func(i *interpreter, x value, y value) (value, error) {
+		nx, err := i.getNumber(x)
+		if err != nil {
+			return nil, err
+		}
+		ny, err := i.getNumber(y)
+		if err != nil {
+			return nil, err
+		}
+		return makeDoubleCheck(i, f(nx.value, ny.value))
+	}
+}
+
 func liftNumericToBoolean(f func(float64) bool) func(*interpreter, value) (value, error) {
 	return func(i *interpreter, x value) (value, error) {
 		n, err := i.getNumber(x)
@@ -1119,6 +1133,7 @@ func liftNumericToBoolean(f func(float64) bool) func(*interpreter, value) (value
 }
 
 var builtinSqrt = liftNumeric(math.Sqrt)
+var builtinHypot = liftNumeric2(math.Hypot)
 var builtinCeil = liftNumeric(math.Ceil)
 var builtinFloor = liftNumeric(math.Floor)
 var builtinSin = liftNumeric(math.Sin)
@@ -1127,6 +1142,7 @@ var builtinTan = liftNumeric(math.Tan)
 var builtinAsin = liftNumeric(math.Asin)
 var builtinAcos = liftNumeric(math.Acos)
 var builtinAtan = liftNumeric(math.Atan)
+var builtinAtan2 = liftNumeric2(math.Atan2)
 var builtinLog = liftNumeric(math.Log)
 var builtinExp = liftNumeric(func(f float64) float64 {
 	res := math.Exp(f)
@@ -2752,12 +2768,14 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "ceil", function: builtinCeil, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "floor", function: builtinFloor, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "sqrt", function: builtinSqrt, params: ast.Identifiers{"x"}},
+	&binaryBuiltin{name: "hypot", function: builtinHypot, params: ast.Identifiers{"x", "y"}},
 	&unaryBuiltin{name: "sin", function: builtinSin, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "cos", function: builtinCos, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "tan", function: builtinTan, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "asin", function: builtinAsin, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "acos", function: builtinAcos, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "atan", function: builtinAtan, params: ast.Identifiers{"x"}},
+	&binaryBuiltin{name: "atan2", function: builtinAtan2, params: ast.Identifiers{"y", "x"}},
 	&unaryBuiltin{name: "log", function: builtinLog, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "exp", function: builtinExp, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "mantissa", function: builtinMantissa, params: ast.Identifiers{"x"}},
