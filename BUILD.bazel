@@ -1,8 +1,8 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 load(
     "@bazel_gazelle//:def.bzl",
     "gazelle",
 )
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 # gazelle:prefix github.com/google/go-jsonnet
 gazelle(
@@ -13,6 +13,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "builtins.go",
+        "debugger.go",
         "doc.go",
         "error_formatter.go",
         "imports.go",
@@ -32,6 +33,7 @@ go_library(
         "//internal/errors:go_default_library",
         "//internal/parser:go_default_library",
         "//internal/program:go_default_library",
+        "//toolutils:go_default_library",
         "@io_k8s_sigs_yaml//:go_default_library",
         "@org_golang_x_crypto//sha3:go_default_library",
     ],
