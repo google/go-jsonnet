@@ -1,6 +1,7 @@
 name: ci
 on:
   pull_request:
+    types: [opened, reopened, synchronize, ready_for_review, review_requested]
     branches:
       - master
   push:
