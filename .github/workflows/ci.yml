@@ -78,15 +78,14 @@ jobs:
       #     version: v1.30.0
       - run: make all
       - name: Install goveralls
-        env:
-          GO111MODULE: off
         run: |
           export GOPATH=$GITHUB_WORKSPACE
-          go get github.com/mattn/goveralls
+          go install github.com/mattn/goveralls@v0.0.12
       - name: Send coverage
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./bin/goveralls -coverprofile=coverage.out -service=github
+        run: |
+          ./bin/goveralls -coverprofile=coverage.out -service=github
 
   goreleaser:
     name: Goreleaser
