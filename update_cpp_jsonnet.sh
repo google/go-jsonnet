@@ -17,10 +17,11 @@ sha256=$(curl -fL https://github.com/google/jsonnet/archive/$hash.tar.gz | shasu
 sed -i.bak \
     -e "s/CPP_JSONNET_SHA256 = .*/CPP_JSONNET_SHA256 = \"$sha256\"/;" \
     -e "s/CPP_JSONNET_GITHASH = .*/CPP_JSONNET_GITHASH = \"$hash\"/;" \
-    bazel/repositories.bzl
+    bazel/repositories.bzl MODULE.bazel
 
 # NB: macOS sed doesn't support -i without arg. This is the easy workaround.
 rm bazel/repositories.bzl.bak
+rm MODULE.bazel.bak
 
 set +x
 echo
