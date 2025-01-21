@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +16,7 @@ limitations under the License.
 package parser
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-jsonnet/ast"
@@ -314,6 +315,39 @@ func TestNumber1epExc(t *testing.T) {
 	SingleTest(t, "1e+!", "snippet:1:4 Couldn't lex number, junk after exponent sign: '!'", Tokens{})
 }
 
+func TestNumberSeparators(t *testing.T) {
+	for _, c := range []struct {
+		input  string
+		err    string
+		tokens Tokens
+	}{
+		{"123_456", "", Tokens{{kind: tokenNumber, data: "123456"}}},
+		{"1_750_000", "", Tokens{{kind: tokenNumber, data: "1750000"}}},
+		{"1_2_3", "", Tokens{{kind: tokenNumber, data: "123"}}},
+		{"3.141_592", "", Tokens{{kind: tokenNumber, data: "3.141592"}}},
+		{"01_100", "", Tokens{{kind: tokenNumber, data: "0"}, {kind: tokenNumber, data: "1100"}}},
+		{"1_200.0", "", Tokens{{kind: tokenNumber, data: "1200.0"}}},
+		{"0e1_01", "", Tokens{{kind: tokenNumber, data: "0e101"}}},
+		{"10_10e3", "", Tokens{{kind: tokenNumber, data: "1010e3"}}},
+		{"2_3e1_2", "", Tokens{{kind: tokenNumber, data: "23e12"}}},
+		{"1.1_2e100", "", Tokens{{kind: tokenNumber, data: "1.12e100"}}},
+		{"1.1e-10_1", "", Tokens{{kind: tokenNumber, data: "1.1e-101"}}},
+		{"9.109_383_56e-31", "", Tokens{{kind: tokenNumber, data: "9.10938356e-31"}}},
+		{"123456_!", "snippet:1:8 Couldn't lex number, junk after '_': '!'", Tokens{}},
+		{"123__456", "snippet:1:5 Couldn't lex number, junk after '_': '_'", Tokens{}},
+		{"1_200_.0", "snippet:1:7 Couldn't lex number, junk after '_': '.'", Tokens{}},
+		{"1_200._0", "snippet:1:7 Couldn't lex number, junk after decimal point: '_'", Tokens{}},
+		{"1_200_e2", "snippet:1:7 Couldn't lex number, junk after '_': 'e'", Tokens{}},
+		{"1_200e_2", "snippet:1:7 Couldn't lex number, junk after 'E': '_'", Tokens{}},
+		{"200e-_2", "snippet:1:6 Couldn't lex number, junk after exponent sign: '_'", Tokens{}},
+		{"200e+_2", "snippet:1:6 Couldn't lex number, junk after exponent sign: '_'", Tokens{}},
+	} {
+		t.Run(fmt.Sprintf("number %s", c.input), func(t *testing.T) {
+			SingleTest(t, c.input, c.err, c.tokens)
+		})
+	}
+}
+
 func TestDoublestring1(t *testing.T) {
 	SingleTest(t, "\"hi\"", "", Tokens{
 		{kind: tokenStringDouble, data: "hi"},
@@ -488,6 +522,12 @@ func TestIdentifiers(t *testing.T) {
 	SingleTest(t, "foo bar123", "", Tokens{
 		{kind: tokenIdentifier, data: "foo"},
 		{kind: tokenIdentifier, data: "bar123"},
+	})
+}
+
+func TestIdentifierUnderscore(t *testing.T) {
+	SingleTest(t, "_123", "", Tokens{
+		{kind: tokenIdentifier, data: "_123"},
 	})
 }
 
