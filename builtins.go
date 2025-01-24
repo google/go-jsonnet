@@ -268,6 +268,29 @@ func builtinTrace(i *interpreter, x value, y value) (value, error) {
 	return y, nil
 }
 
+func builtinMatch(i *interpreter, strv value, patv value) (value, error) {
+	str, err := i.getString(strv)
+	if err != nil {
+		return nil, err
+	}
+	pat, err := i.getString(patv)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := regexp.Compile(pat.getGoString())
+	if err != nil {
+		return nil, i.Error(fmt.Sprintf("Pattern %s is not valid", pat.getGoString()))
+	}
+
+	matches := []*cachedThunk{} // to return empty array
+	for _, a := range r.FindAllString(str.getGoString(), -1) {
+		matches = append(matches, readyThunk(makeValueString(a)))
+	}
+
+	return makeValueArray(matches), nil
+}
+
 // astMakeArrayElement wraps the function argument of std.makeArray so that
 // it can be embedded in cachedThunk without needing to execute it ahead of
 // time.  It is equivalent to `local i = 42; func(i)`.  It therefore has no
@@ -2804,6 +2827,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "isEmpty", function: builtinIsEmpty, params: ast.Identifiers{"str"}},
 	&binaryBuiltin{name: "equalsIgnoreCase", function: builtinEqualsIgnoreCase, params: ast.Identifiers{"str1", "str2"}},
 	&unaryBuiltin{name: "trim", function: builtinTrim, params: ast.Identifiers{"str"}},
+	&binaryBuiltin{name: "match", function: builtinMatch, params: ast.Identifiers{"str", "pat"}},
 	&unaryBuiltin{name: "base64Decode", function: builtinBase64Decode, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "base64DecodeBytes", function: builtinBase64DecodeBytes, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseInt", function: builtinParseInt, params: ast.Identifiers{"str"}},

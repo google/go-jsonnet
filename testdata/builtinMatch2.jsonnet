@@ -1,0 +1,1 @@
+std.match("foo", "(a]")
