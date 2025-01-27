@@ -17,13 +17,18 @@ limitations under the License.
 package jsonnet
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"math"
+	"math/rand"
+	"os"
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/astgen"
@@ -1009,7 +1014,45 @@ func jsonToValue(i *interpreter, v interface{}) (value, error) {
 	}
 }
 
+var (
+	stackProfileOut   *bufio.Writer
+	stackProfileRatio = 0.01
+)
+
+func StartStackProfile() {
+	var err error
+
+	if os.Getenv("JSONNET_STACK_PROFILE") != "" {
+		stackProfileOutFile, err := os.Create(os.Getenv("JSONNET_STACK_PROFILE"))
+		if err != nil {
+			log.Fatal("could not create stack profile: ", err)
+		}
+		stackProfileOut = bufio.NewWriter(stackProfileOutFile)
+	}
+
+	if os.Getenv("JSONNET_STACK_PROFILE_RATIO") != "" {
+		stackProfileRatio, err = strconv.ParseFloat(os.Getenv("JSONNET_STACK_PROFILE_RATIO"), 64)
+		if err != nil {
+			log.Fatal("could not parse stack profile ratio: ", err)
+		}
+	}
+}
+
+func StopStackProfile() {
+	if stackProfileOut != nil {
+		stackProfileOut.Flush()
+	}
+}
+
 func (i *interpreter) EvalInCleanEnv(env *environment, ast ast.Node, trimmable bool) (value, error) {
+	if stackProfileOut != nil && rand.Float64() < stackProfileRatio {
+		stack := []string{}
+		for _, frame := range i.getCurrentStackTrace() {
+			stack = append(stack, frame.Loc.String()+":"+frame.Name)
+		}
+		fmt.Fprintln(stackProfileOut, strings.Join(stack, ";")+" 1")
+	}
+
 	err := i.newCall(*env, trimmable)
 	if err != nil {
 		return nil, err
