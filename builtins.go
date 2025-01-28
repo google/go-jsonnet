@@ -1581,6 +1581,64 @@ func builtinParseYAML(i *interpreter, str value) (value, error) {
 	return jsonToValue(i, elems[0])
 }
 
+func builtinParseXmlJsonml(i *interpreter, arguments []value) (value, error) {
+	strv := arguments[0]
+	pwsv := arguments[1]
+
+	sval, err := i.getString(strv)
+	if err != nil {
+		return nil, err
+	}
+	s := sval.getGoString()
+
+	pws := false
+	if pwsv.getType() != nullType {
+		pwsval, err := i.getBoolean(pwsv)
+		if err != nil {
+			return nil, err
+		}
+		pws = pwsval.value
+	}
+
+	json, err := BuildJsonmlFromString(s, pws)
+	if err != nil {
+		return nil, i.Error(fmt.Sprintf("failed to parse XML: %v", err.Error()))
+	}
+
+	arr, err := arrayToValue(i, json)
+	if err != nil {
+		return nil, err
+	}
+	return arr, nil
+}
+
+func arrayToValue(i *interpreter, json []interface{}) (*valueArray, error) {
+	var elements []*cachedThunk
+	var err error
+	for _, e := range json {
+		var val value
+		switch e := e.(type) {
+		case string:
+			val = makeValueString(e)
+		case map[string]interface{}:
+			val, err = jsonToValue(i, e)
+			if err != nil {
+				return nil, err
+			}
+		case []interface{}:
+			val, err = arrayToValue(i, e)
+			if err != nil {
+				return nil, err
+			}
+		default:
+			return nil, i.Error(fmt.Sprintf("invalid type for section: %v", reflect.TypeOf(e)))
+		}
+		elements = append(elements, readyThunk(val))
+	}
+
+	return makeValueArray(elements), nil
+}
+
 func jsonEncode(v interface{}) (string, error) {
 	buf := new(bytes.Buffer)
 	enc := json.NewEncoder(buf)
@@ -2809,6 +2867,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "parseInt", function: builtinParseInt, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseJson", function: builtinParseJSON, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "parseYaml", function: builtinParseYAML, params: ast.Identifiers{"str"}},
+	&generalBuiltin{name: "parseXmlJsonml", function: builtinParseXmlJsonml, params: []generalBuiltinParameter{{name: "str"}, {name: "preserveWhitespace", defaultValue: &nullValue}}},
 	&generalBuiltin{name: "manifestJsonEx", function: builtinManifestJSONEx, params: []generalBuiltinParameter{{name: "value"}, {name: "indent"},
 		{name: "newline", defaultValue: &valueFlatString{value: []rune("\n")}},
 		{name: "key_val_sep", defaultValue: &valueFlatString{value: []rune(": ")}}}},

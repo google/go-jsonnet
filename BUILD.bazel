@@ -18,6 +18,7 @@ go_library(
         "error_formatter.go",
         "imports.go",
         "interpreter.go",
+        "jsonml.go",
         "runtime_error.go",
         "thunks.go",
         "util.go",
