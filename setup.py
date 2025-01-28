@@ -16,7 +16,6 @@ import os
 from setuptools import setup
 from setuptools import Extension
 from setuptools.command.build_ext import build_ext as BuildExt
-from setuptools.command.test import test as TestCommand
 from subprocess import Popen, PIPE
 
 DIR = os.path.abspath(os.path.dirname(__file__))
@@ -46,10 +45,6 @@ class BuildJsonnetExt(BuildExt):
 
         BuildExt.run(self)
 
-class NoopTestCommand(TestCommand):
-    def __init__(self, dist):
-        print("_gojsonnet does not support running tests with 'python setup.py test'. Please run 'pytest'.")
-
 jsonnet_ext = Extension(
     '_gojsonnet',
     sources=MODULE_SOURCES,
@@ -68,7 +63,6 @@ setup(name='gojsonnet',
     version=get_version(),
     cmdclass={
         'build_ext': BuildJsonnetExt,
-        'test': NoopTestCommand,
     },
     ext_modules=[jsonnet_ext],
 )
