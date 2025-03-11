@@ -108,8 +108,8 @@ def jsonnet_go_dependencies(go_sdk_version = "host"):
     go_repository(
         name = "org_golang_x_crypto",
         importpath = "golang.org/x/crypto",
-        sum = "h1:b15kiHdrGCHrP6LvwaQ3c03kgNhhiMgvlhxHQhmg2Xs=",
-        version = "v0.35.0",
+        sum = "h1:IOBPskki6Lysi0lo9qQvbxiQ+FvsCC/YWOecCHAixus=",
+        version = "v0.33.0",
     )
     go_repository(
         name = "org_golang_x_net",

@@ -5,7 +5,7 @@ go 1.23.6
 require (
 	github.com/fatih/color v1.18.0
 	github.com/sergi/go-diff v1.3.1
-	golang.org/x/crypto v0.35.0
+	golang.org/x/crypto v0.33.0
 	sigs.k8s.io/yaml v1.4.0
 )
 
