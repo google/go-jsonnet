@@ -31,10 +31,7 @@ jobs:
           # - goVersion: "1"
           #   GOARCH: "ppc64le"
           #   SKIP_PYTHON_BINDINGS_TESTS: "0"
-          - goVersion: "1.21"
-            GOARCH: "amd64"
-            SKIP_PYTHON_BINDINGS_TESTS: "0"
-          - goVersion: "1.22"
+          - goVersion: "1.24"
             GOARCH: "amd64"
             SKIP_PYTHON_BINDINGS_TESTS: "0"
     runs-on: ubuntu-latest
