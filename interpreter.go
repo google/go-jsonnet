@@ -1074,14 +1074,14 @@ func (i *interpreter) EvalInCleanEnv(env *environment, ast ast.Node, trimmable b
 	if err != nil {
 		return nil, err
 	}
-// Check profiling flags and sample if needed.
-// Samples randomly based on interpreter.profilerOpts.stackProfileRatio.
 
 	i.stack.popIfExists(stackSize)
 
 	return val, nil
 }
 
+// Check profiling flags and sample if needed.
+// Samples randomly based on interpreter.profilerOpts.stackProfileRatio.
 func (i *interpreter) checkForSampling() {
 	if i.profilerOpts.stackProfileOut != nil && rand.Float64() < i.profilerOpts.stackProfileRatio {
 		stack := []string{}
@@ -1416,23 +1416,21 @@ func evaluateAux(i *interpreter, node ast.Node, tla vmExtMap) (value, error) {
 	return result, nil
 }
 
-// TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
-func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, ic *importCache, traceOut io.Writer, stringOutputMode bool, evalHook EvalHook) (string, error) {
-
-	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic, traceOut, evalHook)
+// Evaluate ast node with the given VM
+func evaluate(node ast.Node, vm *VM) (string, error) {
+	i, err := buildInterpreter(vm.ext, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.EvalHook, vm.profilerOpts)
 	if err != nil {
 		return "", err
 	}
 
-	result, err := evaluateAux(i, node, tla)
+	result, err := evaluateAux(i, node, vm.tla)
 	if err != nil {
 		return "", err
 	}
 
 	var buf bytes.Buffer
 	i.stack.setCurrentTrace(manifestationTrace())
-	if stringOutputMode {
+	if vm.StringOutput {
 		err = i.manifestString(&buf, result)
 	} else {
 		err = i.manifestAndSerializeJSON(&buf, result, true, "")
@@ -1445,36 +1443,30 @@ func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]
 	return buf.String(), nil
 }
 
-// TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
-func evaluateMulti(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, ic *importCache, traceOut io.Writer, stringOutputMode bool, evalHook EvalHook) (map[string]string, error) {
-
-	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic, traceOut, evalHook)
+func evaluateMulti(node ast.Node, vm *VM) (map[string]string, error) {
+	i, err := buildInterpreter(vm.ext, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.EvalHook, vm.profilerOpts)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := evaluateAux(i, node, tla)
+	result, err := evaluateAux(i, node, vm.tla)
 	if err != nil {
 		return nil, err
 	}
 
 	i.stack.setCurrentTrace(manifestationTrace())
-	manifested, err := i.manifestAndSerializeMulti(result, stringOutputMode)
+	manifested, err := i.manifestAndSerializeMulti(result, vm.StringOutput)
 	i.stack.clearCurrentTrace()
 	return manifested, err
 }
 
-// TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
-func evaluateStream(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, ic *importCache, traceOut io.Writer, evalHook EvalHook) ([]string, error) {
-
-	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic, traceOut, evalHook)
+func evaluateStream(node ast.Node, vm *VM) ([]string, error) {
+	i, err := buildInterpreter(vm.ext, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.EvalHook, vm.profilerOpts)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := evaluateAux(i, node, tla)
+	result, err := evaluateAux(i, node, vm.tla)
 	if err != nil {
 		return nil, err
 	}
