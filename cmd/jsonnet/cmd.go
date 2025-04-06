@@ -395,8 +395,8 @@ func main() {
 	cmd.StartCPUProfile()
 	defer cmd.StopCPUProfile()
 
-	jsonnet.StartStackProfile()
-	defer jsonnet.StopStackProfile()
+	profilerOpts := jsonnet.StartStackProfile()
+	defer jsonnet.StopStackProfile(profilerOpts)
 
 	vm := jsonnet.MakeVM()
 	vm.ErrorFormatter.SetColorFormatter(color.New(color.FgRed).Fprintf)
