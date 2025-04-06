@@ -1023,6 +1023,12 @@ func jsonToValue(i *interpreter, v interface{}) (value, error) {
 	}
 }
 
+// This parses env variables and configures the VM interpreter stack profiler
+// Env vars:
+//
+// JSONNET_STACK_PROFILE: If set, it will output a stack profile to the file specified.
+//
+// JSONNET_STACK_PROFILE_RATIO: Determines the ration of stack traces to sample.  Default 0.1
 func StartStackProfile() StackProfilerOpts {
 	if os.Getenv("JSONNET_STACK_PROFILE") != "" {
 		file, err := os.Create(os.Getenv("JSONNET_STACK_PROFILE"))
@@ -1068,6 +1074,8 @@ func (i *interpreter) EvalInCleanEnv(env *environment, ast ast.Node, trimmable b
 	if err != nil {
 		return nil, err
 	}
+// Check profiling flags and sample if needed.
+// Samples randomly based on interpreter.profilerOpts.stackProfileRatio.
 
 	i.stack.popIfExists(stackSize)
 
