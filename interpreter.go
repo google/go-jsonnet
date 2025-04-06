@@ -1056,13 +1056,7 @@ func StopStackProfile(opts StackProfilerOpts) {
 }
 
 func (i *interpreter) EvalInCleanEnv(env *environment, ast ast.Node, trimmable bool) (value, error) {
-	if stackProfileOut != nil && rand.Float64() < stackProfileRatio {
-		stack := []string{}
-		for _, frame := range i.getCurrentStackTrace() {
-			stack = append(stack, frame.Loc.String()+":"+frame.Name)
-		}
-		fmt.Fprintln(stackProfileOut, strings.Join(stack, ";")+" 1")
-	}
+	i.checkForSampling()
 
 	err := i.newCall(*env, trimmable)
 	if err != nil {
@@ -1078,6 +1072,16 @@ func (i *interpreter) EvalInCleanEnv(env *environment, ast ast.Node, trimmable b
 	i.stack.popIfExists(stackSize)
 
 	return val, nil
+}
+
+func (i *interpreter) checkForSampling() {
+	if i.profilerOpts.stackProfileOut != nil && rand.Float64() < i.profilerOpts.stackProfileRatio {
+		stack := []string{}
+		for _, frame := range i.getCurrentStackTrace() {
+			stack = append(stack, frame.Loc.String()+":"+frame.Name)
+		}
+		fmt.Fprintln(i.profilerOpts.stackProfileOut, strings.Join(stack, ";")+" 1")
+	}
 }
 
 func (i *interpreter) evaluatePV(ph potentialValue) (value, error) {
