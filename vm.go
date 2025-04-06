@@ -46,6 +46,7 @@ type VM struct { //nolint:govet
 	StringOutput   bool
 	importCache    *importCache
 	traceOut       io.Writer
+	profilerOpts   StackProfilerOpts
 	EvalHook       EvalHook
 }
 
@@ -104,6 +105,13 @@ func (vm *VM) flushValueCache() {
 // SetTraceOut sets the output stream for the builtin function std.trace().
 func (vm *VM) SetTraceOut(traceOut io.Writer) {
 	vm.traceOut = traceOut
+}
+
+// SetStackTraceOut configures options for interpreter stack trace sampling.
+// It is used for performance profiling purposes.
+// The output can be used to generate flamegraphs of calls stemming from interpreter.EvalInCleanEnv
+func (vm *VM) SetStackTraceOut(traceOut StackProfilerOpts) {
+	vm.profilerOpts = traceOut
 }
 
 // ExtVar binds a Jsonnet external var to the given value.

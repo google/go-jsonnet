@@ -1339,13 +1339,14 @@ func buildObject(hide ast.ObjectFieldHide, fields map[string]value) *valueObject
 	return makeValueSimpleObject(bindingFrame{}, fieldMap, nil, nil)
 }
 
-func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*NativeFunction, maxStack int, ic *importCache, traceOut io.Writer, evalHook EvalHook) (*interpreter, error) {
+func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*NativeFunction, maxStack int, ic *importCache, traceOut io.Writer, evalHook EvalHook, profilerOpts StackProfilerOpts) (*interpreter, error) {
 	i := interpreter{
-		stack:       makeCallStack(maxStack),
-		importCache: ic,
-		traceOut:    traceOut,
-		nativeFuncs: nativeFuncs,
-		evalHook:    evalHook,
+		stack:        makeCallStack(maxStack),
+		importCache:  ic,
+		traceOut:     traceOut,
+		nativeFuncs:  nativeFuncs,
+		evalHook:     evalHook,
+		profilerOpts: profilerOpts,
 	}
 
 	stdObj, err := buildStdObject(&i)

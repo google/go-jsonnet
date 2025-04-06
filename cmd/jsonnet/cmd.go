@@ -401,6 +401,8 @@ func main() {
 	vm := jsonnet.MakeVM()
 	vm.ErrorFormatter.SetColorFormatter(color.New(color.FgRed).Fprintf)
 
+	vm.SetStackTraceOut(profilerOpts)
+
 	config := makeConfig()
 	jsonnetPath := filepath.SplitList(os.Getenv("JSONNET_PATH"))
 	for i := len(jsonnetPath) - 1; i >= 0; i-- {
