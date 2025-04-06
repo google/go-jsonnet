@@ -286,6 +286,12 @@ type interpreter struct {
 	stack callStack
 
 	evalHook EvalHook
+
+type StackProfilerOpts struct {
+	//
+	stackProfileOut *bufio.Writer
+	// ration of stack ast to sample (0.0-1.0)
+	stackProfileRatio float64
 }
 
 // Map union, b takes precedence when keys collide.
@@ -1014,33 +1020,35 @@ func jsonToValue(i *interpreter, v interface{}) (value, error) {
 	}
 }
 
-var (
-	stackProfileOut   *bufio.Writer
-	stackProfileRatio = 0.01
-)
-
-func StartStackProfile() {
-	var err error
-
+func StartStackProfile() StackProfilerOpts {
 	if os.Getenv("JSONNET_STACK_PROFILE") != "" {
-		stackProfileOutFile, err := os.Create(os.Getenv("JSONNET_STACK_PROFILE"))
+		file, err := os.Create(os.Getenv("JSONNET_STACK_PROFILE"))
 		if err != nil {
 			log.Fatal("could not create stack profile: ", err)
 		}
-		stackProfileOut = bufio.NewWriter(stackProfileOutFile)
-	}
 
-	if os.Getenv("JSONNET_STACK_PROFILE_RATIO") != "" {
-		stackProfileRatio, err = strconv.ParseFloat(os.Getenv("JSONNET_STACK_PROFILE_RATIO"), 64)
-		if err != nil {
-			log.Fatal("could not parse stack profile ratio: ", err)
+		sampleRatio := 0.1
+
+		if os.Getenv("JSONNET_STACK_PROFILE_RATIO") != "" {
+			sampleRatio, err = strconv.ParseFloat(os.Getenv("JSONNET_STACK_PROFILE_RATIO"), 64)
+			if err != nil {
+				log.Fatal("could not parse stack profile ratio: ", err)
+			}
 		}
+		return StackProfilerOpts{
+			stackProfileOut:   bufio.NewWriter(file),
+			stackProfileRatio: sampleRatio,
+		}
+	}
+	return StackProfilerOpts{
+		stackProfileOut:   nil,
+		stackProfileRatio: 0.1,
 	}
 }
 
-func StopStackProfile() {
-	if stackProfileOut != nil {
-		stackProfileOut.Flush()
+func StopStackProfile(opts StackProfilerOpts) {
+	if opts.stackProfileOut != nil {
+		opts.stackProfileOut.Flush()
 	}
 }
 
