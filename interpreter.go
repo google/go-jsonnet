@@ -1339,14 +1339,14 @@ func buildObject(hide ast.ObjectFieldHide, fields map[string]value) *valueObject
 	return makeValueSimpleObject(bindingFrame{}, fieldMap, nil, nil)
 }
 
-func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*NativeFunction, maxStack int, ic *importCache, traceOut io.Writer, evalHook EvalHook, profilerOpts StackProfilerOpts) (*interpreter, error) {
+func buildInterpreter(vm *VM) (*interpreter, error) {
 	i := interpreter{
-		stack:        makeCallStack(maxStack),
-		importCache:  ic,
-		traceOut:     traceOut,
-		nativeFuncs:  nativeFuncs,
-		evalHook:     evalHook,
-		profilerOpts: profilerOpts,
+		stack:        makeCallStack(vm.MaxStack),
+		importCache:  vm.importCache,
+		traceOut:     vm.traceOut,
+		nativeFuncs:  vm.nativeFuncs,
+		evalHook:     vm.EvalHook,
+		profilerOpts: vm.profilerOpts,
 	}
 
 	stdObj, err := buildStdObject(&i)
@@ -1356,7 +1356,7 @@ func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*NativeFunction, maxS
 
 	i.baseStd = stdObj
 
-	i.extVars = prepareExtVars(&i, ext, "extvar")
+	i.extVars = prepareExtVars(&i, vm.ext, "extvar")
 
 	return &i, nil
 }
@@ -1419,7 +1419,7 @@ func evaluateAux(i *interpreter, node ast.Node, tla vmExtMap) (value, error) {
 
 // Evaluate ast node with the given VM
 func evaluate(node ast.Node, vm *VM) (string, error) {
-	i, err := buildInterpreter(vm.ext, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.EvalHook, vm.profilerOpts)
+	i, err := buildInterpreter(vm)
 	if err != nil {
 		return "", err
 	}
@@ -1445,7 +1445,7 @@ func evaluate(node ast.Node, vm *VM) (string, error) {
 }
 
 func evaluateMulti(node ast.Node, vm *VM) (map[string]string, error) {
-	i, err := buildInterpreter(vm.ext, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.EvalHook, vm.profilerOpts)
+	i, err := buildInterpreter(vm)
 	if err != nil {
 		return nil, err
 	}
@@ -1462,7 +1462,7 @@ func evaluateMulti(node ast.Node, vm *VM) (map[string]string, error) {
 }
 
 func evaluateStream(node ast.Node, vm *VM) ([]string, error) {
-	i, err := buildInterpreter(vm.ext, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.EvalHook, vm.profilerOpts)
+	i, err := buildInterpreter(vm)
 	if err != nil {
 		return nil, err
 	}
