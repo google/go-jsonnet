@@ -287,6 +287,9 @@ type interpreter struct {
 
 	evalHook EvalHook
 
+	profilerOpts StackProfilerOpts
+}
+
 type StackProfilerOpts struct {
 	//
 	stackProfileOut *bufio.Writer
