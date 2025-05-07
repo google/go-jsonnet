@@ -19,7 +19,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -327,7 +326,7 @@ func writeMultiOutputFiles(output map[string]string, outputDir, outputFile strin
 		}
 
 		if _, err := os.Stat(filename); !os.IsNotExist(err) {
-			existingContent, err := ioutil.ReadFile(filename)
+			existingContent, err := os.ReadFile(filename)
 			if err != nil {
 				return err
 			}
@@ -344,7 +343,7 @@ func writeMultiOutputFiles(output map[string]string, outputDir, outputFile strin
 			}
 		}
 
-		err = ioutil.WriteFile(filename, []byte(newContent), 0666)
+		err = os.WriteFile(filename, []byte(newContent), 0666)
 		if err != nil {
 			return err
 		}

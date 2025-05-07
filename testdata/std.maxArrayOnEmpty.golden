@@ -1,0 +1,10 @@
+RUNTIME ERROR: Expected at least one element in array. Got none
+-------------------------------------------------
+	testdata/std.maxArrayOnEmpty:1:1-17	$
+
+std.maxArray([])
+
+-------------------------------------------------
+	During evaluation	
+
+

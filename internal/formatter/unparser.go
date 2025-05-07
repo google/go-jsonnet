@@ -467,7 +467,11 @@ func (u *unparser) unparse(expr ast.Node, crowded bool) {
 			u.write(node.Value)
 			u.write("'")
 		case ast.StringBlock:
-			u.write("|||\n")
+			u.write("|||")
+			if node.Value[len(node.Value)-1] != '\n' {
+				u.write("-")
+			}
+			u.write("\n")
 			if node.Value[0] != '\n' {
 				u.write(node.BlockIndent)
 			}
@@ -480,6 +484,9 @@ func (u *unparser) unparse(expr ast.Node, crowded bool) {
 				if r == '\n' && (i+1 < len(node.Value)) && node.Value[i+1] != '\n' {
 					u.write(node.BlockIndent)
 				}
+			}
+			if node.Value[len(node.Value)-1] != '\n' {
+				u.write("\n")
 			}
 			u.write(node.BlockTermIndent)
 			u.write("|||")

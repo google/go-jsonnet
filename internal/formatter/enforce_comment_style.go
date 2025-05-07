@@ -38,7 +38,7 @@ func (c *EnforceCommentStyle) FodderElement(p pass.ASTPass, element *ast.FodderE
 				*comment = "#" + (*comment)[2:]
 			}
 			if c.Options.CommentStyle == CommentStyleSlash && (*comment)[0] == '#' {
-				if !c.seenFirstFodder && (*comment)[1] == '!' {
+				if !c.seenFirstFodder && len(*comment) > 1 && (*comment)[1] == '!' {
 					return
 				}
 				*comment = "//" + (*comment)[1:]

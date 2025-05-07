@@ -1,5 +1,6 @@
-# This is an example goreleaser.yaml file with some sane defaults.
-# Make sure to check the documentation at http://goreleaser.com
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+
+version: 2
 
 builds:
   - env:
@@ -9,13 +10,13 @@ builds:
       - windows
       - darwin
     goarch:
-      - 386
+      - "386"
       - amd64
       - arm
       - arm64
     ignore:
       - goos: darwin
-        goarch: 386
+        goarch: "386"
 
     id: jsonnet
     main: ./cmd/jsonnet
@@ -30,13 +31,13 @@ builds:
       - windows
       - darwin
     goarch:
-      - 386
+      - "386"
       - amd64
       - arm
       - arm64
     ignore:
       - goos: darwin
-        goarch: 386
+        goarch: "386"
 
     id: jsonnetfmt
     main: ./cmd/jsonnetfmt
@@ -49,13 +50,13 @@ builds:
       - windows
       - darwin
     goarch:
-      - 386
+      - "386"
       - amd64
       - arm
       - arm64
     ignore:
       - goos: darwin
-        goarch: 386
+        goarch: "386"
 
     id: jsonnet-lint
     main: ./cmd/jsonnet-lint
@@ -68,28 +69,34 @@ builds:
       - windows
       - darwin
     goarch:
-      - 386
+      - "386"
       - amd64
       - arm
       - arm64
     ignore:
       - goos: darwin
-        goarch: 386
+        goarch: "386"
 
     id: jsonnet-deps
     main: ./cmd/jsonnet-deps
     binary: jsonnet-deps
 
-
 archives:
-  - replacements:
-      darwin: Darwin
-      linux: Linux
-      windows: Windows
-      386: i386
-      amd64: x86_64
+  - name_template: >-
+      {{- .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end -}}
+
 checksum:
   name_template: "checksums.txt"
+
+release:
+  draft: true
+  skip_upload: false
+  target_commitish: "{{ .Env.FROM_COMMITISH }}"
 
 nfpms:
   - id: jsonnet
@@ -142,7 +149,7 @@ nfpms:
           # See: https://packages.ubuntu.com/jsonnet
           - jsonnet-lint
   - id: jsonnet-deps
-    package_name:  jsonnet-deps-go
+    package_name: jsonnet-deps-go
     builds:
       - jsonnet-deps
     homepage: https://github.com/google/go-jsonnet

@@ -1,0 +1,126 @@
+name: Build and Publish Python Package
+
+# Be very careful granting extra permissions here, as this workflow uses third party actions.
+# Prefer to pin to exact commits for third-party actions. I'm making an exception for actions
+# maintained by GitHub itself.
+
+# For now, just trigger this workflow manually.
+on:
+  workflow_dispatch:
+    inputs:
+      upload_to_pypi:
+        description: "Upload generate package files to PyPI"
+        required: true
+        type: boolean
+      pypi_environment:
+        description: "Which PyPI instance to publish to"
+        required: true
+        type: choice
+        options:
+          - testpypi
+          - pypi
+
+jobs:
+  build_sdist:
+    name: Build Python sdist
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - run: pip install 'build==1.2.2'
+
+      - name: Build sdist
+        run: python3 -m build --sdist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: ./dist/*.gz
+          if-no-files-found: error
+
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-13, macos-latest]
+        # Windows Wheel build doesn't work yet.
+        # os: [windows-2022]
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: actions/setup-go@v5
+        # Linux runner doesn't need Go setup because it's installed
+        # separately in each cibuildwheel build container
+        if: "${{ runner.os != 'Linux' }}"
+        with:
+          go-version: "1.23.7"
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@ee63bf16da6cddfb925f542f2c7b59ad50e93969 # v2.22.0
+        env:
+          # Skip PyPy, 32-bit Windows, 32-bit Linux, musllinux and CPython before 3.9.
+          # See https://cibuildwheel.readthedocs.io/en/stable/options/#examples_1
+          CIBW_SKIP: "*-win32 pp* *-manylinux_i686 *-musllinux* cp36-* cp37-* cp38-*"
+          CIBW_BEFORE_ALL_LINUX: >
+            bash {package}/.github/workflows/install-go.sh &&
+            export PATH="$PATH":/usr/local/go/bin &&
+            command -v go > /dev/null
+          CIBW_ENVIRONMENT: PATH=$PATH:/usr/local/go/bin
+          CIBW_TEST_COMMAND: >
+            python {package}/python/_jsonnet_test.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cibw-wheels-${{ matrix.os }}
+          path: ./wheelhouse/*.whl
+          if-no-files-found: error
+
+  upload_to_pypi:
+    name: "Upload packages to PyPI"
+    needs: [build_sdist, build_wheels]
+    runs-on: ubuntu-24.04
+    if: "${{ inputs.upload_to_pypi }}"
+    permissions:
+      contents: read
+      id-token: write # Needed for PyPI Trusted Publishing
+    environment:
+      name: "${{ inputs.pypi_environment }}"
+      url: "${{ inputs.pypi_environment == 'pypi' && 'https://pypi.org/p/gosonnet' || 'https://test.pypi.org/p/gosonnet' }}"
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: cibw-wheels
+          pattern: cibw-wheels-*
+      - uses: actions/download-artifact@v4
+        with:
+          path: sdist
+          name: sdist
+      - name: Flatten wheels to one directory
+        run: |
+          mkdir dist
+          find cibw-wheels/ -type f -name '*.whl' -exec mv '{}' ./dist/ ';'
+          find sdist/ -type f -name '*.gz' -exec mv '{}' ./dist/ ';'
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1.12.4
+        with:
+          verbose: true
+          print-hash: true
+          repository-url: "${{ inputs.pypi_environment == 'testpypi' && 'https://test.pypi.org/legacy/' || '' }}"

@@ -1,4 +1,4 @@
-RUNTIME ERROR: std.flatMap second param must be array / string, got object
+RUNTIME ERROR: Unexpected type object, expected array
 -------------------------------------------------
 	testdata/array_comp_try_iterate_over_obj:1:1-16	
 

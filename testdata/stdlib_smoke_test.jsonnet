@@ -26,6 +26,8 @@
     get: [
         std.get(o={a:: 17}, f="a"),
         std.get(o={a:: 17}, f="a", default=42, inc_hidden=false),
+        std.get(o={a:: 17} + {a: 18}, f="a", default=42),
+        std.get(o={a:: 17} + {a: 18}, f="a", default=42, inc_hidden=false),
     ],
 
     // isSomething
@@ -72,6 +74,7 @@
     rstripChars: std.rstripChars(str="aaabbbbcccc", chars="c"),
     split: std.split(str="a,b,c", c=","),
     splitLimit: std.splitLimit(str="a,b,c", c=",", maxsplits=1),
+    splitLimitR: std.splitLimitR(str="a,b,c", c=",", maxsplits=1),
     strReplace: std.strReplace(str="aaa", from="aa", to="bb"),
     asciiUpper: std.asciiUpper(str="Blah"),
     asciiLower: std.asciiLower(str="Blah"),

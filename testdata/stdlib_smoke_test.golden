@@ -88,6 +88,8 @@
    "format": "test blah 42",
    "get": [
       17,
+      42,
+      18,
       42
    ],
    "isArray": true,
@@ -242,6 +244,10 @@
    "splitLimit": [
       "a",
       "b,c"
+   ],
+   "splitLimitR": [
+      "a,b",
+      "c"
    ],
    "sqrt": 2.2360679774997898,
    "startsWith": true,

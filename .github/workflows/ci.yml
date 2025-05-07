@@ -1,11 +1,17 @@
 name: ci
 on:
   pull_request:
+    types: [opened, reopened, synchronize, ready_for_review, review_requested]
     branches:
       - master
   push:
     branches:
       - master
+      - prepare-release
+
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Test go${{ matrix.goVersion}}.x ${{ matrix.goArch }}
@@ -25,22 +31,13 @@ jobs:
           # - goVersion: "1"
           #   GOARCH: "ppc64le"
           #   SKIP_PYTHON_BINDINGS_TESTS: "0"
-          - goVersion: "1.17"
-            GOARCH: "amd64"
-            SKIP_PYTHON_BINDINGS_TESTS: "0"
-          - goVersion: "1.18"
-            GOARCH: "amd64"
-            SKIP_PYTHON_BINDINGS_TESTS: "0"
-          - goVersion: "1.19"
-            GOARCH: "amd64"
-            SKIP_PYTHON_BINDINGS_TESTS: "0"
-          - goVersion: "1.20"
+          - goVersion: "1.24"
             GOARCH: "amd64"
             SKIP_PYTHON_BINDINGS_TESTS: "0"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.goVersion }}
       - run: sudo apt install python3-dev python3-setuptools
@@ -57,21 +54,40 @@ jobs:
     name: bazel test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cache/bazel
             ~/.cache/bazelisk
           key: ${{ runner.os }}-bazel-cache
-      - run: bazel build //...
-      - run: bazel test //...
+      - run: bazelisk build --lockfile_mode=error //...
+      - run: bazelisk test --lockfile_mode=error //...
+
+  bazel_module_example:
+    name: bazel module example test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/bazel
+            ~/.cache/bazelisk
+          key: ${{ runner.os }}-bazel-cache
+      - run: |
+          # We leave the lockfile off for this. lockfile_mode=off is also
+          # set in the .bazelrc in the examples/bazel/ directory.
+          # The example directly references the local jsonnet_go module from
+          # its parent directory, so the hash will change on almost every
+          # commit anyway.
+          cd examples/bazel && bazelisk build --lockfile_mode=off //...
 
   all:
     name: Check all
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - run: sudo apt install python3-dev python3-setuptools
       - run: pip install -U wheel
       - run: pip install -U pytest setuptools
@@ -80,21 +96,20 @@ jobs:
       #     version: v1.30.0
       - run: make all
       - name: Install goveralls
-        env:
-          GO111MODULE: off
         run: |
           export GOPATH=$GITHUB_WORKSPACE
-          go get github.com/mattn/goveralls
+          go install github.com/mattn/goveralls@v0.0.12
       - name: Send coverage
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./bin/goveralls -coverprofile=coverage.out -service=github
+        run: |
+          ./bin/goveralls -coverprofile=coverage.out -service=github
 
   goreleaser:
     name: Goreleaser
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: goreleaser/goreleaser-action@v2
+      - uses: actions/checkout@v4
+      - uses: goreleaser/goreleaser-action@90a3faa9d0182683851fbfa97ca1a2cb983bfca3 # v6.2.1
         with:
-          args: release --snapshot --skip-publish --rm-dist
+          args: release --snapshot --skip=publish --clean

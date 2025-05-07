@@ -2,7 +2,10 @@
 #include <stdlib.h>
 
 extern "C" {
-    #include "libjsonnet.h"
+    void jsonnet_gc_min_objects(struct JsonnetVm *vm, unsigned v);
+    void jsonnet_gc_growth_trigger(struct JsonnetVm *vm, double v);
+    char *jsonnet_realloc(JsonnetVm *vm, char *str, size_t sz);
+
     #include "internal.h"
 }
 

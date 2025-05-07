@@ -90,6 +90,7 @@ func prepareStdlib(g *typeGraph) {
 		"rstripChars":      g.newSimpleFuncType(stringType, "str", "chars"),
 		"split":            g.newSimpleFuncType(arrayOfString, "str", "c"),
 		"splitLimit":       g.newSimpleFuncType(arrayOfString, "str", "c", "maxsplits"),
+		"splitLimitR":      g.newSimpleFuncType(arrayOfString, "str", "c", "maxsplits"),
 		"strReplace":       g.newSimpleFuncType(stringType, "str", "from", "to"),
 		"asciiUpper":       g.newSimpleFuncType(stringType, "str"),
 		"asciiLower":       g.newSimpleFuncType(stringType, "str"),
@@ -124,7 +125,7 @@ func prepareStdlib(g *typeGraph) {
 		"manifestJsonEx":       g.newSimpleFuncType(stringType, "value", "indent"),
 		"manifestJsonMinified": g.newSimpleFuncType(stringType, "value"),
 		"manifestYamlDoc":      g.newFuncType(stringType, []ast.Parameter{required("value"), optional("indent_array_in_object"), optional("quote_keys")}),
-		"manifestYamlStream":   g.newSimpleFuncType(stringType, "value"),
+		"manifestYamlStream":   g.newFuncType(anyArrayType, []ast.Parameter{required("value"), optional("indent_array_in_object"), optional("c_document_end"), optional("quote_keys")}),
 		"manifestCsv":          g.newFuncType(stringType, []ast.Parameter{required("json"), optional("headers")}),
 		"manifestXmlJsonml":    g.newSimpleFuncType(stringType, "value"),
 
@@ -151,8 +152,8 @@ func prepareStdlib(g *typeGraph) {
 		"sort":          g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"uniq":          g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
 		"sum":           g.newSimpleFuncType(numberType, "arr"),
-		"minArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
-		"maxArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF")}),
+		"minArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF"), optional("onEmpty")}),
+		"maxArray":      g.newFuncType(anyArrayType, []ast.Parameter{required("arr"), optional("keyF"), optional("onEmpty")}),
 		"contains":      g.newSimpleFuncType(boolType, "arr", "elem"),
 		"avg":           g.newSimpleFuncType(numberType, "arr"),
 		"all":           g.newSimpleFuncType(boolArrayType, "arr"),
@@ -200,6 +201,7 @@ func prepareStdlib(g *typeGraph) {
 		"mod":              g.newSimpleFuncType(stringOrNumber, "a", "b"),
 		"native":           g.newSimpleFuncType(anyFunctionType, "x"),
 		"$objectFlatMerge": g.newSimpleFuncType(anyObjectType, "x"),
+		"$flatMapArray":    g.newSimpleFuncType(anyArrayType, "func", "arr"),
 
 		// Boolean
 

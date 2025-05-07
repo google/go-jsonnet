@@ -685,7 +685,7 @@ func (c *FixIndentation) Visit(expr ast.Node, currIndent indent, crowded bool) {
 			node.BlockIndent = strings.Repeat(" ", currIndent.base+c.Options.Indent)
 			node.BlockTermIndent = strings.Repeat(" ", currIndent.base)
 			c.column = currIndent.base // blockTermIndent
-			c.column += 3              // "|||"
+			c.column += 3              // always "|||" (never "|||-" because we're only accounting for block end)
 		case ast.VerbatimStringSingle:
 			c.column += 3 // Include @, start and end quotes
 			for _, r := range node.Value {

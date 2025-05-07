@@ -30,6 +30,7 @@ import (
 	"io"
 	"math"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -234,17 +235,25 @@ func builtinLength(i *interpreter, x value) (value, error) {
 	return makeValueNumber(float64(num)), nil
 }
 
-func builtinToString(i *interpreter, x value) (value, error) {
+func valueToString(i *interpreter, x value) (string, error) {
 	switch x := x.(type) {
 	case valueString:
-		return x, nil
+		return x.getGoString(), nil
 	}
+
 	var buf bytes.Buffer
-	err := i.manifestAndSerializeJSON(&buf, x, false, "")
+	if err := i.manifestAndSerializeJSON(&buf, x, false, ""); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
+func builtinToString(i *interpreter, x value) (value, error) {
+	s, err := valueToString(i, x)
 	if err != nil {
 		return nil, err
 	}
-	return makeValueString(buf.String()), nil
+	return makeValueString(s), nil
 }
 
 func builtinTrace(i *interpreter, x value, y value) (value, error) {
@@ -334,6 +343,19 @@ func builtinFlatMap(i *interpreter, funcv, arrv value) (value, error) {
 		return makeValueString(str.String()), nil
 	default:
 		return nil, i.Error("std.flatMap second param must be array / string, got " + arrv.getType().name)
+	}
+}
+
+// builtinFlatMapArray is like builtinFlatMap, but only accepts array as the
+// arrv value. Desugared comprehensions contain a call to this function, rather
+// than builtinFlatMap, so that a better error message is printed when the
+// comprehension would iterate over a non-array.
+func builtinFlatMapArray(i *interpreter, funcv, arrv value) (value, error) {
+	switch arrv := arrv.(type) {
+	case *valueArray:
+		return builtinFlatMap(i, funcv, arrv)
+	default:
+		return nil, i.typeErrorSpecific(arrv, &valueArray{})
 	}
 }
 
@@ -1100,6 +1122,20 @@ func liftNumeric(f func(float64) float64) func(*interpreter, value) (value, erro
 	}
 }
 
+func liftNumeric2(f func(float64, float64) float64) func(*interpreter, value, value) (value, error) {
+	return func(i *interpreter, x value, y value) (value, error) {
+		nx, err := i.getNumber(x)
+		if err != nil {
+			return nil, err
+		}
+		ny, err := i.getNumber(y)
+		if err != nil {
+			return nil, err
+		}
+		return makeDoubleCheck(i, f(nx.value, ny.value))
+	}
+}
+
 func liftNumericToBoolean(f func(float64) bool) func(*interpreter, value) (value, error) {
 	return func(i *interpreter, x value) (value, error) {
 		n, err := i.getNumber(x)
@@ -1111,6 +1147,7 @@ func liftNumericToBoolean(f func(float64) bool) func(*interpreter, value) (value
 }
 
 var builtinSqrt = liftNumeric(math.Sqrt)
+var builtinHypot = liftNumeric2(math.Hypot)
 var builtinCeil = liftNumeric(math.Ceil)
 var builtinFloor = liftNumeric(math.Floor)
 var builtinSin = liftNumeric(math.Sin)
@@ -1119,6 +1156,7 @@ var builtinTan = liftNumeric(math.Tan)
 var builtinAsin = liftNumeric(math.Asin)
 var builtinAcos = liftNumeric(math.Acos)
 var builtinAtan = liftNumeric(math.Atan)
+var builtinAtan2 = liftNumeric2(math.Atan2)
 var builtinLog = liftNumeric(math.Log)
 var builtinExp = liftNumeric(func(f float64) float64 {
 	res := math.Exp(f)
@@ -1216,7 +1254,10 @@ func builtinObjectHasEx(i *interpreter, objv value, fnamev value, includeHiddenV
 		return nil, err
 	}
 	h := withHiddenFromBool(includeHidden.value)
-	hasField := objectHasField(objectBinding(obj), string(fname.getRunes()), h)
+
+	hide, hasField := objectFieldsVisibility(obj)[string(fname.getRunes())]
+	hasField = hasField && (h == withHidden || hide != ast.ObjectFieldHidden)
+
 	return makeValueBoolean(hasField), nil
 }
 
@@ -1317,6 +1358,47 @@ func builtinSplitLimit(i *interpreter, strv, cv, maxSplitsV value) (value, error
 	} else {
 		strs = strings.SplitN(sStr, sC, maxSplits+1)
 	}
+	res := make([]*cachedThunk, len(strs))
+	for i := range strs {
+		res[i] = readyThunk(makeValueString(strs[i]))
+	}
+
+	return makeValueArray(res), nil
+}
+
+func builtinSplitLimitR(i *interpreter, strv, cv, maxSplitsV value) (value, error) {
+	str, err := i.getString(strv)
+	if err != nil {
+		return nil, err
+	}
+	c, err := i.getString(cv)
+	if err != nil {
+		return nil, err
+	}
+	maxSplits, err := i.getInt(maxSplitsV)
+	if err != nil {
+		return nil, err
+	}
+	if maxSplits < -1 {
+		return nil, i.Error(fmt.Sprintf("std.splitLimitR third parameter should be -1 or non-negative, got %v", maxSplits))
+	}
+	sStr := str.getGoString()
+	sC := c.getGoString()
+	if len(sC) < 1 {
+		return nil, i.Error(fmt.Sprintf("std.splitLimitR second parameter should have length 1 or greater, got %v", len(sC)))
+	}
+
+	count := strings.Count(sStr, sC)
+	if maxSplits > -1 && count > maxSplits {
+		count = maxSplits
+	}
+	strs := make([]string, count+1)
+	for i := count; i > 0; i-- {
+		index := strings.LastIndex(sStr, sC)
+		strs[i] = sStr[index+len(sC):]
+		sStr = sStr[:index]
+	}
+	strs[0] = sStr
 	res := make([]*cachedThunk, len(strs))
 	for i := range strs {
 		res[i] = readyThunk(makeValueString(strs[i]))
@@ -1736,8 +1818,16 @@ func tomlIsSection(i *interpreter, val value) (bool, error) {
 	}
 }
 
-// tomlEncodeString encodes a string as quoted TOML string
-func tomlEncodeString(s string) string {
+func builtinEscapeStringJson(i *interpreter, v value) (value, error) {
+	s, err := valueToString(i, v)
+	if err != nil {
+		return nil, err
+	}
+
+	return makeValueString(unparseString(s)), nil
+}
+
+func escapeStringJson(s string) string {
 	res := "\""
 
 	for _, c := range s {
@@ -1767,6 +1857,11 @@ func tomlEncodeString(s string) string {
 	res = res + "\""
 
 	return res
+}
+
+// tomlEncodeString encodes a string as quoted TOML string
+func tomlEncodeString(s string) string {
+	return unparseString(s)
 }
 
 // tomlEncodeKey encodes a key - returning same string if it does not need quoting,
@@ -2160,6 +2255,209 @@ func builtinManifestJSONEx(i *interpreter, arguments []value) (value, error) {
 	return makeValueString(finalString), nil
 }
 
+const (
+	yamlIndent = "  "
+)
+
+var (
+	yamlReserved = []string{
+		// Boolean types taken from https://yaml.org/type/bool.html
+		"true", "false", "yes", "no", "on", "off", "y", "n",
+		// Numerical words taken from https://yaml.org/type/float.html
+		".nan", "-.inf", "+.inf", ".inf", "null",
+		// Invalid keys that contain no invalid characters
+		"-", "---", "''",
+	}
+	yamlTimestampPattern = regexp.MustCompile(`^(?:[0-9]*-){2}[0-9]*$`)
+	yamlBinaryPattern    = regexp.MustCompile(`^[-+]?0b[0-1_]+$`)
+	yamlHexPattern       = regexp.MustCompile(`[-+]?0x[0-9a-fA-F_]+`)
+)
+
+func yamlReservedString(s string) bool {
+	for _, r := range yamlReserved {
+		if strings.EqualFold(s, r) {
+			return true
+		}
+	}
+	return false
+}
+
+func yamlBareSafe(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+
+	// String contains unsafe char
+	for _, c := range s {
+		isAlpha := (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+		isDigit := c >= '0' && c <= '9'
+
+		if !isAlpha && !isDigit && c != '_' && c != '-' && c != '/' && c != '.' {
+			return false
+		}
+	}
+
+	if yamlReservedString(s) {
+		return false
+	}
+
+	if yamlTimestampPattern.MatchString(s) {
+		return false
+	}
+
+	// Check binary /
+	if yamlBinaryPattern.MatchString(s) || yamlHexPattern.MatchString(s) {
+		return false
+	}
+
+	// Is integer
+	if _, err := strconv.Atoi(s); err == nil {
+		return false
+	}
+	// Is float
+	if _, err := strconv.ParseFloat(s, 64); err == nil {
+		return false
+	}
+
+	return true
+}
+
+func builtinManifestYamlDoc(i *interpreter, arguments []value) (value, error) {
+	val := arguments[0]
+	vindentArrInObj, err := i.getBoolean(arguments[1])
+	if err != nil {
+		return nil, err
+	}
+	vQuoteKeys, err := i.getBoolean(arguments[2])
+	if err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+
+	var aux func(ov value, buf *bytes.Buffer, cindent string) error
+	aux = func(ov value, buf *bytes.Buffer, cindent string) error {
+		switch v := ov.(type) {
+		case *valueNull:
+			buf.WriteString("null")
+		case *valueBoolean:
+			if v.value {
+				buf.WriteString("true")
+			} else {
+				buf.WriteString("false")
+			}
+		case valueString:
+			s := v.getGoString()
+			if s == "" {
+				buf.WriteString(`""`)
+			} else if strings.HasSuffix(s, "\n") {
+				s := strings.TrimSuffix(s, "\n")
+				buf.WriteString("|")
+				for _, line := range strings.Split(s, "\n") {
+					buf.WriteByte('\n')
+					buf.WriteString(cindent)
+					buf.WriteString(yamlIndent)
+					buf.WriteString(line)
+				}
+			} else {
+				buf.WriteString(unparseString(s))
+			}
+		case *valueNumber:
+			buf.WriteString(strconv.FormatFloat(v.value, 'f', -1, 64))
+		case *valueArray:
+			if v.length() == 0 {
+				buf.WriteString("[]")
+				return nil
+			}
+			for ix, elem := range v.elements {
+				if ix != 0 {
+					buf.WriteByte('\n')
+					buf.WriteString(cindent)
+				}
+				thunkValue, err := elem.getValue(i)
+				if err != nil {
+					return err
+				}
+				buf.WriteByte('-')
+
+				if v, isArr := thunkValue.(*valueArray); isArr && v.length() > 0 {
+					buf.WriteByte('\n')
+					buf.WriteString(cindent)
+					buf.WriteString(yamlIndent)
+				} else {
+					buf.WriteByte(' ')
+				}
+
+				prevIndent := cindent
+				switch thunkValue.(type) {
+				case *valueArray, *valueObject:
+					cindent = cindent + yamlIndent
+				}
+
+				if err := aux(thunkValue, buf, cindent); err != nil {
+					return err
+				}
+				cindent = prevIndent
+			}
+		case *valueObject:
+			fields := objectFields(v, withoutHidden)
+			if len(fields) == 0 {
+				buf.WriteString("{}")
+				return nil
+			}
+			sort.Strings(fields)
+			for ix, fieldName := range fields {
+				fieldValue, err := v.index(i, fieldName)
+				if err != nil {
+					return err
+				}
+
+				if ix != 0 {
+					buf.WriteByte('\n')
+					buf.WriteString(cindent)
+				}
+
+				keyStr := fieldName
+				if vQuoteKeys.value || !yamlBareSafe(fieldName) {
+					keyStr = escapeStringJson(fieldName)
+				}
+				buf.WriteString(keyStr)
+				buf.WriteByte(':')
+
+				prevIndent := cindent
+				if v, isArr := fieldValue.(*valueArray); isArr && v.length() > 0 {
+					buf.WriteByte('\n')
+					buf.WriteString(cindent)
+					if vindentArrInObj.value {
+						buf.WriteString(yamlIndent)
+						cindent = cindent + yamlIndent
+					}
+				} else if v, isObj := fieldValue.(*valueObject); isObj {
+					if len(objectFields(v, withoutHidden)) > 0 {
+						buf.WriteByte('\n')
+						buf.WriteString(cindent)
+						buf.WriteString(yamlIndent)
+						cindent = cindent + yamlIndent
+					} else {
+						buf.WriteByte(' ')
+					}
+				} else {
+					buf.WriteByte(' ')
+				}
+				aux(fieldValue, buf, cindent)
+				cindent = prevIndent
+			}
+		}
+		return nil
+	}
+
+	if err := aux(val, &buf, ""); err != nil {
+		return nil, err
+	}
+
+	return makeValueString(buf.String()), nil
+}
+
 func builtinExtVar(i *interpreter, name value) (value, error) {
 	str, err := i.getString(name)
 	if err != nil {
@@ -2175,6 +2473,7 @@ func builtinExtVar(i *interpreter, name value) (value, error) {
 func builtinMinArray(i *interpreter, arguments []value) (value, error) {
 	arrv := arguments[0]
 	keyFv := arguments[1]
+	onEmpty := arguments[2]
 
 	arr, err := i.getArray(arrv)
 	if err != nil {
@@ -2186,23 +2485,36 @@ func builtinMinArray(i *interpreter, arguments []value) (value, error) {
 	}
 	num := arr.length()
 	if num == 0 {
-		return nil, i.Error("Expected at least one element in array. Got none")
+		if onEmpty == nil {
+			return nil, i.Error("Expected at least one element in array. Got none")
+		} else {
+			return onEmpty, nil
+		}
 	}
-	minVal, err := keyF.call(i, args(arr.elements[0]))
+	minVal, err := arr.elements[0].getValue(i)
+	if err != nil {
+		return nil, err
+	}
+	minValKey, err := keyF.call(i, args(arr.elements[0]))
 	if err != nil {
 		return nil, err
 	}
 	for index := 1; index < num; index++ {
-		current, err := keyF.call(i, args(arr.elements[index]))
+		current, err := arr.elements[index].getValue(i)
 		if err != nil {
 			return nil, err
 		}
-		cmp, err := valueCmp(i, minVal, current)
+		currentKey, err := keyF.call(i, args(arr.elements[index]))
+		if err != nil {
+			return nil, err
+		}
+		cmp, err := valueCmp(i, minValKey, currentKey)
 		if err != nil {
 			return nil, err
 		}
 		if cmp > 0 {
 			minVal = current
+			minValKey = currentKey
 		}
 	}
 	return minVal, nil
@@ -2211,6 +2523,7 @@ func builtinMinArray(i *interpreter, arguments []value) (value, error) {
 func builtinMaxArray(i *interpreter, arguments []value) (value, error) {
 	arrv := arguments[0]
 	keyFv := arguments[1]
+	onEmpty := arguments[2]
 
 	arr, err := i.getArray(arrv)
 	if err != nil {
@@ -2222,23 +2535,36 @@ func builtinMaxArray(i *interpreter, arguments []value) (value, error) {
 	}
 	num := arr.length()
 	if num == 0 {
-		return nil, i.Error("Expected at least one element in array. Got none")
+		if onEmpty == nil {
+			return nil, i.Error("Expected at least one element in array. Got none")
+		} else {
+			return onEmpty, nil
+		}
 	}
-	maxVal, err := keyF.call(i, args(arr.elements[0]))
+	maxVal, err := arr.elements[0].getValue(i)
+	if err != nil {
+		return nil, err
+	}
+	maxValKey, err := keyF.call(i, args(arr.elements[0]))
 	if err != nil {
 		return nil, err
 	}
 	for index := 1; index < num; index++ {
-		current, err := keyF.call(i, args(arr.elements[index]))
+		current, err := arr.elements[index].getValue(i)
 		if err != nil {
 			return nil, err
 		}
-		cmp, err := valueCmp(i, maxVal, current)
+		currentKey, err := keyF.call(i, args(arr.elements[index]))
+		if err != nil {
+			return nil, err
+		}
+		cmp, err := valueCmp(i, maxValKey, currentKey)
 		if err != nil {
 			return nil, err
 		}
 		if cmp < 0 {
 			maxVal = current
+			maxValKey = currentKey
 		}
 	}
 	return maxVal, nil
@@ -2410,7 +2736,7 @@ func flattenArgs(args callArguments, params []namedParameter, defaults []value) 
 	}
 	// Bind defaults for unsatisfied named parameters
 	for i := range params {
-		if flatArgs[i] == nil {
+		if flatArgs[i] == nil && defaults[i] != nil {
 			flatArgs[i] = readyThunk(defaults[i])
 		}
 	}
@@ -2428,9 +2754,13 @@ type unaryBuiltin struct {
 func (b *unaryBuiltin) evalCall(args callArguments, i *interpreter) (value, error) {
 	flatArgs := flattenArgs(args, b.parameters(), []value{})
 
-	x, err := flatArgs[0].getValue(i)
-	if err != nil {
-		return nil, err
+	var x value
+	var err error
+	if flatArgs[0] != nil {
+		x, err = flatArgs[0].getValue(i)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return b.function(i, x)
 }
@@ -2458,13 +2788,19 @@ type binaryBuiltin struct {
 func (b *binaryBuiltin) evalCall(args callArguments, i *interpreter) (value, error) {
 	flatArgs := flattenArgs(args, b.parameters(), []value{})
 
-	x, err := flatArgs[0].getValue(i)
-	if err != nil {
-		return nil, err
+	var err error
+	var x, y value
+	if flatArgs[0] != nil {
+		x, err = flatArgs[0].getValue(i)
+		if err != nil {
+			return nil, err
+		}
 	}
-	y, err := flatArgs[1].getValue(i)
-	if err != nil {
-		return nil, err
+	if flatArgs[1] != nil {
+		y, err = flatArgs[1].getValue(i)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return b.function(i, x, y)
 }
@@ -2492,17 +2828,25 @@ type ternaryBuiltin struct {
 func (b *ternaryBuiltin) evalCall(args callArguments, i *interpreter) (value, error) {
 	flatArgs := flattenArgs(args, b.parameters(), []value{})
 
-	x, err := flatArgs[0].getValue(i)
-	if err != nil {
-		return nil, err
+	var err error
+	var x, y, z value
+	if flatArgs[0] != nil {
+		x, err = flatArgs[0].getValue(i)
+		if err != nil {
+			return nil, err
+		}
 	}
-	y, err := flatArgs[1].getValue(i)
-	if err != nil {
-		return nil, err
+	if flatArgs[1] != nil {
+		y, err = flatArgs[1].getValue(i)
+		if err != nil {
+			return nil, err
+		}
 	}
-	z, err := flatArgs[2].getValue(i)
-	if err != nil {
-		return nil, err
+	if flatArgs[2] != nil {
+		z, err = flatArgs[2].getValue(i)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return b.function(i, x, y, z)
 }
@@ -2524,8 +2868,9 @@ type generalBuiltinFunc func(*interpreter, []value) (value, error)
 type generalBuiltinParameter struct {
 	// Note that the defaults are passed as values rather than AST nodes like in Parameters.
 	// This spares us unnecessary evaluation.
-	defaultValue value
-	name         ast.Identifier
+	defaultValue    value
+	name            ast.Identifier
+	nonValueDefault bool
 }
 
 // generalBuiltin covers cases that other builtin structures do not,
@@ -2542,7 +2887,7 @@ func (b *generalBuiltin) parameters() []namedParameter {
 	ret := make([]namedParameter, len(b.params))
 	for i := range ret {
 		ret[i].name = b.params[i].name
-		if b.params[i].defaultValue != nil {
+		if b.params[i].defaultValue != nil || b.params[i].nonValueDefault {
 			// This is not actually used because the defaultValue is used instead.
 			// The only reason we don't leave it nil is because the checkArguments
 			// function uses the non-nil status to indicate that the parameter
@@ -2570,9 +2915,11 @@ func (b *generalBuiltin) evalCall(args callArguments, i *interpreter) (value, er
 	values := make([]value, len(flatArgs))
 	for j := 0; j < len(values); j++ {
 		var err error
-		values[j], err = flatArgs[j].getValue(i)
-		if err != nil {
-			return nil, err
+		if flatArgs[j] != nil {
+			values[j], err = flatArgs[j].getValue(i)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return b.function(i, values)
@@ -2639,6 +2986,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "extVar", function: builtinExtVar, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "length", function: builtinLength, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "toString", function: builtinToString, params: ast.Identifiers{"a"}},
+	&unaryBuiltin{name: "escapeStringJson", function: builtinEscapeStringJson, params: ast.Identifiers{"str_"}},
 	&binaryBuiltin{name: "trace", function: builtinTrace, params: ast.Identifiers{"str", "rest"}},
 	&binaryBuiltin{name: "makeArray", function: builtinMakeArray, params: ast.Identifiers{"sz", "func"}},
 	&binaryBuiltin{name: "flatMap", function: builtinFlatMap, params: ast.Identifiers{"func", "arr"}},
@@ -2662,12 +3010,14 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "ceil", function: builtinCeil, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "floor", function: builtinFloor, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "sqrt", function: builtinSqrt, params: ast.Identifiers{"x"}},
+	&binaryBuiltin{name: "hypot", function: builtinHypot, params: ast.Identifiers{"x", "y"}},
 	&unaryBuiltin{name: "sin", function: builtinSin, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "cos", function: builtinCos, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "tan", function: builtinTan, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "asin", function: builtinAsin, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "acos", function: builtinAcos, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "atan", function: builtinAtan, params: ast.Identifiers{"x"}},
+	&binaryBuiltin{name: "atan2", function: builtinAtan2, params: ast.Identifiers{"y", "x"}},
 	&unaryBuiltin{name: "log", function: builtinLog, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "exp", function: builtinExp, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "mantissa", function: builtinMantissa, params: ast.Identifiers{"x"}},
@@ -2691,6 +3041,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&binaryBuiltin{name: "stripChars", function: builtinStripChars, params: ast.Identifiers{"str", "chars"}},
 	&ternaryBuiltin{name: "substr", function: builtinSubstr, params: ast.Identifiers{"str", "from", "len"}},
 	&ternaryBuiltin{name: "splitLimit", function: builtinSplitLimit, params: ast.Identifiers{"str", "c", "maxsplits"}},
+	&ternaryBuiltin{name: "splitLimitR", function: builtinSplitLimitR, params: ast.Identifiers{"str", "c", "maxsplits"}},
 	&ternaryBuiltin{name: "strReplace", function: builtinStrReplace, params: ast.Identifiers{"str", "from", "to"}},
 	&unaryBuiltin{name: "isEmpty", function: builtinIsEmpty, params: ast.Identifiers{"str"}},
 	&binaryBuiltin{name: "equalsIgnoreCase", function: builtinEqualsIgnoreCase, params: ast.Identifiers{"str1", "str2"}},
@@ -2706,12 +3057,17 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 		{name: "newline", defaultValue: &valueFlatString{value: []rune("\n")}},
 		{name: "key_val_sep", defaultValue: &valueFlatString{value: []rune(": ")}}}},
 	&generalBuiltin{name: "manifestTomlEx", function: builtinManifestTomlEx, params: []generalBuiltinParameter{{name: "value"}, {name: "indent"}}},
+	&generalBuiltin{name: "manifestYamlDoc", function: builtinManifestYamlDoc, params: []generalBuiltinParameter{
+		{name: "value"},
+		{name: "indent_array_in_object", defaultValue: &valueBoolean{value: false}},
+		{name: "quote_keys", defaultValue: &valueBoolean{value: true}},
+	}},
 	&unaryBuiltin{name: "base64", function: builtinBase64, params: ast.Identifiers{"input"}},
 	&unaryBuiltin{name: "encodeUTF8", function: builtinEncodeUTF8, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "decodeUTF8", function: builtinDecodeUTF8, params: ast.Identifiers{"arr"}},
 	&generalBuiltin{name: "sort", function: builtinSort, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}}},
-	&generalBuiltin{name: "minArray", function: builtinMinArray, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}}},
-	&generalBuiltin{name: "maxArray", function: builtinMaxArray, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}}},
+	&generalBuiltin{name: "minArray", function: builtinMinArray, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}, {name: "onEmpty", nonValueDefault: true}}},
+	&generalBuiltin{name: "maxArray", function: builtinMaxArray, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}, {name: "onEmpty", nonValueDefault: true}}},
 	&unaryBuiltin{name: "native", function: builtinNative, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "sum", function: builtinSum, params: ast.Identifiers{"arr"}},
 	&unaryBuiltin{name: "avg", function: builtinAvg, params: ast.Identifiers{"arr"}},
@@ -2719,4 +3075,5 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 
 	// internal
 	&unaryBuiltin{name: "$objectFlatMerge", function: builtinUglyObjectFlatMerge, params: ast.Identifiers{"x"}},
+	&binaryBuiltin{name: "$flatMapArray", function: builtinFlatMapArray, params: ast.Identifiers{"func", "arr"}},
 })

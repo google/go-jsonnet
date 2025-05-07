@@ -719,6 +719,13 @@ func (l *lexer) lexSymbol() error {
 	if r == '|' && strings.HasPrefix(l.input[l.pos.byteNo:], "||") {
 		commentStartLoc := l.tokenStartLoc
 		l.acceptN(2) // Skip "||"
+
+		var chompTrailingNl bool = false
+		if l.peek() == '-' {
+			chompTrailingNl = true
+			l.next()
+		}
+
 		var cb bytes.Buffer
 
 		// Skip whitespace
@@ -775,7 +782,13 @@ func (l *lexer) lexSymbol() error {
 					return l.makeStaticErrorPoint("Text block not terminated with |||", commentStartLoc)
 				}
 				l.acceptN(3) // Skip '|||'
-				l.emitFullToken(tokenStringBlock, cb.String(),
+
+				var str string = cb.String()
+				if chompTrailingNl {
+					str = str[:len(str)-1]
+				}
+
+				l.emitFullToken(tokenStringBlock, str,
 					stringBlockIndent, stringBlockTermIndent)
 				l.resetTokenStart()
 				return nil
@@ -793,7 +806,7 @@ func (l *lexer) lexSymbol() error {
 		if r == '/' && strings.HasPrefix(l.input[l.pos.byteNo:], "*") {
 			break
 		}
-		// Not allowed ||| in operators
+		// Not allowed ||| in operators (accounts for |||-)
 		if r == '|' && strings.HasPrefix(l.input[l.pos.byteNo:], "||") {
 			break
 		}

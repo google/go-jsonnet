@@ -186,7 +186,7 @@ static struct JsonnetJsonValue *cpython_native_callback(
     }
 
     // Call python function.
-    result = PyEval_CallObject(ctx->callback, arglist);
+    result = PyObject_CallObject(ctx->callback, arglist);
     Py_DECREF(arglist);
 
     if (result == NULL) {
@@ -226,7 +226,7 @@ static int cpython_import_callback(void *ctx_, const char *base, const char *rel
 
     PyEval_RestoreThread(*ctx->py_thread);
     arglist = Py_BuildValue("(s, s)", base, rel);
-    result = PyEval_CallObject(ctx->callback, arglist);
+    result = PyObject_CallObject(ctx->callback, arglist);
     Py_DECREF(arglist);
 
     if (result == NULL) {
@@ -255,7 +255,7 @@ static int cpython_import_callback(void *ctx_, const char *base, const char *rel
             success = 0;
         } else {
             char *content_buf;
-            ssize_t content_len;
+            Py_ssize_t content_len;
 #if PY_MAJOR_VERSION >= 3
             const char *found_here_cstr = PyUnicode_AsUTF8(file_name);
 #else
@@ -665,7 +665,7 @@ static struct PyModuleDef _module =
 
 PyMODINIT_FUNC PyInit__gojsonnet(void)
 {
-    PyObject *module =  PyModule_Create(&_module);
+    PyObject *module = PyModule_Create(&_module);
     PyObject *version_str = PyUnicode_FromString(LIB_JSONNET_VERSION);
     if (PyModule_AddObject(module, "version", PyUnicode_FromString(LIB_JSONNET_VERSION)) < 0) {
       Py_XDECREF(version_str);

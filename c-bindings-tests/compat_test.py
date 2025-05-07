@@ -473,7 +473,7 @@ class TestJsonnetEvaluateBindings(unittest.TestCase):
 
     def test_jsonnet_version(self):
         res = lib.jsonnet_version()
-        match = re.match(r'^v[0-9]+[.][0-9]+[.][0-9]+ [(]go-jsonnet[)]$', to_bytes(res).decode('utf-8'))
+        match = re.match(r'^v[0-9]+[.][0-9]+[.][0-9]+(-?([a-z]+[0-9]*))? [(]go-jsonnet[)]$', to_bytes(res).decode('utf-8'))
         self.assertIsNotNone(match)
 
     def test_jsonnet_native_callback_square(self):

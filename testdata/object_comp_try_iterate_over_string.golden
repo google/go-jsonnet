@@ -1,0 +1,15 @@
+RUNTIME ERROR: Unexpected type string, expected array
+-------------------------------------------------
+	testdata/object_comp_try_iterate_over_string:1:1-24	
+
+{ [a]: 0 for a in 'b' }
+
+-------------------------------------------------
+	testdata/object_comp_try_iterate_over_string:1:1-24	
+
+{ [a]: 0 for a in 'b' }
+
+-------------------------------------------------
+	During evaluation	
+
+
