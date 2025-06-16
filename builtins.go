@@ -2485,6 +2485,7 @@ func builtinRemove(i *interpreter, arrv value, ev value) (value, error) {
 }
 
 func builtinRemoveAt(i *interpreter, arrv value, idxv value) (value, error) {
+	var newArr []*cachedThunk
 	arr, err := i.getArray(arrv)
 	if err != nil {
 		return nil, err
@@ -2494,7 +2495,8 @@ func builtinRemoveAt(i *interpreter, arrv value, idxv value) (value, error) {
 		return nil, err
 	}
 
-	newArr := append(arr.elements[:idx], arr.elements[idx+1:]...)
+	newArr = append(newArr, arr.elements[:idx]...)
+	newArr = append(newArr, arr.elements[idx+1:]...)
 	return makeValueArray(newArr), nil
 }
 
