@@ -1428,6 +1428,56 @@ func builtinStrReplace(i *interpreter, strv, fromv, tov value) (value, error) {
 	return makeValueString(strings.Replace(sStr, sFrom, sTo, -1)), nil
 }
 
+func builtinRegexMatch(i *interpreter, regexv, strv value) (value, error) {
+	regex, err := i.getString(regexv)
+	if err != nil {
+		return nil, err
+	}
+
+	str, err := i.getString(strv)
+	if err != nil {
+		return nil, err
+	}
+
+	sRegex := regex.getGoString()
+	sStr := str.getGoString()
+
+	match, err := regexp.MatchString(sRegex, sStr)
+	if err != nil {
+		return nil, err
+	}
+
+	return makeValueBoolean(match), nil
+}
+
+func builtinRegexSubst(i *interpreter, regexv, srcv, replv value) (value, error) {
+	regex, err := i.getString(regexv)
+	if err != nil {
+		return nil, err
+	}
+
+	src, err := i.getString(srcv)
+	if err != nil {
+		return nil, err
+	}
+
+	repl, err := i.getString(replv)
+	if err != nil {
+		return nil, err
+	}
+
+	sRegex := regex.getGoString()
+	sSrc := src.getGoString()
+	sRepl := repl.getGoString()
+
+	r, err := regexp.Compile(sRegex)
+	if err != nil {
+		return nil, err
+	}
+
+	return makeValueString(r.ReplaceAllString(sSrc, sRepl)), nil
+}
+
 func builtinIsEmpty(i *interpreter, strv value) (value, error) {
 	str, err := i.getString(strv)
 	if err != nil {
@@ -2865,6 +2915,8 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&ternaryBuiltin{name: "splitLimit", function: builtinSplitLimit, params: ast.Identifiers{"str", "c", "maxsplits"}},
 	&ternaryBuiltin{name: "splitLimitR", function: builtinSplitLimitR, params: ast.Identifiers{"str", "c", "maxsplits"}},
 	&ternaryBuiltin{name: "strReplace", function: builtinStrReplace, params: ast.Identifiers{"str", "from", "to"}},
+	&binaryBuiltin{name: "regexMatch", function: builtinRegexMatch, params: ast.Identifiers{"regex", "str"}},
+	&ternaryBuiltin{name: "regexSubst", function: builtinRegexSubst, params: ast.Identifiers{"regex", "src", "repl"}},
 	&unaryBuiltin{name: "isEmpty", function: builtinIsEmpty, params: ast.Identifiers{"str"}},
 	&binaryBuiltin{name: "equalsIgnoreCase", function: builtinEqualsIgnoreCase, params: ast.Identifiers{"str1", "str2"}},
 	&unaryBuiltin{name: "trim", function: builtinTrim, params: ast.Identifiers{"str"}},
