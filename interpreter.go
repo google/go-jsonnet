@@ -17,13 +17,18 @@ limitations under the License.
 package jsonnet
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"math"
+	"math/rand"
+	"os"
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/astgen"
@@ -281,6 +286,15 @@ type interpreter struct {
 	stack callStack
 
 	evalHook EvalHook
+
+	profilerOpts StackProfilerOpts
+}
+
+type StackProfilerOpts struct {
+	//
+	stackProfileOut *bufio.Writer
+	// ration of stack ast to sample (0.0-1.0)
+	stackProfileRatio float64
 }
 
 // Map union, b takes precedence when keys collide.
@@ -1009,7 +1023,47 @@ func jsonToValue(i *interpreter, v interface{}) (value, error) {
 	}
 }
 
+// This parses env variables and configures the VM interpreter stack profiler
+// Env vars:
+//
+// JSONNET_STACK_PROFILE: If set, it will output a stack profile to the file specified.
+//
+// JSONNET_STACK_PROFILE_RATIO: Determines the ration of stack traces to sample.  Default 0.1
+func StartStackProfile() StackProfilerOpts {
+	if os.Getenv("JSONNET_STACK_PROFILE") != "" {
+		file, err := os.Create(os.Getenv("JSONNET_STACK_PROFILE"))
+		if err != nil {
+			log.Fatal("could not create stack profile: ", err)
+		}
+
+		sampleRatio := 0.1
+
+		if os.Getenv("JSONNET_STACK_PROFILE_RATIO") != "" {
+			sampleRatio, err = strconv.ParseFloat(os.Getenv("JSONNET_STACK_PROFILE_RATIO"), 64)
+			if err != nil {
+				log.Fatal("could not parse stack profile ratio: ", err)
+			}
+		}
+		return StackProfilerOpts{
+			stackProfileOut:   bufio.NewWriter(file),
+			stackProfileRatio: sampleRatio,
+		}
+	}
+	return StackProfilerOpts{
+		stackProfileOut:   nil,
+		stackProfileRatio: 0.1,
+	}
+}
+
+func StopStackProfile(opts StackProfilerOpts) {
+	if opts.stackProfileOut != nil {
+		opts.stackProfileOut.Flush()
+	}
+}
+
 func (i *interpreter) EvalInCleanEnv(env *environment, ast ast.Node, trimmable bool) (value, error) {
+	i.checkForSampling()
+
 	err := i.newCall(*env, trimmable)
 	if err != nil {
 		return nil, err
@@ -1024,6 +1078,18 @@ func (i *interpreter) EvalInCleanEnv(env *environment, ast ast.Node, trimmable b
 	i.stack.popIfExists(stackSize)
 
 	return val, nil
+}
+
+// Check profiling flags and sample if needed.
+// Samples randomly based on interpreter.profilerOpts.stackProfileRatio.
+func (i *interpreter) checkForSampling() {
+	if i.profilerOpts.stackProfileOut != nil && rand.Float64() < i.profilerOpts.stackProfileRatio {
+		stack := []string{}
+		for _, frame := range i.getCurrentStackTrace() {
+			stack = append(stack, frame.Loc.String()+":"+frame.Name)
+		}
+		fmt.Fprintln(i.profilerOpts.stackProfileOut, strings.Join(stack, ";")+" 1")
+	}
 }
 
 func (i *interpreter) evaluatePV(ph potentialValue) (value, error) {
@@ -1273,13 +1339,14 @@ func buildObject(hide ast.ObjectFieldHide, fields map[string]value) *valueObject
 	return makeValueSimpleObject(bindingFrame{}, fieldMap, nil, nil)
 }
 
-func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*NativeFunction, maxStack int, ic *importCache, traceOut io.Writer, evalHook EvalHook) (*interpreter, error) {
+func buildInterpreter(vm *VM) (*interpreter, error) {
 	i := interpreter{
-		stack:       makeCallStack(maxStack),
-		importCache: ic,
-		traceOut:    traceOut,
-		nativeFuncs: nativeFuncs,
-		evalHook:    evalHook,
+		stack:        makeCallStack(vm.MaxStack),
+		importCache:  vm.importCache,
+		traceOut:     vm.traceOut,
+		nativeFuncs:  vm.nativeFuncs,
+		evalHook:     vm.EvalHook,
+		profilerOpts: vm.profilerOpts,
 	}
 
 	stdObj, err := buildStdObject(&i)
@@ -1289,7 +1356,7 @@ func buildInterpreter(ext vmExtMap, nativeFuncs map[string]*NativeFunction, maxS
 
 	i.baseStd = stdObj
 
-	i.extVars = prepareExtVars(&i, ext, "extvar")
+	i.extVars = prepareExtVars(&i, vm.ext, "extvar")
 
 	return &i, nil
 }
@@ -1350,23 +1417,21 @@ func evaluateAux(i *interpreter, node ast.Node, tla vmExtMap) (value, error) {
 	return result, nil
 }
 
-// TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
-func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, ic *importCache, traceOut io.Writer, stringOutputMode bool, evalHook EvalHook) (string, error) {
-
-	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic, traceOut, evalHook)
+// Evaluate ast node with the given VM
+func evaluate(node ast.Node, vm *VM) (string, error) {
+	i, err := buildInterpreter(vm)
 	if err != nil {
 		return "", err
 	}
 
-	result, err := evaluateAux(i, node, tla)
+	result, err := evaluateAux(i, node, vm.tla)
 	if err != nil {
 		return "", err
 	}
 
 	var buf bytes.Buffer
 	i.stack.setCurrentTrace(manifestationTrace())
-	if stringOutputMode {
+	if vm.StringOutput {
 		err = i.manifestString(&buf, result)
 	} else {
 		err = i.manifestAndSerializeJSON(&buf, result, true, "")
@@ -1379,36 +1444,30 @@ func evaluate(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]
 	return buf.String(), nil
 }
 
-// TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
-func evaluateMulti(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, ic *importCache, traceOut io.Writer, stringOutputMode bool, evalHook EvalHook) (map[string]string, error) {
-
-	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic, traceOut, evalHook)
+func evaluateMulti(node ast.Node, vm *VM) (map[string]string, error) {
+	i, err := buildInterpreter(vm)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := evaluateAux(i, node, tla)
+	result, err := evaluateAux(i, node, vm.tla)
 	if err != nil {
 		return nil, err
 	}
 
 	i.stack.setCurrentTrace(manifestationTrace())
-	manifested, err := i.manifestAndSerializeMulti(result, stringOutputMode)
+	manifested, err := i.manifestAndSerializeMulti(result, vm.StringOutput)
 	i.stack.clearCurrentTrace()
 	return manifested, err
 }
 
-// TODO(sbarzowski) this function takes far too many arguments - build interpreter in vm instead
-func evaluateStream(node ast.Node, ext vmExtMap, tla vmExtMap, nativeFuncs map[string]*NativeFunction,
-	maxStack int, ic *importCache, traceOut io.Writer, evalHook EvalHook) ([]string, error) {
-
-	i, err := buildInterpreter(ext, nativeFuncs, maxStack, ic, traceOut, evalHook)
+func evaluateStream(node ast.Node, vm *VM) ([]string, error) {
+	i, err := buildInterpreter(vm)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := evaluateAux(i, node, tla)
+	result, err := evaluateAux(i, node, vm.tla)
 	if err != nil {
 		return nil, err
 	}

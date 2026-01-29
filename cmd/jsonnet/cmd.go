@@ -395,8 +395,13 @@ func main() {
 	cmd.StartCPUProfile()
 	defer cmd.StopCPUProfile()
 
+	profilerOpts := jsonnet.StartStackProfile()
+	defer jsonnet.StopStackProfile(profilerOpts)
+
 	vm := jsonnet.MakeVM()
 	vm.ErrorFormatter.SetColorFormatter(color.New(color.FgRed).Fprintf)
+
+	vm.SetStackTraceOut(profilerOpts)
 
 	config := makeConfig()
 	jsonnetPath := filepath.SplitList(os.Getenv("JSONNET_PATH"))

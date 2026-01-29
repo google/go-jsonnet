@@ -46,6 +46,7 @@ type VM struct { //nolint:govet
 	StringOutput   bool
 	importCache    *importCache
 	traceOut       io.Writer
+	profilerOpts   StackProfilerOpts
 	EvalHook       EvalHook
 }
 
@@ -104,6 +105,13 @@ func (vm *VM) flushValueCache() {
 // SetTraceOut sets the output stream for the builtin function std.trace().
 func (vm *VM) SetTraceOut(traceOut io.Writer) {
 	vm.traceOut = traceOut
+}
+
+// SetStackTraceOut configures options for interpreter stack trace sampling.
+// It is used for performance profiling purposes.
+// The output can be used to generate flamegraphs of calls stemming from interpreter.EvalInCleanEnv
+func (vm *VM) SetStackTraceOut(traceOut StackProfilerOpts) {
+	vm.profilerOpts = traceOut
 }
 
 // ExtVar binds a Jsonnet external var to the given value.
@@ -187,7 +195,7 @@ func (vm *VM) Evaluate(node ast.Node) (val string, err error) {
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	return evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput, vm.EvalHook)
+	return evaluate(node, vm)
 }
 
 // EvaluateStream evaluates a Jsonnet program given by an Abstract Syntax Tree
@@ -198,7 +206,7 @@ func (vm *VM) EvaluateStream(node ast.Node) (output []string, err error) {
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	return evaluateStream(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.EvalHook)
+	return evaluateStream(node, vm)
 }
 
 // EvaluateMulti evaluates a Jsonnet program given by an Abstract Syntax Tree
@@ -210,7 +218,7 @@ func (vm *VM) EvaluateMulti(node ast.Node) (output map[string]string, err error)
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())
 		}
 	}()
-	return evaluateMulti(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput, vm.EvalHook)
+	return evaluateMulti(node, vm)
 }
 
 func (vm *VM) evaluateSnippet(diagnosticFileName ast.DiagnosticFileName, filename string, snippet string, kind evalKind) (output interface{}, err error) {
@@ -225,11 +233,11 @@ func (vm *VM) evaluateSnippet(diagnosticFileName ast.DiagnosticFileName, filenam
 	}
 	switch kind {
 	case evalKindRegular:
-		output, err = evaluate(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput, vm.EvalHook)
+		output, err = evaluate(node, vm)
 	case evalKindMulti:
-		output, err = evaluateMulti(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.StringOutput, vm.EvalHook)
+		output, err = evaluateMulti(node, vm)
 	case evalKindStream:
-		output, err = evaluateStream(node, vm.ext, vm.tla, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.EvalHook)
+		output, err = evaluateStream(node, vm)
 	}
 	if err != nil {
 		return "", err
