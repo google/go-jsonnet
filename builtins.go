@@ -2510,9 +2510,27 @@ func builtInObjectRemoveKey(i *interpreter, objv value, keyv value) (value, erro
 		return nil, err
 	}
 
+	switch obj.uncached.(type) {
+	case *simpleObject:
+		simpleObj := obj.uncached.(*simpleObject)
+		return builtInObjectRemoveKeySimpleObject(simpleObj, key), nil
+	case *extendedObject:
+		leftObj := obj.uncached.(*extendedObject).left.(*simpleObject)
+		leftResult := builtInObjectRemoveKeySimpleObject(leftObj, key)
+
+		rightObj := obj.uncached.(*extendedObject).right.(*simpleObject)
+		rightResult := builtInObjectRemoveKeySimpleObject(rightObj, key)
+
+		return makeValueExtendedObject(leftResult, rightResult), nil
+
+	default:
+		return nil, i.typeErrorGeneral(objv)
+	}
+}
+
+func builtInObjectRemoveKeySimpleObject(obj *simpleObject, key valueString) *valueObject {
 	newFields := make(simpleObjectFieldMap)
-	simpleObj := obj.uncached.(*simpleObject)
-	for fieldName, fieldVal := range simpleObj.fields {
+	for fieldName, fieldVal := range obj.fields {
 		if fieldName == key.getGoString() {
 			// skip the field which needs to be deleted
 			continue
@@ -2522,7 +2540,7 @@ func builtInObjectRemoveKey(i *interpreter, objv value, keyv value) (value, erro
 			hide: fieldVal.hide,
 			field: &bindingsUnboundField{
 				inner:    fieldVal.field,
-				bindings: simpleObj.upValues,
+				bindings: obj.upValues,
 			},
 		}
 	}
@@ -2532,12 +2550,12 @@ func builtInObjectRemoveKey(i *interpreter, objv value, keyv value) (value, erro
 		newFields,
 		[]unboundField{}, // No asserts allowed
 		nil,
-	), nil
+	)
 }
 
 func builtinIsNull(i *interpreter, v value) (value, error) {
-    _, isNull := v.(*valueNull)
-    return makeValueBoolean(isNull), nil
+	_, isNull := v.(*valueNull)
+	return makeValueBoolean(isNull), nil
 }
 
 // Utils for builtins - TODO(sbarzowski) move to a separate file in another commit
