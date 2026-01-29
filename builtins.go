@@ -2522,7 +2522,6 @@ func builtInObjectRemoveKey(i *interpreter, objv value, keyv value) (value, erro
 		rightResult := builtInObjectRemoveKeySimpleObject(rightObj, key)
 
 		return makeValueExtendedObject(leftResult, rightResult), nil
-
 	default:
 		return nil, i.typeErrorGeneral(objv)
 	}
