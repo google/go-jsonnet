@@ -122,7 +122,7 @@ func prepareStdlib(g *typeGraph) {
 		"manifestPython":       g.newSimpleFuncType(stringType, "v"),
 		"manifestPythonVars":   g.newSimpleFuncType(stringType, "conf"),
 		"manifestTomlEx":       g.newSimpleFuncType(stringType, "value", "indent"),
-		"manifestJsonEx":       g.newSimpleFuncType(stringType, "value", "indent"),
+		"manifestJsonEx":       g.newFuncType(stringType, []ast.Parameter{required("value"), required("indent"), optional("newline"), optional("key_val_sep")}),
 		"manifestJsonMinified": g.newSimpleFuncType(stringType, "value"),
 		"manifestYamlDoc":      g.newFuncType(stringType, []ast.Parameter{required("value"), optional("indent_array_in_object"), optional("quote_keys")}),
 		"manifestYamlStream":   g.newFuncType(anyArrayType, []ast.Parameter{required("value"), optional("indent_array_in_object"), optional("c_document_end"), optional("quote_keys")}),
