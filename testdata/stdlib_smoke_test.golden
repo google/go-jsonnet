@@ -1,11 +1,11 @@
 {
    "abs": 42,
-   "acos": 1.0471975511965976,
+   "acos": true,
    "asciiLower": "blah",
    "asciiUpper": "BLAH",
-   "asin": 0.52359877559829893,
+   "asin": true,
    "assertEqual": true,
-   "atan": 1.3734007669450157,
+   "atan": true,
    "base64": [
       "YmxhaA==",
       "YmxhaA=="
@@ -21,7 +21,7 @@
    "ceil": 5,
    "char": "A",
    "codepoint": 65,
-   "cos": 0.2836621854632263,
+   "cos": true,
    "count": 1,
    "decodeUTF8": "AAA",
    "encodeUTF8": [
@@ -101,7 +101,7 @@
    "join": "a,b,c",
    "length": 0,
    "lines": "a\nb\nc\n",
-   "log": 1.6094379124341003,
+   "log": true,
    "lstripChars": "bbbbcccc",
    "makeArray": [
       0,
@@ -222,7 +222,7 @@
       ]
    ],
    "sign": 1,
-   "sin": -0.95892427466313845,
+   "sin": true,
    "slice": "o",
    "sort": [
       [
@@ -249,7 +249,7 @@
       "a,b",
       "c"
    ],
-   "sqrt": 2.2360679774997898,
+   "sqrt": true,
    "startsWith": true,
    "strReplace": "bba",
    "stringChars": [
@@ -260,8 +260,8 @@
    ],
    "stripChars": "bbbb",
    "substr": "s",
-   "tan": -3.3805150062465854,
-   "thisFile": "testdata/stdlib_smoke_test",
+   "tan": true,
+   "thisFile": "stdlib_smoke_test.jsonnet",
    "toString": "42",
    "type": "object",
    "uniq": [

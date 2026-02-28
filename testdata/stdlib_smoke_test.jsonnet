@@ -5,6 +5,17 @@
 // Functions with optional arguments need two lines - one with none of the optional arguments
 // and the other with all of them.
 
+local assertClose(a, b) =
+  local err =
+    if b == 0 then
+      a - b
+    else
+      if a / b - 1 > 0 then a / b - 1 else 1 - a / b;
+  if err > 0.000005 then
+    error 'Assertion failed (error ' + err + '). ' + a + ' !~ ' + b
+  else
+    true;
+
 {
     // extVar and native are skipped here, because of the special setup required.
     // We also skip undocumented functions used in desugaring and std.trace.
@@ -45,18 +56,18 @@
     min: std.min(a=2, b=3),
     pow: std.pow(x=2, n=3),
     exp: std.exp(x=5),
-    log: std.log(x=5),
+    log: assertClose(std.log(x=5), 1.6094379124341003),
     exponent: std.exponent(x=5),
     mantissa: std.mantissa(x=5),
     floor: std.floor(x=5),
     ceil: std.ceil(x=5),
-    sqrt: std.sqrt(x=5),
-    sin: std.sin(x=5),
-    cos: std.cos(x=5),
-    tan: std.tan(x=5),
-    asin: std.asin(x=0.5),
-    acos: std.acos(x=0.5),
-    atan: std.atan(x=5),
+    sqrt: assertClose(std.sqrt(x=5), 2.2360679774997898),
+    sin: assertClose(std.sin(x=5), -0.9589242746631385),
+    cos: assertClose(std.cos(x=5), 0.28366218546322625),
+    tan: assertClose(std.tan(x=5), -3.380515006246586),
+    asin: assertClose(std.asin(x=0.5), 0.5235987755982989),
+    acos: assertClose(std.acos(x=0.5), 1.0471975511965979),
+    atan: assertClose(std.atan(x=5), 1.373400766945016),
 
     // Assertions and debugging
     assertEqual: std.assertEqual(a="a", b="a"),
