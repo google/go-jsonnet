@@ -4118,7 +4118,7 @@ var p8 = &ast.Source{
 		"    \"'\": '&apos;',\n",
 		"  },\n",
 		"\n",
-		"  escapeStringXML(str_)::\n",
+		"  escapeStringXml(str_)::\n",
 		"    local str = std.toString(str_);\n",
 		"    std.join('', [std.get(xml_escapes, ch, ch) for ch in std.stringChars(str)]),\n",
 		"\n",
@@ -144787,7 +144787,7 @@ var _StdAst = &ast.DesugaredObject{
 		},
 		ast.DesugaredObjectField{
 			Name: &ast.LiteralString{
-				Value: "escapeStringXML",
+				Value: "escapeStringXml",
 				BlockIndent: "",
 				BlockTermIndent: "",
 				NodeBase: ast.NodeBase{
