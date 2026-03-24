@@ -104,6 +104,8 @@ local assertClose(a, b) =
     splitLimit: std.splitLimit(str="a,b,c", c=",", maxsplits=1),
     splitLimitR: std.splitLimitR(str="a,b,c", c=",", maxsplits=1),
     strReplace: std.strReplace(str="aaa", from="aa", to="bb"),
+    regexMatch: std.regexMatch(regex="\\d+", str="abc123def"),
+    regexSubst: std.regexSubst(regex="([0-9]+)", src="abc123def456ghi", repl="[$1]"),
     asciiUpper: std.asciiUpper(str="Blah"),
     asciiLower: std.asciiLower(str="Blah"),
     stringChars: std.stringChars(str="blah"),
