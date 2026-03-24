@@ -1,6 +1,10 @@
 package types
 
 import (
+	"fmt"
+	"io"
+	"time"
+
 	"github.com/google/go-jsonnet/ast"
 )
 
@@ -20,6 +24,32 @@ type typeGraph struct {
 
 	// TODO(sbarzowski) what was this for?
 	importFunc ImportFunc
+
+	// For performance tuning
+	timeStats timeStats
+
+	counters counters
+}
+
+// Subject to change at any point. For fine-tuning only.
+type timeStats struct {
+	simplifyRef       time.Duration
+	separateElemTypes time.Duration
+	topoOrder         time.Duration
+	findTypes         time.Duration
+}
+
+type counters struct {
+	sccCount                   int
+	containWidenCount          int
+	builtinWidenConcreteCount  int
+	builtinWidenContainedCount int
+	preNormalizationSumSize    int64
+	postNormalizationSumSize   int64
+}
+
+func (g *typeGraph) debugStats(w io.Writer) {
+	fmt.Fprintf(w, "placeholders no: %d\n", len(g._placeholders))
 }
 
 func (g *typeGraph) placeholder(id placeholderID) *typePlaceholder {
@@ -164,10 +194,21 @@ func newTypeGraph(importFunc ImportFunc) *typeGraph {
 // prepareTypes produces a final type for each expression in the graph.
 // No further operations on the graph are valid after this is called.
 func (g *typeGraph) prepareTypes(node ast.Node, typeOf exprTypes) {
+	tStart := time.Now()
 	g.simplifyReferences()
+	tSimplify := time.Now()
 	g.separateElementTypes()
+	tSeparate := time.Now()
 	g.makeTopoOrder()
+	tTopo := time.Now()
 	g.findTypes()
+	tTypes := time.Now()
+	g.timeStats = timeStats{
+		simplifyRef:       tSimplify.Sub(tStart),
+		separateElemTypes: tSeparate.Sub(tSimplify),
+		topoOrder:         tTopo.Sub(tSeparate),
+		findTypes:         tTypes.Sub(tTopo),
+	}
 	for e, p := range g.exprPlaceholder {
 		typeOf[e] = g.upperBound[p]
 	}

@@ -139,6 +139,8 @@ func Check(mainNode ast.Node, roots map[string]ast.Node, vars map[string]map[ast
 	g.prepareTypes(mainNode, et)
 
 	// TODO(sbarzowski) Useful for debugging – expose it in CLI?
+	// spew.Dump(g.timeStats)
+	// spew.Dump(g.counters)
 	// t := et[node.node]
 	// fmt.Fprintf(os.Stderr, "%v\n", types.Describe(&t))
 

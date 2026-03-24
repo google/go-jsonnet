@@ -8,7 +8,7 @@ func prepareStdlib(g *typeGraph) {
 	arrayOfString := anyArrayType
 	stringOrArray := anyType
 	stringOrNumber := anyType
-	jsonType := anyType // It actually cannot functions anywhere
+	jsonType := anyType // It actually cannot have functions anywhere
 
 	required := func(name string) ast.Parameter {
 		return ast.Parameter{Name: ast.Identifier(name)}
