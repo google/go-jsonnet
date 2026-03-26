@@ -294,7 +294,10 @@ func (arr *valueArray) index(i *interpreter, index int) (value, error) {
 	if 0 <= index && index < arr.length() {
 		return i.evaluatePV(arr.elements[index])
 	}
-	return nil, i.Error(fmt.Sprintf("Index %d out of bounds, not within [0, %v)", index, arr.length()))
+	if -arr.length() <= index && index < 0 {
+		return i.evaluatePV(arr.elements[index + arr.length()])
+	}
+	return nil, i.Error(fmt.Sprintf("Index %d out of bounds, not within [%v, %v)", index, -arr.length(), arr.length()))
 }
 
 func (arr *valueArray) length() int {
