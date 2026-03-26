@@ -1,0 +1,1 @@
+std.parseXmlJsonml('<svg height="100" width="100"><circle cx="50" cy="50" fill="red" r="40" stroke="black" stroke-width="3"></circle></svg>')

@@ -1,0 +1,1 @@
+std.parseXmlJsonml('<svg><circle> Foobar</circle></svg>', preserveWhitespace=true)
