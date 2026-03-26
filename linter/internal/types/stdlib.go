@@ -109,13 +109,14 @@ func prepareStdlib(g *typeGraph) {
 
 		// Parsing
 
-		"parseInt":   g.newSimpleFuncType(numberType, "str"),
-		"parseOctal": g.newSimpleFuncType(numberType, "str"),
-		"parseHex":   g.newSimpleFuncType(numberType, "str"),
-		"parseJson":  g.newSimpleFuncType(jsonType, "str"),
-		"parseYaml":  g.newSimpleFuncType(jsonType, "str"),
-		"encodeUTF8": g.newSimpleFuncType(numberArrayType, "str"),
-		"decodeUTF8": g.newSimpleFuncType(stringType, "arr"),
+		"parseInt":           g.newSimpleFuncType(numberType, "str"),
+		"parseOctal":         g.newSimpleFuncType(numberType, "str"),
+		"parseHex":           g.newSimpleFuncType(numberType, "str"),
+		"parseJson":          g.newSimpleFuncType(jsonType, "str"),
+		"parseYaml":          g.newSimpleFuncType(jsonType, "str"),
+		"parseCsvWithHeader": g.newFuncType(jsonType, []ast.Parameter{required("str"), optional("delimiter"), optional("overwrite_duplicate_headers")}),
+		"encodeUTF8":         g.newSimpleFuncType(numberArrayType, "str"),
+		"decodeUTF8":         g.newSimpleFuncType(stringType, "arr"),
 
 		// Manifestation
 
@@ -127,6 +128,7 @@ func prepareStdlib(g *typeGraph) {
 		"manifestJsonMinified": g.newSimpleFuncType(stringType, "value"),
 		"manifestYamlDoc":      g.newFuncType(stringType, []ast.Parameter{required("value"), optional("indent_array_in_object"), optional("quote_keys")}),
 		"manifestYamlStream":   g.newFuncType(anyArrayType, []ast.Parameter{required("value"), optional("indent_array_in_object"), optional("c_document_end"), optional("quote_keys")}),
+		"manifestCsv":          g.newFuncType(stringType, []ast.Parameter{required("json"), optional("headers")}),
 		"manifestXmlJsonml":    g.newSimpleFuncType(stringType, "value"),
 
 		// Arrays

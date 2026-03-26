@@ -1,0 +1,1 @@
+std.manifestCsv([{ "head1": "val1", "head2": "val2", "head3": "foo" }, { "head2": 1, "head3": "bar" }, { "head1": "val3" }], ["head1", "head2"])
