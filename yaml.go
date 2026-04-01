@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"io"
+	"strings"
 
 	"sigs.k8s.io/yaml"
 )
@@ -85,6 +86,21 @@ func NewYAMLReader(r *bufio.Reader) *YAMLReader {
 
 var docStartMarker = []byte("---")
 
+// isCommentOrWhitespace reports whether all non-empty lines in b are either
+// blank or YAML comments (start with '#'). Such content is valid YAML
+// frontmatter/preamble that precedes the first document-start marker and does
+// not constitute a document by itself.
+func isCommentOrWhitespace(b []byte) bool {
+	for _, line := range strings.Split(string(b), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
 // Read returns a full YAML document.
 func (r *YAMLReader) read() ([]byte, error) {
 	for {
@@ -102,6 +118,15 @@ func (r *YAMLReader) read() ([]byte, error) {
 			if end == len(line) || line[end] == '\n' || line[end] == ' ' || line[end] == '\t' {
 				r.stream = true
 				if r.buffer.Len() != 0 {
+					// Per YAML spec §9.2, comments and blank lines may appear
+					// before the first document-start marker without forming a
+					// document. Discard such preamble instead of emitting a
+					// spurious null document.
+					if isCommentOrWhitespace(r.buffer.Bytes()) {
+						r.buffer.Reset()
+						r.buffer.Write(line)
+						continue
+					}
 					out := append([]byte(nil), r.buffer.Bytes()...)
 					r.buffer.Reset()
 					// The document start marker should be included in the next document.

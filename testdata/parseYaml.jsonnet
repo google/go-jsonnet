@@ -60,5 +60,24 @@
     |||,
 
     "---",
+
+    // A leading comment before the first document-start marker must not
+    // produce a spurious null document (issue #660).
+    |||
+      # Test
+      ---
+      foo: bar
+      ---
+      baz: cuux
+    |||,
+
+    // Multiple leading comments and blank lines before the first marker.
+    |||
+      # Comment 1
+      # Comment 2
+
+      ---
+      a: 1
+    |||,
   ]
 ]
