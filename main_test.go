@@ -104,13 +104,14 @@ var nativePanic = &NativeFunction{
 }
 
 type jsonnetInput struct {
-	name             string
-	input            []byte
-	eKind            evalKind
-	stringOutputMode bool
-	noNewline        bool // not nice to have a negative flag, but it gives the more relevant default
-	extVars          map[string]string
-	extCode          map[string]string
+	name                string
+	input               []byte
+	eKind               evalKind
+	stringOutputMode    bool
+	noNewline           bool // not nice to have a negative flag, but it gives the more relevant default
+	preserveFieldOrder  bool
+	extVars             map[string]string
+	extCode             map[string]string
 }
 
 type jsonnetResult struct {
@@ -136,6 +137,7 @@ func runInternalJsonnet(i jsonnetInput) jsonnetResult {
 
 	vm.StringOutput = i.stringOutputMode
 	vm.OutputNewline = !i.noNewline
+	vm.PreserveFieldOrder = i.preserveFieldOrder
 	for name, value := range i.extVars {
 		vm.ExtVar(name, value)
 	}
@@ -337,8 +339,9 @@ func runTest(t *testing.T, test *mainTest) {
 		name:             test.name,
 		input:            input,
 		eKind:            eKind,
-		stringOutputMode: strings.HasSuffix(test.golden, "_string_output.golden"),
-		noNewline:        strings.Contains(test.golden, "_no_newline"),
+		stringOutputMode:   strings.HasSuffix(test.golden, "_string_output.golden"),
+		noNewline:          strings.Contains(test.golden, "_no_newline"),
+		preserveFieldOrder: strings.Contains(test.golden, "_preserve_field_order"),
 		extVars:          test.meta.extVars,
 		extCode:          test.meta.extCode,
 	})

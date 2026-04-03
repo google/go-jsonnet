@@ -258,6 +258,8 @@ func processArgs(givenArgs []string, config *config, vm *jsonnet.VM) (processArg
 			config.evalStream = true
 		} else if arg == "-S" || arg == "--string" {
 			vm.StringOutput = true
+		} else if arg == "--preserve-field-order" {
+			vm.PreserveFieldOrder = true
 		} else if arg == "--no-trailing-newline" {
 			vm.OutputNewline = false
 		} else if len(arg) > 1 && arg[0] == '-' {

@@ -1531,6 +1531,7 @@ func builtinUglyObjectFlatMerge(i *interpreter, x value) (value, error) {
 		return nil, err
 	}
 	newFields := make(simpleObjectFieldMap)
+	var newOrder []string
 	for _, elem := range objarr.elements {
 		obj, err := i.evaluateObject(elem)
 		if err != nil {
@@ -1545,7 +1546,8 @@ func builtinUglyObjectFlatMerge(i *interpreter, x value) (value, error) {
 		}
 
 		// there is only one field, really
-		for fieldName, fieldVal := range simpleObj.fields {
+		for _, fieldName := range simpleObj.fieldOrder {
+			fieldVal := simpleObj.fields[fieldName]
 			if _, alreadyExists := newFields[fieldName]; alreadyExists {
 				return nil, i.Error(duplicateFieldNameErrMsg(fieldName))
 			}
@@ -1557,12 +1559,14 @@ func builtinUglyObjectFlatMerge(i *interpreter, x value) (value, error) {
 					bindings: simpleObj.upValues,
 				},
 			}
+			newOrder = append(newOrder, fieldName)
 		}
 	}
 
 	return makeValueSimpleObject(
 		nil,
 		newFields,
+		newOrder,
 		[]unboundField{}, // No asserts allowed
 		nil,
 	), nil

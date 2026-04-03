@@ -539,10 +539,11 @@ type objectLocal struct {
 // Let a = {x: 42} and b = {y: self.x}. Evaluating b.y is an error,
 // but (a+b).y evaluates to 42.
 type simpleObject struct {
-	upValues bindingFrame
-	fields   simpleObjectFieldMap
-	asserts  []unboundField
-	locals   []objectLocal
+	upValues   bindingFrame
+	fields     simpleObjectFieldMap
+	fieldOrder []string // tracks definition order of fields
+	asserts    []unboundField
+	locals     []objectLocal
 }
 
 func checkAssertionsHelper(i *interpreter, obj *valueObject, curr uncachedObject, superDepth int) error {
@@ -592,14 +593,15 @@ func (*simpleObject) inheritanceSize() int {
 	return 1
 }
 
-func makeValueSimpleObject(b bindingFrame, fields simpleObjectFieldMap, asserts []unboundField, locals []objectLocal) *valueObject {
+func makeValueSimpleObject(b bindingFrame, fields simpleObjectFieldMap, fieldOrder []string, asserts []unboundField, locals []objectLocal) *valueObject {
 	return &valueObject{
 		cache: make(map[objectCacheKey]value),
 		uncached: &simpleObject{
-			upValues: b,
-			fields:   fields,
-			asserts:  asserts,
-			locals:   locals,
+			upValues:   b,
+			fields:     fields,
+			fieldOrder: fieldOrder,
+			asserts:    asserts,
+			locals:     locals,
 		},
 	}
 }
@@ -659,6 +661,7 @@ func makeValueExtendedObject(left, right *valueObject) *valueObject {
 type restrictedObject struct {
 	obj            uncachedObject
 	retainedFields fieldHideMap
+	retainedOrder  []string // tracks field order after restriction
 }
 
 func (o *restrictedObject) inheritanceSize() int {
@@ -666,11 +669,20 @@ func (o *restrictedObject) inheritanceSize() int {
 }
 
 func makeValueRestrictedObject(obj *valueObject) *valueObject {
+	retained := objectFieldsVisibility(obj)
+	fullOrder := uncachedObjectFieldsOrder(obj.uncached)
+	retainedOrder := make([]string, 0, len(fullOrder))
+	for _, f := range fullOrder {
+		if _, ok := retained[f]; ok {
+			retainedOrder = append(retainedOrder, f)
+		}
+	}
 	return &valueObject{
 		cache: make(map[objectCacheKey]value),
 		uncached: &restrictedObject{
 			obj:            obj.uncached,
-			retainedFields: objectFieldsVisibility(obj),
+			retainedFields: retained,
+			retainedOrder:  retainedOrder,
 		},
 	}
 }
@@ -768,6 +780,50 @@ func objectHasField(sb selfBinding, fieldName string) bool {
 }
 
 type fieldHideMap map[string]ast.ObjectFieldHide
+
+// uncachedObjectFieldsOrder returns field names in definition order, without filtering by visibility.
+// For extended objects, left fields come first, then new fields from the right.
+func uncachedObjectFieldsOrder(obj uncachedObject) []string {
+	switch obj := obj.(type) {
+	case *extendedObject:
+		leftOrder := uncachedObjectFieldsOrder(obj.left)
+		rightOrder := uncachedObjectFieldsOrder(obj.right)
+		result := make([]string, 0, len(leftOrder)+len(rightOrder))
+		seen := make(map[string]bool, len(leftOrder))
+		for _, f := range leftOrder {
+			result = append(result, f)
+			seen[f] = true
+		}
+		for _, f := range rightOrder {
+			if !seen[f] {
+				result = append(result, f)
+			}
+		}
+		return result
+	case *restrictedObject:
+		return obj.retainedOrder
+	case *simpleObject:
+		return obj.fieldOrder
+	}
+	return nil
+}
+
+// objectFieldsOrdered returns visible field names in definition order.
+func objectFieldsOrdered(obj *valueObject, h hidden) []string {
+	visibility := objectFieldsVisibility(obj)
+	allKeys := uncachedObjectFieldsOrder(obj.uncached)
+	result := make([]string, 0, len(allKeys))
+	for _, key := range allKeys {
+		hide, exists := visibility[key]
+		if !exists {
+			continue
+		}
+		if h == withHidden || hide != ast.ObjectFieldHidden {
+			result = append(result, key)
+		}
+	}
+	return result
+}
 
 func uncachedObjectFieldsVisibility(obj uncachedObject) fieldHideMap {
 	r := make(fieldHideMap)

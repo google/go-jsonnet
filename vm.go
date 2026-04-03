@@ -43,8 +43,9 @@ type VM struct { //nolint:govet
 	nativeFuncs    map[string]*NativeFunction
 	importer       Importer
 	ErrorFormatter ErrorFormatter
-	StringOutput   bool // expect to evaluate to a string, and output that string directly
-	OutputNewline  bool // add a trailing newline (default true)
+	StringOutput        bool // expect to evaluate to a string, and output that string directly
+	OutputNewline       bool // add a trailing newline (default true)
+	PreserveFieldOrder  bool // preserve field declaration order instead of sorting alphabetically
 	importCache    *importCache
 	traceOut       io.Writer
 	EvalHook       EvalHook
@@ -178,10 +179,10 @@ const (
 )
 
 // version is the current gojsonnet's version
-const version = "v0.22.0"
+const version = "v0.22.1-fork.1"
 
 func (vm *VM) buildConfiguredInterpreter() (*interpreter, error) {
-	return buildInterpreter(vm.ext, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.EvalHook)
+	return buildInterpreter(vm.ext, vm.nativeFuncs, vm.MaxStack, vm.importCache, vm.traceOut, vm.EvalHook, vm.PreserveFieldOrder)
 }
 
 // Evaluate evaluates a Jsonnet program given by an Abstract Syntax Tree

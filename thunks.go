@@ -273,7 +273,7 @@ func (native *NativeFunction) evalCall(arguments callArguments, i *interpreter) 
 		if err != nil {
 			return nil, err
 		}
-		nativeArgs = append(nativeArgs, json)
+		nativeArgs = append(nativeArgs, flattenJSONForNative(json))
 	}
 	call := func() (resultJSON interface{}, err error) {
 		defer func() {
