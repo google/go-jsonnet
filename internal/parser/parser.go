@@ -42,9 +42,12 @@ func locFromTokenAST(begin *token, end ast.Node) ast.LocationRange {
 
 // ---------------------------------------------------------------------------
 
+const maxParseDepth = 500
+
 type parser struct {
-	t     Tokens
-	currT int
+	t          Tokens
+	currT      int
+	parseDepth int
 }
 
 func makeParser(t Tokens) *parser {
@@ -981,6 +984,14 @@ func (p *parser) parsingFailure(msg string, tok *token) (ast.Node, errors.Static
 }
 
 func (p *parser) parse(prec iast.Precedence) (ast.Node, errors.StaticError) {
+	p.parseDepth++
+	defer func() { p.parseDepth-- }()
+	if p.parseDepth > maxParseDepth {
+		return nil, errors.MakeStaticError(
+			fmt.Sprintf("Exceeded max parse depth of %d", maxParseDepth),
+			p.peek().loc)
+	}
+
 	begin := p.peek()
 
 	switch begin.kind {
