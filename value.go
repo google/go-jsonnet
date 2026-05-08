@@ -548,6 +548,12 @@ type simpleObject struct {
 func checkAssertionsHelper(i *interpreter, obj *valueObject, curr uncachedObject, superDepth int) error {
 	switch curr := curr.(type) {
 	case *extendedObject:
+		// Skip whole subtrees that have no assertions to evaluate.
+		// This avoids walking exponential DAG-as-tree structures
+		// (see comment on extendedObject) when there's nothing to do.
+		if !curr.hasAssertions() {
+			return nil
+		}
 		err := checkAssertionsHelper(i, obj, curr.right, superDepth)
 		if err != nil {
 			return err
@@ -634,9 +640,50 @@ type unboundField interface {
 //
 // This represenation allows us to implement "+" in O(1),
 // but requires going through the tree and trying subsequent leafs for field access.
+//
+// Note: when the same valueObject is used on both sides of a `+`
+// (e.g. `x + x`, which can arise from `acc { f+: acc.f }` patterns),
+// `left` and `right` end up pointing to the same uncachedObject. The graph
+// of an extendedObject is therefore really a DAG. Naively walking it as a
+// tree leads to exponential behaviour, so the recursive walks below
+// (uncachedObjectFieldsVisibility, checkAssertionsHelper) memoize their
+// results per *extendedObject pointer.
 type extendedObject struct {
 	left, right          uncachedObject
 	totalInheritanceSize int
+
+	// cachedFieldsVisibility caches the result of
+	// uncachedObjectFieldsVisibility for this *extendedObject.
+	// nil until populated.
+	cachedFieldsVisibility fieldHideMap
+
+	// assertionsScanned and assertionsPresent cache whether the subtree
+	// rooted at this extendedObject contains any simpleObject with
+	// assertions. This lets checkAssertionsHelper skip walking subtrees
+	// that have nothing to check, which is essential when the same
+	// uncachedObject is reachable via many paths (DAG sharing).
+	assertionsScanned bool
+	assertionsPresent bool
+}
+
+func (o *extendedObject) hasAssertions() bool {
+	if !o.assertionsScanned {
+		o.assertionsPresent = subtreeHasAssertions(o.left) || subtreeHasAssertions(o.right)
+		o.assertionsScanned = true
+	}
+	return o.assertionsPresent
+}
+
+func subtreeHasAssertions(o uncachedObject) bool {
+	switch o := o.(type) {
+	case *extendedObject:
+		return o.hasAssertions()
+	case *restrictedObject:
+		return subtreeHasAssertions(o.obj)
+	case *simpleObject:
+		return len(o.asserts) > 0
+	}
+	return false
 }
 
 func (o *extendedObject) inheritanceSize() int {
@@ -770,10 +817,20 @@ func objectHasField(sb selfBinding, fieldName string) bool {
 type fieldHideMap map[string]ast.ObjectFieldHide
 
 func uncachedObjectFieldsVisibility(obj uncachedObject) fieldHideMap {
-	r := make(fieldHideMap)
 	switch obj := obj.(type) {
 	case *extendedObject:
-		r = uncachedObjectFieldsVisibility(obj.left)
+		// Memoize on the *extendedObject pointer. The result depends only
+		// on the (immutable) structure of the object, so it's safe to cache.
+		// This avoids exponential blowup when the same subtree is shared
+		// across multiple branches (DAG-as-tree).
+		if obj.cachedFieldsVisibility != nil {
+			return obj.cachedFieldsVisibility
+		}
+		r := make(fieldHideMap)
+		leftMap := uncachedObjectFieldsVisibility(obj.left)
+		for k, v := range leftMap {
+			r[k] = v
+		}
 		rightMap := uncachedObjectFieldsVisibility(obj.right)
 		for k, v := range rightMap {
 			if v == ast.ObjectFieldInherit {
@@ -784,20 +841,24 @@ func uncachedObjectFieldsVisibility(obj uncachedObject) fieldHideMap {
 				r[k] = v
 			}
 		}
+		obj.cachedFieldsVisibility = r
 		return r
 
 	case *restrictedObject:
+		r := make(fieldHideMap, len(obj.retainedFields))
 		for k, v := range obj.retainedFields {
 			r[k] = v
 		}
 		return r
 
 	case *simpleObject:
+		r := make(fieldHideMap, len(obj.fields))
 		for fieldName, field := range obj.fields {
 			r[fieldName] = field.hide
 		}
+		return r
 	}
-	return r
+	return make(fieldHideMap)
 }
 
 func objectFieldsVisibility(obj *valueObject) fieldHideMap {
