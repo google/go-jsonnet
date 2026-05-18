@@ -1588,6 +1588,11 @@ func builtinParseYAML(i *interpreter, str value) (value, error) {
 		return nil, err
 	}
 	s := sval.getGoString()
+	// Strip a leading comment/blank-only prefix before the first
+	// explicit --- separator. Otherwise the YAML reader treats that
+	// prefix as a separate (empty) document and emits a stray null in
+	// the result array.
+	s = stripLeadingYAMLComments(s)
 
 	elems := []interface{}{}
 	d := NewYAMLToJSONDecoder(strings.NewReader(s))
@@ -1609,6 +1614,55 @@ func builtinParseYAML(i *interpreter, str value) (value, error) {
 		return jsonToValue(i, elems)
 	}
 	return jsonToValue(i, elems[0])
+}
+
+// stripLeadingYAMLComments removes leading lines that are blank or
+// pure comments up to (and including) the first --- document marker,
+// but only when no real content appears before that marker AND
+// content follows the marker. This avoids emitting a stray null
+// element for streams whose first "document" is just commentary
+// while leaving a bare `---` (an explicit single-null document)
+// alone.
+func stripLeadingYAMLComments(s string) string {
+	idx := 0
+	hasComment := false
+	for idx < len(s) {
+		nl := strings.IndexByte(s[idx:], '\n')
+		var line string
+		var next int
+		if nl < 0 {
+			line = s[idx:]
+			next = len(s)
+		} else {
+			line = s[idx : idx+nl]
+			next = idx + nl + 1
+		}
+		trimmed := strings.TrimSpace(line)
+		switch {
+		case len(trimmed) == 0:
+			// blank, keep scanning
+		case strings.HasPrefix(trimmed, "#"):
+			hasComment = true
+		case trimmed == "---":
+			if !hasComment {
+				return s
+			}
+			// Only strip if real content follows; otherwise the input is
+			// a comment-only-then-marker stream that should still decode
+			// to a single null doc, matching the bare `---` case.
+			rest := s[next:]
+			for _, c := range rest {
+				if c != '\n' && c != '\r' && c != ' ' && c != '\t' {
+					return rest
+				}
+			}
+			return s
+		default:
+			return s
+		}
+		idx = next
+	}
+	return s
 }
 
 func jsonEncode(v interface{}) (string, error) {

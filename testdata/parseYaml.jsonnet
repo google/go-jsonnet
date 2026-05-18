@@ -60,5 +60,15 @@
     |||,
 
     "---",
+
+    // Comment-only prefix before the first document separator
+    // shouldn't be exposed as a leading null.
+    |||
+      # Test
+      ---
+      foo: bar
+      ---
+      baz: cuux
+    |||,
   ]
 ]
