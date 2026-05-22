@@ -198,6 +198,7 @@ func (p *parser) parseParameters(elementKind string) (*token, []ast.Parameter, b
 
 	var parenR *token
 	var params []ast.Parameter
+	seenParams := ast.NewIdentifierSet()
 	gotComma := false
 	first := true
 	for {
@@ -216,6 +217,9 @@ func (p *parser) parseParameters(elementKind string) (*token, []ast.Parameter, b
 		param, err := p.parseParameter()
 		if err != nil {
 			return nil, nil, false, err
+		}
+		if !seenParams.Add(param.Name) {
+			return nil, nil, false, errors.MakeStaticError(fmt.Sprintf("Duplicate %s: %v", elementKind, param.Name), param.LocRange)
 		}
 
 		if p.peek().kind == tokenComma {
