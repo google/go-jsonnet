@@ -149,6 +149,7 @@ type testError struct {
 var errorTests = []testError{
 	{`,`, `test:1:1-2 Unexpected: "," while parsing terminal`},
 	{`function(a, b c)`, `test:1:15-16 Expected a comma before next function parameter, got (IDENTIFIER, "c")`},
+	{`function(a, a) a`, `test:1:13-14 Duplicate function parameter: a`},
 	{`function(a, 1)`, `test:1:13-14 Expected token IDENTIFIER but got (NUMBER, "1") while parsing parameter`},
 	{`function(,)`, `test:1:10-11 Expected token IDENTIFIER but got "," while parsing parameter`},
 	{`function(a=)`, `test:1:12-13 Unexpected: ")" while parsing terminal`},
@@ -159,6 +160,7 @@ var errorTests = []testError{
 	{`local`, `test:1:6 Expected token IDENTIFIER but got end of file`},
 	{`local foo = 1, foo = 2; true`, `test:1:16-19 Duplicate local var: foo`},
 	{`local foo(a b) = a; true`, `test:1:13-14 Expected a comma before next function parameter, got (IDENTIFIER, "b")`},
+	{`local foo(a, a) = a; true`, `test:1:14-15 Duplicate function parameter: a`},
 	{`local foo(a): a; true`, `test:1:13-14 Expected operator = but got (OPERATOR, ":")`},
 	{`local foo(a) = bar(a b); true`, `test:1:22-23 Expected a comma before next function argument, got (IDENTIFIER, "b")`},
 	{`local foo: 1; true`, `test:1:10-11 Expected operator = but got (OPERATOR, ":")`},
@@ -184,6 +186,7 @@ var errorTests = []testError{
 	{`{[x y]: z}`, `test:1:5-6 Expected token "]" but got (IDENTIFIER, "y")`},
 
 	{`{foo(x y): z}`, `test:1:8-9 Expected a comma before next method parameter, got (IDENTIFIER, "y")`},
+	{`{foo(x, x): x}`, `test:1:9-10 Duplicate method parameter: x`},
 	{`{foo(x)+: z}`, `test:1:2-5 Cannot use +: syntax sugar in a method: foo`},
 	{`{foo: 1, foo: 2}`, `test:1:10-13 Duplicate field: foo`},
 	{`{foo: (1 2)}`, `test:1:10-11 Expected token ")" but got (NUMBER, "2")`},
