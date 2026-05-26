@@ -39,6 +39,25 @@ It's also available on Homebrew:
 brew install go-jsonnet
 ```
 
+## Import search path
+
+By default, the command line tools do not add any library search directories.
+Imports are first resolved relative to the file that contains the import. Extra
+library directories can be supplied with `-J` / `--jpath` or with the
+`JSONNET_PATH` environment variable.
+
+`JSONNET_PATH` uses a colon-separated list on Unix-like systems and a
+semicolon-separated list on Windows. Its entries are added before paths passed
+with `-J`, and the right-most search path takes priority. For example, these are
+equivalent, with `d` searched before `c`, then `a`, then `b` after the importing
+file's directory:
+
+```shell
+JSONNET_PATH=a:b jsonnet -J c -J d main.jsonnet
+JSONNET_PATH=d:c:a:b jsonnet main.jsonnet
+jsonnet -J b -J a -J c -J d main.jsonnet
+```
+
 ## Installing tools for working with Jsonnet code (formatter, linter)
 
 `jsonnetfmt` and `jsonnet-lint` are also available as [pre-commit](https://github.com/pre-commit/pre-commit) hooks. Example `.pre-commit-config.yaml`:
