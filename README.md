@@ -150,6 +150,29 @@ bazel build //cmd/wasm:libjsonnet.wasm
 ./tests.sh  # Also runs `go test ./...`
 ```
 
+### Adding and updating golden tests
+
+Most language behavior tests live in `testdata/` as pairs of Jsonnet input
+files and `.golden` expected-output files. To add a new core language test, add
+`testdata/<name>.jsonnet`, then regenerate and review the matching golden file:
+
+```bash
+go test . -run TestEval -update
+```
+
+Formatter and linter golden tests use the same update flag in their own
+packages:
+
+```bash
+go test ./formatter -run TestFormatter -update
+go test ./linter -run TestLinter -update
+```
+
+The formatter and linter update runs intentionally report a `Goldens_Updated`
+subtest failure so the list of changed files is visible in the test output.
+Always review the generated `.golden`, `.fmt.golden`, or `.linter.golden`
+changes before committing them, then run `go test ./...` or `./tests.sh`.
+
 ## Running Benchmarks
 
 ### Method 1
