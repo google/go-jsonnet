@@ -25,6 +25,7 @@ import (
 // PrettyFieldNames forces minimal syntax with field lookups and definitions
 type PrettyFieldNames struct {
 	pass.Base
+	insideObjectComp bool
 }
 
 // Index prettifies the definitions.
@@ -44,8 +45,22 @@ func (c *PrettyFieldNames) Index(p pass.ASTPass, index *ast.Index, ctx pass.Cont
 	c.Base.Index(p, index, ctx)
 }
 
+// ObjectComp traverses an object comprehension, skipping field key simplification
+// since object comprehensions require the [expr] key syntax.
+func (c *PrettyFieldNames) ObjectComp(p pass.ASTPass, node *ast.ObjectComp, ctx pass.Context) {
+	prev := c.insideObjectComp
+	c.insideObjectComp = true
+	c.Base.ObjectComp(p, node, ctx)
+	c.insideObjectComp = prev
+}
+
 // ObjectField prettifies the definitions.
 func (c *PrettyFieldNames) ObjectField(p pass.ASTPass, field *ast.ObjectField, ctx pass.Context) {
+	if c.insideObjectComp {
+		// Object comprehensions require [expr] key syntax; do not simplify the key.
+		c.Base.ObjectField(p, field, ctx)
+		return
+	}
 	if field.Kind == ast.ObjectFieldExpr {
 		// First try ["foo"] -> "foo".
 		lit, ok := field.Expr1.(*ast.LiteralString)
