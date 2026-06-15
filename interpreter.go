@@ -681,7 +681,7 @@ func unparseNumber(v float64) string {
 }
 
 // manifestJSON converts to standard JSON representation as in "encoding/json" package
-func (i *interpreter) manifestJSON(v value) (interface{}, error) {
+func (i *interpreter) manifestJSON(v value) (any, error) {
 	// TODO(sbarzowski) Add nice stack traces indicating the part of the code which
 	// evaluates to non-manifestable value (that might require passing context about
 	// the root value)
@@ -715,7 +715,7 @@ func (i *interpreter) manifestJSON(v value) (interface{}, error) {
 		return nil, nil
 
 	case *valueArray:
-		result := make([]interface{}, 0, len(v.elements))
+		result := make([]any, 0, len(v.elements))
 		for index, th := range v.elements {
 			msg := ast.MakeLocationRangeMessage(fmt.Sprintf("Array element %d", index))
 			i.stack.setCurrentTrace(traceElement{
@@ -751,7 +751,7 @@ func (i *interpreter) manifestJSON(v value) (interface{}, error) {
 		}
 		i.stack.clearCurrentTrace()
 
-		result := make(map[string]interface{}, len(fieldNames))
+		result := make(map[string]any, len(fieldNames))
 
 		for _, fieldName := range fieldNames {
 			msg := ast.MakeLocationRangeMessage(fmt.Sprintf("Field %#v", fieldName))
@@ -784,12 +784,12 @@ func (i *interpreter) manifestJSON(v value) (interface{}, error) {
 	}
 }
 
-func serializeJSON(v interface{}, multiline bool, indent string, buf *bytes.Buffer) {
+func serializeJSON(v any, multiline bool, indent string, buf *bytes.Buffer) {
 	switch v := v.(type) {
 	case nil:
 		buf.WriteString("null")
 
-	case []interface{}:
+	case []any:
 		if len(v) == 0 {
 			buf.WriteString("[ ]")
 		} else {
@@ -829,7 +829,7 @@ func serializeJSON(v interface{}, multiline bool, indent string, buf *bytes.Buff
 	case float64:
 		buf.WriteString(unparseNumber(v))
 
-	case map[string]interface{}:
+	case map[string]any:
 		fieldNames := make([]string, 0, len(v))
 		for name := range v {
 			fieldNames = append(fieldNames, name)
@@ -909,7 +909,7 @@ func (i *interpreter) manifestAndSerializeMulti(v value, stringOutputMode bool, 
 		return r, err
 	}
 	switch json := json.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		for filename, fileJSON := range json {
 			var buf bytes.Buffer
 			if stringOutputMode {
@@ -945,7 +945,7 @@ func (i *interpreter) manifestAndSerializeYAMLStream(v value) (r []string, err e
 		return r, err
 	}
 	switch json := json.(type) {
-	case []interface{}:
+	case []any:
 		for _, doc := range json {
 			var buf bytes.Buffer
 			serializeJSON(doc, true, "", &buf)
@@ -961,12 +961,12 @@ func (i *interpreter) manifestAndSerializeYAMLStream(v value) (r []string, err e
 	return
 }
 
-func jsonToValue(i *interpreter, v interface{}) (value, error) {
+func jsonToValue(i *interpreter, v any) (value, error) {
 	switch v := v.(type) {
 	case nil:
 		return &nullValue, nil
 
-	case []interface{}:
+	case []any:
 		elems := make([]*cachedThunk, len(v))
 		for counter, elem := range v {
 			val, err := jsonToValue(i, elem)
@@ -992,7 +992,7 @@ func jsonToValue(i *interpreter, v interface{}) (value, error) {
 	case float64:
 		return makeDoubleCheck(i, v)
 
-	case map[string]interface{}:
+	case map[string]any:
 		fieldMap := map[string]value{}
 		for name, f := range v {
 			val, err := jsonToValue(i, f)

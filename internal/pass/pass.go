@@ -23,7 +23,7 @@ import (
 )
 
 // Context can be used to provide context when visting child expressions.
-type Context interface{}
+type Context any
 
 // ASTPass is an interface for a pass that transforms the AST in some way.
 type ASTPass interface {

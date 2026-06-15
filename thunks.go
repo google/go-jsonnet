@@ -256,14 +256,14 @@ func makeClosure(env environment, function *ast.Function) *closure {
 // NativeFunction represents a function implemented in Go.
 type NativeFunction struct {
 	Name   string
-	Func   func([]interface{}) (interface{}, error)
+	Func   func([]any) (any, error)
 	Params ast.Identifiers
 }
 
 // evalCall evaluates a call to a NativeFunction and returns the result.
 func (native *NativeFunction) evalCall(arguments callArguments, i *interpreter) (value, error) {
 	flatArgs := flattenArgs(arguments, native.parameters(), []value{})
-	nativeArgs := make([]interface{}, 0, len(flatArgs))
+	nativeArgs := make([]any, 0, len(flatArgs))
 	for _, arg := range flatArgs {
 		v, err := i.evaluatePV(arg)
 		if err != nil {
@@ -275,7 +275,7 @@ func (native *NativeFunction) evalCall(arguments callArguments, i *interpreter) 
 		}
 		nativeArgs = append(nativeArgs, json)
 	}
-	call := func() (resultJSON interface{}, err error) {
+	call := func() (resultJSON any, err error) {
 		defer func() {
 			if r := recover(); r != nil {
 				err = fmt.Errorf("native function %#v panicked: %v", native.Name, r)

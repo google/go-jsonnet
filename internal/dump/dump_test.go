@@ -23,124 +23,124 @@ import (
 func TestSdumpPrimitives(t *testing.T) {
 	testcases := []struct {
 		name     string
-		input    func() interface{}
+		input    func() any
 		expected string
 	}{
 		{
 			"boolTrue",
-			func() interface{} {
+			func() any {
 				return true
 			},
 			"var Obj = true\n",
 		},
 		{
 			"boolFalse",
-			func() interface{} {
+			func() any {
 				return false
 			},
 			"var Obj = false\n",
 		},
 		{
 			"int",
-			func() interface{} {
+			func() any {
 				return 10
 			},
 			"var Obj = int(10)\n",
 		},
 		{
 			"int8",
-			func() interface{} {
+			func() any {
 				return int8(10)
 			},
 			"var Obj = int8(10)\n",
 		},
 		{
 			"int16",
-			func() interface{} {
+			func() any {
 				return int16(10)
 			},
 			"var Obj = int16(10)\n",
 		},
 		{
 			"int32",
-			func() interface{} {
+			func() any {
 				return int32(10)
 			},
 			"var Obj = int32(10)\n",
 		},
 		{
 			"int64",
-			func() interface{} {
+			func() any {
 				return int64(10)
 			},
 			"var Obj = int64(10)\n",
 		},
 		{
 			"uint",
-			func() interface{} {
+			func() any {
 				return uint(10)
 			},
 			"var Obj = uint(10)\n",
 		},
 		{
 			"uint8",
-			func() interface{} {
+			func() any {
 				return uint8(10)
 			},
 			"var Obj = uint8(10)\n",
 		},
 		{
 			"uint16",
-			func() interface{} {
+			func() any {
 				return uint16(10)
 			},
 			"var Obj = uint16(10)\n",
 		},
 		{
 			"uint32",
-			func() interface{} {
+			func() any {
 				return uint32(10)
 			},
 			"var Obj = uint32(10)\n",
 		},
 		{
 			"uint64",
-			func() interface{} {
+			func() any {
 				return uint64(10)
 			},
 			"var Obj = uint64(10)\n",
 		},
 		{
 			"float32",
-			func() interface{} {
+			func() any {
 				return float32(10.5)
 			},
 			"var Obj = float32(10.5)\n",
 		},
 		{
 			"float64",
-			func() interface{} {
+			func() any {
 				return float64(10.5)
 			},
 			"var Obj = float64(10.5)\n",
 		},
 		{
 			"complex64",
-			func() interface{} {
+			func() any {
 				return complex64(10 + 10.5i)
 			},
 			"var Obj = complex64(10+10.5i)\n",
 		},
 		{
 			"complex128",
-			func() interface{} {
+			func() any {
 				return complex128(-1.2 - 0.5i)
 			},
 			"var Obj = complex128(-1.2-0.5i)\n",
 		},
 		{
 			"string",
-			func() interface{} {
+			func() any {
 				return "hello world"
 			},
 			"var Obj = \"hello world\"\n",
@@ -158,12 +158,12 @@ func TestSdumpPrimitives(t *testing.T) {
 func TestSdumpPrimitivePointers(t *testing.T) {
 	testcases := []struct {
 		name     string
-		input    func() interface{}
+		input    func() any
 		expected string
 	}{
 		{
 			"booltruepointer",
-			func() interface{} {
+			func() any {
 				var a = true
 				return &a
 			},
@@ -174,7 +174,7 @@ var Obj = p0
 		},
 		{
 			"boolfalsepointer",
-			func() interface{} {
+			func() any {
 				var a = false
 				return &a
 			},
@@ -185,7 +185,7 @@ var Obj = p0
 		},
 		{
 			"intpointer",
-			func() interface{} {
+			func() any {
 				var a = 10
 				return &a
 			},
@@ -196,7 +196,7 @@ var Obj = p0
 		},
 		{
 			"int8pointer",
-			func() interface{} {
+			func() any {
 				var a = int8(10)
 				return &a
 			},
@@ -207,7 +207,7 @@ var Obj = p0
 		},
 		{
 			"int16pointer",
-			func() interface{} {
+			func() any {
 				var a = int16(10)
 				return &a
 			},
@@ -218,7 +218,7 @@ var Obj = p0
 		},
 		{
 			"int32pointer",
-			func() interface{} {
+			func() any {
 				var a = int32(10)
 				return &a
 			},
@@ -229,7 +229,7 @@ var Obj = p0
 		},
 		{
 			"int64pointer",
-			func() interface{} {
+			func() any {
 				var a = int64(10)
 				return &a
 			},
@@ -240,7 +240,7 @@ var Obj = p0
 		},
 		{
 			"uintpointer",
-			func() interface{} {
+			func() any {
 				var a = uint(10)
 				return &a
 			},
@@ -251,7 +251,7 @@ var Obj = p0
 		},
 		{
 			"uint8pointer",
-			func() interface{} {
+			func() any {
 				var a = uint8(10)
 				return &a
 			},
@@ -262,7 +262,7 @@ var Obj = p0
 		},
 		{
 			"uint16pointer",
-			func() interface{} {
+			func() any {
 				var a = uint16(10)
 				return &a
 			},
@@ -273,7 +273,7 @@ var Obj = p0
 		},
 		{
 			"uint32pointer",
-			func() interface{} {
+			func() any {
 				var a = uint32(10)
 				return &a
 			},
@@ -284,7 +284,7 @@ var Obj = p0
 		},
 		{
 			"uint64pointer",
-			func() interface{} {
+			func() any {
 				var a = uint64(10)
 				return &a
 			},
@@ -295,7 +295,7 @@ var Obj = p0
 		},
 		{
 			"float32pointer",
-			func() interface{} {
+			func() any {
 				var a = float32(10.5)
 				return &a
 			},
@@ -306,7 +306,7 @@ var Obj = p0
 		},
 		{
 			"float64pointer",
-			func() interface{} {
+			func() any {
 				var a = float64(10.5)
 				return &a
 			},
@@ -317,7 +317,7 @@ var Obj = p0
 		},
 		{
 			"complex64pointer",
-			func() interface{} {
+			func() any {
 				var a = complex64(10 + 10.5i)
 				return &a
 			},
@@ -328,7 +328,7 @@ var Obj = p0
 		},
 		{
 			"complex128pointer",
-			func() interface{} {
+			func() any {
 				var a = complex128(-1.2 - 0.5i)
 				return &a
 			},
@@ -339,7 +339,7 @@ var Obj = p0
 		},
 		{
 			"stringpointer",
-			func() interface{} {
+			func() any {
 				var a = "hello world"
 				return &a
 			},
@@ -350,7 +350,7 @@ var Obj = p0
 		},
 		{
 			"nilpointer",
-			func() interface{} {
+			func() any {
 				return nil
 			},
 			`var Obj = nil
@@ -358,7 +358,7 @@ var Obj = p0
 		},
 		{
 			"stringnilpointer",
-			func() interface{} {
+			func() any {
 				var a *string
 				return a
 			},
@@ -378,12 +378,12 @@ var Obj = p0
 func TestSdumpReusedPointers(t *testing.T) {
 	testcases := []struct {
 		name     string
-		input    func() interface{}
+		input    func() any
 		expected string
 	}{
 		{
 			"reusedprimitivepointer",
-			func() interface{} {
+			func() any {
 				var a = "hello world"
 				return &struct {
 					Foo *string
@@ -403,7 +403,7 @@ var Obj = &struct { Foo *string; Bar *string }{
 		},
 		{
 			"reusednilpointer",
-			func() interface{} {
+			func() any {
 				var a *string
 				return &struct {
 					Foo *string
@@ -421,7 +421,7 @@ var Obj = &struct { Foo *string; Bar *string }{
 		},
 		{
 			"reusedstructpointer",
-			func() interface{} {
+			func() any {
 				type Zeo struct {
 					A string
 				}

@@ -27,7 +27,7 @@ type vm struct {
 }
 
 type jsonValue struct {
-	val interface{}
+	val any
 	// these objects are exclusively owned by this jsonValue
 	owned []*C.struct_JsonnetJsonValue
 }
@@ -335,7 +335,7 @@ func jsonnet_native_callback(vmRef *C.struct_JsonnetVm, name *C.char, cb *C.Json
 	f := &jsonnet.NativeFunction{
 		Name:   C.GoString(name),
 		Params: paramNames,
-		Func: func(x []interface{}) (interface{}, error) {
+		Func: func(x []any) (any, error) {
 			var (
 				arr     []*C.struct_JsonnetJsonValue
 				argv    **C.struct_JsonnetJsonValue
@@ -460,13 +460,13 @@ func jsonnet_json_make_null(vmRef *C.struct_JsonnetVm) *C.struct_JsonnetJsonValu
 
 //export jsonnet_json_make_array
 func jsonnet_json_make_array(vmRef *C.struct_JsonnetVm) *C.struct_JsonnetJsonValue {
-	return createJSONValue(vmRef, []interface{}{})
+	return createJSONValue(vmRef, []any{})
 }
 
 //export jsonnet_json_array_append
 func jsonnet_json_array_append(vmRef *C.struct_JsonnetVm, arr *C.struct_JsonnetJsonValue, v *C.struct_JsonnetJsonValue) {
 	json := getJSONValue(arr)
-	slice, ok := json.val.([]interface{})
+	slice, ok := json.val.([]any)
 
 	if !ok {
 		fmt.Fprintf(os.Stderr, "array should be provided")
@@ -479,7 +479,7 @@ func jsonnet_json_array_append(vmRef *C.struct_JsonnetVm, arr *C.struct_JsonnetJ
 
 //export jsonnet_json_make_object
 func jsonnet_json_make_object(vmRef *C.struct_JsonnetVm) *C.struct_JsonnetJsonValue {
-	return createJSONValue(vmRef, make(map[string]interface{}))
+	return createJSONValue(vmRef, make(map[string]any))
 }
 
 //export jsonnet_json_object_append
@@ -490,7 +490,7 @@ func jsonnet_json_object_append(
 	v *C.struct_JsonnetJsonValue,
 ) {
 	d := getJSONValue(obj)
-	table, ok := d.val.(map[string]interface{})
+	table, ok := d.val.(map[string]any)
 
 	if !ok {
 		fmt.Fprintf(os.Stderr, "object should be provided")
@@ -515,7 +515,7 @@ func jsonnet_json_destroy(vmRef *C.struct_JsonnetVm, v *C.struct_JsonnetJsonValu
 	C.jsonnet_internal_free_json(v)
 }
 
-func createJSONValue(vmRef *C.struct_JsonnetVm, val interface{}) *C.struct_JsonnetJsonValue {
+func createJSONValue(vmRef *C.struct_JsonnetVm, val any) *C.struct_JsonnetJsonValue {
 	id, err := handles.make(&jsonValue{val: val})
 
 	if err != nil {

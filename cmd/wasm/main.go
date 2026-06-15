@@ -48,7 +48,7 @@ func processObjectParam(name string, value js.Value) (map[string]string, error) 
 	return result, nil
 }
 
-func jsonnetEvaluateSnippet(this js.Value, p []js.Value) (interface{}, error) {
+func jsonnetEvaluateSnippet(this js.Value, p []js.Value) (any, error) {
 	if len(p) != 7 {
 		return "", fmt.Errorf("wrong number of parameters: %d", len(p))
 	}
@@ -99,7 +99,7 @@ func jsonnetEvaluateSnippet(this js.Value, p []js.Value) (interface{}, error) {
 	return vm.EvaluateAnonymousSnippet(filename, code)
 }
 
-func jsonnetFmtSnippet(this js.Value, p []js.Value) (interface{}, error) {
+func jsonnetFmtSnippet(this js.Value, p []js.Value) (any, error) {
 	if len(p) != 2 {
 		return "", fmt.Errorf("wrong number of parameters: %d", len(p))
 	}
@@ -118,9 +118,9 @@ func jsonnetFmtSnippet(this js.Value, p []js.Value) (interface{}, error) {
 // promiseFuncOf is like js.FuncOf but returns a promise.
 // The promise is able to propagate errors naturally across the wasm /
 // javascript bridge.
-func promiseFuncOf(jsFunc func(this js.Value, p []js.Value) (interface{}, error)) js.Func {
-	return js.FuncOf(func(this js.Value, p []js.Value) interface{} {
-		return js.Global().Get("Promise").New(js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+func promiseFuncOf(jsFunc func(this js.Value, p []js.Value) (any, error)) js.Func {
+	return js.FuncOf(func(this js.Value, p []js.Value) any {
+		return js.Global().Get("Promise").New(js.FuncOf(func(this js.Value, args []js.Value) any {
 			resolve := args[0]
 			reject := args[1]
 			go func() {
