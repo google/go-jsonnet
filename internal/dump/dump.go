@@ -165,7 +165,7 @@ func (s *dumpState) dumpMap(v reflect.Value) {
 	mustWrite(s.w, []byte("}"))
 }
 
-func (s *dumpState) dump(value interface{}) {
+func (s *dumpState) dump(value any) {
 	writeVar := func() {
 		if s.config.VariableDescription != "" {
 			fmt.Fprintf(s.w, "\n// %s\n", s.config.VariableDescription)
@@ -497,7 +497,7 @@ func (s *dumpState) visitPointerAndCheckIfFirstTime(v reflect.Value) bool {
 }
 
 // prepares a new state object for dumping the provided value
-func newDumpState(value interface{}, options *Options) *dumpState {
+func newDumpState(value any, options *Options) *dumpState {
 	result := &dumpState{
 		config: options,
 	}
@@ -512,17 +512,17 @@ func newDumpState(value interface{}, options *Options) *dumpState {
 }
 
 // Dump a value to stdout
-func Dump(value interface{}) {
+func Dump(value any) {
 	(&Config).Dump(value)
 }
 
 // Sdump dumps a value to a string
-func Sdump(value interface{}) string {
+func Sdump(value any) string {
 	return (&Config).Sdump(value)
 }
 
 // Dump a value to stdout according to the options
-func (o Options) Dump(value interface{}) {
+func (o Options) Dump(value any) {
 
 	state := newDumpState(value, &o)
 	state.w = os.Stdout
@@ -530,7 +530,7 @@ func (o Options) Dump(value interface{}) {
 }
 
 // Sdump dumps a value to a string according to the options
-func (o Options) Sdump(value interface{}) string {
+func (o Options) Sdump(value any) string {
 	buf := new(bytes.Buffer)
 
 	state := newDumpState(value, &o)

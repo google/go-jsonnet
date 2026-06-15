@@ -231,7 +231,7 @@ func (vm *VM) EvaluateMulti(node ast.Node) (output map[string]string, err error)
 	return evaluateMulti(i, node, vm.tla, vm.StringOutput, vm.OutputNewline)
 }
 
-func (vm *VM) evaluateSnippet(diagnosticFileName ast.DiagnosticFileName, filename string, snippet string, kind evalKind) (output interface{}, err error) {
+func (vm *VM) evaluateSnippet(diagnosticFileName ast.DiagnosticFileName, filename string, snippet string, kind evalKind) (output any, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("(CRASH) %v\n%s", r, debug.Stack())

@@ -21,7 +21,7 @@ type handlesTable struct {
 }
 
 type handle struct {
-	ref interface{}
+	ref any
 }
 
 // errInvalidHandle tells that there was an attempt to dereference invalid handle ID
@@ -34,7 +34,7 @@ func newHandlesTable() handlesTable {
 }
 
 // make registers the new object as a handle and returns the corresponding ID
-func (h *handlesTable) make(obj interface{}) (uintptr, error) {
+func (h *handlesTable) make(obj any) (uintptr, error) {
 	entry := &handle{ref: obj}
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -56,7 +56,7 @@ func (h *handlesTable) free(id uintptr) error {
 }
 
 // get returns the corresponding object for the provided ID
-func (h *handlesTable) get(id uintptr) (interface{}, error) {
+func (h *handlesTable) get(id uintptr) (any, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if handle := h.handles[id]; handle != nil {

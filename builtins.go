@@ -1574,7 +1574,7 @@ func builtinParseJSON(i *interpreter, str value) (value, error) {
 		return nil, err
 	}
 	s := sval.getGoString()
-	var parsedJSON interface{}
+	var parsedJSON any
 	err = json.Unmarshal([]byte(s), &parsedJSON)
 	if err != nil {
 		return nil, i.Error(fmt.Sprintf("failed to parse JSON: %v", err.Error()))
@@ -1589,10 +1589,10 @@ func builtinParseYAML(i *interpreter, str value) (value, error) {
 	}
 	s := sval.getGoString()
 
-	elems := []interface{}{}
+	elems := []any{}
 	d := NewYAMLToJSONDecoder(strings.NewReader(s))
 	for {
-		var elem interface{}
+		var elem any
 		if err := d.Decode(&elem); err != nil {
 			if err == io.EOF {
 				break
@@ -1611,7 +1611,7 @@ func builtinParseYAML(i *interpreter, str value) (value, error) {
 	return jsonToValue(i, elems[0])
 }
 
-func jsonEncode(v interface{}) (string, error) {
+func jsonEncode(v any) (string, error) {
 	buf := new(bytes.Buffer)
 	enc := json.NewEncoder(buf)
 	enc.SetEscapeHTML(false)

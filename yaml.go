@@ -45,7 +45,7 @@ func NewYAMLToJSONDecoder(r io.Reader) *YAMLToJSONDecoder {
 // Decode reads a YAML document as JSON from the stream or returns
 // an error. The decoding rules match json.Unmarshal, not
 // yaml.Unmarshal.
-func (d *YAMLToJSONDecoder) Decode(into interface{}) error {
+func (d *YAMLToJSONDecoder) Decode(into any) error {
 	bytes, err := d.reader.read()
 	if err != nil && err != io.EOF {
 		return err

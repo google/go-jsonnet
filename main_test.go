@@ -78,7 +78,7 @@ type mainTest struct {
 var jsonToString = &NativeFunction{
 	Name:   "jsonToString",
 	Params: ast.Identifiers{"x"},
-	Func: func(x []interface{}) (interface{}, error) {
+	Func: func(x []any) (any, error) {
 		bytes, err := json.Marshal(x[0])
 		if err != nil {
 			return nil, err
@@ -90,7 +90,7 @@ var jsonToString = &NativeFunction{
 var nativeError = &NativeFunction{
 	Name:   "nativeError",
 	Params: ast.Identifiers{},
-	Func: func(x []interface{}) (interface{}, error) {
+	Func: func(x []any) (any, error) {
 		return nil, errors.New("native function error")
 	},
 }
@@ -98,7 +98,7 @@ var nativeError = &NativeFunction{
 var nativePanic = &NativeFunction{
 	Name:   "nativePanic",
 	Params: ast.Identifiers{},
-	Func: func(x []interface{}) (interface{}, error) {
+	Func: func(x []any) (any, error) {
 		panic("native function panic")
 	},
 }
