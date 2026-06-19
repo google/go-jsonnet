@@ -505,7 +505,7 @@ func (i *interpreter) rawevaluate(a ast.Node, tc tailCallStatus) (value, error) 
 			return target.index(i, int(indexInt.value))
 		}
 
-		return nil, i.Error(fmt.Sprintf("Value non indexable: %v", reflect.TypeOf(targetValue)))
+		return nil, i.Error(fmt.Sprintf("Could not index a value of type %q (only objects, arrays and strings can be indexed)", targetValue.getType().name))
 
 	case *ast.Import:
 		codePath := node.Loc().FileName

@@ -350,3 +350,32 @@ func TestSetTraceOut(t *testing.T) {
 		t.Errorf("Expected %q, but got %q", expected, actual)
 	}
 }
+
+func TestIndexNonIndexableErrorMessage(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    string
+		typeName string
+	}{
+		{name: "null", input: `null[42]`, typeName: "null"},
+		{name: "number", input: `(42)[0]`, typeName: "number"},
+		{name: "boolean", input: `true[0]`, typeName: "boolean"},
+		{name: "function", input: `(function() 1)[0]`, typeName: "function"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			vm := MakeVM()
+			_, err := vm.EvaluateAnonymousSnippet("test.jsonnet", tc.input)
+			if err == nil {
+				t.Fatalf("expected error, got nil")
+			}
+			if !strings.Contains(err.Error(), tc.typeName) {
+				t.Errorf("error %q should mention the jsonnet type %q", err.Error(), tc.typeName)
+			}
+			if strings.Contains(err.Error(), "jsonnet.value") {
+				t.Errorf("error %q should not leak internal Go type names", err.Error())
+			}
+		})
+	}
+}
