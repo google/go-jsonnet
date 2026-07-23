@@ -614,7 +614,7 @@ func rawMember(i *interpreter, arrv, value value) (bool, error) {
 			if err != nil {
 				return false, err
 			}
-			equal, err := rawEquals(i, cachedThunkValue, value)
+			equal, err := rawEquals(i, cachedThunkValue, value, i.stack.limit)
 			if err != nil {
 				return false, err
 			}
@@ -824,7 +824,10 @@ func primitiveEquals(i *interpreter, x, y value) (value, error) {
 	}
 }
 
-func rawEquals(i *interpreter, x, y value) (bool, error) {
+func rawEquals(i *interpreter, x, y value, depth int) (bool, error) {
+	if depth <= 0 {
+		return false, i.Error("max equality depth exceeded, possible infinite recursion")
+	}
 	if x.getType() != y.getType() {
 		return false, nil
 	}
@@ -866,7 +869,7 @@ func rawEquals(i *interpreter, x, y value) (bool, error) {
 			if err != nil {
 				return false, err
 			}
-			eq, err := rawEquals(i, leftElem, rightElem)
+			eq, err := rawEquals(i, leftElem, rightElem, depth-1)
 			if err != nil {
 				return false, err
 			}
@@ -902,7 +905,7 @@ func rawEquals(i *interpreter, x, y value) (bool, error) {
 			if err != nil {
 				return false, err
 			}
-			eq, err := rawEquals(i, leftField, rightField)
+			eq, err := rawEquals(i, leftField, rightField, depth-1)
 			if err != nil {
 				return false, err
 			}
@@ -918,7 +921,7 @@ func rawEquals(i *interpreter, x, y value) (bool, error) {
 }
 
 func builtinEquals(i *interpreter, x, y value) (value, error) {
-	eq, err := rawEquals(i, x, y)
+	eq, err := rawEquals(i, x, y, i.stack.limit)
 	if err != nil {
 		return nil, err
 	}
@@ -926,7 +929,7 @@ func builtinEquals(i *interpreter, x, y value) (value, error) {
 }
 
 func builtinNotEquals(i *interpreter, x, y value) (value, error) {
-	eq, err := rawEquals(i, x, y)
+	eq, err := rawEquals(i, x, y, i.stack.limit)
 	if err != nil {
 		return nil, err
 	}
@@ -2489,7 +2492,7 @@ func builtinContains(i *interpreter, arrv value, ev value) (value, error) {
 		if err != nil {
 			return nil, err
 		}
-		eq, err := rawEquals(i, val, ev)
+		eq, err := rawEquals(i, val, ev, i.stack.limit)
 		if err != nil {
 			return nil, err
 		}
@@ -2510,7 +2513,7 @@ func builtinRemove(i *interpreter, arrv value, ev value) (value, error) {
 		if err != nil {
 			return nil, err
 		}
-		eq, err := rawEquals(i, val, ev)
+		eq, err := rawEquals(i, val, ev, i.stack.limit)
 		if err != nil {
 			return nil, err
 		}
