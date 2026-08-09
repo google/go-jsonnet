@@ -1,0 +1,10 @@
+RUNTIME ERROR: std.abs expected number, got string
+-------------------------------------------------
+	testdata/builtinAbs_wrong_type:1:1-13	$
+
+std.abs("x")
+
+-------------------------------------------------
+	During evaluation	
+
+

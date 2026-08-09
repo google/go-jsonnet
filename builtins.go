@@ -1194,6 +1194,18 @@ var builtinIsDecimal = liftNumericToBoolean(func(f float64) bool {
 	return frac != 0
 })
 
+// builtinAbs shadows the standard library definition of std.abs, which is
+// `if n > 0 then n else -n` and therefore negates zero, making std.abs(0)
+// manifest as -0. The error message is kept identical to the one raised by
+// the standard library version.
+func builtinAbs(i *interpreter, xv value) (value, error) {
+	x, ok := xv.(*valueNumber)
+	if !ok {
+		return nil, i.Error("std.abs expected number, got " + xv.getType().name)
+	}
+	return makeDoubleCheck(i, math.Abs(x.value))
+}
+
 // IEEE-754 double precision floats can safely store integers in the range [-2**53+1, 2**53-1].
 // We restrict bitwise operations to arguments in this range, since operating on larger values is
 // likely to be a mistake.
@@ -2851,6 +2863,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "type", function: builtinType, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "char", function: builtinChar, params: ast.Identifiers{"n"}},
 	&unaryBuiltin{name: "codepoint", function: builtinCodepoint, params: ast.Identifiers{"str"}},
+	&unaryBuiltin{name: "abs", function: builtinAbs, params: ast.Identifiers{"n"}},
 	&unaryBuiltin{name: "ceil", function: builtinCeil, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "floor", function: builtinFloor, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "sqrt", function: builtinSqrt, params: ast.Identifiers{"x"}},
