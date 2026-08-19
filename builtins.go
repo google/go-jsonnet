@@ -2531,6 +2531,9 @@ func builtinRemoveAt(i *interpreter, arrv value, idxv value) (value, error) {
 	if err != nil {
 		return nil, err
 	}
+	if idx < 0 || idx >= arr.length() {
+		return nil, i.Error(fmt.Sprintf("Index %d out of bounds, not within [0, %v)", idx, arr.length()))
+	}
 
 	newArr = append(newArr, arr.elements[:idx]...)
 	newArr = append(newArr, arr.elements[idx+1:]...)

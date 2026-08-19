@@ -1,0 +1,10 @@
+RUNTIME ERROR: Index -1 out of bounds, not within [0, 3)
+-------------------------------------------------
+	testdata/builtinRemoveAt_neg:1:1-28	$
+
+std.removeAt([1, 2, 3], -1)
+
+-------------------------------------------------
+	During evaluation	
+
+
