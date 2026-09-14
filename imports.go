@@ -20,11 +20,65 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"unsafe"
 
 	"github.com/google/go-jsonnet/ast"
 	"github.com/google/go-jsonnet/internal/program"
 )
+
+// ImportASTCache caches the parsed AST of imported files, keyed by the
+// resolved ("foundAt") path an Importer returns. Parsing a file into an AST
+// is a pure function of its bytes: it never touches ExtCode, TLACode, or any
+// other per-VM binding. That makes an ImportASTCache safe to construct once
+// and share across several VMs, even VMs configured with different ExtCode
+// or TLACode, as long as they import through compatible Importers pointed at
+// the same files -- exactly the condition the Importer contract already
+// requires ("for a given foundAt, the contents are always the same").
+//
+// This does not cache evaluated values. Each VM still evaluates its own
+// imports independently through its own (unshared) value cache, so
+// ExtCode/TLACode bindings are always applied correctly per VM; only the
+// parse step is reused.
+//
+// A caller that evaluates the same Jsonnet root many times with different
+// top-level parameters in one process (for example, rendering one Tanka
+// environment per cluster from a shared library tree) can construct one
+// ImportASTCache, call SetImportASTCache on every VM it creates for that
+// batch, and avoid re-parsing the shared files once per VM. Without a call
+// to SetImportASTCache, a VM's behavior is unchanged: it keeps its own
+// private, per-VM AST cache exactly as before this type existed.
+type ImportASTCache struct {
+	mu    sync.Mutex
+	cache map[string]astCacheEntry
+}
+
+// NewImportASTCache creates an empty, ready-to-share ImportASTCache.
+func NewImportASTCache() *ImportASTCache {
+	return &ImportASTCache{cache: make(map[string]astCacheEntry)}
+}
+
+func (c *ImportASTCache) getOrParse(foundAt string, contents Contents) (ast.Node, error) {
+	c.mu.Lock()
+	if entry, isCached := c.cache[foundAt]; isCached {
+		c.mu.Unlock()
+		return entry.node, entry.err
+	}
+	c.mu.Unlock()
+
+	// Parsing happens outside the lock. It is pure and is the expensive part
+	// of a cache miss, so two VMs racing on the same not-yet-cached file both
+	// parse it once in parallel rather than one blocking behind the other's
+	// hold on the lock. A duplicate write below is harmless: SnippetToAST is
+	// a deterministic function of (foundAt, contents), so both parses agree.
+	node, err := program.SnippetToAST(ast.DiagnosticFileName(foundAt), foundAt, contents.String())
+
+	c.mu.Lock()
+	c.cache[foundAt] = astCacheEntry{node: node, err: err}
+	c.mu.Unlock()
+
+	return node, err
+}
 
 // An Importer imports data from a path.
 // TODO(sbarzowski) caching of errors (may require breaking changes)
@@ -101,6 +155,11 @@ type importCache struct {
 	astCache            map[string]astCacheEntry
 	codeCache           map[string]potentialValue
 	importer            Importer
+
+	// sharedASTCache is nil unless a caller opts in via VM.SetImportASTCache.
+	// When set, it is consulted and populated instead of astCache; astCache
+	// itself is left allocated but unused in that case.
+	sharedASTCache *ImportASTCache
 }
 
 type astCacheEntry struct {
@@ -141,6 +200,10 @@ func (cache *importCache) importAST(importedFrom, importedPath string) (ast.Node
 	contents, foundAt, err := cache.importData(importedFrom, importedPath)
 	if err != nil {
 		return nil, "", err
+	}
+	if cache.sharedASTCache != nil {
+		node, err := cache.sharedASTCache.getOrParse(foundAt, contents)
+		return node, foundAt, err
 	}
 	if entry, isCached := cache.astCache[foundAt]; isCached {
 		return entry.node, foundAt, entry.err
