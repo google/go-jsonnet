@@ -46,6 +46,7 @@ type VM struct { //nolint:govet
 	StringOutput   bool // expect to evaluate to a string, and output that string directly
 	OutputNewline  bool // add a trailing newline (default true)
 	importCache    *importCache
+	sharedASTCache *ImportASTCache
 	traceOut       io.Writer
 	EvalHook       EvalHook
 }
@@ -95,6 +96,7 @@ func MakeVM() *VM {
 // didn't change, for example when the importer changed.
 func (vm *VM) flushCache() {
 	vm.importCache = makeImportCache(vm.importer)
+	vm.importCache.sharedASTCache = vm.sharedASTCache
 }
 
 // Flush value cache. This should be executed when calculated values may no longer be up to date,
@@ -161,6 +163,21 @@ func (vm *VM) TLAReset() {
 func (vm *VM) Importer(i Importer) {
 	vm.importer = i
 	vm.flushCache()
+}
+
+// SetImportASTCache opts this VM into a shared ImportASTCache: parsed ASTs
+// for imported files are read from and written to cache instead of this
+// VM's own private cache. See the ImportASTCache docstring for what is (and
+// is not) safe to share this way. Pass nil to go back to a private, per-VM
+// cache; either way, only the AST cache is affected, never evaluated values.
+//
+// Safe to call before or after Importer, and at any point before evaluation:
+// it takes effect immediately and survives a later call to Importer (which
+// otherwise discards the whole import cache, since a new Importer may read
+// different files).
+func (vm *VM) SetImportASTCache(cache *ImportASTCache) {
+	vm.sharedASTCache = cache
+	vm.importCache.sharedASTCache = cache
 }
 
 // NativeFunction registers a native function.
