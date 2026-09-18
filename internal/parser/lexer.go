@@ -389,6 +389,38 @@ func (l *lexer) makeStaticErrorPoint(msg string, loc ast.Location) errors.Static
 	return errors.MakeStaticError(msg, ast.MakeLocationRange(l.importedFilename, l.source, loc, loc))
 }
 
+
+// atEOL reports whether the next input is a line terminator (\n or \r\n).
+func (l *lexer) atEOL() bool {
+	r := l.peek()
+	if r == '\n' {
+		return true
+	}
+	if r == '\r' {
+		// Peek the byte after \r without consuming.
+		if l.pos.byteNo+1 < len(l.input) && l.input[l.pos.byteNo+1] == '\n' {
+			return true
+		}
+	}
+	return false
+}
+
+// consumeEOL consumes a line terminator (\n or \r\n) and returns true.
+// Lone \r is not treated as a line terminator.
+func (l *lexer) consumeEOL() bool {
+	if !l.atEOL() {
+		return false
+	}
+	if l.peek() == '\r' {
+		l.next() // '\r'
+	}
+	if l.peek() == '\n' {
+		l.next() // '\n'
+		return true
+	}
+	return false
+}
+
 // lexWhitespace consumes all whitespace and returns the number of \n and number of
 // spaces after last \n.  It also converts \t to spaces.
 // The parameter 'r' is the rune that begins the whitespace.
@@ -779,20 +811,30 @@ func (l *lexer) lexSymbol() error {
 
 		var cb bytes.Buffer
 
-		// Skip whitespace
+		// Skip horizontal whitespace after ||| / |||-
 		for r = l.next(); r == ' ' || r == '\t' || r == '\r'; r = l.next() {
 		}
 
-		// Skip \n
-		if r != '\n' {
+		// Require a line terminator after |||. Allow either \n or \r\n.
+		// We already consumed one rune into r; if it was the start of an EOL,
+		// finish the terminator, otherwise require that we are at EOL.
+		if r == '\r' {
+			if l.peek() != '\n' {
+				return l.makeStaticErrorPoint("Text block requires new line after |||.",
+					commentStartLoc)
+			}
+			l.next() // '\n'
+		} else if r != '\n' {
 			return l.makeStaticErrorPoint("Text block requires new line after |||.",
 				commentStartLoc)
 		}
 
-		// Process leading blank lines before calculating stringBlockIndent
-		for r = l.peek(); r == '\n'; r = l.peek() {
-			l.next()
-			cb.WriteRune(r)
+		// Process leading blank lines before calculating stringBlockIndent.
+		// Treat both \n and \r\n as blank-line terminators; always record \n
+		// in the string content so LF and CRLF inputs produce the same value.
+		for l.atEOL() {
+			l.consumeEOL()
+			cb.WriteRune('\n')
 		}
 		numWhiteSpace := checkWhitespace(l.input[l.pos.byteNo:], l.input[l.pos.byteNo:])
 		stringBlockIndent := l.input[l.pos.byteNo : l.pos.byteNo+numWhiteSpace]
@@ -806,18 +848,24 @@ func (l *lexer) lexSymbol() error {
 				panic("Unexpected value for numWhiteSpace")
 			}
 			l.acceptN(numWhiteSpace)
-			for r = l.next(); r != '\n'; r = l.next() {
+			for {
+				r = l.peek()
 				if r == lexEOF {
 					return l.makeStaticErrorPoint("Unexpected EOF", commentStartLoc)
 				}
-				cb.WriteRune(r)
-			}
-			cb.WriteRune('\n')
-
-			// Skip any blank lines
-			for r = l.peek(); r == '\n'; r = l.peek() {
+				if l.atEOL() {
+					l.consumeEOL()
+					cb.WriteRune('\n')
+					break
+				}
 				l.next()
 				cb.WriteRune(r)
+			}
+
+			// Skip any blank lines
+			for l.atEOL() {
+				l.consumeEOL()
+				cb.WriteRune('\n')
 			}
 
 			// Look at the next line
