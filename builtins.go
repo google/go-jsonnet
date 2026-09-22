@@ -1001,16 +1001,7 @@ func builtinBase64(i *interpreter, input value) (value, error) {
 			return nil, err
 		}
 
-		str := vStr.getGoString()
-		for _, r := range str {
-			n := int(r)
-			msg, ok := sanityCheck(n)
-			if !ok {
-				return nil, makeRuntimeError(msg, i.getCurrentStackTrace())
-			}
-		}
-
-		byteArr = []byte(str)
+		byteArr = []byte(vStr.getGoString())
 	case *valueArray:
 		vArr, err := i.getArray(input)
 		if err != nil {
