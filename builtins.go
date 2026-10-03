@@ -1193,6 +1193,9 @@ var builtinIsDecimal = liftNumericToBoolean(func(f float64) bool {
 	_, frac := math.Modf(f) // Get the fraction part of the float
 	return frac != 0
 })
+var builtinIsNegativeZero = liftNumericToBoolean(func(f float64) bool {
+	return f == 0 && math.Signbit(f)
+})
 
 // IEEE-754 double precision floats can safely store integers in the range [-2**53+1, 2**53-1].
 // We restrict bitwise operations to arguments in this range, since operating on larger values is
@@ -2871,6 +2874,7 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "isOdd", function: builtinIsOdd, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "isInteger", function: builtinIsInteger, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "isDecimal", function: builtinIsDecimal, params: ast.Identifiers{"x"}},
+	&unaryBuiltin{name: "isNegativeZero", function: builtinIsNegativeZero, params: ast.Identifiers{"n"}},
 	&binaryBuiltin{name: "pow", function: builtinPow, params: ast.Identifiers{"x", "n"}},
 	&binaryBuiltin{name: "modulo", function: builtinModulo, params: ast.Identifiers{"x", "y"}},
 	&unaryBuiltin{name: "md5", function: builtinMd5, params: ast.Identifiers{"s"}},
