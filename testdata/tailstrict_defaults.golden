@@ -1,0 +1,11 @@
+{
+   "chain": 3,
+   "explicit": 2,
+   "lazy": 2,
+   "named": 2,
+   "outer": 7,
+   "parameter": 2,
+   "recursive": 0,
+   "self": 5,
+   "super": 3
+}

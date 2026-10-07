@@ -1,0 +1,15 @@
+RUNTIME ERROR: default error
+-------------------------------------------------
+	testdata/tailstrict_default_error:1:11-32	function <f>
+
+local f(a=error 'default error') = true;
+
+-------------------------------------------------
+	testdata/tailstrict_default_error:2:1-4	$
+
+f() tailstrict
+
+-------------------------------------------------
+	During evaluation	
+
+
