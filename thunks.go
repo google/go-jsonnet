@@ -215,17 +215,16 @@ func (closure *closure) evalCall(arguments callArguments, i *interpreter) (value
 		}
 	}
 
+	calledEnvironment = makeEnvironment(
+		addBindings(closure.env.upValues, argThunks),
+		closure.env.selfBinding,
+	)
 	if arguments.tailstrict {
 		err := forceThunks(i, &argThunks)
 		if err != nil {
 			return nil, err
 		}
 	}
-
-	calledEnvironment = makeEnvironment(
-		addBindings(closure.env.upValues, argThunks),
-		closure.env.selfBinding,
-	)
 	return i.EvalInCleanEnv(&calledEnvironment, closure.function.Body, arguments.tailstrict)
 }
 
