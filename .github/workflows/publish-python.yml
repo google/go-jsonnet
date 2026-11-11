@@ -28,11 +28,11 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           submodules: true
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.13"
           cache: "pip"
@@ -42,7 +42,7 @@ jobs:
       - name: Build sdist
         run: python3 -m build --sdist
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: sdist
           path: ./dist/*.gz
@@ -62,11 +62,11 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           submodules: true
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         # Linux runner doesn't need Go setup because it's installed
         # separately in each cibuildwheel build container
         if: "${{ runner.os != 'Linux' }}"
@@ -87,7 +87,7 @@ jobs:
           CIBW_TEST_COMMAND: >
             python {package}/python/_jsonnet_test.py
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: cibw-wheels-${{ matrix.os }}
           path: ./wheelhouse/*.whl
@@ -105,11 +105,11 @@ jobs:
       name: "${{ inputs.pypi_environment }}"
       url: "${{ inputs.pypi_environment == 'pypi' && 'https://pypi.org/p/gosonnet' || 'https://test.pypi.org/p/gosonnet' }}"
     steps:
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           path: cibw-wheels
           pattern: cibw-wheels-*
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           path: sdist
           name: sdist
