@@ -2451,6 +2451,9 @@ func builtinSum(i *interpreter, arrv value) (value, error) {
 			return nil, err
 		}
 		sum += elemValue.value
+		if math.IsInf(sum, 0) {
+			return nil, i.Error("Overflow")
+		}
 	}
 	return makeValueNumber(sum), nil
 }
