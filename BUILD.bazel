@@ -47,6 +47,7 @@ go_test(
     name = "go-jsonnet_test",
     srcs = [
         "builtins_benchmark_test.go",
+        "builtins_bounds_test.go",
         "interpreter_test.go",
         "jsonnet_test.go",
         "main_test.go",

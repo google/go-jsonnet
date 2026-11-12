@@ -1327,18 +1327,15 @@ func builtinSubstr(i *interpreter, inputStr, inputFrom, inputLen value) (value, 
 		return nil, makeRuntimeError(msg, i.getCurrentStackTrace())
 	}
 
-	fromInt := int(fromV.value)
 	strStr := strV.getRunes()
-
-	endIndex := fromInt + lenInt
-
-	if endIndex > len(strStr) {
-		endIndex = len(strStr)
-	}
-
-	if fromInt > len(strStr) {
+	if fromV.value > float64(len(strStr)) {
 		return makeValueString(""), nil
 	}
+	fromInt := int(fromV.value)
+	if lenInt > len(strStr)-fromInt {
+		lenInt = len(strStr) - fromInt
+	}
+	endIndex := fromInt + lenInt
 	return makeValueString(string(strStr[fromInt:endIndex])), nil
 }
 
