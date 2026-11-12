@@ -46,6 +46,7 @@ go_library(
 go_test(
     name = "go-jsonnet_test",
     srcs = [
+        "builtin_sum_test.go",
         "builtins_benchmark_test.go",
         "interpreter_test.go",
         "jsonnet_test.go",
