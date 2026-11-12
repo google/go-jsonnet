@@ -717,8 +717,8 @@ func builtinRange(i *interpreter, fromv, tov value) (value, error) {
 	}
 	if n := to - from + 1; n > 0 {
 		elems := make([]*cachedThunk, n)
-		for i := from; i <= to; i++ {
-			elems[i-from] = readyThunk(intToValue(i))
+		for index := range elems {
+			elems[index] = readyThunk(intToValue(from + index))
 		}
 		return makeValueArray(elems), nil
 	}
