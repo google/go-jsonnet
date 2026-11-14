@@ -50,6 +50,7 @@ go_test(
         "interpreter_test.go",
         "jsonnet_test.go",
         "main_test.go",
+        "trim_whitespace_test.go",
     ],
     data = glob(["testdata/**"]),
     embed = [":go-jsonnet"],

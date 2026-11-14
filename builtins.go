@@ -1469,7 +1469,7 @@ func builtinTrim(i *interpreter, strv value) (value, error) {
 		return nil, err
 	}
 	sStr := str.getGoString()
-	return makeValueString(strings.TrimSpace(sStr)), nil
+	return makeValueString(strings.Trim(sStr, " \t\n\f\r\u0085\u00A0")), nil
 }
 
 func base64DecodeGoBytes(i *interpreter, str string) ([]byte, error) {
