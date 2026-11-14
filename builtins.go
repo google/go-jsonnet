@@ -2818,11 +2818,30 @@ func builtinParseInt(i *interpreter, x value) (value, error) {
 	if err != nil {
 		return nil, err
 	}
-	res, err := strconv.ParseInt(str.getGoString(), 10, 64)
-	if err != nil {
-		return nil, i.Error(fmt.Sprintf("%s is not a base 10 integer", str.getGoString()))
+	text := str.getGoString()
+	digits := text
+	negative := len(digits) > 0 && digits[0] == '-'
+	if negative {
+		digits = digits[1:]
 	}
-	return makeValueNumber(float64(res)), nil
+	if len(digits) == 0 {
+		return nil, i.Error(fmt.Sprintf("%s is not a base 10 integer", text))
+	}
+	result := 0.0
+	for index := 0; index < len(digits); index++ {
+		if digits[index] < '0' || digits[index] > '9' {
+			return nil, i.Error(fmt.Sprintf("%s is not a base 10 integer", text))
+		}
+		// Match the stdlib's separate multiplication and addition operations.
+		result = float64(result*10) + float64(digits[index]-'0')
+		if math.IsInf(result, 0) {
+			return nil, i.Error("Overflow")
+		}
+	}
+	if negative {
+		result = -result
+	}
+	return makeValueNumber(result), nil
 }
 
 var funcBuiltins = buildBuiltinMap([]builtin{
