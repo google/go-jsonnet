@@ -17,6 +17,8 @@ func TestExtremaUnusedArguments(t *testing.T) {
 		{`std.maxArray([3], keyF=function(x) error "unused")`, "3"},
 		{`std.minArray([{x: 2}, {x: 1}], keyF=function(x) x.x).x`, "1"},
 		{`std.maxArray([{x: 2}, {x: 1}], keyF=function(x) x.x).x`, "2"},
+		{`std.minArray([1], onEmpty=9) tailstrict`, "1"},
+		{`std.maxArray([3], onEmpty=9) tailstrict`, "3"},
 	} {
 		t.Run(test.input, func(t *testing.T) {
 			output, err := MakeVM().EvaluateAnonymousSnippet("extrema.jsonnet", test.input)
@@ -31,6 +33,8 @@ func TestExtremaRequiredArgumentErrors(t *testing.T) {
 	for _, test := range []struct{ input, message string }{
 		{`std.minArray([])`, "Expected at least one element"},
 		{`std.maxArray([])`, "Expected at least one element"},
+		{`std.minArray([1]) tailstrict`, "Expected at least one element"},
+		{`std.maxArray([1]) tailstrict`, "Expected at least one element"},
 		{`std.minArray([], onEmpty=error "empty fallback")`, "empty fallback"},
 		{`std.maxArray([], onEmpty=error "empty fallback")`, "empty fallback"},
 		{`std.minArray([1], onEmpty=error "strict fallback") tailstrict`, "strict fallback"},

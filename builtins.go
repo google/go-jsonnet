@@ -2784,6 +2784,10 @@ func (b *extremaBuiltin) evalCall(args callArguments, i *interpreter) (value, er
 				}
 			}
 		}
+		// tailstrict also forces the stdlib's implicit error default.
+		if flatArgs[2] == nil {
+			return nil, i.Error("Expected at least one element in array. Got none")
+		}
 	}
 	arrayValue, err := flatArgs[0].getValue(i)
 	if err != nil {
