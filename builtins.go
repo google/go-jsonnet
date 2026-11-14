@@ -1460,7 +1460,23 @@ func builtinEqualsIgnoreCase(i *interpreter, sv1, sv2 value) (value, error) {
 	if err != nil {
 		return nil, err
 	}
-	return makeValueBoolean(strings.EqualFold(s1.getGoString(), s2.getGoString())), nil
+	a, b := s1.getGoString(), s2.getGoString()
+	if len(a) != len(b) {
+		return makeValueBoolean(false), nil
+	}
+	for index := 0; index < len(a); index++ {
+		x, y := a[index], b[index]
+		if 'A' <= x && x <= 'Z' {
+			x += 'a' - 'A'
+		}
+		if 'A' <= y && y <= 'Z' {
+			y += 'a' - 'A'
+		}
+		if x != y {
+			return makeValueBoolean(false), nil
+		}
+	}
+	return makeValueBoolean(true), nil
 }
 
 func builtinTrim(i *interpreter, strv value) (value, error) {
