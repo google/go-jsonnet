@@ -35,6 +35,8 @@ func TestExtremaRequiredArgumentErrors(t *testing.T) {
 		{`std.maxArray([])`, "Expected at least one element"},
 		{`std.minArray([1]) tailstrict`, "Expected at least one element"},
 		{`std.maxArray([1]) tailstrict`, "Expected at least one element"},
+		{`std.minArray([1], keyF=error "strict key before default") tailstrict`, "strict key before default"},
+		{`std.maxArray([1], keyF=error "strict key before default") tailstrict`, "strict key before default"},
 		{`std.minArray([], onEmpty=error "empty fallback")`, "empty fallback"},
 		{`std.maxArray([], onEmpty=error "empty fallback")`, "empty fallback"},
 		{`std.minArray([1], onEmpty=error "strict fallback") tailstrict`, "strict fallback"},
