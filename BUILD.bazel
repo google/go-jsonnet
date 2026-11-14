@@ -48,6 +48,7 @@ go_test(
     srcs = [
         "builtins_benchmark_test.go",
         "interpreter_test.go",
+        "jsonnet_round_test.go",
         "jsonnet_test.go",
         "main_test.go",
     ],

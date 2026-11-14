@@ -1176,7 +1176,18 @@ var builtinExponent = liftNumeric(func(f float64) float64 {
 	_, exponent := math.Frexp(f)
 	return float64(exponent)
 })
-var builtinRound = liftNumeric(math.Round)
+var builtinRound = liftNumeric(func(f float64) float64 {
+	// The stdlib rounds ties toward positive infinity. Avoid adding 0.5,
+	// which can change an already-integral value at large magnitudes.
+	result := math.Floor(f)
+	if f-result >= 0.5 {
+		result++
+	}
+	if result == 0 {
+		return 0
+	}
+	return result
+})
 var builtinIsEven = liftNumericToBoolean(func(f float64) bool {
 	i, _ := math.Modf(f) // Get the integral part of the float
 	return math.Mod(i, 2) == 0
