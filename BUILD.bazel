@@ -49,6 +49,7 @@ go_test(
         "builtins_benchmark_test.go",
         "interpreter_test.go",
         "jsonnet_test.go",
+        "main_strip_runs_test.go",
         "main_test.go",
     ],
     data = glob(["testdata/**"]),

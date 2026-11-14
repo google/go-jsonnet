@@ -533,24 +533,22 @@ func builtinFilter(i *interpreter, funcv, arrv value) (value, error) {
 func builtinLstripChars(i *interpreter, str, chars value) (value, error) {
 	switch strType := str.(type) {
 	case valueString:
-		if strType.length() > 0 {
-			index, err := strType.index(i, 0)
+		runes := strType.getRunes()
+		start := 0
+		for start < len(runes) {
+			member, err := rawMember(i, chars, makeValueString(string(runes[start])))
 			if err != nil {
 				return nil, err
 			}
-			member, err := rawMember(i, chars, index)
-			if err != nil {
-				return nil, err
+			if !member {
+				break
 			}
-			if member {
-				runes := strType.getRunes()
-				s := string(runes[1:])
-				return builtinLstripChars(i, makeValueString(s), chars)
-			} else {
-				return str, nil
-			}
+			start++
 		}
-		return str, nil
+		if start == 0 {
+			return str, nil
+		}
+		return makeValueString(string(runes[start:])), nil
 	default:
 		return nil, i.Error(fmt.Sprintf("Unexpected type %s, expected string", strType.getType().name))
 	}
@@ -559,24 +557,22 @@ func builtinLstripChars(i *interpreter, str, chars value) (value, error) {
 func builtinRstripChars(i *interpreter, str, chars value) (value, error) {
 	switch strType := str.(type) {
 	case valueString:
-		if strType.length() > 0 {
-			index, err := strType.index(i, strType.length()-1)
+		runes := strType.getRunes()
+		end := len(runes)
+		for end > 0 {
+			member, err := rawMember(i, chars, makeValueString(string(runes[end-1])))
 			if err != nil {
 				return nil, err
 			}
-			member, err := rawMember(i, chars, index)
-			if err != nil {
-				return nil, err
+			if !member {
+				break
 			}
-			if member {
-				runes := strType.getRunes()
-				s := string(runes[:len(runes)-1])
-				return builtinRstripChars(i, makeValueString(s), chars)
-			} else {
-				return str, nil
-			}
+			end--
 		}
-		return str, nil
+		if end == len(runes) {
+			return str, nil
+		}
+		return makeValueString(string(runes[:end])), nil
 	default:
 		return nil, i.Error(fmt.Sprintf("Unexpected type %s, expected string", strType.getType().name))
 	}
