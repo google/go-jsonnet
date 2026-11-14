@@ -2769,6 +2769,46 @@ func (b *generalBuiltin) evalCall(args callArguments, i *interpreter) (value, er
 	return b.function(i, values)
 }
 
+// extremaBuiltin keeps unused extrema arguments lazy, like the stdlib functions.
+type extremaBuiltin struct {
+	generalBuiltin
+}
+
+func (b *extremaBuiltin) evalCall(args callArguments, i *interpreter) (value, error) {
+	flatArgs := flattenArgs(args, b.parameters(), b.defaultValues())
+	if args.tailstrict {
+		for _, arg := range flatArgs {
+			if arg != nil {
+				if _, err := arg.getValue(i); err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+	arrayValue, err := flatArgs[0].getValue(i)
+	if err != nil {
+		return nil, err
+	}
+	array, err := i.getArray(arrayValue)
+	if err != nil {
+		return nil, err
+	}
+	if array.length() == 0 {
+		if flatArgs[2] == nil {
+			return nil, i.Error("Expected at least one element in array. Got none")
+		}
+		return flatArgs[2].getValue(i)
+	}
+	if array.length() == 1 {
+		return array.elements[0].getValue(i)
+	}
+	key, err := flatArgs[1].getValue(i)
+	if err != nil {
+		return nil, err
+	}
+	return b.function(i, []value{arrayValue, key, nil})
+}
+
 // End of builtin utils
 
 var builtinID = &unaryBuiltin{name: "id", function: builtinIdentity, params: ast.Identifiers{"x"}}
@@ -2908,8 +2948,8 @@ var funcBuiltins = buildBuiltinMap([]builtin{
 	&unaryBuiltin{name: "encodeUTF8", function: builtinEncodeUTF8, params: ast.Identifiers{"str"}},
 	&unaryBuiltin{name: "decodeUTF8", function: builtinDecodeUTF8, params: ast.Identifiers{"arr"}},
 	&generalBuiltin{name: "sort", function: builtinSort, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}}},
-	&generalBuiltin{name: "minArray", function: builtinMinArray, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}, {name: "onEmpty", nonValueDefault: true}}},
-	&generalBuiltin{name: "maxArray", function: builtinMaxArray, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}, {name: "onEmpty", nonValueDefault: true}}},
+	&extremaBuiltin{generalBuiltin{name: "minArray", function: builtinMinArray, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}, {name: "onEmpty", nonValueDefault: true}}}},
+	&extremaBuiltin{generalBuiltin{name: "maxArray", function: builtinMaxArray, params: []generalBuiltinParameter{{name: "arr"}, {name: "keyF", defaultValue: functionID}, {name: "onEmpty", nonValueDefault: true}}}},
 	&unaryBuiltin{name: "native", function: builtinNative, params: ast.Identifiers{"x"}},
 	&unaryBuiltin{name: "sum", function: builtinSum, params: ast.Identifiers{"arr"}},
 	&unaryBuiltin{name: "avg", function: builtinAvg, params: ast.Identifiers{"arr"}},
